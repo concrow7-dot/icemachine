@@ -24,4 +24,4 @@ Then open the address it prints (usually http://localhost:5173).
 
 ## Tech
 
-[Phaser 3](https://phaser.io) game engine · [Vite](https://vite.dev) build tool · GitHub Pages hosting.
+[Phaser 4](https://phaser.io) game engine · [TypeScript](https://www.typescriptlang.org) · [Vite](https://vite.dev) build tool · GitHub Pages hosting.
