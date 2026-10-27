@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 
 // Placeholder scene: proves rendering, input and physics all work.
 // The blue square is a stand-in for the player until mechanics are specced.

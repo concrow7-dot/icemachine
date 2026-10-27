@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import { TestRoomScene } from './scenes/TestRoomScene.js';
 
 // Game-wide settings. Resolution is a placeholder until the
@@ -9,6 +9,9 @@ const config = {
   width: 960,
   height: 540,
   backgroundColor: '#1b2230',
+  // Phaser 4 changed this default to false. Revisit when the art style is
+  // chosen: pixel art usually needs true to keep sprites crisp.
+  roundPixels: false,
   physics: {
     default: 'arcade',
     arcade: { debug: false },
