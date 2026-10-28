@@ -29,3 +29,6 @@ export const TRUCK_SPEED = 150;
 /** Issue #9: seconds to reach top speed from a stop, and to stop from top speed. */
 export const TRUCK_ACCELERATION_SECONDS = 0.25;
 export const TRUCK_BRAKING_SECONDS = 0.15;
+
+/** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
+export const PLACEHOLDER_SALE_CENTS = 400;
