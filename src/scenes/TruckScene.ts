@@ -139,7 +139,11 @@ export class TruckScene extends Phaser.Scene {
   private activate(id: Station): void {
     if (!this.isAvailable(id)) return;
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
-    if (id === 'driver') this.scene.start(SceneKeys.TestRoom);
+    if (id === 'driver') {
+      // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
+      this.evening.lockPrep();
+      this.scene.start(SceneKeys.TestRoom);
+    }
     if (id === 'window') this.scene.start(SceneKeys.Window);
   }
 

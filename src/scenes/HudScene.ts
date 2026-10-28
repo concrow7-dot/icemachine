@@ -37,9 +37,9 @@ export class HudScene extends Phaser.Scene {
     this.refresh();
     this.addDebugKeys();
 
-    const onMoney = (change: number, _total: number, label: string) => {
+    const onMoney = (change: number, _cash: number, label: string, popup: boolean) => {
       this.refresh();
-      this.showMoneyChange(change, label);
+      if (popup) this.showMoneyChange(change, label);
     };
     const onEnded = () => endEvening(this);
 
@@ -84,7 +84,7 @@ export class HudScene extends Phaser.Scene {
   private refresh(): void {
     this.clockText.setText(formatClock(this.evening.clockMinutes));
     const cents = this.evening.moneyCents;
-    this.moneyText.setText(formatMoney(cents));
+    this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
   }
 

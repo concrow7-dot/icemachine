@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { returnToTruck, SceneKeys, type Station } from '../flow';
 
 // Temporary screens for stations that aren't built yet, so the truck hub (#7)
-// can be tested end to end. Replaced by the real cooler (#8) and window (#13).
+// can be tested end to end. Replaced by the real window (#13).
 
 abstract class PlaceholderStationScene extends Phaser.Scene {
   protected abstract readonly station: Station;
@@ -40,16 +40,6 @@ abstract class PlaceholderStationScene extends Phaser.Scene {
     const back = () => returnToTruck(this, this.station);
     this.input.keyboard?.once('keydown-BACKSPACE', back);
     this.input.keyboard?.once('keydown-B', back);
-  }
-}
-
-export class CoolerScene extends PlaceholderStationScene {
-  protected readonly station = 'cooler';
-  protected readonly title = 'THE COOLER';
-  protected readonly comingIn = 'Stocking up comes in issue #8';
-
-  constructor() {
-    super(SceneKeys.Cooler);
   }
 }
 
