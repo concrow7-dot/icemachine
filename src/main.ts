@@ -1,5 +1,8 @@
 import * as Phaser from 'phaser';
+import { HudScene } from './scenes/HudScene';
+import { ResultsScene } from './scenes/ResultsScene';
 import { TestRoomScene } from './scenes/TestRoomScene';
+import { TitleScene } from './scenes/TitleScene';
 
 // Game-wide settings. Resolution is a placeholder until the
 // camera/perspective spec is decided (roadmap item 4).
@@ -20,7 +23,9 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [TestRoomScene],
+  // The first scene listed starts automatically. HUD is listed last so it
+  // draws on top of every evening phase.
+  scene: [TitleScene, TestRoomScene, ResultsScene, HudScene],
 };
 
 new Phaser.Game(config);
