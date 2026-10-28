@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser';
 import { HudScene } from './scenes/HudScene';
+import { CoolerScene, WindowScene } from './scenes/PlaceholderStationScene';
 import { ResultsScene } from './scenes/ResultsScene';
 import { TestRoomScene } from './scenes/TestRoomScene';
 import { TitleScene } from './scenes/TitleScene';
+import { TruckScene } from './scenes/TruckScene';
 
 // Game-wide settings. Resolution is a placeholder until the
 // camera/perspective spec is decided (roadmap item 4).
@@ -25,7 +27,15 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   // The first scene listed starts automatically. HUD is listed last so it
   // draws on top of every evening phase.
-  scene: [TitleScene, TestRoomScene, ResultsScene, HudScene],
+  scene: [
+    TitleScene,
+    TruckScene,
+    CoolerScene,
+    WindowScene,
+    TestRoomScene,
+    ResultsScene,
+    HudScene,
+  ],
 };
 
 new Phaser.Game(config);

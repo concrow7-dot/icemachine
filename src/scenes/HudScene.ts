@@ -35,6 +35,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(1, 0);
 
     this.refresh();
+    this.addDebugKeys();
 
     const onMoney = (change: number, _total: number, label: string) => {
       this.refresh();
@@ -50,6 +51,29 @@ export class HudScene extends Phaser.Scene {
       this.evening.off(EveningEvents.MoneyChanged, onMoney);
       this.evening.off(EveningEvents.Ended, onEnded);
     });
+  }
+
+  /**
+   * TEMPORARY debug keys, available on every evening screen. Remove once real
+   * sales (#15), damage (#10) and customers (#12) exist.
+   */
+  private addDebugKeys(): void {
+    const { width } = this.scale;
+    this.add
+      .text(width / 2, 22, 'DEBUG  1:+$4.50  2:-$2.00  3:end evening  4:customer on/off', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#d9a0ff',
+      })
+      .setOrigin(0.5);
+
+    const keyboard = this.input.keyboard;
+    keyboard?.on('keydown-ONE', () => this.evening.changeMoney(450, 'Sale'));
+    keyboard?.on('keydown-TWO', () => this.evening.changeMoney(-200, 'Damage'));
+    keyboard?.on('keydown-THREE', () => this.evening.endNow());
+    keyboard?.on('keydown-FOUR', () =>
+      this.evening.setCustomerWaiting(!this.evening.customerWaiting),
+    );
   }
 
   update(_time: number, delta: number): void {

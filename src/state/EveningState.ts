@@ -11,6 +11,8 @@ export const EveningEvents = {
   MoneyChanged: 'money-changed',
   /** () — the clock reached 8pm */
   Ended: 'ended',
+  /** (waiting: boolean) — a customer arrived at, or left, the window */
+  CustomerChanged: 'customer-changed',
 } as const;
 
 /**
@@ -24,6 +26,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private elapsedMs = 0;
   private ended = false;
   private totalCents = 0;
+  private customerAtWindow = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
 
   /** How far through the evening we are, from 0 (5pm) to 1 (8pm). */
@@ -44,6 +47,17 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   get isOver(): boolean {
     return this.ended;
+  }
+
+  /** True while a customer is waiting at the window (issue #7: window only usable during a sale). */
+  get customerWaiting(): boolean {
+    return this.customerAtWindow;
+  }
+
+  setCustomerWaiting(waiting: boolean): void {
+    if (this.customerAtWindow === waiting) return;
+    this.customerAtWindow = waiting;
+    this.emit(EveningEvents.CustomerChanged, waiting);
   }
 
   /** Advances the clock. Called every frame by the HUD, whatever phase the player is in. */
