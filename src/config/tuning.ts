@@ -22,3 +22,13 @@ export const MAX_PRICE_CENTS = 1000;
 
 /** Issue #23: first-playable rule, customers refuse to pay more than this per ice cream. */
 export const REFUSE_ABOVE_CENTS = 400;
+
+/** Issue #9: truck top speed in pixels per second. 150 crosses the 2880-pixel neighbourhood in about 20 seconds. */
+export const TRUCK_SPEED = 150;
+
+/** Issue #9: seconds to reach top speed from a stop, and to stop from top speed. */
+export const TRUCK_ACCELERATION_SECONDS = 0.25;
+export const TRUCK_BRAKING_SECONDS = 0.15;
+
+/** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
+export const PLACEHOLDER_SALE_CENTS = 400;

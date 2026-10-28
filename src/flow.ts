@@ -7,7 +7,7 @@ export const SceneKeys = {
   Truck: 'Truck',
   Cooler: 'Cooler',
   Window: 'Window',
-  TestRoom: 'TestRoom',
+  Drive: 'Drive',
   Hud: 'Hud',
   Results: 'Results',
 } as const;
@@ -17,7 +17,7 @@ const EVENING_SCENES: string[] = [
   SceneKeys.Truck,
   SceneKeys.Cooler,
   SceneKeys.Window,
-  SceneKeys.TestRoom,
+  SceneKeys.Drive,
   SceneKeys.Hud,
 ];
 

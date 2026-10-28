@@ -142,7 +142,9 @@ export class TruckScene extends Phaser.Scene {
     if (id === 'driver') {
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
       this.evening.lockPrep();
-      this.scene.start(SceneKeys.TestRoom);
+      // Placeholder until selling (#13-#15): driving off without visiting the window sends the customer away unserved.
+      this.evening.setCustomerWaiting(false);
+      this.scene.start(SceneKeys.Drive);
     }
     if (id === 'window') this.scene.start(SceneKeys.Window);
   }
