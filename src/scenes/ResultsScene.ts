@@ -11,7 +11,8 @@ export class ResultsScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    const cents = getEvening(this).moneyCents;
+    const evening = getEvening(this);
+    const profit = evening.profitCents;
 
     this.add
       .text(width / 2, height / 2 - 90, 'THE SUN HAS SET', {
@@ -21,16 +22,25 @@ export class ResultsScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    // Issue #21: the evening's score is profit (cash at the end minus cash at the start).
     this.add
-      .text(width / 2, height / 2 - 20, `Tonight's total: ${formatMoney(cents)}`, {
+      .text(width / 2, height / 2 - 30, `Tonight's profit: ${formatMoney(profit)}`, {
         fontFamily: 'monospace',
         fontSize: '28px',
-        color: cents < 0 ? '#ff9c9c' : '#c8f7c5',
+        color: profit < 0 ? '#ff9c9c' : '#c8f7c5',
       })
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height / 2 + 60, 'Enter: new evening    Esc: title screen', {
+      .text(width / 2, height / 2 + 10, `Cash on hand: ${formatMoney(evening.moneyCents)}`, {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#8a9bb3',
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(width / 2, height / 2 + 70, 'Enter: new evening    Esc: title screen', {
         fontFamily: 'monospace',
         fontSize: '20px',
         color: '#8a9bb3',

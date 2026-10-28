@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { HudScene } from './scenes/HudScene';
-import { CoolerScene, WindowScene } from './scenes/PlaceholderStationScene';
+import { CoolerScene } from './scenes/CoolerScene';
+import { WindowScene } from './scenes/PlaceholderStationScene';
 import { ResultsScene } from './scenes/ResultsScene';
 import { TestRoomScene } from './scenes/TestRoomScene';
 import { TitleScene } from './scenes/TitleScene';
