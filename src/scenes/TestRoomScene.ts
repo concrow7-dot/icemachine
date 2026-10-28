@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { getEvening, SceneKeys } from '../flow';
 
 type MoveKeys = {
   W: Phaser.Input.Keyboard.Key;
@@ -7,8 +8,8 @@ type MoveKeys = {
   D: Phaser.Input.Keyboard.Key;
 };
 
-// Placeholder scene: proves rendering, input and physics all work.
-// The blue square is a stand-in for the player until mechanics are specced.
+// Placeholder for evening gameplay until the truck hub (#7) and driving (#9)
+// are built. Includes temporary debug keys for testing the clock and money.
 export class TestRoomScene extends Phaser.Scene {
   private playerBody!: Phaser.Physics.Arcade.Body;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -16,25 +17,35 @@ export class TestRoomScene extends Phaser.Scene {
   private readonly speed = 220; // pixels per second — tuning value, not final
 
   constructor() {
-    super('TestRoom');
+    super(SceneKeys.TestRoom);
   }
 
   create(): void {
     const { width, height } = this.scale;
 
     this.add
-      .text(width / 2, 60, 'ICE MACHINE', {
+      .text(width / 2, 90, 'Evening gameplay goes here', {
         fontFamily: 'monospace',
-        fontSize: '40px',
+        fontSize: '28px',
         color: '#bfe6ff',
       })
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 110, 'Move with arrow keys or WASD', {
+      .text(width / 2, 130, 'Move with arrow keys or WASD', {
         fontFamily: 'monospace',
         fontSize: '18px',
         color: '#8a9bb3',
+      })
+      .setOrigin(0.5);
+
+    // TEMPORARY debug keys for testing issues #5 and #6. Remove once real
+    // sales (#15) and damage (#10) exist.
+    this.add
+      .text(width / 2, height - 40, 'DEBUG  1: fake sale +$4.50   2: fake damage -$2.00   3: end evening now', {
+        fontFamily: 'monospace',
+        fontSize: '15px',
+        color: '#d9a0ff',
       })
       .setOrigin(0.5);
 
@@ -50,6 +61,11 @@ export class TestRoomScene extends Phaser.Scene {
     }
     this.cursors = keyboard.createCursorKeys();
     this.wasd = keyboard.addKeys('W,A,S,D') as MoveKeys;
+
+    const evening = getEvening(this);
+    keyboard.on('keydown-ONE', () => evening.changeMoney(450, 'Sale'));
+    keyboard.on('keydown-TWO', () => evening.changeMoney(-200, 'Damage'));
+    keyboard.on('keydown-THREE', () => evening.endNow());
   }
 
   update(): void {
