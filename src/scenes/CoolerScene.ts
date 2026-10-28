@@ -2,12 +2,16 @@ import * as Phaser from 'phaser';
 import { getFlavour } from '../config/flavours';
 import { PRICE_STEP_CENTS, REFUSE_ABOVE_CENTS, SLOT_CAPACITY } from '../config/tuning';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
+import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatMoney } from '../util/format';
 
 // Issue #8 (with #21 and #23): prepping the cooler. Three flavour slots; for
-// each, the player picks a flavour, buys up to 15 bars with their cash, and
-// sets a selling price. Everything locks once they head for the driver's seat.
+// each, the player picks a flavour, how many bars (up to 15) and a selling
+// price. Changes are a draft order: Buy Stock pays for it and goes back to the
+// truck; B goes back and cancels it (PR #29 feedback). Stock already bought can
+// be added to but not returned. Everything locks once they head for the
+// driver's seat.
 
 type Row = 0 | 1 | 2; // 0 = flavour, 1 = how many, 2 = sell price
 
@@ -15,6 +19,7 @@ type Column = {
   name: Phaser.GameObjects.Text;
   cost: Phaser.GameObjects.Text;
   quantity: Phaser.GameObjects.Text;
+  owned: Phaser.GameObjects.Text;
   price: Phaser.GameObjects.Text;
   margin: Phaser.GameObjects.Text;
   buttons: Phaser.GameObjects.Text[];
@@ -27,6 +32,8 @@ const BUTTON = '#1d5c8c';
 
 export class CoolerScene extends Phaser.Scene {
   private evening!: EveningState;
+  private order!: CoolerOrder;
+  private buyButton?: Phaser.GameObjects.Text;
   private columns: Column[] = [];
   private focus!: Phaser.GameObjects.Rectangle;
   private focusCol = 0;
@@ -39,6 +46,8 @@ export class CoolerScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents);
+    this.buyButton = undefined;
     this.columns = [];
     this.focusCol = 0;
     this.focusRow = 1;
@@ -59,37 +68,54 @@ export class CoolerScene extends Phaser.Scene {
     for (let i = 0; i < COLUMN_X.length; i++) this.columns.push(this.makeColumn(i, locked));
 
     this.totals = this.add
-      .text(width / 2, 405, '', { fontFamily: 'monospace', fontSize: '18px', color: INK })
+      .text(width / 2, 418, '', { fontFamily: 'monospace', fontSize: '17px', color: INK })
       .setOrigin(0.5);
+
+    if (!locked) {
+      this.buyButton = this.add
+        .text(width / 2, 458, '', {
+          fontFamily: 'monospace',
+          fontSize: '20px',
+          color: '#ffffff',
+          backgroundColor: '#2e7d32',
+          padding: { x: 14, y: 6 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      this.buyButton.on('pointerdown', () => this.buy());
+    }
 
     this.add
       .text(
         width / 2,
-        438,
+        locked ? 458 : 494,
         locked
           ? 'Stock and prices were locked when you left for the road.'
-          : 'Stock and prices lock when you head to the driver’s seat.',
-        { fontFamily: 'monospace', fontSize: '15px', color: '#5a4636' },
+          : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
+        { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' },
       )
       .setOrigin(0.5);
 
     this.add
       .text(
         width / 2,
-        height - 22,
+        height - 18,
         locked
           ? 'B or Backspace: back to the truck'
-          : '↑↓←→ move   + / − change   B: back to the truck   (or click the buttons)',
+          : '↑↓←→ move   + / − change   Enter: buy stock   B: cancel and go back',
         { fontFamily: 'monospace', fontSize: '15px', color: INK },
       )
       .setOrigin(0.5);
 
     const keyboard = this.input.keyboard;
+    // Going back without buying throws the draft order away.
     const back = () => returnToTruck(this, 'cooler');
     keyboard?.once('keydown-B', back);
     keyboard?.once('keydown-BACKSPACE', back);
 
     if (!locked) {
+      keyboard?.on('keydown-ENTER', () => this.buy());
+      keyboard?.on('keydown-SPACE', () => this.buy());
       keyboard?.on('keydown-UP', () => this.moveFocus(0, -1));
       keyboard?.on('keydown-DOWN', () => this.moveFocus(0, 1));
       keyboard?.on('keydown-LEFT', () => this.moveFocus(-1, 0));
@@ -128,6 +154,7 @@ export class CoolerScene extends Phaser.Scene {
     const cost = text(ROW_Y[0] + 24, 13, '#5a4636');
     text(ROW_Y[1] - 26, 13, '#5a4636').setText('HOW MANY');
     const quantity = text(ROW_Y[1], 20);
+    const owned = text(ROW_Y[1] + 24, 12, '#5a4636');
     text(ROW_Y[2] - 26, 13, '#5a4636').setText('SELL PRICE');
     const price = text(ROW_Y[2], 20);
     const margin = text(ROW_Y[2] + 28, 13);
@@ -147,7 +174,7 @@ export class CoolerScene extends Phaser.Scene {
       }
     }
 
-    return { name, cost, quantity, price, margin, buttons };
+    return { name, cost, quantity, owned, price, margin, buttons };
   }
 
   private makeButton(
@@ -183,15 +210,21 @@ export class CoolerScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Applies a + or - to one field. Invalid changes (too many, no cash) are simply ignored. */
+  /** Applies a + or - to one field of the draft. Invalid changes (too many, no cash) are simply ignored. */
   private adjust(col: number, row: Row, direction: -1 | 1): void {
-    if (row === 0) this.evening.cycleSlotFlavour(col, direction);
-    if (row === 1) this.evening.changeSlotQuantity(col, direction);
-    if (row === 2) this.evening.changeSlotPrice(col, direction * PRICE_STEP_CENTS);
+    if (row === 0) this.order.cycleFlavour(col, direction);
+    if (row === 1) this.order.changeQuantity(col, direction);
+    if (row === 2) this.order.changePrice(col, direction * PRICE_STEP_CENTS);
+    this.refresh();
+  }
+
+  /** Pays for the draft order and heads back to the truck. */
+  private buy(): void {
+    if (this.evening.buyStock(this.order)) returnToTruck(this, 'cooler');
   }
 
   private refresh(): void {
-    const slots = this.evening.slots;
+    const slots = this.order.slots;
     this.columns.forEach((column, i) => {
       const slot = slots.at(i);
       if (!slot) return;
@@ -200,6 +233,11 @@ export class CoolerScene extends Phaser.Scene {
       column.name.setText(flavour.name).setFontSize(flavour.name.length > 18 ? 13 : 17);
       column.cost.setText(`costs you ${formatMoney(flavour.costCents)} each`);
       column.quantity.setText(`${slot.quantity} / ${SLOT_CAPACITY}`);
+      const owned = this.order.ownedQuantity(i);
+      column.owned.setText(owned > 0 && !this.evening.isPrepLocked ? `${owned} already bought` : '');
+      // A slot holding bought stock keeps its flavour, so dim its flavour arrows.
+      const flavourLocked = this.order.isFlavourLocked(i);
+      column.buttons.slice(0, 2).forEach((b) => b.setAlpha(flavourLocked ? 0.3 : 1));
       column.price.setText(formatMoney(slot.priceCents));
 
       const profitEach = slot.priceCents - flavour.costCents;
@@ -216,8 +254,14 @@ export class CoolerScene extends Phaser.Scene {
     const y = ROW_Y.at(this.focusRow) ?? 0;
     this.focus.setPosition(x, y);
 
-    this.totals.setText(
-      `Spent on stock: ${formatMoney(this.evening.stockCostCents)}     Cash left: ${formatMoney(this.evening.moneyCents)}`,
-    );
+    if (this.evening.isPrepLocked) {
+      this.totals.setText(`Spent on stock: ${formatMoney(this.evening.stockCostCents)}`);
+    } else {
+      this.totals.setText(
+        `This order: ${formatMoney(this.order.costCents)}     ` +
+          `Cash: ${formatMoney(this.evening.moneyCents)} → ${formatMoney(this.order.cashAfterCents)}`,
+      );
+      this.buyButton?.setText(`BUY STOCK  ${formatMoney(this.order.costCents)}`);
+    }
   }
 }

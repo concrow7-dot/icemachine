@@ -1,13 +1,11 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
+import type { CoolerOrder } from './CoolerOrder';
 import {
   COOLER_SLOTS,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
-  MAX_PRICE_CENTS,
-  MIN_PRICE_CENTS,
-  SLOT_CAPACITY,
   STARTING_CASH_CENTS,
 } from '../config/tuning';
 
@@ -104,7 +102,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /**
    * Adds (or, with a negative amount, removes) cash. Sales and damage may take
-   * the total below zero; buying stock never does (see changeSlotQuantity).
+   * the total below zero; buying stock never does (see CoolerOrder).
    * `popup` controls whether the HUD shows a "+$x Label" popup.
    */
   changeMoney(cents: number, label: string, popup = true): void {
@@ -147,60 +145,20 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /**
-   * Switches a slot to the next (or previous) flavour not used by another slot.
-   * Any stock already bought for that slot is refunded in full.
+   * Buy Stock (PR #29 feedback): pays for a draft order from the cooler and
+   * makes it the cooler's contents. Returns false, changing nothing, if prep is
+   * locked, the evening is over, or the player can't afford it.
    */
-  cycleSlotFlavour(index: number, direction: -1 | 1): boolean {
-    const slot = this.coolerSlots.at(index);
-    if (!slot || this.prepLocked || this.ended) return false;
-
-    const taken = new Set(this.coolerSlots.filter((s) => s !== slot).map((s) => s.flavour));
-    const ids = FLAVOURS.map((f) => f.id);
-    let i = ids.indexOf(slot.flavour);
-    for (let step = 0; step < ids.length; step++) {
-      i = (i + direction + ids.length) % ids.length;
-      const candidate = ids.at(i);
-      if (candidate && !taken.has(candidate)) {
-        if (candidate === slot.flavour) return false;
-        if (slot.quantity > 0) {
-          this.changeMoney(slot.quantity * getFlavour(slot.flavour).costCents, 'Refund', false);
-        }
-        slot.flavour = candidate;
-        slot.quantity = 0;
-        slot.priceCents = defaultPriceCents(candidate);
-        this.emit(EveningEvents.CoolerChanged);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /** Buys (positive) or returns (negative) bars for a slot. Can't overspend or overfill. */
-  changeSlotQuantity(index: number, delta: number): boolean {
-    const slot = this.coolerSlots.at(index);
-    if (!slot || this.prepLocked || this.ended || delta === 0) return false;
-
-    const next = slot.quantity + delta;
-    if (next < 0 || next > SLOT_CAPACITY) return false;
-
-    const cost = delta * getFlavour(slot.flavour).costCents;
+  buyStock(order: CoolerOrder): boolean {
+    if (this.prepLocked || this.ended) return false;
+    const cost = order.costCents;
     if (cost > this.cashCents) return false;
 
-    slot.quantity = next;
-    this.changeMoney(-cost, delta > 0 ? 'Stock' : 'Refund', false);
-    this.emit(EveningEvents.CoolerChanged);
-    return true;
-  }
-
-  /** Raises or lowers a slot's selling price, within the allowed range. */
-  changeSlotPrice(index: number, deltaCents: number): boolean {
-    const slot = this.coolerSlots.at(index);
-    if (!slot || this.prepLocked || this.ended) return false;
-
-    const next = slot.priceCents + deltaCents;
-    if (next < MIN_PRICE_CENTS || next > MAX_PRICE_CENTS) return false;
-
-    slot.priceCents = next;
+    order.slots.forEach((slot, i) => {
+      const target = this.coolerSlots.at(i);
+      if (target) Object.assign(target, slot);
+    });
+    if (cost !== 0) this.changeMoney(-cost, 'Stock', false);
     this.emit(EveningEvents.CoolerChanged);
     return true;
   }
