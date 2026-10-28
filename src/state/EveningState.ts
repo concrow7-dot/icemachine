@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
+import { CUSTOMER_SPOTS, HOME_START, TILE_SIZE } from '../config/neighbourhood';
 import {
   COOLER_SLOTS,
   EVENING_END_HOUR,
@@ -20,6 +21,12 @@ export const EveningEvents = {
   /** () — a cooler slot's flavour, quantity or price changed */
   CoolerChanged: 'cooler-changed',
 } as const;
+
+/** Which way the truck is pointing (issue #9: four-direction driving). */
+export type Facing = 'up' | 'down' | 'left' | 'right';
+
+/** Where the truck is parked in the neighbourhood, in pixels. */
+export type TruckPosition = { x: number; y: number; facing: Facing };
 
 /** One of the cooler's flavour slots (issue #8). */
 export type CoolerSlot = {
@@ -43,6 +50,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private customerAtWindow = false;
   private prepLocked = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
+  private customerSpotIndex = 0;
+
+  /** The truck starts each evening on the road outside home (#9). */
+  private truckPosition: TruckPosition = {
+    x: HOME_START.col * TILE_SIZE,
+    y: HOME_START.row * TILE_SIZE,
+    facing: 'right',
+  };
 
   /** The cooler starts with the first three flavours selected and empty. */
   private readonly coolerSlots: CoolerSlot[] = FLAVOURS.slice(0, COOLER_SLOTS).map((f) => ({
@@ -122,6 +137,31 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (this.customerAtWindow === waiting) return;
     this.customerAtWindow = waiting;
     this.emit(EveningEvents.CustomerChanged, waiting);
+  }
+
+  /** Which of the CUSTOMER_SPOTS the next customer waits at (placeholder until #12). */
+  get customerSpot(): number {
+    return this.customerSpotIndex;
+  }
+
+  /**
+   * The truck drove into the waiting customer (PO decision on #9): they step up
+   * to the window, and the next customer will wait at the next spot.
+   */
+  meetCustomer(): void {
+    this.customerSpotIndex = (this.customerSpotIndex + 1) % CUSTOMER_SPOTS.length;
+    this.setCustomerWaiting(true);
+  }
+
+  // ---- Driving (#9) ----
+
+  get truck(): Readonly<TruckPosition> {
+    return this.truckPosition;
+  }
+
+  /** Remembers where the truck stopped, so driving resumes from the same place. */
+  parkTruck(position: TruckPosition): void {
+    this.truckPosition = { ...position };
   }
 
   // ---- Cooler prep (#8) and selling prices (#23) ----
