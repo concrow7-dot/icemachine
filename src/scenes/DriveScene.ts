@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { formatMoney } from '../util/format';
+import { hitCostCents } from '../state/Damage';
 import { CURB_SPOTS, NEIGHBOURHOOD_MAP, PARKED_CARS, POTHOLES, TILE_SIZE } from '../config/neighbourhood';
 import {
   HIT_MIN_SPEED_FRACTION,
@@ -9,7 +10,10 @@ import {
   ROAD_EDGE_DAMAGE_CENTS,
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
+  TRUCK_COAST_SECONDS,
   TRUCK_SPEED,
+  TURN_SLOWDOWN_ABOVE_FRACTION,
+  TURN_SPEED_KEPT,
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState, type Facing } from '../state/EveningState';
@@ -41,6 +45,8 @@ const DIRECTIONS: Record<Facing, { dx: number; dy: number; angle: number }> = {
   left: { dx: -1, dy: 0, angle: 180 },
   up: { dx: 0, dy: -1, angle: -90 },
 };
+
+const OPPOSITE: Record<Facing, Facing> = { right: 'left', left: 'right', up: 'down', down: 'up' };
 
 const KEY_TO_FACING: Record<string, Facing> = {
   ArrowUp: 'up',
@@ -166,11 +172,24 @@ export class DriveScene extends Phaser.Scene {
     const dt = Math.min(deltaMs, 100) / 1000;
     const steering = this.held.at(-1);
 
-    if (steering) {
-      this.setFacing(steering);
+    // Driving feel (#32): the truck carries its speed. Same direction or from a
+    // stop: speed up. Opposite direction: brake hard, then turn round. Turning
+    // a corner fast costs a third of your speed. No keys: roll to a stop.
+    const accelerate = () => {
       this.speed = Math.min(TRUCK_SPEED, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
-    } else {
+    };
+    if (steering === undefined) {
+      this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS);
+    } else if (steering === this.facing || this.speed === 0) {
+      this.setFacing(steering);
+      accelerate();
+    } else if (steering === OPPOSITE[this.facing]) {
       this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS);
+      if (this.speed === 0) this.setFacing(steering);
+    } else {
+      if (this.speed > TRUCK_SPEED * TURN_SLOWDOWN_ABOVE_FRACTION) this.speed *= TURN_SPEED_KEPT;
+      this.setFacing(steering);
+      accelerate();
     }
 
     if (this.speed > 0) {
@@ -370,10 +389,11 @@ export class DriveScene extends Phaser.Scene {
 
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
   private crash(kind: 'edge' | 'car'): void {
+    // Harder hits cost more (#32): priced from the speed at the moment of impact.
+    const cost = hitCostCents(kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS, this.speed, TRUCK_SPEED);
     this.speed = 0;
     this.hitCooldownUntil = this.time.now + HIT_COOLDOWN_MS;
     this.cameras.main.shake(150, 0.006);
-    const cost = kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS;
     this.evening.takeDamage(cost, kind === 'car' ? 'Parked car' : 'Curb');
     // The cost pops up where the truck's nose hit (PO, testing PR #40).
     const { dx, dy } = DIRECTIONS[this.facing];
@@ -400,11 +420,12 @@ export class DriveScene extends Phaser.Scene {
       }
       if (distance > POTHOLE_REACH) continue;
       hole.armed = false;
+      const cost = hitCostCents(POTHOLE_DAMAGE_CENTS, this.speed, TRUCK_SPEED);
       this.speed = 0;
       this.spinning = true;
       this.cameras.main.shake(250, 0.01);
-      this.evening.takeDamage(POTHOLE_DAMAGE_CENTS, 'Pothole');
-      this.showCost(hole.x, hole.y, POTHOLE_DAMAGE_CENTS);
+      this.evening.takeDamage(cost, 'Pothole');
+      this.showCost(hole.x, hole.y, cost);
       this.tweens.add({
         targets: this.truck,
         angle: this.truck.angle + 360,
