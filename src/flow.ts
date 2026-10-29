@@ -11,10 +11,11 @@ export const SceneKeys = {
   Drive: 'Drive',
   Hud: 'Hud',
   Results: 'Results',
+  Pause: 'Pause',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
-const EVENING_SCENES: string[] = [
+export const EVENING_SCENES: string[] = [
   SceneKeys.Truck,
   SceneKeys.Cooler,
   SceneKeys.Sales,
@@ -39,6 +40,18 @@ export function endEvening(from: Phaser.Scene): void {
     if (key !== from.scene.key) from.scene.stop(key);
   }
   from.scene.start(SceneKeys.Results);
+}
+
+/**
+ * Esc during an evening (#19): freezes every running evening screen (the HUD
+ * too, which stops the clock) and opens the pause menu on top.
+ */
+export function pauseEvening(from: Phaser.Scene): void {
+  if (from.scene.isActive(SceneKeys.Pause)) return;
+  const paused = EVENING_SCENES.filter((key) => from.scene.isActive(key));
+  for (const key of paused) from.scene.pause(key);
+  from.scene.launch(SceneKeys.Pause, { paused });
+  from.scene.bringToTop(SceneKeys.Pause);
 }
 
 /** The current evening. Only valid between startEvening and the next title screen. */
