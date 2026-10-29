@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { formatMoney } from '../util/format';
 import { CURB_SPOTS, NEIGHBOURHOOD_MAP, PARKED_CARS, POTHOLES, TILE_SIZE } from '../config/neighbourhood';
 import {
   HIT_MIN_SPEED_FRACTION,
@@ -29,6 +30,8 @@ const POTHOLE_REACH = 22;
 const HUD_HEIGHT = 44;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
 const HIT_BOX = 32;
+/** After a crash, no new charge for this long (one bump = one charge). */
+const HIT_COOLDOWN_MS = 400;
 /** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
 const CUSTOMER_REACH = 30;
 
@@ -78,6 +81,7 @@ export class DriveScene extends Phaser.Scene {
   private cars: Box[] = [];
   private potholes: { x: number; y: number; armed: boolean }[] = [];
   private spinning = false;
+  private hitCooldownUntil = 0;
 
   constructor() {
     super(SceneKeys.Drive);
@@ -86,6 +90,7 @@ export class DriveScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.speed = 0;
+    this.hitCooldownUntil = 0;
     this.held = [];
     this.leaving = false;
     this.spinning = false;
@@ -314,7 +319,8 @@ export class DriveScene extends Phaser.Scene {
       this.truck.setPosition(target.x, target.y);
       return true;
     }
-    if (this.speed >= TRUCK_SPEED * HIT_MIN_SPEED_FRACTION) this.crash(hit);
+    // One charge per hit: after a crash, a short cooldown stops a slow frame from charging twice.
+    if (this.speed >= TRUCK_SPEED * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) this.crash(hit);
     // Creep forward a pixel at a time to sit right up against the obstacle.
     const steps = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
     let moved = false;
@@ -365,9 +371,23 @@ export class DriveScene extends Phaser.Scene {
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
   private crash(kind: 'edge' | 'car'): void {
     this.speed = 0;
+    this.hitCooldownUntil = this.time.now + HIT_COOLDOWN_MS;
     this.cameras.main.shake(150, 0.006);
-    if (kind === 'car') this.evening.takeDamage(PARKED_CAR_DAMAGE_CENTS, 'Parked car');
-    else this.evening.takeDamage(ROAD_EDGE_DAMAGE_CENTS, 'Curb');
+    const cost = kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS;
+    this.evening.takeDamage(cost, kind === 'car' ? 'Parked car' : 'Curb');
+    // The cost pops up where the truck's nose hit (PO, testing PR #40).
+    const { dx, dy } = DIRECTIONS[this.facing];
+    this.showCost(this.truck.x + (dx * HIT_BOX) / 2, this.truck.y + (dy * HIT_BOX) / 2, cost);
+  }
+
+  /** A red "-$2.00" at the point of contact that floats up and fades. */
+  private showCost(x: number, y: number, cents: number): void {
+    const label = this.add
+      .text(x, y, `-${formatMoney(cents)}`, { fontFamily: 'monospace', fontSize: '22px', color: '#d32f2f', fontStyle: 'bold' })
+      .setOrigin(0.5)
+      .setStroke('#ffffff', 5)
+      .setDepth(20);
+    this.tweens.add({ targets: label, y: y - 48, alpha: 0, duration: 1200, ease: 'Cubic.easeOut', onComplete: () => label.destroy() });
   }
 
   /** Driving over a pothole spins the truck round and stops it (PO, #10). Each pothole re-arms once you've left it. */
@@ -384,6 +404,7 @@ export class DriveScene extends Phaser.Scene {
       this.spinning = true;
       this.cameras.main.shake(250, 0.01);
       this.evening.takeDamage(POTHOLE_DAMAGE_CENTS, 'Pothole');
+      this.showCost(hole.x, hole.y, POTHOLE_DAMAGE_CENTS);
       this.tweens.add({
         targets: this.truck,
         angle: this.truck.angle + 360,
