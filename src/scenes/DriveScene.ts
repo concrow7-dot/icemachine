@@ -183,6 +183,8 @@ export class DriveScene extends Phaser.Scene {
     });
     // Letting go of keys while the window is in the background shouldn't leave the truck driving.
     this.game.events.on(Phaser.Core.Events.BLUR, this.releaseKeys, this);
+    // Keys let go of while paused never reached this screen: start clean on resume (#19).
+    this.events.on(Phaser.Scenes.Events.RESUME, this.releaseKeys, this);
 
     const onCustomer = () => this.refreshCustomer();
     this.evening.on(EveningEvents.CustomerChanged, onCustomer);

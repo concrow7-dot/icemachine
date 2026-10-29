@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { PATIENCE_WARNING_SECONDS } from '../config/tuning';
-import { endEvening, getEvening, SceneKeys } from '../flow';
+import { endEvening, getEvening, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 
@@ -94,6 +94,11 @@ export class HudScene extends Phaser.Scene {
 
     // Shift + number, so the plain number keys are free for typing prices (PO, doc 12 Q30).
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      // Esc pauses the evening from any screen (#19). The HUD runs during every evening screen, so it listens here.
+      if (event.key === 'Escape') {
+        pauseEvening(this);
+        return;
+      }
       if (!event.shiftKey) return;
       if (event.code === 'Digit1') this.evening.changeMoney(450, 'Sale');
       if (event.code === 'Digit2') this.evening.changeMoney(-200, 'Damage');

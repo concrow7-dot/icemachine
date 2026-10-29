@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { HudScene } from './scenes/HudScene';
+import { PauseScene } from './scenes/PauseScene';
 import { CoolerScene } from './scenes/CoolerScene';
 import { DriveScene } from './scenes/DriveScene';
 import { FillScene } from './scenes/FillScene';
@@ -38,6 +39,7 @@ const config: Phaser.Types.Core.GameConfig = {
     DriveScene,
     ResultsScene,
     HudScene,
+    PauseScene,
   ],
 };
 
