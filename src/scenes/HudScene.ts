@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { PATIENCE_WARNING_SECONDS } from '../config/tuning';
 import { endEvening, getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
@@ -10,6 +11,7 @@ export class HudScene extends Phaser.Scene {
   private clockText!: Phaser.GameObjects.Text;
   private moneyText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
+  private patienceWarning!: Phaser.GameObjects.Container;
 
   constructor() {
     super(SceneKeys.Hud);
@@ -47,6 +49,14 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setVisible(false);
 
+    // PO, PR #37: with 5 seconds of the customer's minute left, a pulsing "!" in the top bar.
+    const warnCircle = this.add.circle(0, 0, 15, 0xff4f9a).setStrokeStyle(2, 0xffffff);
+    const warnMark = this.add
+      .text(0, 0, '!', { fontFamily: 'monospace', fontSize: '22px', color: '#ffffff', fontStyle: 'bold' })
+      .setOrigin(0.5);
+    this.patienceWarning = this.add.container(0, 22, [warnCircle, warnMark]).setVisible(false);
+    this.tweens.add({ targets: this.patienceWarning, scale: 1.3, duration: 300, yoyo: true, repeat: -1 });
+
     this.refresh();
     this.addDebugKeys();
 
@@ -75,25 +85,41 @@ export class HudScene extends Phaser.Scene {
    */
   private addDebugKeys(): void {
     this.add
-      .text(140, 22, 'DEBUG  1:+$4.50  2:-$2.00  3:end evening  4:customer on/off', {
+      .text(140, 22, 'DEBUG (Shift+)  1:+$4.50  2:-$2.00  3:end evening  4:serve now', {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#d9a0ff',
       })
       .setOrigin(0, 0.5);
 
-    const keyboard = this.input.keyboard;
-    keyboard?.on('keydown-ONE', () => this.evening.changeMoney(450, 'Sale'));
-    keyboard?.on('keydown-TWO', () => this.evening.changeMoney(-200, 'Damage'));
-    keyboard?.on('keydown-THREE', () => this.evening.endNow());
-    keyboard?.on('keydown-FOUR', () =>
-      this.evening.setCustomerWaiting(!this.evening.customerWaiting),
-    );
+    // Shift + number, so the plain number keys are free for typing prices (PO, doc 12 Q30).
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (!event.shiftKey) return;
+      if (event.code === 'Digit1') this.evening.changeMoney(450, 'Sale');
+      if (event.code === 'Digit2') this.evening.changeMoney(-200, 'Damage');
+      if (event.code === 'Digit3') this.evening.endNow();
+      if (event.code === 'Digit4') this.serveNow();
+    });
+  }
+
+  /** Debug: skip the drive and start a sale with the waiting customer right away. */
+  private serveNow(): void {
+    if (this.evening.sale || !this.evening.roadCustomer) return;
+    for (const key of [SceneKeys.Truck, SceneKeys.Cooler, SceneKeys.Drive]) {
+      if (this.scene.isActive(key)) this.scene.stop(key);
+    }
+    this.evening.startSale();
+    this.scene.launch(SceneKeys.Sales);
+    this.scene.bringToTop();
   }
 
   update(_time: number, delta: number): void {
     this.evening.tick(delta);
     this.clockText.setText(formatClock(this.evening.clockMinutes));
+    const sale = this.evening.sale;
+    const warn =
+      !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
+    this.patienceWarning.setVisible(warn).setX(this.moneyText.x - this.moneyText.width - 30);
   }
 
   private refresh(): void {

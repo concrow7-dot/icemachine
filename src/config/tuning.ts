@@ -32,3 +32,27 @@ export const TRUCK_BRAKING_SECONDS = 0.15;
 
 /** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
 export const PLACEHOLDER_SALE_CENTS = 400;
+
+// ---- Selling (#13-#15), decided in doc 12 ----
+
+/** How long the customer's order stays in the speech bubble, in seconds. */
+export const ORDER_SHOW_SECONDS = 5;
+
+/**
+ * Chance of each order size, from 1 to 6 ice creams (PO: 2 and 3 about 30% each).
+ * Must add up to 100.
+ */
+export const ORDER_SIZE_WEIGHTS = [15, 30, 30, 12, 8, 5];
+
+/** The tip countdown: starts when the order is hidden and runs this many seconds. */
+export const TIP_COUNTDOWN_SECONDS = 40;
+
+/** Tip percentage for each 10-second step of the countdown: 20% within 10 s, then 15%, 10%, 5%, then none. */
+export const TIP_STEP_SECONDS = 10;
+export const TIP_PERCENT_STEPS = [20, 15, 10, 5];
+
+/** A customer at the window waits this long, from when the conversation starts, before leaving. */
+export const WINDOW_PATIENCE_SECONDS = 60;
+
+/** With this many seconds of patience left, a pulsing "!" appears in the top bar. */
+export const PATIENCE_WARNING_SECONDS = 5;
