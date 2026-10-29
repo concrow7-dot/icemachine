@@ -11,8 +11,11 @@ import {
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
   TRUCK_COAST_SECONDS,
+  TRUCK_CREEP_SPEED,
   TRUCK_MAX_TURN_DEGREES_PER_SECOND,
   TRUCK_MIN_TURN_RADIUS,
+  TRUCK_REVERSE_ACCELERATION_SECONDS,
+  TRUCK_REVERSE_DELAY_SECONDS,
   TRUCK_REVERSE_SPEED,
   TRUCK_SPEED,
   TURN_SLOWDOWN_ABOVE_FRACTION,
@@ -90,6 +93,10 @@ export class DriveScene extends Phaser.Scene {
   private potholes: { x: number; y: number; armed: boolean }[] = [];
   private spinning = false;
   private hitCooldownUntil = 0;
+  /** Stopped with the brake (or not yet driven): stays put, no creeping, until the gas is pressed. */
+  private parked = true;
+  /** How long the brake has been held at a standstill (it reverses after a moment). */
+  private brakeHeldStill = 0;
 
   constructor() {
     super(SceneKeys.Drive);
@@ -99,6 +106,8 @@ export class DriveScene extends Phaser.Scene {
     this.evening = getEvening(this);
     this.speed = 0;
     this.hitCooldownUntil = 0;
+    this.parked = true;
+    this.brakeHeldStill = 0;
     this.held = [];
     this.leaving = false;
     this.spinning = false;
@@ -176,21 +185,37 @@ export class DriveScene extends Phaser.Scene {
     const brake = this.held.includes('down');
     const steer = (this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0);
 
-    // Car-style driving (#32, PO testing PR #58). Gas speeds up; the brake
-    // stops quickly and then reverses; no pedal rolls to a stop.
+    // Car-style driving (#32, PO testing PR #58). Gas speeds up. Letting go
+    // slows the truck to a creep; it only stops when you brake. Holding the
+    // brake at a stop reverses after a moment.
     if (gas && !brake) {
+      this.parked = false;
+      this.brakeHeldStill = 0;
       this.speed =
         this.speed < 0
           ? Math.min(0, this.speed + (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS)
           : Math.min(TRUCK_SPEED, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
     } else if (brake && !gas) {
-      this.speed =
-        this.speed > 0
-          ? Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS)
-          : Math.max(-TRUCK_REVERSE_SPEED, this.speed - (TRUCK_REVERSE_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
+      if (this.speed > 0) {
+        this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS);
+        this.brakeHeldStill = 0;
+      } else if (this.speed === 0 && this.brakeHeldStill < TRUCK_REVERSE_DELAY_SECONDS) {
+        this.brakeHeldStill += dt;
+      } else {
+        this.speed = Math.max(-TRUCK_REVERSE_SPEED, this.speed - (TRUCK_REVERSE_SPEED * dt) / TRUCK_REVERSE_ACCELERATION_SECONDS);
+      }
+      if (this.speed <= 0) this.parked = true;
     } else {
+      this.brakeHeldStill = 0;
       const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
-      this.speed = this.speed > 0 ? Math.max(0, this.speed - roll) : Math.min(0, this.speed + roll);
+      if (this.speed < 0) {
+        this.speed = Math.min(0, this.speed + roll);
+      } else if (this.speed > TRUCK_CREEP_SPEED) {
+        this.speed = Math.max(TRUCK_CREEP_SPEED, this.speed - roll);
+      } else if (this.speed > 0 && !this.parked) {
+        // Below a creep (after scraping a wall, say): ease back up to it.
+        this.speed = Math.min(TRUCK_CREEP_SPEED, this.speed + roll / 4);
+      }
     }
 
     // Steering turns the truck only while it's moving, like a car: tight turns
@@ -205,7 +230,11 @@ export class DriveScene extends Phaser.Scene {
     if (this.speed !== 0) {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
-      if (!moved) this.speed = 0;
+      if (!moved) {
+        // Up against something: stopped, and no creeping into it until you press the gas.
+        this.speed = 0;
+        this.parked = true;
+      }
     }
 
     this.checkPotholes();

@@ -25,28 +25,43 @@ export const REFUSE_ABOVE_CENTS = 400;
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
- * testing (PR #38), then x1.75 to 525 while testing driving feel (PR #58):
- * about 5.5 seconds across the map.
+ * testing (PR #38), then x1.75 to 525 and back down x0.75 to 394 while
+ * testing driving feel (PR #58): about 7 seconds across the map.
  */
-export const TRUCK_SPEED = 525;
+export const TRUCK_SPEED = 394;
 
-/** Issue #9: seconds to reach top speed from a stop. */
-export const TRUCK_ACCELERATION_SECONDS = 0.25;
+/**
+ * Issue #9: seconds to reach top speed from a stop. First 0.25 s; raised to
+ * 2.5 s while testing PR #58, so the loaded truck builds speed slowly, a bit
+ * like a train (PO).
+ */
+export const TRUCK_ACCELERATION_SECONDS = 2.5;
 
 // ---- Driving feel (#32): PO decisions in doc 18, then car-style steering after testing PR #58 ----
 
 /**
- * Letting go of the gas: the truck rolls to a stop over this many seconds from
- * top speed. First 0.2 s (half a tile, Q16); doubled to 0.4 s while testing
- * PR #58. At 525 px/s that rolls about 105 px, a tile and three quarters.
+ * Letting go of the gas: the truck rolls down from top speed over this many
+ * seconds (to a creep, below). First 0.2 s (half a tile, Q16); doubled to 0.4 s
+ * while testing PR #58.
  */
 export const TRUCK_COAST_SECONDS = 0.4;
 
 /** The brake (down arrow): top speed to a stop in this many seconds. */
 export const TRUCK_BRAKING_SECONDS = 0.15;
 
-/** Holding the brake once stopped reverses, up to this speed in px/s (about a third of top speed). */
+/**
+ * The truck never quite stops on its own (PO, testing PR #58): letting go of the
+ * gas slows it to this creep, in px/s (about a tile a second), so you can still
+ * steer slowly. Only the brake brings it to a full stop.
+ */
+export const TRUCK_CREEP_SPEED = 60;
+
+/** Holding the brake once stopped reverses, up to this speed in px/s (about a third of the first top speed)... */
 export const TRUCK_REVERSE_SPEED = 175;
+/** Seconds to reach full reverse speed (reversing picks up quicker than going forward). */
+export const TRUCK_REVERSE_ACCELERATION_SECONDS = 0.5;
+/** ...after holding it this long at a stop, so a quick brake to stop doesn't back you up. */
+export const TRUCK_REVERSE_DELAY_SECONDS = 0.4;
 
 /**
  * Steering (left and right arrows) turns the truck like a car, at any angle
