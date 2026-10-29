@@ -39,7 +39,14 @@ const POTHOLE_REACH = 22;
 
 const HUD_HEIGHT = 44;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
-const HIT_BOX = 32;
+/**
+ * The truck's collision shape: a rectangle the size of the drawn truck (46 x 28),
+ * a touch smaller so near-misses that look clear are clear, turning with the
+ * truck. It used to be a 32 px square that didn't turn, which caught on parked
+ * cars the truck visibly cleared (PO, testing PR #58).
+ */
+const TRUCK_HALF_LENGTH = 22;
+const TRUCK_HALF_WIDTH = 13;
 /** After a crash, no new charge for this long (one bump = one charge). */
 const HIT_COOLDOWN_MS = 400;
 /** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
@@ -222,7 +229,9 @@ export class DriveScene extends Phaser.Scene {
     // when slow, wider at speed. In reverse the wheel works the other way round.
     if (steer !== 0 && this.speed !== 0) {
       const turnRate = Math.min(TRUCK_MAX_TURN_DEGREES_PER_SECOND, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
-      this.setHeading(this.heading + steer * Math.sign(this.speed) * turnRate * dt);
+      const turnedTo = this.heading + steer * Math.sign(this.speed) * turnRate * dt;
+      // Don't swing the truck's nose or tail into a wall or a parked car.
+      if (!this.obstacleAt(this.truck.x, this.truck.y, turnedTo)) this.setHeading(turnedTo);
       const fast = TRUCK_SPEED * TURN_SLOWDOWN_ABOVE_FRACTION;
       if (this.speed > fast) this.speed = Math.max(fast, this.speed - TRUCK_SPEED * TURN_SPEED_LOSS_PER_SECOND * dt);
     }
@@ -348,22 +357,51 @@ export class DriveScene extends Phaser.Scene {
     this.truck.setAngle(this.heading);
   }
 
-  /** What the truck's hit box, centred on (x, y), runs into: the road edge, a parked car, or nothing. */
-  private obstacleAt(x: number, y: number): 'edge' | 'car' | null {
-    const half = HIT_BOX / 2;
-    const box = { left: x - half, top: y - half, right: x + half, bottom: y + half };
-    const overlaps = (c: Box) => box.left < c.right && box.right > c.left && box.top < c.bottom && box.bottom > c.top;
-    if (this.cars.some(overlaps)) return 'car';
-    const left = Math.floor((x - half) / TILE_SIZE);
-    const right = Math.floor((x + half - 0.001) / TILE_SIZE);
-    const top = Math.floor((y - half) / TILE_SIZE);
-    const bottom = Math.floor((y + half - 0.001) / TILE_SIZE);
+  /**
+   * What the truck, centred on (x, y) and pointing `angle` degrees round, runs
+   * into: the road edge, a parked car, or nothing.
+   */
+  private obstacleAt(x: number, y: number, angle = this.heading): 'edge' | 'car' | null {
+    const rad = Phaser.Math.DegToRad(angle);
+    const ux = Math.cos(rad);
+    const uy = Math.sin(rad);
+    if (this.cars.some((c) => this.truckOverlaps(x, y, ux, uy, c))) return 'car';
+    // The truck's reach on screen at this angle, to find the map tiles it could touch.
+    const reachX = TRUCK_HALF_LENGTH * Math.abs(ux) + TRUCK_HALF_WIDTH * Math.abs(uy);
+    const reachY = TRUCK_HALF_LENGTH * Math.abs(uy) + TRUCK_HALF_WIDTH * Math.abs(ux);
+    const left = Math.floor((x - reachX) / TILE_SIZE);
+    const right = Math.floor((x + reachX - 0.001) / TILE_SIZE);
+    const top = Math.floor((y - reachY) / TILE_SIZE);
+    const bottom = Math.floor((y + reachY - 0.001) / TILE_SIZE);
     for (let row = top; row <= bottom; row++) {
       for (let col = left; col <= right; col++) {
-        if (this.isSolid(col, row)) return 'edge';
+        if (!this.isSolid(col, row)) continue;
+        const tile = { left: col * TILE_SIZE, top: row * TILE_SIZE, right: (col + 1) * TILE_SIZE, bottom: (row + 1) * TILE_SIZE };
+        if (this.truckOverlaps(x, y, ux, uy, tile)) return 'edge';
       }
     }
     return null;
+  }
+
+  /**
+   * Does the truck's turned rectangle (centre x, y; pointing along ux, uy)
+   * overlap a box? Checked on the four edge directions of the two shapes: if
+   * there's a gap along any of them, they don't touch.
+   */
+  private truckOverlaps(x: number, y: number, ux: number, uy: number, box: Box): boolean {
+    const vx = -uy;
+    const vy = ux;
+    const halfW = (box.right - box.left) / 2;
+    const halfH = (box.bottom - box.top) / 2;
+    const dx = box.left + halfW - x;
+    const dy = box.top + halfH - y;
+    const L = TRUCK_HALF_LENGTH;
+    const W = TRUCK_HALF_WIDTH;
+    if (Math.abs(dx) >= halfW + L * Math.abs(ux) + W * Math.abs(vx)) return false;
+    if (Math.abs(dy) >= halfH + L * Math.abs(uy) + W * Math.abs(vy)) return false;
+    if (Math.abs(dx * ux + dy * uy) >= L + halfW * Math.abs(ux) + halfH * Math.abs(uy)) return false;
+    if (Math.abs(dx * vx + dy * vy) >= W + halfW * Math.abs(vx) + halfH * Math.abs(vy)) return false;
+    return true;
   }
 
   /**
@@ -395,9 +433,9 @@ export class DriveScene extends Phaser.Scene {
     if (impact >= TRUCK_SPEED * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) {
       this.crash(kind, impact, dx / distance, dy / distance);
     } else if (slideX || slideY) {
-      // Scraping along: the part of the speed going into the wall is lost.
+      // Sliding along the edge at the speed you're going along it. (It used to
+      // shave speed off every frame, which pinned the truck against parked cars.)
       this.truck.setPosition(slideX ? x + dx : x, slideY ? y + dy : y);
-      this.speed *= 1 - intoIt;
       return true;
     }
     // Creep forward a pixel at a time to sit right up against the obstacle.
@@ -457,7 +495,7 @@ export class DriveScene extends Phaser.Scene {
     this.cameras.main.shake(150, 0.006);
     this.evening.takeDamage(cost, kind === 'car' ? 'Parked car' : 'Curb');
     // The cost pops up where the truck hit (PO, testing PR #40): its nose, or its back when reversing.
-    this.showCost(this.truck.x + (dirX * HIT_BOX) / 2, this.truck.y + (dirY * HIT_BOX) / 2, cost);
+    this.showCost(this.truck.x + dirX * TRUCK_HALF_LENGTH, this.truck.y + dirY * TRUCK_HALF_LENGTH, cost);
   }
 
   /** A red "-$2.00" at the point of contact that floats up and fades. */
