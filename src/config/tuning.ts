@@ -23,27 +23,46 @@ export const MAX_PRICE_CENTS = 1000;
 /** Issue #23: first-playable rule, customers refuse to pay more than this per ice cream. */
 export const REFUSE_ABOVE_CENTS = 400;
 
-/** Issue #9: truck top speed in pixels per second. Doubled to 300 after PO testing (PR #38): about 10 seconds across the map. */
-export const TRUCK_SPEED = 300;
+/**
+ * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
+ * testing (PR #38), then x1.75 to 525 while testing driving feel (PR #58):
+ * about 5.5 seconds across the map.
+ */
+export const TRUCK_SPEED = 525;
 
 /** Issue #9: seconds to reach top speed from a stop. */
 export const TRUCK_ACCELERATION_SECONDS = 0.25;
 
-// ---- Driving feel (#32), PO decisions in doc 18 ----
+// ---- Driving feel (#32): PO decisions in doc 18, then car-style steering after testing PR #58 ----
 
 /**
- * Letting go of the keys: the truck rolls to a stop over this many seconds from
- * top speed. 0.2 s at 300 px/s is about 30 px, half a tile (Q16).
+ * Letting go of the gas: the truck rolls to a stop over this many seconds from
+ * top speed. First 0.2 s (half a tile, Q16); doubled to 0.4 s while testing
+ * PR #58. At 525 px/s that rolls about 105 px, a tile and three quarters.
  */
-export const TRUCK_COAST_SECONDS = 0.2;
+export const TRUCK_COAST_SECONDS = 0.4;
 
-/** Pressing the opposite direction brakes hard: top speed to a stop in this many seconds, then the truck turns round (Q16). */
+/** The brake (down arrow): top speed to a stop in this many seconds. */
 export const TRUCK_BRAKING_SECONDS = 0.15;
 
-/** Turning while going faster than this share of top speed costs speed (Q17)... */
+/** Holding the brake once stopped reverses, up to this speed in px/s (about a third of top speed). */
+export const TRUCK_REVERSE_SPEED = 175;
+
+/**
+ * Steering (left and right arrows) turns the truck like a car, at any angle
+ * (PO, testing PR #58). The tightest turn has this radius in px, so a U-turn
+ * fits across a two-lane road when you're going slowly...
+ */
+export const TRUCK_MIN_TURN_RADIUS = 40;
+/** ...and the wheel never turns the truck faster than this, in degrees per second, so at speed the turns get wider. */
+export const TRUCK_MAX_TURN_DEGREES_PER_SECOND = 200;
+
+/**
+ * Turning hard at speed scrubs some speed off (Q17, eased after testing): above
+ * this share of top speed, steering loses this share of top speed per second.
+ */
 export const TURN_SLOWDOWN_ABOVE_FRACTION = 0.5;
-/** ...the truck keeps this share of its speed through the turn: it slows by a third. */
-export const TURN_SPEED_KEPT = 2 / 3;
+export const TURN_SPEED_LOSS_PER_SECOND = 0.5;
 
 /** Harder hits cost more (Q18): the slowest hit that counts costs this share of the full price; top speed costs it all. */
 export const HIT_COST_MIN_FRACTION = 0.5;
