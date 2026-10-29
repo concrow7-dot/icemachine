@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
+import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { CURB_SPOTS, HOME_START, TILE_SIZE } from '../config/neighbourhood';
 import {
   COOLER_SLOTS,
@@ -22,6 +23,8 @@ export const EveningEvents = {
   CoolerChanged: 'cooler-changed',
   /** () — the customer waiting at the curb appeared, moved, gave up or was picked up (#12) */
   RoadCustomerChanged: 'road-customer-changed',
+  /** () — the sale at the window changed phase or ended (#13-#15) */
+  SaleChanged: 'sale-changed',
 } as const;
 
 /** Which way the truck is pointing (issue #9: four-direction driving). */
@@ -56,6 +59,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private prepLocked = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
   private roadCustomerNow: RoadCustomer | null = null;
+  /** Keeps running after 8 PM, so a sale in progress can finish (#15). */
+  private nowMsValue = 0;
+  private endPending = false;
+  private saleNow: Sale | null = null;
+  private lastSalePhase: string | null = null;
 
   /** The truck starts each evening on the road outside home (#9). */
   private truckPosition: TruckPosition = {
@@ -92,20 +100,41 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Advances the clock. Called every frame by the HUD, whatever phase the player is in. */
   tick(deltaMs: number): void {
     if (this.ended) return;
+    this.nowMsValue += deltaMs;
+    this.updateSale();
+    if (this.endPending) return;
     this.elapsedMs += deltaMs;
     if (this.elapsedMs >= this.lengthMs) {
       this.elapsedMs = this.lengthMs;
-      this.ended = true;
-      this.emit(EveningEvents.Ended);
+      this.finishEvening();
     }
   }
 
-  /** Ends the evening immediately (used by the debug shortcut). */
+  /** Ends the evening now (debug shortcut). A sale in progress still finishes first. */
   endNow(): void {
     if (this.ended) return;
     this.elapsedMs = this.lengthMs;
+    this.finishEvening();
+  }
+
+  /** 8 PM: the evening ends, unless a sale is under way, which finishes first (PO, doc 12 Q31). */
+  private finishEvening(): void {
+    if (this.saleNow) {
+      this.endPending = true;
+      return;
+    }
     this.ended = true;
     this.emit(EveningEvents.Ended);
+  }
+
+  /** Past 8 PM: no new customers. */
+  get isAfterHours(): boolean {
+    return this.elapsedMs >= this.lengthMs;
+  }
+
+  /** The evening's running clock in milliseconds; keeps going while a sale finishes after 8 PM. */
+  get nowMs(): number {
+    return this.nowMsValue;
   }
 
   // ---- Wallet (#21) ----
@@ -179,12 +208,106 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private spawnRoadCustomer(): void {
     const previous = this.roadCustomerNow?.spot;
     this.roadCustomerNow = null;
-    if (!this.ended && !this.isSoldOut && this.prepLocked && !this.customerAtWindow) {
+    if (!this.ended && !this.isAfterHours && !this.isSoldOut && this.prepLocked && !this.customerAtWindow) {
       const choices = CURB_SPOTS.map((_, i) => i).filter((i) => i !== previous);
       const spot = choices[Math.floor(Math.random() * choices.length)] ?? 0;
       this.roadCustomerNow = { spot };
     }
     this.emit(EveningEvents.RoadCustomerChanged);
+  }
+
+  // ---- Selling (#13-#15) ----
+
+  /** The sale at the window, or null. */
+  get sale(): Sale | null {
+    return this.saleNow;
+  }
+
+  /**
+   * The truck reached a customer: they step up to the window and order from
+   * what's in the cooler (PO, doc 12 Q22: straight to the sales screen).
+   */
+  startSale(): Sale {
+    this.meetCustomer();
+    this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue);
+    this.lastSalePhase = this.saleNow.phase;
+    this.emit(EveningEvents.SaleChanged);
+    return this.saleNow;
+  }
+
+  /** At the cooler during a sale: moves one ice cream between the slot and the bag (+1 or -1). */
+  pickForSale(slot: number, delta: 1 | -1): boolean {
+    const sale = this.saleNow;
+    const stock = this.coolerSlots[slot];
+    if (!sale || sale.phase !== 'deciding' || !stock) return false;
+    const inBag = sale.bag[slot] ?? 0;
+    if (delta > 0 && stock.quantity <= 0) return false;
+    if (delta < 0 && inBag <= 0) return false;
+    stock.quantity -= delta;
+    sale.bag[slot] = inBag + delta;
+    this.emit(EveningEvents.CoolerChanged);
+    return true;
+  }
+
+  /** The player types a price and presses Enter (#15). */
+  chargeForSale(priceCents: number): void {
+    const sale = this.saleNow;
+    if (!sale) return;
+    const result = sale.charge(priceCents, orderTotalCents(sale.order, this.coolerSlots), this.nowMsValue);
+    if (result === 'retry') this.returnBagToStock(sale);
+    if (sale.outcome?.kind === 'paid') {
+      this.changeMoney(sale.outcome.priceCents, 'Sale');
+      if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
+    }
+    this.afterSaleChange();
+  }
+
+  /** B on the sales screen: drive off without serving (a lost sale). */
+  driveOffFromSale(): void {
+    this.saleNow?.driveOff();
+    this.afterSaleChange();
+  }
+
+  /**
+   * The player leaves the sales screen after the sale is over. Items handed
+   * over in a failed sale are gone; anything else in the bag goes back in the
+   * cooler. The next customer appears, or the evening ends if it's past 8 PM.
+   */
+  closeSale(): void {
+    const sale = this.saleNow;
+    if (!sale || sale.phase !== 'over') return;
+    if (!sale.itemsGivenAway && sale.outcome?.kind !== 'paid') this.returnBagToStock(sale);
+    this.saleNow = null;
+    this.lastSalePhase = null;
+    this.setCustomerWaiting(false);
+    this.emit(EveningEvents.SaleChanged);
+    if (this.endPending) {
+      this.endPending = false;
+      this.ended = true;
+      this.emit(EveningEvents.Ended);
+    }
+  }
+
+  private returnBagToStock(sale: Sale): void {
+    sale.bag.forEach((count, slot) => {
+      const stock = this.coolerSlots[slot];
+      if (stock) stock.quantity += count;
+      sale.bag[slot] = 0;
+    });
+    this.emit(EveningEvents.CoolerChanged);
+  }
+
+  /** Advances the sale's timers and tells the scenes when its phase changes. */
+  private updateSale(): void {
+    const sale = this.saleNow;
+    if (!sale) return;
+    sale.update(this.nowMsValue);
+    if (sale.phase !== this.lastSalePhase) this.afterSaleChange();
+  }
+
+  private afterSaleChange(): void {
+    this.lastSalePhase = this.saleNow?.phase ?? null;
+    this.emit(EveningEvents.SaleChanged);
   }
 
   // ---- Driving (#9) ----

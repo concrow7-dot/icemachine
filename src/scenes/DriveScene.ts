@@ -363,15 +363,16 @@ export class DriveScene extends Phaser.Scene {
     });
   }
 
-  /** Driving into the pickup zone stops the truck and starts the sale. */
+  /** Pulling into the pickup zone stops the truck and starts the sale. */
   private checkCustomer(): void {
     if (!this.customer.visible) return;
     const distance = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.pickupZone.x, this.pickupZone.y);
     if (distance > CUSTOMER_REACH) return;
     this.leaving = true;
     this.speed = 0;
-    this.evening.meetCustomer();
-    this.scene.start(SceneKeys.Truck, { station: 'window' });
+    // PO, doc 12 Q22: straight to the sales screen.
+    this.evening.startSale();
+    this.scene.start(SceneKeys.Sales);
   }
 
   /** An arrow at the screen edge points to the customer while they're off screen. */

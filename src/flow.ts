@@ -6,7 +6,8 @@ export const SceneKeys = {
   Title: 'Title',
   Truck: 'Truck',
   Cooler: 'Cooler',
-  Window: 'Window',
+  Sales: 'Sales',
+  Fill: 'Fill',
   Drive: 'Drive',
   Hud: 'Hud',
   Results: 'Results',
@@ -16,7 +17,8 @@ export const SceneKeys = {
 const EVENING_SCENES: string[] = [
   SceneKeys.Truck,
   SceneKeys.Cooler,
-  SceneKeys.Window,
+  SceneKeys.Sales,
+  SceneKeys.Fill,
   SceneKeys.Drive,
   SceneKeys.Hud,
 ];
