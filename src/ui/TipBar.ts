@@ -44,6 +44,6 @@ export class TipBar {
     const top = TIP_PERCENT_STEPS[0] ?? 20;
     const colour = percent === 0 ? 0x8a8a8a : percent >= top ? 0x2e7d32 : percent >= top / 2 ? 0x7cb342 : 0xf9a825;
     this.fill.setFillStyle(colour);
-    this.label.setText(percent > 0 ? `${percent}%` : sale.askedAgain || sale.retryUsed ? 'no tip' : 'none');
+    this.label.setText(percent > 0 ? `${percent}%` : sale.askedAgain || sale.retryUsed ? 'no tip' : 'Took too long');
   }
 }

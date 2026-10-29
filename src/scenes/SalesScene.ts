@@ -11,7 +11,8 @@ import { formatMoney } from '../util/format';
 // (#14), comes back, and types what to charge.
 
 const INK = '#2b1d10';
-const PRICE_PATTERN = /^\d{0,3}(\.\d{0,2})?$/;
+/** Up to $999.99. */
+const MAX_PRICE_DIGITS = 5;
 
 export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -22,6 +23,7 @@ export class SalesScene extends Phaser.Scene {
   private chargeLabel!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private sorryButton!: Phaser.GameObjects.Text;
+  private coolerButton!: Phaser.GameObjects.Text;
   private typed = '';
 
   constructor() {
@@ -95,6 +97,19 @@ export class SalesScene extends Phaser.Scene {
       .setVisible(false);
     this.sorryButton.on('pointerdown', () => this.leave());
 
+    this.coolerButton = this.add
+      .text(330, 330, 'GO TO THE COOLER', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#2e7d32',
+        padding: { x: 14, y: 8 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+    this.coolerButton.on('pointerdown', () => this.goToCooler());
+
     this.hint = this.add
       .text(width / 2, height - 18, '', { fontFamily: 'monospace', fontSize: '15px', color: INK })
       .setOrigin(0.5);
@@ -128,23 +143,31 @@ export class SalesScene extends Phaser.Scene {
       return;
     }
 
-    if (sale.phase === 'deciding') {
-      if (key === 'Enter' || key === 'c' || key === 'C') this.scene.start(SceneKeys.Fill);
+    if (sale.phase === 'ordering' || sale.phase === 'deciding') {
+      if (key === 'Enter' || key === 'c' || key === 'C') this.goToCooler();
       else if ((key === 'r' || key === 'R') && sale.askAgain(this.evening.nowMs)) this.refresh();
       return;
     }
 
     if (sale.phase === 'pricing') {
+      // Like a cash register (PO, PR #38): digits fill from the right, so 7, 2, 5 reads $0.07, $0.72, $7.25.
       if (key === 'Backspace') this.typed = this.typed.slice(0, -1);
       else if (key === 'Enter') this.charge();
-      else if (/^[0-9.]$/.test(key) && PRICE_PATTERN.test(this.typed + key)) this.typed += key;
+      else if (/^[0-9]$/.test(key) && this.typed.length < MAX_PRICE_DIGITS && !(this.typed === '' && key === '0')) {
+        this.typed += key;
+      }
       this.refresh();
     }
   }
 
+  /** To the cooler, even while the order is still showing (PO, PR #38). */
+  private goToCooler(): void {
+    if (this.evening.sale?.skipToCooler(this.evening.nowMs)) this.scene.start(SceneKeys.Fill);
+  }
+
   private charge(): void {
-    if (this.typed === '' || this.typed === '.') return;
-    const cents = Math.round(Number.parseFloat(this.typed) * 100);
+    if (this.typed === '') return;
+    const cents = Number.parseInt(this.typed, 10);
     this.typed = '';
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
@@ -194,14 +217,15 @@ export class SalesScene extends Phaser.Scene {
             .join('\n'),
       )
       .setVisible(pricing);
-    this.priceBox.setText(`$${this.typed === '' ? '__.__' : this.typed}`).setVisible(pricing);
+    this.priceBox.setText(this.typed === '' ? '$__.__' : formatMoney(Number.parseInt(this.typed, 10))).setVisible(pricing);
     this.chargeLabel.setVisible(pricing);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
     this.sorryButton.setVisible(freebie);
+    this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
 
     let hint = '';
-    if (sale.phase === 'ordering') hint = 'Remember the order!    B: drive off';
+    if (sale.phase === 'ordering') hint = 'Remember the order!    C or Enter: go to the cooler now    B: drive off';
     if (sale.phase === 'deciding') {
       const canAsk = !sale.askedAgain && !sale.retryUsed;
       hint = `C or Enter: go to the cooler    ${canAsk ? 'R: ask again (no tip)    ' : ''}B: drive off`;

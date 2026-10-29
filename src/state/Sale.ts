@@ -124,13 +124,24 @@ export class Sale {
   /** Called every frame. Hides the order after 5 seconds and ends the sale after the 1-minute wait. */
   update(nowMs: number): void {
     if (this.phase === 'over') return;
-    if (this.phase === 'ordering' && nowMs >= this.showUntilMs) {
-      this.phase = 'deciding';
-      this.line = '…';
-      // The tip countdown starts the first time the order is hidden (Q23).
-      if (this.orderHiddenMs === null) this.orderHiddenMs = nowMs;
-    }
+    if (this.phase === 'ordering' && nowMs >= this.showUntilMs) this.hideOrder(nowMs);
     if (this.patienceLeftSeconds(nowMs) <= 0) this.finish({ kind: 'timed-out' }, 'Sorry, I have to go.');
+  }
+
+  /**
+   * PO, PR #38: the player can head to the cooler while the order is still
+   * showing, without waiting out the 5 seconds. Hides the order now.
+   */
+  skipToCooler(nowMs: number): boolean {
+    if (this.phase === 'ordering') this.hideOrder(nowMs);
+    return this.phase === 'deciding';
+  }
+
+  private hideOrder(nowMs: number): void {
+    this.phase = 'deciding';
+    this.line = '…';
+    // The tip countdown starts the first time the order is hidden (Q23).
+    if (this.orderHiddenMs === null) this.orderHiddenMs = nowMs;
   }
 
   /** Seconds left of the customer's 1-minute wait, which starts when the conversation starts. */
