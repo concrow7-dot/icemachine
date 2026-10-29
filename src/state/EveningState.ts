@@ -4,7 +4,6 @@ import type { CoolerOrder } from './CoolerOrder';
 import { CURB_SPOTS, HOME_START, TILE_SIZE } from '../config/neighbourhood';
 import {
   COOLER_SLOTS,
-  CUSTOMER_PATIENCE_SECONDS,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
@@ -31,8 +30,8 @@ export type Facing = 'up' | 'down' | 'left' | 'right';
 /** Where the truck is parked in the neighbourhood, in pixels. */
 export type TruckPosition = { x: number; y: number; facing: Facing };
 
-/** The one customer waiting at the curb (#12): which CURB_SPOTS entry, and when they arrived. */
-export type RoadCustomer = { spot: number; sinceMs: number };
+/** The one customer waiting at the curb (#12): which CURB_SPOTS entry. They wait until picked up. */
+export type RoadCustomer = { spot: number };
 
 /** One of the cooler's flavour slots (issue #8). */
 export type CoolerSlot = {
@@ -94,7 +93,6 @@ export class EveningState extends Phaser.Events.EventEmitter {
   tick(deltaMs: number): void {
     if (this.ended) return;
     this.elapsedMs += deltaMs;
-    this.checkCustomerPatience();
     if (this.elapsedMs >= this.lengthMs) {
       this.elapsedMs = this.lengthMs;
       this.ended = true;
@@ -153,12 +151,6 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.roadCustomerNow;
   }
 
-  /** Seconds the curb customer will still wait before giving up. */
-  get roadCustomerSecondsLeft(): number {
-    if (!this.roadCustomerNow) return 0;
-    return Math.max(0, CUSTOMER_PATIENCE_SECONDS - (this.elapsedMs - this.roadCustomerNow.sinceMs) / 1000);
-  }
-
   /** Total ice creams left in the cooler. */
   get stockLeft(): number {
     return this.coolerSlots.reduce((sum, s) => sum + s.quantity, 0);
@@ -190,14 +182,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!this.ended && !this.isSoldOut && this.prepLocked && !this.customerAtWindow) {
       const choices = CURB_SPOTS.map((_, i) => i).filter((i) => i !== previous);
       const spot = choices[Math.floor(Math.random() * choices.length)] ?? 0;
-      this.roadCustomerNow = { spot, sinceMs: this.elapsedMs };
+      this.roadCustomerNow = { spot };
     }
     this.emit(EveningEvents.RoadCustomerChanged);
-  }
-
-  /** A customer who has waited too long gives up, and the next one appears elsewhere (#12). */
-  private checkCustomerPatience(): void {
-    if (this.roadCustomerNow && this.roadCustomerSecondsLeft <= 0) this.spawnRoadCustomer();
   }
 
   // ---- Driving (#9) ----
@@ -222,7 +209,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.prepLocked;
   }
 
-  /** Called when the player first heads for the road. The first customer appears then, so prep doesn't use up their patience. */
+  /** Called when the player first heads for the road; the first customer appears then. */
   lockPrep(): void {
     if (this.prepLocked) return;
     this.prepLocked = true;

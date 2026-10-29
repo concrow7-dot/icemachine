@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 import { CURB_SPOTS, NEIGHBOURHOOD_MAP, TILE_SIZE } from '../config/neighbourhood';
 import {
-  CUSTOMER_FLASH_SECONDS,
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
   TRUCK_SPEED,
@@ -135,7 +134,7 @@ export class DriveScene extends Phaser.Scene {
     this.refreshCustomer();
   }
 
-  update(time: number, deltaMs: number): void {
+  update(_time: number, deltaMs: number): void {
     if (this.leaving) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
@@ -155,7 +154,6 @@ export class DriveScene extends Phaser.Scene {
     }
 
     this.checkCustomer();
-    this.flashIfLeaving(time);
     this.updatePointer();
   }
 
@@ -374,15 +372,6 @@ export class DriveScene extends Phaser.Scene {
     this.speed = 0;
     this.evening.meetCustomer();
     this.scene.start(SceneKeys.Truck, { station: 'window' });
-  }
-
-  /** The customer flashes for their last few seconds before giving up (#12). */
-  private flashIfLeaving(time: number): void {
-    if (!this.customer.visible) return;
-    const leaving = this.evening.roadCustomerSecondsLeft <= CUSTOMER_FLASH_SECONDS;
-    const alpha = leaving && Math.floor(time / 200) % 2 === 0 ? 0.2 : 1;
-    this.customer.setAlpha(alpha);
-    this.pickupZone.setVisible(alpha === 1);
   }
 
   /** An arrow at the screen edge points to the customer while they're off screen. */

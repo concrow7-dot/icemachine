@@ -32,9 +32,3 @@ export const TRUCK_BRAKING_SECONDS = 0.15;
 
 /** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
 export const PLACEHOLDER_SALE_CENTS = 400;
-
-/** Issue #12: a customer waiting at the curb gives up after this many seconds (PO: 1 minute). */
-export const CUSTOMER_PATIENCE_SECONDS = 60;
-
-/** Issue #12: the customer's marker flashes for this many seconds before they give up. */
-export const CUSTOMER_FLASH_SECONDS = 5;
