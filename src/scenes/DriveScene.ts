@@ -1,6 +1,11 @@
 import * as Phaser from 'phaser';
-import { CUSTOMER_SPOTS, NEIGHBOURHOOD_MAP, TILE_SIZE } from '../config/neighbourhood';
-import { TRUCK_ACCELERATION_SECONDS, TRUCK_BRAKING_SECONDS, TRUCK_SPEED } from '../config/tuning';
+import { CURB_SPOTS, NEIGHBOURHOOD_MAP, TILE_SIZE } from '../config/neighbourhood';
+import {
+  CUSTOMER_FLASH_SECONDS,
+  TRUCK_ACCELERATION_SECONDS,
+  TRUCK_BRAKING_SECONDS,
+  TRUCK_SPEED,
+} from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState, type Facing } from '../state/EveningState';
 
@@ -13,8 +18,8 @@ import { EveningEvents, EveningState, type Facing } from '../state/EveningState'
 const HUD_HEIGHT = 44;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
 const HIT_BOX = 32;
-/** How close (in pixels) the truck's centre must get to a customer to stop for them: anywhere across the road counts. */
-const CUSTOMER_REACH = 48;
+/** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
+const CUSTOMER_REACH = 30;
 
 const DIRECTIONS: Record<Facing, { dx: number; dy: number; angle: number }> = {
   right: { dx: 1, dy: 0, angle: 0 },
@@ -51,7 +56,12 @@ export class DriveScene extends Phaser.Scene {
   private speed = 0;
   /** Direction keys currently held, most recent last: the newest one steers. */
   private held: Facing[] = [];
+  /** The customer, standing on the sidewalk. */
   private customer!: Phaser.GameObjects.Container;
+  /** The patch of road beside them where the truck pulls in to pick them up. */
+  private pickupZone!: Phaser.GameObjects.Rectangle;
+  private customerLabel!: Phaser.GameObjects.Text;
+  private labelBob?: Phaser.Tweens.Tween;
   private pointer!: Phaser.GameObjects.Triangle;
   private leaving = false;
 
@@ -89,7 +99,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, 'Arrows / WASD: drive    Drive into a customer (!) to serve them', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, 'Arrows / WASD: drive    Pull up beside a customer (!) to serve them', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -114,8 +124,10 @@ export class DriveScene extends Phaser.Scene {
 
     const onCustomer = () => this.refreshCustomer();
     this.evening.on(EveningEvents.CustomerChanged, onCustomer);
+    this.evening.on(EveningEvents.RoadCustomerChanged, onCustomer);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.evening.off(EveningEvents.CustomerChanged, onCustomer);
+      this.evening.off(EveningEvents.RoadCustomerChanged, onCustomer);
       this.game.events.off(Phaser.Core.Events.BLUR, this.releaseKeys, this);
       this.evening.parkTruck({ x: this.truck.x, y: this.truck.y, facing: this.facing });
     });
@@ -123,7 +135,7 @@ export class DriveScene extends Phaser.Scene {
     this.refreshCustomer();
   }
 
-  update(_time: number, deltaMs: number): void {
+  update(time: number, deltaMs: number): void {
     if (this.leaving) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
@@ -143,6 +155,7 @@ export class DriveScene extends Phaser.Scene {
     }
 
     this.checkCustomer();
+    this.flashIfLeaving(time);
     this.updatePointer();
   }
 
@@ -291,16 +304,22 @@ export class DriveScene extends Phaser.Scene {
     this.held = [];
   }
 
-  // ---- Customer marker ----
+  // ---- Customer at the curb (#12) ----
 
   private makeCustomer(): Phaser.GameObjects.Container {
-    const ring = this.add.circle(0, 0, 26).setStrokeStyle(3, 0xff4f9a);
+    // The pickup zone: a soft pink patch in the curb lane, pulsing so it's easy to aim for.
+    this.pickupZone = this.add
+      .rectangle(0, 0, 50, 50, 0xff4f9a, 0.18)
+      .setStrokeStyle(3, 0xff4f9a)
+      .setDepth(4);
+    this.tweens.add({ targets: this.pickupZone, scale: 1.2, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
+
     const person = this.add.circle(0, 0, 14, 0xffd1e3).setStrokeStyle(3, 0xff4f9a);
     const bang = this.add
       .text(0, -1, '!', { fontFamily: 'monospace', fontSize: '20px', color: '#c2185b', fontStyle: 'bold' })
       .setOrigin(0.5);
-    const label = this.add
-      .text(0, -40, 'CUSTOMER', {
+    this.customerLabel = this.add
+      .text(0, -34, 'CUSTOMER', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -308,28 +327,62 @@ export class DriveScene extends Phaser.Scene {
         padding: { x: 4, y: 1 },
       })
       .setOrigin(0.5);
-    this.tweens.add({ targets: ring, scale: 1.35, alpha: 0.2, duration: 700, yoyo: true, repeat: -1 });
-    this.tweens.add({ targets: label, y: -46, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    return this.add.container(0, 0, [ring, person, bang, label]).setDepth(5);
+    return this.add.container(0, 0, [person, bang, this.customerLabel]).setDepth(6);
   }
 
-  /** Shows the customer at their spot, unless one is already at the window. */
+  /**
+   * Places the customer on the sidewalk at their curb spot, with the pickup
+   * zone in the road tile beside them. Hidden when nobody is waiting at the
+   * curb, or while a customer is at the window.
+   */
   private refreshCustomer(): void {
-    const spot = CUSTOMER_SPOTS.at(this.evening.customerSpot);
+    const road = this.evening.roadCustomer;
+    const spot = road ? CURB_SPOTS.at(road.spot) : undefined;
     const visible = !!spot && !this.evening.customerWaiting;
-    this.customer.setVisible(visible);
-    if (spot) this.customer.setPosition(spot.col * TILE_SIZE, spot.row * TILE_SIZE);
+    this.customer.setVisible(visible).setAlpha(1);
+    this.pickupZone.setVisible(visible);
+    if (!spot) return;
+
+    const { dx, dy } = DIRECTIONS[spot.side];
+    const cx = (spot.col + 0.5) * TILE_SIZE;
+    const cy = (spot.row + 0.5) * TILE_SIZE;
+    this.pickupZone.setPosition(cx, cy);
+    // On the sidewalk: just past the edge of the road tile.
+    const toSidewalk = TILE_SIZE / 2 + 5;
+    this.customer.setPosition(cx + dx * toSidewalk, cy + dy * toSidewalk);
+
+    // The label sits on the far side of the customer from the road, so it never covers the pickup zone.
+    const labelY = spot.side === 'down' ? 34 : -34;
+    this.labelBob?.remove();
+    this.customerLabel.setY(labelY);
+    this.labelBob = this.tweens.add({
+      targets: this.customerLabel,
+      y: labelY + (labelY > 0 ? 6 : -6),
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
-  /** Driving into the customer stops the truck and opens the hub with the window ready. */
+  /** Driving into the pickup zone stops the truck and starts the sale. */
   private checkCustomer(): void {
     if (!this.customer.visible) return;
-    const distance = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.customer.x, this.customer.y);
+    const distance = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.pickupZone.x, this.pickupZone.y);
     if (distance > CUSTOMER_REACH) return;
     this.leaving = true;
     this.speed = 0;
     this.evening.meetCustomer();
     this.scene.start(SceneKeys.Truck, { station: 'window' });
+  }
+
+  /** The customer flashes for their last few seconds before giving up (#12). */
+  private flashIfLeaving(time: number): void {
+    if (!this.customer.visible) return;
+    const leaving = this.evening.roadCustomerSecondsLeft <= CUSTOMER_FLASH_SECONDS;
+    const alpha = leaving && Math.floor(time / 200) % 2 === 0 ? 0.2 : 1;
+    this.customer.setAlpha(alpha);
+    this.pickupZone.setVisible(alpha === 1);
   }
 
   /** An arrow at the screen edge points to the customer while they're off screen. */
