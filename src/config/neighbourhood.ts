@@ -77,3 +77,35 @@ export const CURB_SPOTS: readonly { col: number; row: number; side: CurbSide }[]
   { col: 9, row: 23, side: 'up' },
   { col: 37, row: 23, side: 'up' },
 ];
+
+/**
+ * Issue #10: potholes, at the centre of these road tiles. Driving over one
+ * spins the truck round and stops it. Placed away from customer spots.
+ */
+export const POTHOLES: readonly { col: number; row: number }[] = [
+  { col: 20, row: 2 },
+  { col: 35, row: 3 },
+  { col: 6, row: 24 },
+  { col: 28, row: 23 },
+  { col: 45, row: 6 },
+  { col: 2, row: 17 },
+  { col: 17, row: 11 },
+  { col: 24, row: 8 },
+  { col: 36, row: 13 },
+  { col: 32, row: 15 },
+];
+
+/**
+ * Issue #10: cars parked in the curb lane of these road tiles, against the
+ * curb on `side`. Solid, like the road edge. Placed away from customer spots.
+ */
+export const PARKED_CARS: readonly { col: number; row: number; side: CurbSide }[] = [
+  { col: 14, row: 3, side: 'down' },
+  { col: 30, row: 2, side: 'up' },
+  { col: 3, row: 15, side: 'right' },
+  { col: 19, row: 14, side: 'down' },
+  { col: 43, row: 23, side: 'up' },
+  { col: 16, row: 21, side: 'left' },
+  { col: 45, row: 18, side: 'right' },
+  { col: 21, row: 24, side: 'down' },
+];

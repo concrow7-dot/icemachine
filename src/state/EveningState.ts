@@ -63,6 +63,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private nowMsValue = 0;
   private endPending = false;
   private saleNow: Sale | null = null;
+  private damageTotalCents = 0;
   private lastSalePhase: string | null = null;
 
   /** The truck starts each evening on the road outside home (#9). */
@@ -158,6 +159,20 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (this.ended) return;
     this.cashCents += cents;
     this.emit(EveningEvents.MoneyChanged, cents, this.cashCents, label, popup);
+  }
+
+  // ---- Damage (#10) ----
+
+  /** Charges for a hit on the road (pothole, parked car, road edge). Cash may go below zero. */
+  takeDamage(cents: number, label: string): void {
+    if (this.ended) return;
+    this.damageTotalCents += cents;
+    this.changeMoney(-cents, label);
+  }
+
+  /** Total paid in damage tonight. */
+  get damageCents(): number {
+    return this.damageTotalCents;
   }
 
   // ---- Customers (#7, set for real by #12) ----
