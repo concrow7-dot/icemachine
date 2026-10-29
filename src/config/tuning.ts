@@ -25,10 +25,10 @@ export const REFUSE_ABOVE_CENTS = 400;
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
- * testing (PR #38), then x1.75 to 525 and back down x0.75 to 394 while
- * testing driving feel (PR #58): about 7 seconds across the map.
+ * testing (PR #38), then while testing driving feel (PR #58): x1.75 to 525,
+ * x0.75 to 394, then +10% to 433, about 6.5 seconds across the map.
  */
-export const TRUCK_SPEED = 394;
+export const TRUCK_SPEED = 433;
 
 /**
  * Issue #9: seconds to reach top speed from a stop. First 0.25 s; raised to
@@ -51,10 +51,10 @@ export const TRUCK_BRAKING_SECONDS = 0.15;
 
 /**
  * The truck never quite stops on its own (PO, testing PR #58): letting go of the
- * gas slows it to this creep, in px/s (about a tile a second), so you can still
- * steer slowly. Only the brake brings it to a full stop.
+ * gas slows it to this creep, in px/s, so you can still steer slowly. Only the
+ * brake brings it to a full stop. First 60 (a tile a second); +20% to 72 in testing.
  */
-export const TRUCK_CREEP_SPEED = 60;
+export const TRUCK_CREEP_SPEED = 72;
 
 /** Holding the brake once stopped reverses, up to this speed in px/s (about a third of the first top speed)... */
 export const TRUCK_REVERSE_SPEED = 175;

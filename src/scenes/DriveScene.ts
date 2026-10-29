@@ -100,8 +100,11 @@ export class DriveScene extends Phaser.Scene {
   private potholes: { x: number; y: number; armed: boolean }[] = [];
   private spinning = false;
   private hitCooldownUntil = 0;
-  /** Stopped with the brake (or not yet driven): stays put, no creeping, until the gas is pressed. */
-  private parked = true;
+  /** The park brake (Q, only at a standstill): holds the truck still until the gas (or Q again). */
+  private parkBrake = true;
+  /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
+  private rolling = 1;
+  private parkLabel!: Phaser.GameObjects.Text;
   /** How long the brake has been held at a standstill (it reverses after a moment). */
   private brakeHeldStill = 0;
 
@@ -113,7 +116,9 @@ export class DriveScene extends Phaser.Scene {
     this.evening = getEvening(this);
     this.speed = 0;
     this.hitCooldownUntil = 0;
-    this.parked = true;
+    // Each drive starts with the park brake on, so the truck doesn't creep off by itself.
+    this.parkBrake = true;
+    this.rolling = 1;
     this.brakeHeldStill = 0;
     this.held = [];
     this.leaving = false;
@@ -144,7 +149,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas   ↓ brake/reverse   ← → steer    Pull up beside a customer (!)    Mind the potholes and cars', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -155,8 +160,20 @@ export class DriveScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(20);
 
+    this.parkLabel = this.add
+      .text(16, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas or Q to release', {
+        fontFamily: 'monospace',
+        fontSize: '15px',
+        color: '#ffffff',
+        backgroundColor: '#c62828',
+        padding: { x: 8, y: 4 },
+      })
+      .setScrollFactor(0)
+      .setDepth(20);
+
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'q' || event.key === 'Q') this.toggleParkBrake();
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir && !this.held.includes(dir)) this.held.push(dir);
     });
@@ -192,11 +209,12 @@ export class DriveScene extends Phaser.Scene {
     const brake = this.held.includes('down');
     const steer = (this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0);
 
-    // Car-style driving (#32, PO testing PR #58). Gas speeds up. Letting go
-    // slows the truck to a creep; it only stops when you brake. Holding the
-    // brake at a stop reverses after a moment.
+    // Car-style driving (#32, PO testing PR #58). Gas speeds up. Let go of
+    // everything and the truck rolls at a creep, the way it was last going;
+    // the brake stops it, and holding the brake at a stop reverses after a
+    // moment. To stay still once stopped, put the park brake on (Q).
     if (gas && !brake) {
-      this.parked = false;
+      this.parkBrake = false;
       this.brakeHeldStill = 0;
       this.speed =
         this.speed < 0
@@ -209,21 +227,22 @@ export class DriveScene extends Phaser.Scene {
       } else if (this.speed === 0 && this.brakeHeldStill < TRUCK_REVERSE_DELAY_SECONDS) {
         this.brakeHeldStill += dt;
       } else {
+        this.parkBrake = false;
         this.speed = Math.max(-TRUCK_REVERSE_SPEED, this.speed - (TRUCK_REVERSE_SPEED * dt) / TRUCK_REVERSE_ACCELERATION_SECONDS);
       }
-      if (this.speed <= 0) this.parked = true;
+    } else if (this.parkBrake) {
+      this.brakeHeldStill = 0;
+      this.speed = 0;
     } else {
       this.brakeHeldStill = 0;
       const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
-      if (this.speed < 0) {
-        this.speed = Math.min(0, this.speed + roll);
-      } else if (this.speed > TRUCK_CREEP_SPEED) {
-        this.speed = Math.max(TRUCK_CREEP_SPEED, this.speed - roll);
-      } else if (this.speed > 0 && !this.parked) {
-        // Below a creep (after scraping a wall, say): ease back up to it.
-        this.speed = Math.min(TRUCK_CREEP_SPEED, this.speed + roll / 4);
-      }
+      const creep = this.rolling * TRUCK_CREEP_SPEED;
+      // Faster than a creep: slow down to it. Slower (just set off, or after a stop): ease up to it.
+      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED) this.speed -= Math.sign(this.speed) * Math.min(roll, Math.abs(this.speed) - TRUCK_CREEP_SPEED);
+      else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
+    if (this.speed !== 0) this.rolling = Math.sign(this.speed);
+    this.parkLabel.setVisible(this.parkBrake);
 
     // Steering turns the truck only while it's moving, like a car: tight turns
     // when slow, wider at speed. In reverse the wheel works the other way round.
@@ -239,11 +258,7 @@ export class DriveScene extends Phaser.Scene {
     if (this.speed !== 0) {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
-      if (!moved) {
-        // Up against something: stopped, and no creeping into it until you press the gas.
-        this.speed = 0;
-        this.parked = true;
-      }
+      if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
     }
 
     this.checkPotholes();
@@ -349,6 +364,13 @@ export class DriveScene extends Phaser.Scene {
     const cab = this.add.rectangle(16, 0, 12, 24, 0x5ec8ff);
     const stripe = this.add.rectangle(-6, 0, 22, 6, 0xff7eb6);
     return this.add.container(0, 0, [body, stripe, cab]).setDepth(10);
+  }
+
+  /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */
+  private toggleParkBrake(): void {
+    if (this.parkBrake) this.parkBrake = false;
+    else if (this.speed === 0) this.parkBrake = true;
+    this.parkLabel.setVisible(this.parkBrake);
   }
 
   /** Points the truck `degrees` round from facing right (90 = down), any angle. */
