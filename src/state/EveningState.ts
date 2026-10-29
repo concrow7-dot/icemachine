@@ -64,6 +64,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private endPending = false;
   private saleNow: Sale | null = null;
   private damageTotalCents = 0;
+  private salesTotalCents = 0;
+  private tipsTotalCents = 0;
+  private stockSpentCents = 0;
   private lastSalePhase: string | null = null;
 
   /** The truck starts each evening on the road outside home (#9). */
@@ -175,6 +178,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.damageTotalCents;
   }
 
+  /** Tonight's breakdown for the results screen (#16). */
+  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; damageCents: number } {
+    return {
+      salesCents: this.salesTotalCents,
+      tipsCents: this.tipsTotalCents,
+      stockCents: this.stockSpentCents,
+      damageCents: this.damageTotalCents,
+    };
+  }
+
   // ---- Customers (#7, set for real by #12) ----
 
   /** True while a customer is waiting at the window (issue #7: window only usable during a sale). */
@@ -272,7 +285,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (result === 'retry') this.returnBagToStock(sale);
     if (sale.outcome?.kind === 'paid') {
       this.changeMoney(sale.outcome.priceCents, 'Sale');
+      this.salesTotalCents += sale.outcome.priceCents;
       if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
+      this.tipsTotalCents += sale.outcome.tipCents;
     }
     this.afterSaleChange();
   }
@@ -374,6 +389,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       if (target) Object.assign(target, slot);
     });
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);
+    this.stockSpentCents += cost;
     this.emit(EveningEvents.CoolerChanged);
     return true;
   }
