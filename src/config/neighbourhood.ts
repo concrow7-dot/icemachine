@@ -81,23 +81,23 @@ export const CURB_SPOTS: readonly { col: number; row: number; side: CurbSide }[]
 /**
  * Issue #10: potholes, at the centre of these road tiles. Driving over one
  * spins the truck round and stops it. Placed away from customer spots.
+ * 7 of them (down from 10, PO testing PR #40).
  */
 export const POTHOLES: readonly { col: number; row: number }[] = [
   { col: 20, row: 2 },
-  { col: 35, row: 3 },
   { col: 6, row: 24 },
   { col: 28, row: 23 },
   { col: 45, row: 6 },
   { col: 2, row: 17 },
-  { col: 17, row: 11 },
   { col: 24, row: 8 },
   { col: 36, row: 13 },
-  { col: 32, row: 15 },
 ];
 
 /**
  * Issue #10: cars parked in the curb lane of these road tiles, against the
  * curb on `side`. Solid, like the road edge. Placed away from customer spots.
+ * 24 of them (3x the first 8, PO testing PR #40). Each sits on a straight
+ * stretch with the other lane clear, so no road is ever fully blocked.
  */
 export const PARKED_CARS: readonly { col: number; row: number; side: CurbSide }[] = [
   { col: 14, row: 3, side: 'down' },
@@ -108,4 +108,20 @@ export const PARKED_CARS: readonly { col: number; row: number; side: CurbSide }[
   { col: 16, row: 21, side: 'left' },
   { col: 45, row: 18, side: 'right' },
   { col: 21, row: 24, side: 'down' },
+  { col: 42, row: 2, side: 'up' },
+  { col: 32, row: 23, side: 'up' },
+  { col: 2, row: 5, side: 'left' },
+  { col: 29, row: 13, side: 'up' },
+  { col: 22, row: 2, side: 'up' },
+  { col: 38, row: 13, side: 'up' },
+  { col: 36, row: 2, side: 'up' },
+  { col: 20, row: 8, side: 'up' },
+  { col: 44, row: 8, side: 'left' },
+  { col: 26, row: 8, side: 'up' },
+  { col: 14, row: 13, side: 'up' },
+  { col: 11, row: 23, side: 'up' },
+  { col: 26, row: 23, side: 'up' },
+  { col: 6, row: 2, side: 'up' },
+  { col: 10, row: 2, side: 'up' },
+  { col: 2, row: 11, side: 'left' },
 ];

@@ -13,6 +13,8 @@ import { formatMoney } from '../util/format';
 const INK = '#2b1d10';
 /** Up to $999.99. */
 const MAX_PRICE_DIGITS = 5;
+/** Whole dollars only, after clicking the dollars in $XX.YY (up to $999). */
+const MAX_DOLLAR_DIGITS = 3;
 
 export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -25,6 +27,13 @@ export class SalesScene extends Phaser.Scene {
   private sorryButton!: Phaser.GameObjects.Text;
   private coolerButton!: Phaser.GameObjects.Text;
   private typed = '';
+  /**
+   * How typed digits are read. 'register' (the default, PR #38): digits fill from
+   * the right, so 7, 2, 5 reads $7.25. 'dollars' (PO, testing PR #40): after
+   * clicking the dollars part of the box, digits are whole dollars and the
+   * cents fill in as .00, so 7 reads $7.00.
+   */
+  private entry: 'register' | 'dollars' = 'register';
 
   constructor() {
     super(SceneKeys.Sales);
@@ -33,6 +42,7 @@ export class SalesScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.typed = '';
+    this.entry = 'register';
     const { width, height } = this.scale;
 
     // The truck wall, and the serving window.
@@ -82,7 +92,9 @@ export class SalesScene extends Phaser.Scene {
         backgroundColor: '#fffdf9',
         padding: { x: 12, y: 4 },
       })
-      .setOrigin(0, 0.5);
+      .setOrigin(0, 0.5)
+      .setInteractive({ useHandCursor: true });
+    this.priceBox.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.clickPrice(pointer));
 
     this.sorryButton = this.add
       .text(330, 330, "Sorry, ice cream's on me", {
@@ -151,9 +163,10 @@ export class SalesScene extends Phaser.Scene {
 
     if (sale.phase === 'pricing') {
       // Like a cash register (PO, PR #38): digits fill from the right, so 7, 2, 5 reads $0.07, $0.72, $7.25.
+      const maxDigits = this.entry === 'dollars' ? MAX_DOLLAR_DIGITS : MAX_PRICE_DIGITS;
       if (key === 'Backspace') this.typed = this.typed.slice(0, -1);
       else if (key === 'Enter') this.charge();
-      else if (/^[0-9]$/.test(key) && this.typed.length < MAX_PRICE_DIGITS && !(this.typed === '' && key === '0')) {
+      else if (/^[0-9]$/.test(key) && this.typed.length < maxDigits && !(this.typed === '' && key === '0')) {
         this.typed += key;
       }
       this.refresh();
@@ -165,10 +178,39 @@ export class SalesScene extends Phaser.Scene {
     if (this.evening.sale?.skipToCooler(this.evening.nowMs)) this.scene.start(SceneKeys.Fill);
   }
 
-  private charge(): void {
-    if (this.typed === '') return;
-    const cents = Number.parseInt(this.typed, 10);
+  /** The price typed so far, in cents (null if nothing is typed). */
+  private get typedCents(): number | null {
+    if (this.typed === '') return null;
+    const value = Number.parseInt(this.typed, 10);
+    return this.entry === 'dollars' ? value * 100 : value;
+  }
+
+  /**
+   * Clicking the dollars part of $XX.YY switches to whole dollars (the cents
+   * fill in as .00); clicking the cents goes back to cash-register typing.
+   * Either way you start typing that part fresh.
+   */
+  private clickPrice(pointer: Phaser.Input.Pointer): void {
+    if (this.evening.sale?.phase !== 'pricing') return;
+    const text = this.priceBox.text;
+    const dot = text.indexOf('.');
+    const padding = 12;
+    const charWidth = (this.priceBox.width - 2 * padding) / text.length;
+    const clicked = Math.floor((pointer.x - this.priceBox.getTopLeft().x - padding) / charWidth);
+    this.setEntry(clicked < dot ? 'dollars' : 'register');
+  }
+
+  private setEntry(entry: 'register' | 'dollars'): void {
+    this.entry = entry;
     this.typed = '';
+    this.refresh();
+  }
+
+  private charge(): void {
+    const cents = this.typedCents;
+    if (cents === null) return;
+    this.typed = '';
+    this.entry = 'register';
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
     if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents);
@@ -217,7 +259,12 @@ export class SalesScene extends Phaser.Scene {
             .join('\n'),
       )
       .setVisible(pricing);
-    this.priceBox.setText(this.typed === '' ? '$__.__' : formatMoney(Number.parseInt(this.typed, 10))).setVisible(pricing);
+    const cents = this.typedCents;
+    const empty = this.entry === 'dollars' ? '$__.00' : '$__.__';
+    this.priceBox
+      .setText(cents === null ? empty : formatMoney(cents))
+      .setBackgroundColor(this.entry === 'dollars' ? '#fff3c4' : '#fffdf9')
+      .setVisible(pricing);
     this.chargeLabel.setVisible(pricing);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
@@ -230,7 +277,12 @@ export class SalesScene extends Phaser.Scene {
       const canAsk = !sale.askedAgain && !sale.retryUsed;
       hint = `C or Enter: go to the cooler    ${canAsk ? 'R: ask again (no tip)    ' : ''}B: drive off`;
     }
-    if (pricing) hint = 'Type the price, then Enter to charge    Backspace: fix    B: drive off';
+    if (pricing) {
+      hint =
+        this.entry === 'dollars'
+          ? 'Whole dollars, .00 fills in    Click the cents for cents    Enter: charge    B: drive off'
+          : 'Type the price, Enter to charge    Click the dollars for whole dollars    B: drive off';
+    }
     if (sale.phase === 'over') hint = freebie ? "Enter: say sorry, it's on the house" : 'Enter: back on the road';
     this.hint.setText(hint);
   }
