@@ -1,7 +1,7 @@
 // Issue #16: the pinball-style high score table. Decision 004: scores are
 // kept on this computer only (in the browser), a top 5 for now (PO, October
-// 29), and the table starts fresh with every new build of the game.
-// Negative evenings count too, if they make the top 5.
+// 29). Scores stay when a new build of the game is deployed (PO, testing
+// PR #42). Negative evenings count too, if they make the top 5.
 
 export const HIGH_SCORE_COUNT = 5;
 
@@ -13,8 +13,11 @@ export type HighScore = {
   date: string;
 };
 
-const BUILD = typeof __BUILD_ID__ === 'string' ? __BUILD_ID__ : 'dev';
-const STORAGE_KEY = `icemachine.highscores.${BUILD}`;
+/**
+ * One table for every build, so scores survive updates to the game. Bump the
+ * version only if the saved format ever changes in a way old scores can't be read.
+ */
+const STORAGE_KEY = 'icemachine.highscores.v1';
 
 /** Reads the table. Storage can be missing or blocked (private windows), so failures give an empty table. */
 export function loadHighScores(): HighScore[] {

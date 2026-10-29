@@ -4,14 +4,14 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 004 — High scores kept on this computer (2026-10-29)
 
-**Decision:** A pinball-style top 5, stored in the player's browser on this computer. The table starts fresh with every new build of the game. Negative evenings count if they make the top 5.
+**Decision:** A pinball-style top 5, stored in the player's browser on this computer. Scores stay when a new version of the game is deployed. Negative evenings count if they make the top 5.
 
 **Options considered:** Local browser storage now vs an online leaderboard (needs a hosted backend, issue #3). A longer table vs a top 5 to start.
 
 **Why (product owner's rationale):**
 - *Scope:* storing scores locally is enough to give the loop a goal; an online board can come later.
 - *Cost:* no backend, no accounts, no hosting cost.
-- *Testing:* a table that resets with each build keeps old test scores out of the way.
+- *Scores that last:* first proposed as resetting with each new build; changed while testing PR #42 so players keep their scores through updates.
 
 **Deferred:** a fuller scoreboard with fun records (lowest score ever, least money earned), tracked as its own ticket.
 
