@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
+import type { Difficulty } from './Difficulty';
 import { CURB_SPOTS, HOME_START, TILE_SIZE } from '../config/neighbourhood';
 import {
   COOLER_SLOTS,
@@ -54,6 +55,8 @@ export type CoolerSlot = {
  * Money is stored in whole cents to avoid rounding errors.
  */
 export class EveningState extends Phaser.Events.EventEmitter {
+  /** Picked on the title screen; fixed for the evening (easy: arrows point the way, hard: car-style). */
+  difficulty: Difficulty = 'hard';
   private elapsedMs = 0;
   private ended = false;
   private readonly startCashCents = STARTING_CASH_CENTS;

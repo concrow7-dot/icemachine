@@ -79,6 +79,14 @@ export const TRUCK_MAX_TURN_DEGREES_PER_SECOND = 200;
 export const TURN_SLOWDOWN_ABOVE_FRACTION = 0.5;
 export const TURN_SPEED_LOSS_PER_SECOND = 0.5;
 
+// ---- Easy difficulty (PO, October 29): the original driving from #9 ----
+
+/** Easy: top speed in px/s (the first playable's speed, PR #38), about 10 seconds across the map. */
+export const EASY_TRUCK_SPEED = 300;
+/** Easy: seconds to reach top speed, and to stop after letting go. */
+export const EASY_ACCELERATION_SECONDS = 0.25;
+export const EASY_STOPPING_SECONDS = 0.15;
+
 /** Harder hits cost more (Q18): the slowest hit that counts costs this share of the full price; top speed costs it all. */
 export const HIT_COST_MIN_FRACTION = 0.5;
 
