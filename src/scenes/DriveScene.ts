@@ -1,6 +1,12 @@
 import * as Phaser from 'phaser';
-import { CURB_SPOTS, NEIGHBOURHOOD_MAP, TILE_SIZE } from '../config/neighbourhood';
+import { formatMoney } from '../util/format';
+import { CURB_SPOTS, NEIGHBOURHOOD_MAP, PARKED_CARS, POTHOLES, TILE_SIZE } from '../config/neighbourhood';
 import {
+  HIT_MIN_SPEED_FRACTION,
+  PARKED_CAR_DAMAGE_CENTS,
+  POTHOLE_DAMAGE_CENTS,
+  POTHOLE_SPIN_SECONDS,
+  ROAD_EDGE_DAMAGE_CENTS,
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
   TRUCK_SPEED,
@@ -12,11 +18,20 @@ import { EveningEvents, EveningState, type Facing } from '../state/EveningState'
 // PO decisions: four-direction movement (like Pokémon), one fixed map about
 // 20 seconds across, and the only way back into the truck is to drive into a
 // waiting customer, which opens the hub with the window ready.
+// Issue #10: potholes ($5, spin and stop), parked cars ($10) and the road
+// edge ($2 a hit) cost money. Cars and the road edge stop the truck.
 // Placeholder shapes until art direction (#17) is decided.
+
+/** A solid box on the road, in pixels (a parked car). */
+type Box = { left: number; top: number; right: number; bottom: number };
+/** Driving into a pothole from this close (centre to centre) counts as hitting it. */
+const POTHOLE_REACH = 22;
 
 const HUD_HEIGHT = 44;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
 const HIT_BOX = 32;
+/** After a crash, no new charge for this long (one bump = one charge). */
+const HIT_COOLDOWN_MS = 400;
 /** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
 const CUSTOMER_REACH = 30;
 
@@ -63,6 +78,10 @@ export class DriveScene extends Phaser.Scene {
   private labelBob?: Phaser.Tweens.Tween;
   private pointer!: Phaser.GameObjects.Triangle;
   private leaving = false;
+  private cars: Box[] = [];
+  private potholes: { x: number; y: number; armed: boolean }[] = [];
+  private spinning = false;
+  private hitCooldownUntil = 0;
 
   constructor() {
     super(SceneKeys.Drive);
@@ -71,13 +90,16 @@ export class DriveScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.speed = 0;
+    this.hitCooldownUntil = 0;
     this.held = [];
     this.leaving = false;
+    this.spinning = false;
 
     const worldWidth = (NEIGHBOURHOOD_MAP[0]?.length ?? 0) * TILE_SIZE;
     const worldHeight = NEIGHBOURHOOD_MAP.length * TILE_SIZE;
 
     this.drawNeighbourhood(worldWidth, worldHeight);
+    this.placeObstacles();
     this.customer = this.makeCustomer();
     this.truck = this.makeTruck();
 
@@ -98,7 +120,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, 'Arrows / WASD: drive    Pull up beside a customer (!) to serve them', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, 'Arrows / WASD: drive    Pull up beside a customer (!)    Watch for potholes and parked cars', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -136,6 +158,10 @@ export class DriveScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     if (this.leaving) return;
+    if (this.spinning) {
+      this.updatePointer();
+      return;
+    }
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
     const steering = this.held.at(-1);
@@ -153,6 +179,7 @@ export class DriveScene extends Phaser.Scene {
       if (!moved) this.speed = 0;
     }
 
+    this.checkPotholes();
     this.checkCustomer();
     this.updatePointer();
   }
@@ -262,36 +289,45 @@ export class DriveScene extends Phaser.Scene {
     this.truck.setAngle(DIRECTIONS[facing].angle);
   }
 
-  /** True if the truck's hit box, centred on (x, y), overlaps anything solid. */
-  private blockedAt(x: number, y: number): boolean {
+  /** What the truck's hit box, centred on (x, y), runs into: the road edge, a parked car, or nothing. */
+  private obstacleAt(x: number, y: number): 'edge' | 'car' | null {
     const half = HIT_BOX / 2;
+    const box = { left: x - half, top: y - half, right: x + half, bottom: y + half };
+    const overlaps = (c: Box) => box.left < c.right && box.right > c.left && box.top < c.bottom && box.bottom > c.top;
+    if (this.cars.some(overlaps)) return 'car';
     const left = Math.floor((x - half) / TILE_SIZE);
     const right = Math.floor((x + half - 0.001) / TILE_SIZE);
     const top = Math.floor((y - half) / TILE_SIZE);
     const bottom = Math.floor((y + half - 0.001) / TILE_SIZE);
     for (let row = top; row <= bottom; row++) {
       for (let col = left; col <= right; col++) {
-        if (this.isSolid(col, row)) return true;
+        if (this.isSolid(col, row)) return 'edge';
       }
     }
-    return false;
+    return null;
   }
 
-  /** Moves the truck, stopping flush against walls. Returns false if it couldn't move at all. */
+  /**
+   * Moves the truck, stopping flush against walls and parked cars. A bump at
+   * speed costs money (#10). Returns false if it couldn't move at all.
+   */
   private moveTruck(dx: number, dy: number): boolean {
     const start = { x: this.truck.x, y: this.truck.y };
     const target = { x: start.x + dx, y: start.y + dy };
-    if (!this.blockedAt(target.x, target.y)) {
+    const hit = this.obstacleAt(target.x, target.y);
+    if (!hit) {
       this.truck.setPosition(target.x, target.y);
       return true;
     }
+    // One charge per hit: after a crash, a short cooldown stops a slow frame from charging twice.
+    if (this.speed >= TRUCK_SPEED * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) this.crash(hit);
     // Creep forward a pixel at a time to sit right up against the obstacle.
     const steps = Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)));
     let moved = false;
     for (let i = 1; i <= steps; i++) {
       const nx = start.x + (dx * i) / steps;
       const ny = start.y + (dy * i) / steps;
-      if (this.blockedAt(nx, ny)) break;
+      if (this.obstacleAt(nx, ny)) break;
       this.truck.setPosition(nx, ny);
       moved = true;
     }
@@ -300,6 +336,87 @@ export class DriveScene extends Phaser.Scene {
 
   private releaseKeys(): void {
     this.held = [];
+  }
+
+  // ---- Obstacles (#10) ----
+
+  private placeObstacles(): void {
+    this.cars = [];
+    this.potholes = [];
+    const carColours = [0xc0392b, 0x2e86c1, 0x7d3c98, 0x27ae60, 0xd68910, 0x566573];
+
+    POTHOLES.forEach(({ col, row }) => {
+      const x = (col + 0.5) * TILE_SIZE;
+      const y = (row + 0.5) * TILE_SIZE;
+      this.add.ellipse(x, y, 36, 28, 0x2b2d31).setStrokeStyle(3, 0x45484f).setDepth(2);
+      this.add.ellipse(x - 3, y - 2, 18, 12, 0x1a1b1e).setDepth(2);
+      this.potholes.push({ x, y, armed: true });
+    });
+
+    PARKED_CARS.forEach(({ col, row, side }, i) => {
+      const { dx, dy } = DIRECTIONS[side];
+      // Parked against the curb: the car's centre sits 10 px from the lane's centre, toward the curb.
+      const x = (col + 0.5) * TILE_SIZE + dx * 10;
+      const y = (row + 0.5) * TILE_SIZE + dy * 10;
+      const horizontal = side === 'up' || side === 'down';
+      const w = horizontal ? 54 : 32;
+      const h = horizontal ? 32 : 54;
+      const colour = carColours[i % carColours.length] ?? 0x888888;
+      this.add.rectangle(x, y, w, h, colour).setStrokeStyle(2, 0x1b1b1b).setDepth(3);
+      this.add.rectangle(x, y, horizontal ? 22 : 24, horizontal ? 24 : 22, 0xbfe6ff, 0.9).setDepth(3);
+      this.cars.push({ left: x - w / 2, top: y - h / 2, right: x + w / 2, bottom: y + h / 2 });
+    });
+  }
+
+  /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
+  private crash(kind: 'edge' | 'car'): void {
+    this.speed = 0;
+    this.hitCooldownUntil = this.time.now + HIT_COOLDOWN_MS;
+    this.cameras.main.shake(150, 0.006);
+    const cost = kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS;
+    this.evening.takeDamage(cost, kind === 'car' ? 'Parked car' : 'Curb');
+    // The cost pops up where the truck's nose hit (PO, testing PR #40).
+    const { dx, dy } = DIRECTIONS[this.facing];
+    this.showCost(this.truck.x + (dx * HIT_BOX) / 2, this.truck.y + (dy * HIT_BOX) / 2, cost);
+  }
+
+  /** A red "-$2.00" at the point of contact that floats up and fades. */
+  private showCost(x: number, y: number, cents: number): void {
+    const label = this.add
+      .text(x, y, `-${formatMoney(cents)}`, { fontFamily: 'monospace', fontSize: '22px', color: '#d32f2f', fontStyle: 'bold' })
+      .setOrigin(0.5)
+      .setStroke('#ffffff', 5)
+      .setDepth(20);
+    this.tweens.add({ targets: label, y: y - 48, alpha: 0, duration: 1200, ease: 'Cubic.easeOut', onComplete: () => label.destroy() });
+  }
+
+  /** Driving over a pothole spins the truck round and stops it (PO, #10). Each pothole re-arms once you've left it. */
+  private checkPotholes(): void {
+    for (const hole of this.potholes) {
+      const distance = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, hole.x, hole.y);
+      if (!hole.armed) {
+        if (distance > POTHOLE_REACH + 24) hole.armed = true;
+        continue;
+      }
+      if (distance > POTHOLE_REACH) continue;
+      hole.armed = false;
+      this.speed = 0;
+      this.spinning = true;
+      this.cameras.main.shake(250, 0.01);
+      this.evening.takeDamage(POTHOLE_DAMAGE_CENTS, 'Pothole');
+      this.showCost(hole.x, hole.y, POTHOLE_DAMAGE_CENTS);
+      this.tweens.add({
+        targets: this.truck,
+        angle: this.truck.angle + 360,
+        duration: POTHOLE_SPIN_SECONDS * 1000,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          this.spinning = false;
+          this.setFacing(this.facing);
+        },
+      });
+      return;
+    }
   }
 
   // ---- Customer at the curb (#12) ----

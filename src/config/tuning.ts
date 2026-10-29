@@ -56,3 +56,19 @@ export const WINDOW_PATIENCE_SECONDS = 60;
 
 /** With this many seconds of patience left, a pulsing "!" appears in the top bar. */
 export const PATIENCE_WARNING_SECONDS = 5;
+
+// ---- Obstacles (#10), PO decisions October 29 ----
+
+/** Damage costs, in cents: a pothole $5, a parked car $10, the road edge $2 per hit. */
+export const POTHOLE_DAMAGE_CENTS = 500;
+export const PARKED_CAR_DAMAGE_CENTS = 1000;
+export const ROAD_EDGE_DAMAGE_CENTS = 200;
+
+/**
+ * A bump only counts as a hit if the truck was going at least this share of
+ * top speed, so resting against a wall or nudging along it doesn't keep charging.
+ */
+export const HIT_MIN_SPEED_FRACTION = 0.25;
+
+/** How long the truck spins after hitting a pothole, in seconds. */
+export const POTHOLE_SPIN_SECONDS = 0.6;
