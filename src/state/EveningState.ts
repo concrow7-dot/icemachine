@@ -27,11 +27,14 @@ export const EveningEvents = {
   SaleChanged: 'sale-changed',
 } as const;
 
-/** Which way the truck is pointing (issue #9: four-direction driving). */
+/** A new curb customer appears at least this many tiles from the truck (so leaving the window never starts another sale on the spot). */
+const SPAWN_CLEAR_OF_TRUCK_TILES = 3;
+
+/** The four arrow keys (and W A S D): up is gas, down is brake and reverse, left and right steer (#32). */
 export type Facing = 'up' | 'down' | 'left' | 'right';
 
-/** Where the truck is parked in the neighbourhood, in pixels. */
-export type TruckPosition = { x: number; y: number; facing: Facing };
+/** Where the truck is parked in the neighbourhood, in pixels, and the way it points in degrees (0 = right, 90 = down). */
+export type TruckPosition = { x: number; y: number; angle: number };
 
 /** The one customer waiting at the curb (#12): which CURB_SPOTS entry. They wait until picked up. */
 export type RoadCustomer = { spot: number };
@@ -73,7 +76,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private truckPosition: TruckPosition = {
     x: HOME_START.col * TILE_SIZE,
     y: HOME_START.row * TILE_SIZE,
-    facing: 'right',
+    angle: 0,
   };
 
   /** The cooler starts with the first three flavours selected and empty. */
@@ -237,7 +240,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const previous = this.roadCustomerNow?.spot;
     this.roadCustomerNow = null;
     if (!this.ended && !this.isAfterHours && !this.isSoldOut && this.prepLocked && !this.customerAtWindow) {
-      const choices = CURB_SPOTS.map((_, i) => i).filter((i) => i !== previous);
+      // Never right where the truck is: a customer there would start a sale the
+      // moment you leave the window (the spot just served was being picked again).
+      const nearTruck = (i: number) => {
+        const s = CURB_SPOTS[i];
+        if (!s) return false;
+        const dx = (s.col + 0.5) * TILE_SIZE - this.truckPosition.x;
+        const dy = (s.row + 0.5) * TILE_SIZE - this.truckPosition.y;
+        return Math.hypot(dx, dy) < SPAWN_CLEAR_OF_TRUCK_TILES * TILE_SIZE;
+      };
+      const choices = CURB_SPOTS.map((_, i) => i).filter((i) => i !== previous && !nearTruck(i));
       const spot = choices[Math.floor(Math.random() * choices.length)] ?? 0;
       this.roadCustomerNow = { spot };
     }
