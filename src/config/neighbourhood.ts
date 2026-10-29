@@ -49,16 +49,31 @@ export const NEIGHBOURHOOD_MAP: readonly string[] = [
 /** Where the truck starts each evening: on the road outside home, facing right. */
 export const HOME_START = { col: 7.5, row: 14 };
 
+/** Which side of a road tile the curb (and the customer on the sidewalk) is on. */
+export type CurbSide = 'up' | 'down' | 'left' | 'right';
+
 /**
- * Road tiles where customers wait, in the order they appear (one at a time).
- * Placeholder for #12, which decides how many customers there are and when they leave.
+ * Issue #12: curbside spots where customers wait, one at a time, picked at
+ * random. Each is a road tile next to a sidewalk: the customer stands on the
+ * sidewalk on `side`, and the truck picks them up by pulling into that tile
+ * (the lane nearest the curb). Later these become residents' homes (#28).
  */
-export const CUSTOMER_SPOTS: readonly { col: number; row: number }[] = [
-  { col: 11.5, row: 3 },
-  { col: 24.5, row: 9 },
-  { col: 40.5, row: 14 },
-  { col: 32, row: 18.5 },
-  { col: 17, row: 20.5 },
-  { col: 38.5, row: 24 },
-  { col: 3, row: 7.5 },
+export const CURB_SPOTS: readonly { col: number; row: number; side: CurbSide }[] = [
+  { col: 8, row: 3, side: 'down' },
+  { col: 25, row: 3, side: 'down' },
+  { col: 38, row: 3, side: 'down' },
+  { col: 3, row: 9, side: 'right' },
+  { col: 16, row: 6, side: 'left' },
+  { col: 22, row: 8, side: 'up' },
+  { col: 28, row: 9, side: 'down' },
+  { col: 32, row: 6, side: 'right' },
+  { col: 44, row: 10, side: 'left' },
+  { col: 12, row: 14, side: 'down' },
+  { col: 25, row: 13, side: 'up' },
+  { col: 40, row: 14, side: 'down' },
+  { col: 30, row: 18, side: 'left' },
+  { col: 17, row: 20, side: 'right' },
+  { col: 3, row: 20, side: 'right' },
+  { col: 9, row: 23, side: 'up' },
+  { col: 37, row: 23, side: 'up' },
 ];

@@ -9,6 +9,7 @@ export class HudScene extends Phaser.Scene {
   private evening!: EveningState;
   private clockText!: Phaser.GameObjects.Text;
   private moneyText!: Phaser.GameObjects.Text;
+  private soldOutText!: Phaser.GameObjects.Text;
 
   constructor() {
     super(SceneKeys.Hud);
@@ -34,6 +35,18 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(1, 0);
 
+    // Issue #12: on the road with an empty cooler, no customers come.
+    this.soldOutText = this.add
+      .text(0, 12, 'SOLD OUT', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        color: '#ffffff',
+        backgroundColor: '#c2185b',
+        padding: { x: 6, y: 2 },
+      })
+      .setOrigin(1, 0)
+      .setVisible(false);
+
     this.refresh();
     this.addDebugKeys();
 
@@ -43,12 +56,15 @@ export class HudScene extends Phaser.Scene {
     };
     const onEnded = () => endEvening(this);
 
+    const onStock = () => this.refresh();
     this.evening.on(EveningEvents.MoneyChanged, onMoney);
+    this.evening.on(EveningEvents.RoadCustomerChanged, onStock);
     this.evening.once(EveningEvents.Ended, onEnded);
 
     // Stop listening when this scene closes, so old evenings can't affect new ones.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.evening.off(EveningEvents.MoneyChanged, onMoney);
+      this.evening.off(EveningEvents.RoadCustomerChanged, onStock);
       this.evening.off(EveningEvents.Ended, onEnded);
     });
   }
@@ -58,14 +74,13 @@ export class HudScene extends Phaser.Scene {
    * sales (#15), damage (#10) and customers (#12) exist.
    */
   private addDebugKeys(): void {
-    const { width } = this.scale;
     this.add
-      .text(width / 2, 22, 'DEBUG  1:+$4.50  2:-$2.00  3:end evening  4:customer on/off', {
+      .text(140, 22, 'DEBUG  1:+$4.50  2:-$2.00  3:end evening  4:customer on/off', {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: '11px',
         color: '#d9a0ff',
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0.5);
 
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown-ONE', () => this.evening.changeMoney(450, 'Sale'));
@@ -86,6 +101,9 @@ export class HudScene extends Phaser.Scene {
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
+    this.soldOutText
+      .setVisible(this.evening.isSoldOut)
+      .setX(this.moneyText.x - this.moneyText.width - 20);
   }
 
   /** Shows "+$4.50 Sale" or "-$2.00 Damage" under the total, then fades it out. */
