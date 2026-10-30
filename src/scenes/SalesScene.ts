@@ -12,6 +12,10 @@ import { formatMoney } from '../util/format';
 
 const INK = '#2b1d10';
 /** Up to $999.99. */
+/** The paid flash (PO, doc 12 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
+const FLASH_IN_MS = 375;
+const FLASH_HOLD_MS = 1350;
+const TIP_FLASH_DELAY_MS = 1050;
 const MAX_PRICE_DIGITS = 5;
 /** Whole dollars only, after clicking the dollars in $XX.YY (up to $999). */
 const MAX_DOLLAR_DIGITS = 3;
@@ -225,10 +229,20 @@ export class SalesScene extends Phaser.Scene {
         .setStroke('#ffffff', 6)
         .setAlpha(0)
         .setScale(0.6);
-      this.tweens.add({ targets: t, alpha: 1, scale: 1.15, duration: 250, delay, yoyo: true, hold: 900, repeat: 1 });
+      // One flash each, held 1.5x longer than before (PO, October 30: it used to flash twice).
+      this.tweens.add({
+        targets: t,
+        alpha: 1,
+        scale: 1.15,
+        duration: FLASH_IN_MS,
+        delay,
+        yoyo: true,
+        hold: FLASH_HOLD_MS,
+        onComplete: () => t.destroy(),
+      });
     };
     flash(`+${formatMoney(priceCents)}`, 300, '#2e7d32', 0);
-    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'no tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', 700);
+    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'no tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
   }
 
   private driveOff(): void {

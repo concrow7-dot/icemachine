@@ -39,6 +39,10 @@ export class CoolerScene extends Phaser.Scene {
   private focusCol = 0;
   private focusRow: Row = 1;
   private totals!: Phaser.GameObjects.Text;
+  private note!: Phaser.GameObjects.Text;
+  private noteText = '';
+  private noteColor = '';
+  private noteTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super(SceneKeys.Cooler);
@@ -85,14 +89,16 @@ export class CoolerScene extends Phaser.Scene {
       this.buyButton.on('pointerdown', () => this.buy());
     }
 
-    this.add
+    this.note = this.add
       .text(
         width / 2,
         locked ? 458 : 494,
         locked
           ? 'Stock and prices were locked when you left for the road.'
-          : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
-        { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' },
+          : !this.evening.isClockRunning
+            ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
+            : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
+        { fontFamily: 'monospace', fontSize: '13px', color: !locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
       )
       .setOrigin(0.5);
 
@@ -107,11 +113,25 @@ export class CoolerScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
+    this.noteText = this.note.text;
+    this.noteColor = this.note.style.color as string;
+    this.noteTimer = undefined;
+
     const keyboard = this.input.keyboard;
-    // Going back without buying throws the draft order away.
-    const back = () => returnToTruck(this, 'cooler');
-    keyboard?.once('keydown-B', back);
-    keyboard?.once('keydown-BACKSPACE', back);
+    // Going back without buying throws the draft order away. The truck can't
+    // leave the cooler empty, though (#66 feedback): buy at least one first.
+    let leaving = false;
+    const back = () => {
+      if (leaving) return;
+      if (!locked && this.evening.stockLeft === 0) {
+        this.warnEmpty();
+        return;
+      }
+      leaving = true;
+      returnToTruck(this, 'cooler');
+    };
+    keyboard?.on('keydown-B', back);
+    keyboard?.on('keydown-BACKSPACE', back);
 
     if (!locked) {
       keyboard?.on('keydown-ENTER', () => this.buy());
@@ -220,7 +240,20 @@ export class CoolerScene extends Phaser.Scene {
 
   /** Pays for the draft order and heads back to the truck. */
   private buy(): void {
+    // An order that leaves the cooler empty doesn't count (#66 feedback).
+    const total = this.order.slots.reduce((sum, slot) => sum + slot.quantity, 0);
+    if (total === 0) {
+      this.warnEmpty();
+      return;
+    }
     if (this.evening.buyStock(this.order)) returnToTruck(this, 'cooler');
+  }
+
+  /** Says why the player can't leave yet, in red, then puts the usual note back. */
+  private warnEmpty(): void {
+    this.note.setText('Add at least one ice cream before you leave the cooler.').setColor('#b3261e');
+    this.noteTimer?.remove();
+    this.noteTimer = this.time.delayedCall(2500, () => this.note.setText(this.noteText).setColor(this.noteColor));
   }
 
   private refresh(): void {
