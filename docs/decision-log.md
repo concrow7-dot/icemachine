@@ -6,6 +6,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision:** Each evening opens straight at the cooler with the clock stopped at 5:00 PM. The clock starts when you leave the cooler for the first time. Later trips back to the cooler still cost daylight. (Issue #66.)
 
+**Added while testing PR #70 (product owner's request):** the player can't leave the opening cooler until at least one ice cream is bought; B and an empty Buy Stock show a warning instead.
+
 **Changes:** the pitch's rule that the clock starts at 5 PM and never stops, so that even the first stock-up cost time.
 
 **Why (proposed by engineering; product owner to confirm or replace):** the opening stock-up is setup, not play. Starting at the cooler with the clock waiting gets a new player straight to the first real decision without losing evening time to learning the screen.
