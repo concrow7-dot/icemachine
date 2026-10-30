@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { loadDifficulty } from './state/Difficulty';
 import { EveningState } from './state/EveningState';
 
 /** Scene names, kept in one place so a typo can't break the flow. */
@@ -30,8 +29,6 @@ const STATE_KEY = 'evening';
 /** Starts a brand-new evening from any screen: fresh clock, $0, everything reset. */
 export function startEvening(from: Phaser.Scene): void {
   const evening = new EveningState();
-  // The difficulty picked on the title screen; a restart keeps it (change it on the title).
-  evening.difficulty = loadDifficulty();
   from.registry.set(STATE_KEY, evening);
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
   from.scene.start(SceneKeys.Cooler);
