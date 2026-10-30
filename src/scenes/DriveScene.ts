@@ -413,11 +413,19 @@ export class DriveScene extends Phaser.Scene {
 
   // ---- Truck ----
 
+  /**
+   * The truck from above, facing right, in the colours of LimeZu's ice cream
+   * truck (SCREAM-6, PO October 30: the pack only has it side-on, so the driving
+   * truck is drawn here to match). Same 46 x 28 size as the collision shape.
+   */
   private makeTruck(): Phaser.GameObjects.Container {
-    const body = this.add.rectangle(0, 0, 46, 28, 0xfafafa).setStrokeStyle(2, 0x2b2b2b);
-    const cab = this.add.rectangle(16, 0, 12, 24, 0x5ec8ff);
-    const stripe = this.add.rectangle(-6, 0, 22, 6, 0xff7eb6);
-    return this.add.container(0, 0, [body, stripe, cab]).setDepth(10);
+    const body = this.add.rectangle(0, 0, 46, 28, 0xd6779d).setStrokeStyle(2, 0x3a3a50);
+    const roof = this.add.rectangle(-5, 0, 30, 22, 0x5ea592).setStrokeStyle(1, 0x367f82);
+    const windscreen = this.add.rectangle(15, 0, 6, 22, 0xa4bbd5);
+    const bonnet = this.add.rectangle(20, 0, 4, 24, 0xeea5b8);
+    const cone = this.add.triangle(-6, 0, 0, -4, 0, 4, -12, 0, 0xd9a35a);
+    const scoop = this.add.circle(-3, 0, 5, 0xeea5b8).setStrokeStyle(1, 0xb95d72);
+    return this.add.container(0, 0, [body, roof, windscreen, bonnet, cone, scoop]).setDepth(10);
   }
 
   /** Easy difficulty: the original arrows-point-the-way driving. */
