@@ -23,6 +23,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 OSM_JSON = os.path.join(HERE, 'worcester-osm.json')
 OUT_TS = os.path.join(ROOT, 'src', 'config', 'worcester.ts')
 OUT_ART = os.path.join(ROOT, 'public', 'assets', 'limezu', 'map')
+OUT_ROADS = os.path.join(ROOT, 'public', 'assets', 'map')
 
 # ---- Area ----
 K = math.cos(math.radians(42.265))
@@ -43,6 +44,11 @@ PX_PER_M = 4.6          # about twice the old map's size (PO)
 MARGIN = 360            # px of scenery around the area
 ROAD_HALF = 60          # two 60 px lanes, as on the old map (room for a U-turn)
 SIDEWALK = 14
+# Street corners are rounded with this radius (PO, testing PR #80: corners were too sharp).
+CORNER_RADIUS = 48
+# The road image and the road-edge map are made at half size (one pixel = 2 x 2 map pixels).
+RASTER = 2
+ROAD_TILE = 512   # road image tiles, in half-size pixels (1024 map pixels)
 LANE = 30               # lane centre, from the road's centre line
 
 
@@ -119,7 +125,7 @@ class Roads:
 
 
 def build(art):
-    from PIL import Image
+    from PIL import Image, ImageDraw
     random.seed(7)
     d = json.load(open(OSM_JSON))
     poly_m = [metres(*c) for c in CORNERS]
@@ -259,7 +265,49 @@ def build(art):
         if max(p[0] for p in pts) < 0 or min(p[0] for p in pts) > W or max(p[1] for p in pts) < 0 or min(p[1] for p in pts) > H: continue
         areas.append({'name': a['name'], 'kind': a['kind'], 'points': [c for p in pts[:-1] for c in (r1(p[0]), r1(p[1]))]})
 
-    # 6. Sprites, shrunk to 16 px, and houses and trees placed on the lawns.
+    # 6. The road surface, with rounded corners: widen every road by the corner
+    # radius, then shrink it back. Straight curbs stay put; sharp inside corners
+    # fill in with a curve. Done for the asphalt, the curb and the sidewalk.
+    import numpy as np
+    from scipy import ndimage
+    W2, H2 = (W + RASTER - 1) // RASTER, (H + RASTER - 1) // RASTER
+    lines = Image.new('L', (W2, H2), 255)
+    ld = ImageDraw.Draw(lines)
+    for _, pts in pieces:
+        ld.line([(x / RASTER, y / RASTER) for x, y in pts], fill=0, width=1)
+    to_centre = ndimage.distance_transform_edt(np.array(lines) > 0) * RASTER
+    def rounded(half, radius):
+        widened = to_centre <= half + radius
+        return ndimage.distance_transform_edt(widened) * RASTER >= radius
+    # The curb and sidewalk follow the asphalt's curve (same centre, so a smaller radius).
+    asphalt = rounded(ROAD_HALF, CORNER_RADIUS)
+    curb_mask = rounded(ROAD_HALF + 3, CORNER_RADIUS - 3)
+    sidewalk_mask = rounded(edge, CORNER_RADIUS - SIDEWALK)
+    img = np.zeros((H2, W2, 4), np.uint8)
+    img[sidewalk_mask] = (0xd6, 0xd0, 0xc7, 255)
+    img[curb_mask] = (0x7a, 0x74, 0x70, 255)
+    img[asphalt] = (0x53, 0x4f, 0x52, 255)
+    os.makedirs(OUT_ROADS, exist_ok=True)
+    for f in os.listdir(OUT_ROADS):
+        if f.startswith('roads_'): os.remove(os.path.join(OUT_ROADS, f))
+    road_tiles = []
+    for ty in range(0, H2, ROAD_TILE):
+        for tx in range(0, W2, ROAD_TILE):
+            part = img[ty:ty + ROAD_TILE, tx:tx + ROAD_TILE]
+            if not part[:, :, 3].any(): continue
+            key = f'roads_{tx // ROAD_TILE}_{ty // ROAD_TILE}'
+            Image.fromarray(part, 'RGBA').save(os.path.join(OUT_ROADS, key + '.png'), optimize=True)
+            road_tiles.append({'key': key, 'x': tx * RASTER, 'y': ty * RASTER})
+    # The road-edge map: for each half-size row, the runs of asphalt as [start, end) pairs.
+    road_rows = []
+    for row in asphalt:
+        edges = np.flatnonzero(np.diff(np.concatenate(([0], row.astype(np.int8), [0]))))
+        road_rows.append(edges.tolist())
+    def on_sidewalk_or_road(x, y):
+        x2, y2 = int(x // RASTER), int(y // RASTER)
+        return 0 <= x2 < W2 and 0 <= y2 < H2 and bool(sidewalk_mask[y2, x2])
+
+    # 7. Sprites, shrunk to 16 px, and houses and trees placed on the lawns.
     os.makedirs(OUT_ART, exist_ok=True)
     def sprite(src, key):
         im = Image.open(os.path.join(art, src)).convert('RGBA')
@@ -281,12 +329,12 @@ def build(art):
         l, t, r, b = cx - w / 2 - gap, bottom - h - gap, cx + w / 2 + gap, bottom + gap
         if l < 0 or t < 0 or r > W or b > H: return False
         if any(not (r < q[0] or l > q[2] or b < q[1] or t > q[3]) for q in placed): return False
-        for x in range(int(l), int(r) + 1, 12):
+        for x in range(int(l), int(r) + 1, 8):
             for y in (t, b, (t + b) / 2):
-                if roads.dist((x, y)) < edge + 2: return False
-        for y in range(int(t), int(b) + 1, 12):
+                if on_sidewalk_or_road(x, y): return False
+        for y in range(int(t), int(b) + 1, 8):
             for x in (l, r):
-                if roads.dist((x, y)) < edge + 2: return False
+                if on_sidewalk_or_road(x, y): return False
         for a in areas:
             if inside(list(zip(a['points'][::2], a['points'][1::2])), (cx, bottom - h / 2)) or inside(list(zip(a['points'][::2], a['points'][1::2])), (cx, bottom)): return False
         return True
@@ -329,6 +377,8 @@ def build(art):
         'labels': labels, 'areas': areas, 'homeStart': home_start,
         'home': home_obj, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
         'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in houses + villas + trees],
+        'roadTiles': road_tiles, 'roadTileScale': RASTER,
+        'roadMask': {'scale': RASTER, 'rows': road_rows},
     }
     ts = ['// GENERATED by tools/worcester/build_map.py: edit the script, not this file.',
           '// SCREAM-10: the streets around June St, Pleasant St, Park Ave and Chandler St in',

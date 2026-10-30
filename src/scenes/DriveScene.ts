@@ -41,8 +41,6 @@ import { EveningEvents, EveningState, type Facing } from '../state/EveningState'
 const CAR_HALF_LENGTH = 27;
 const CAR_HALF_WIDTH = 16;
 const CAR_COLOURS = [0xc0392b, 0x2e86c1, 0x7d3c98, 0x27ae60, 0xd68910, 0x566573];
-/** Easy driving follows the road you're on when the arrow points within this many degrees of it. */
-const EASY_FOLLOW_ROAD_DEGREES = 60;
 /** Driving into a pothole from this close (centre to centre) counts as hitting it. */
 const POTHOLE_REACH = 22;
 
@@ -84,17 +82,13 @@ const KEY_TO_FACING: Record<string, Facing> = {
   d: 'right',
 };
 
-/** Colours from the LimeZu pack (asphalt, sidewalk paving, grass). */
+/** Colours (the road surface itself comes as images from the map generator). */
 const COLOURS = {
-  asphalt: 0x534f52,
-  curb: 0x7a7470,
-  sidewalk: 0xd6d0c7,
   lane: 0xe8d36a,
   park: 0x5fae5a,
   pitch: 0x4f9d4a,
   school: 0xb9ad97,
 };
-const SIDEWALK_WIDTH = 14;
 /**
  * The painted map image round the camera: the 512 px square the view starts in
  * plus enough to cover the 960 x 496 view from anywhere in it, and a little
@@ -105,7 +99,6 @@ const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
 const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
-const CURB_WIDTH = 3;
 
 export class DriveScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -126,9 +119,9 @@ export class DriveScene extends Phaser.Scene {
   private cars: TurnedBox[] = [];
   /** The map being driven (SCREAM-10: Worcester). */
   readonly map = WORCESTER;
-  private readonly roads = new RoadNetwork(WORCESTER.roads);
+  private readonly roads = new RoadNetwork(WORCESTER.roads, WORCESTER.roadMask);
   /** Map pieces shown only near the camera (2,000 houses and trees drawn every frame were too slow). */
-  /** Names painted into the map image (street, field and Home labels). */
+  /** Street, field and Home names, shown only near the camera. */
   private mapTexts: { obj: Phaser.GameObjects.Text; x: number; y: number }[] = [];
   private roadGraphics!: Phaser.GameObjects.Graphics;
   private fieldGraphics!: Phaser.GameObjects.Graphics;
@@ -140,6 +133,8 @@ export class DriveScene extends Phaser.Scene {
   private potholes: { x: number; y: number; armed: boolean }[] = [];
   private spinning = false;
   private hitCooldownUntil = 0;
+  /** Still in contact with what it last ran into: scraping along it isn't a new hit (SCREAM-10). */
+  private scraping = false;
   /** The park brake (Q, only at a standstill): holds the truck still until the gas (or Q again). */
   private parkBrake = true;
   /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
@@ -156,12 +151,14 @@ export class DriveScene extends Phaser.Scene {
   preload(): void {
     this.load.image('map-grass', 'assets/limezu/map/grass.png');
     for (const { key } of WORCESTER.sprites) this.load.image(`map-${key}`, `assets/limezu/map/${key}.png`);
+    for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
   }
 
   create(): void {
     this.evening = getEvening(this);
     this.speed = 0;
     this.hitCooldownUntil = 0;
+    this.scraping = false;
     // Each drive (hard) starts with the park brake on, so the truck doesn't creep off by itself.
     this.parkBrake = this.evening.difficulty === 'hard';
     this.rolling = 1;
@@ -302,9 +299,9 @@ export class DriveScene extends Phaser.Scene {
   }
 
   /**
-   * Easy (SCREAM-10): the arrows point the way, and two arrows together point
-   * between them. On an angled street the truck follows the road: it takes the
-   * road's direction nearest to the arrows, if that's within 60 degrees.
+   * Easy: the arrows point the way, and two arrows together point between them
+   * (SCREAM-10: angled streets need the diagonals). The player does the
+   * steering: the truck doesn't follow the road by itself (PO, testing PR #80).
    */
   private easyHeading(): number | null {
     const newest = this.held.at(-1);
@@ -315,29 +312,42 @@ export class DriveScene extends Phaser.Scene {
       const diff = Phaser.Math.Angle.ShortestBetween(want, EASY_HEADING[other]);
       if (Math.abs(diff) === 90) want += diff / 2;
     }
-    let best: number | null = null;
-    for (const dir of this.roads.directionsNear(this.truck.x, this.truck.y, ROAD_HALF_WIDTH)) {
-      const off = Math.abs(Phaser.Math.Angle.ShortestBetween(want, dir));
-      if (off <= EASY_FOLLOW_ROAD_DEGREES && (best === null || off < Math.abs(Phaser.Math.Angle.ShortestBetween(want, best)))) best = dir;
-    }
-    return Phaser.Math.Angle.WrapDegrees(best ?? want);
+    return Phaser.Math.Angle.WrapDegrees(want);
   }
 
   /**
    * Easy: points the truck straight at `heading`. Right beside a curb there may
    * be no room to swing round on the spot, so it tries stepping a few pixels
-   * the new way first. Returns false if the truck can't turn that way.
+   * the new way first, then toward the middle of the road. Returns false if
+   * the truck can't turn that way.
    */
   private turnTo(heading: number): boolean {
     if (Math.abs(Phaser.Math.Angle.ShortestBetween(heading, this.heading)) < 0.01) return true;
     const rad = Phaser.Math.DegToRad(heading);
-    for (let step = 0; step <= TRUCK_HALF_LENGTH - TRUCK_HALF_WIDTH + 1; step++) {
-      const x = this.truck.x + Math.cos(rad) * step;
-      const y = this.truck.y + Math.sin(rad) * step;
-      if (!this.obstacleAt(x, y, heading)) {
-        this.truck.setPosition(x, y);
-        this.setHeading(heading);
-        return true;
+    // Step a few pixels the new way, or (SCREAM-10, angled curbs) toward the middle of the road.
+    const seg = this.roads.nearestSegment(this.truck.x, this.truck.y);
+    let midX = 0;
+    let midY = 0;
+    if (seg) {
+      const vx = seg.bx - seg.ax;
+      const vy = seg.by - seg.ay;
+      const t = Math.max(0, Math.min(1, ((this.truck.x - seg.ax) * vx + (this.truck.y - seg.ay) * vy) / (vx * vx + vy * vy || 1)));
+      const len = Math.hypot(seg.ax + t * vx - this.truck.x, seg.ay + t * vy - this.truck.y) || 1;
+      midX = (seg.ax + t * vx - this.truck.x) / len;
+      midY = (seg.ay + t * vy - this.truck.y) / len;
+    }
+    for (const [ux, uy] of [
+      [Math.cos(rad), Math.sin(rad)],
+      [midX, midY],
+    ] as const) {
+      for (let step = 0; step <= TRUCK_HALF_LENGTH - TRUCK_HALF_WIDTH + 1; step++) {
+        const x = this.truck.x + ux * step;
+        const y = this.truck.y + uy * step;
+        if (!this.obstacleAt(x, y, heading)) {
+          this.truck.setPosition(x, y);
+          this.setHeading(heading);
+          return true;
+        }
       }
     }
     return false;
@@ -430,10 +440,13 @@ export class DriveScene extends Phaser.Scene {
     }
 
     // Houses and trees (LimeZu, at the pack's 16 px size), drawn front to back.
-    for (const { key } of WORCESTER.sprites) this.textures.get(`map-${key}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    // Names, painted into the map image with everything else that never moves.
+    for (const { key } of [...WORCESTER.sprites, ...WORCESTER.roadTiles]) this.textures.get(`map-${key}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    // Names: text over the map image, shown only near the camera (refreshVisibleMap).
     this.mapTexts = [];
-    const paint = (x: number, y: number, text: Phaser.GameObjects.Text) => this.mapTexts.push({ obj: text, x, y });
+    const paint = (x: number, y: number, text: Phaser.GameObjects.Text) => {
+      this.add.existing(text.setPosition(x, y).setDepth(7).setVisible(false));
+      this.mapTexts.push({ obj: text, x, y });
+    };
     const home = WORCESTER.home;
     if (home) {
       const sprite = WORCESTER.sprites.find((s) => s.key === home.key);
@@ -476,7 +489,7 @@ export class DriveScene extends Phaser.Scene {
 
   /**
    * Paints the map round the camera into one image: grass, fields, roads,
-   * potholes, parked cars, houses, trees and names. Drawing them all as
+   * potholes, parked cars, houses and trees (names stay as text on top). Drawing them all as
    * separate objects every frame was too slow (2,000 houses and trees). Runs
    * when the camera moves into a new 512 px square, so most frames do nothing.
    */
@@ -493,28 +506,9 @@ export class DriveScene extends Phaser.Scene {
     const x1 = x0 + MAP_TEXTURE_WIDTH;
     const y1 = y0 + MAP_TEXTURE_HEIGHT;
 
-    const reach = ROAD_HALF_WIDTH + SIDEWALK_WIDTH;
-    const segs = this.roads.segments.filter(
-      (s) => Math.max(s.ax, s.bx) + reach > x0 && Math.min(s.ax, s.bx) - reach < x1 && Math.max(s.ay, s.by) + reach > y0 && Math.min(s.ay, s.by) - reach < y1,
-    );
+    // The road surface (sidewalks, curbs, asphalt, rounded corners) comes as images
+    // from the map generator; lane lines, potholes and parked cars are drawn over it.
     const g = this.roadGraphics.clear();
-    // Sidewalk, then curb, then asphalt, each a thick line with round joins.
-    const layers: [number, number][] = [
-      [COLOURS.sidewalk, ROAD_HALF_WIDTH + SIDEWALK_WIDTH],
-      [COLOURS.curb, ROAD_HALF_WIDTH + CURB_WIDTH],
-      [COLOURS.asphalt, ROAD_HALF_WIDTH],
-    ];
-    for (const [colour, half] of layers) {
-      g.fillStyle(colour, 1);
-      for (const s of segs) {
-        const len = Math.hypot(s.bx - s.ax, s.by - s.ay) || 1;
-        const nx = (-(s.by - s.ay) / len) * half;
-        const ny = ((s.bx - s.ax) / len) * half;
-        g.fillPoints([v(s.ax + nx, s.ay + ny), v(s.bx + nx, s.by + ny), v(s.bx - nx, s.by - ny), v(s.ax - nx, s.ay - ny)], true);
-        g.fillCircle(s.ax, s.ay, half);
-        g.fillCircle(s.bx, s.by, half);
-      }
-    }
     g.fillStyle(COLOURS.lane, 1);
     for (const { x, y, ux, uy } of this.dashes) {
       if (x < x0 || x > x1 || y < y0 || y > y1) continue;
@@ -549,16 +543,18 @@ export class DriveScene extends Phaser.Scene {
     const GRASS = 64;
     rt.repeat('map-grass', undefined, -(((x0 % GRASS) + GRASS) % GRASS), -(((y0 % GRASS) + GRASS) % GRASS), MAP_TEXTURE_WIDTH + GRASS, MAP_TEXTURE_HEIGHT + GRASS);
     rt.draw(this.fieldGraphics, -x0, -y0);
+    const tileSize = 512 * WORCESTER.roadTileScale;
+    for (const t of WORCESTER.roadTiles) {
+      if (t.x + tileSize < x0 || t.x > x1 || t.y + tileSize < y0 || t.y > y1) continue;
+      rt.stamp(`map-${t.key}`, undefined, t.x - x0, t.y - y0, { originX: 0, originY: 0, scale: WORCESTER.roadTileScale });
+    }
     rt.draw(g, -x0, -y0);
     for (const o of this.sortedObjects) {
       if (o.x < x0 - 150 || o.x > x1 + 150 || o.y < y0 || o.y > y1 + 220) continue;
       rt.stamp(`map-${o.key}`, undefined, o.x - x0, o.y - y0, { originX: 0.5, originY: 1 });
     }
-    for (const t of this.mapTexts) {
-      if (t.x < x0 - 200 || t.x > x1 + 200 || t.y < y0 - 200 || t.y > y1 + 200) continue;
-      rt.draw(t.obj, t.x - x0, t.y - y0);
-    }
     rt.render();
+    for (const t of this.mapTexts) t.obj.setVisible(t.x > x0 - 200 && t.x < x1 + 200 && t.y > y0 - 200 && t.y < y1 + 200);
   }
 
   // ---- Truck ----
@@ -659,6 +655,7 @@ export class DriveScene extends Phaser.Scene {
     const { x, y } = this.truck;
     const hit = this.obstacleAt(x + dx, y + dy);
     if (!hit) {
+      this.scraping = false;
       this.truck.setPosition(x + dx, y + dy);
       return true;
     }
@@ -673,7 +670,24 @@ export class DriveScene extends Phaser.Scene {
       const tx = (seg.bx - seg.ax) / len;
       const ty = (seg.by - seg.ay) / len;
       const along = dx * tx + dy * ty;
-      if (Math.abs(along) > 0.01 && !this.obstacleAt(x + tx * along, y + ty * along)) slide = [tx * along, ty * along];
+      // The drawn curb comes in 2 px steps (rounded corners), so a truck sliding
+      // along it may also ease up to 3 px back toward the middle of the road.
+      const vx = seg.bx - seg.ax;
+      const vy = seg.by - seg.ay;
+      const t = Math.max(0, Math.min(1, ((x - seg.ax) * vx + (y - seg.ay) * vy) / (vx * vx + vy * vy || 1)));
+      const toMiddleX = seg.ax + t * vx - x;
+      const toMiddleY = seg.ay + t * vy - y;
+      const toMiddle = Math.hypot(toMiddleX, toMiddleY) || 1;
+      if (Math.abs(along) > 0.01) {
+        for (const ease of [0, 1, 2, 3]) {
+          const sx = tx * along + (toMiddleX / toMiddle) * ease;
+          const sy = ty * along + (toMiddleY / toMiddle) * ease;
+          if (!this.obstacleAt(x + sx, y + sy)) {
+            slide = [sx, sy];
+            break;
+          }
+        }
+      }
     }
     if (!slide && dx !== 0 && dy !== 0) {
       if (!this.obstacleAt(x + dx, y)) slide = [dx, 0];
@@ -682,8 +696,11 @@ export class DriveScene extends Phaser.Scene {
     const kept = slide ? Math.hypot(slide[0], slide[1]) / distance : 0;
     const intoIt = slide ? Math.sqrt(Math.max(0, 1 - kept * kept)) : 1;
     const impact = Math.abs(this.speed) * intoIt;
-    // One charge per hit: after a crash, a short cooldown stops a slow frame from charging twice.
-    if (impact >= this.topSpeed * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) {
+    // One charge per hit: after a crash, a short cooldown stops a slow frame from charging twice,
+    // and grinding along a slanted curb you're already touching isn't a new hit.
+    const fresh = !this.scraping;
+    this.scraping = true;
+    if (fresh && impact >= this.topSpeed * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) {
       this.crash(hit, impact, dx / distance, dy / distance);
     } else if (slide) {
       // Sliding along the edge at the speed you're going along it. (It used to

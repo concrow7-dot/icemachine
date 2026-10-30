@@ -55,4 +55,14 @@ export interface WorcesterMap {
   parkedCars: { x: number; y: number; angle: number }[];
   objects: MapObject[];
   sprites: { key: string; w: number; h: number }[];
+  /** The road surface as images (sidewalk, curb, asphalt; rounded corners), drawn at `roadTileScale` times their size. */
+  roadTiles: { key: string; x: number; y: number }[];
+  roadTileScale: number;
+  /** Where the asphalt is, for the road edge: per row of `scale` px, [start, end) pairs of columns. */
+  roadMask: RoadMask;
+}
+
+export interface RoadMask {
+  scale: number;
+  rows: number[][];
 }

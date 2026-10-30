@@ -2,7 +2,7 @@
 // worked out from the streets' centre lines instead of a tile grid. A point is on
 // the road if it's within half a road's width (two 60 px lanes, as on the old map) of a centre line.
 
-import type { MapRoad } from '../config/mapTypes';
+import type { MapRoad, RoadMask } from '../config/mapTypes';
 
 export const ROAD_HALF_WIDTH = 60;
 /** Distance from the centre line to the middle of a lane. */
@@ -33,7 +33,16 @@ export class RoadNetwork {
   readonly names: string[];
   private readonly grid = new Map<string, number[]>();
 
-  constructor(roads: readonly MapRoad[]) {
+  /**
+   * With a mask (SCREAM-10, rounded corners), "on the road" is read from it:
+   * the generator rounds every street corner, and the mask matches the drawn
+   * curbs exactly. Without one (the test track), it's within half a road's
+   * width of a centre line.
+   */
+  private readonly mask?: RoadMask;
+
+  constructor(roads: readonly MapRoad[], mask?: RoadMask) {
+    this.mask = mask;
     this.names = roads.map((r) => r.name);
     roads.forEach((road, i) => {
       const p = road.points;
@@ -65,6 +74,16 @@ export class RoadNetwork {
 
   /** Is (x, y) on the road (asphalt, not the sidewalk)? */
   onRoad(x: number, y: number): boolean {
+    if (this.mask) {
+      const runs = this.mask.rows[Math.floor(y / this.mask.scale)];
+      if (!runs) return false;
+      const col = Math.floor(x / this.mask.scale);
+      for (let i = 0; i + 1 < runs.length; i += 2) {
+        if (col < runs[i]!) return false;
+        if (col < runs[i + 1]!) return true;
+      }
+      return false;
+    }
     return this.near(x, y).some((s) => distanceToSegment(x, y, s) <= ROAD_HALF_WIDTH);
   }
 
@@ -86,17 +105,6 @@ export class RoadNetwork {
   streetAt(x: number, y: number): string {
     const seg = this.nearestSegment(x, y);
     return seg && this.onRoad(x, y) ? (this.names[seg.road] ?? '') : '';
-  }
-
-  /** Which ways the roads near (x, y) run, in degrees (both directions of each), for easy driving. */
-  directionsNear(x: number, y: number, reach: number): number[] {
-    const out: number[] = [];
-    for (const s of this.near(x, y)) {
-      if (distanceToSegment(x, y, s) > reach) continue;
-      const a = (Math.atan2(s.by - s.ay, s.bx - s.ax) * 180) / Math.PI;
-      out.push(a, a > 0 ? a - 180 : a + 180);
-    }
-    return out;
   }
 }
 
