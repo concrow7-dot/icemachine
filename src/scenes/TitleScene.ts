@@ -4,6 +4,10 @@ import { DIFFICULTIES, loadDifficulty, saveDifficulty, type Difficulty } from '.
 
 // Issue #4: title screen. Placeholder text until art direction (#17) is decided.
 // Difficulty (PO, October 29): picked here, and only here, before starting.
+// SCREAM-6 (PO, October 30): LimeZu's ice cream truck sits beside the title, and
+// the LimeZu credit the licence asks for is shown at the bottom (decision 008).
+
+const TRUCK_KEY = 'limezu-ice-cream-truck';
 
 const INFO: Record<Difficulty, { name: string; lines: string }> = {
   easy: { name: 'EASY', lines: 'Arrows point the way\nyou drive. Let go\nto stop.' },
@@ -19,8 +23,16 @@ export class TitleScene extends Phaser.Scene {
     super(SceneKeys.Title);
   }
 
+  preload(): void {
+    this.load.image(TRUCK_KEY, 'assets/limezu/ice_cream_truck.png');
+  }
+
   create(): void {
     const { width, height } = this.scale;
+    // Pixel art stays crisp when scaled (only this texture: the text stays smooth).
+    this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.add.image(150, 92, TRUCK_KEY).setScale(0.5);
+
     this.difficulty = loadDifficulty();
     this.cards = [];
     this.starting = false;
@@ -54,6 +66,9 @@ export class TitleScene extends Phaser.Scene {
         fontSize: '14px',
         color: '#6b7a93',
       })
+      .setOrigin(0.5);
+    this.add
+      .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
       .setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {

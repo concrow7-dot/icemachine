@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 008 — Art from a paid pack, kept out of the public repo (2026-10-30)
+
+**Decision:** The game's art comes from LimeZu's Modern Exteriors pack (48x48), bought by the product owner. The full pack lives in a private repository (`icemachine-art`); only the individual sprites the game uses are copied into this public repo, under `public/assets/limezu/`. LimeZu is credited on the title screen. The first piece is LimeZu's ice cream truck beside the title. The pack only draws it side-on, so the top-down driving truck is drawn in code in its colours. (Jira SCREAM-6.)
+
+**Options considered:**
+- *Simpler route (chosen):* commit only the sprites in use to the public repo.
+- *Build-time pull:* the build fetches art from the private repo, so no pack files are ever in the public repo. More setup (a deploy key and a build step).
+- *Driving truck:* the side-on truck on screens with a matching top-down truck for driving (chosen), a 4-direction pack vehicle snapped to 4 directions, or keeping the placeholder.
+
+**Why (product owner's rationale):** the simpler route fits the licence, which allows use in open-source projects on GitHub but not redistributing the pack itself, so single sprites used in the game are fine while the whole pack stays private.
+
+**Revisit if:** the game uses so many sprites that the public folder starts to look like a copy of the pack.
+
 ## 007 — Prices are entered on a calculator, typed left to right (2026-10-30)
 
 **Decision:** The price at the sales window is entered on an on-screen calculator in the middle of the window: a large display with the $ on the left and digits right-aligned, the number keys 7–9, 4–6, 1–3, 0, 00 and ".", plus C, back and CHARGE keys. Typing works like a calculator, left to right: 7 . 2 5 is $7.25, and with no decimal point the number is whole dollars (7 is $7.00). Keyboard and mouse both work and can be mixed. (Jira SCREAM-12; doc 28.)
