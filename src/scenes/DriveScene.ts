@@ -53,7 +53,10 @@ const TRUCK_HALF_WIDTH = 13;
 /** After a crash, no new charge for this long (one bump = one charge). */
 const HIT_COOLDOWN_MS = 400;
 /** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
-const CUSTOMER_REACH = 30;
+/** The pink pickup square beside a curb customer, in px (it pulses bigger on screen; this is its real size). */
+const PICKUP_ZONE_SIZE = 50;
+/** SCREAM-16 (PO): at least half of the truck's hitbox must be in the pickup square. */
+const PICKUP_MIN_OVERLAP = 0.5;
 
 const DIRECTIONS: Record<Facing, { dx: number; dy: number; angle: number }> = {
   right: { dx: 1, dy: 0, angle: 0 },
@@ -655,7 +658,7 @@ export class DriveScene extends Phaser.Scene {
   private makeCustomer(): Phaser.GameObjects.Container {
     // The pickup zone: a soft pink patch in the curb lane, pulsing so it's easy to aim for.
     this.pickupZone = this.add
-      .rectangle(0, 0, 50, 50, 0xff4f9a, 0.18)
+      .rectangle(0, 0, PICKUP_ZONE_SIZE, PICKUP_ZONE_SIZE, 0xff4f9a, 0.18)
       .setStrokeStyle(3, 0xff4f9a)
       .setDepth(4);
     this.tweens.add({ targets: this.pickupZone, scale: 1.2, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
@@ -711,16 +714,39 @@ export class DriveScene extends Phaser.Scene {
     });
   }
 
-  /** Pulling into the pickup zone stops the truck and starts the sale. */
+  /**
+   * SCREAM-16 (PO, October 30): the sales window opens only once the truck has
+   * come to a complete stop with at least half its hitbox in the pickup square,
+   * and then straight away (no "press Enter to serve").
+   */
   private checkCustomer(): void {
-    if (!this.customer.visible) return;
-    const distance = Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.pickupZone.x, this.pickupZone.y);
-    if (distance > CUSTOMER_REACH) return;
+    if (!this.customer.visible || this.speed !== 0) return;
+    if (this.pickupOverlap() < PICKUP_MIN_OVERLAP) return;
     this.leaving = true;
-    this.speed = 0;
-    // PO, doc 12 Q22: straight to the sales screen.
     this.evening.startSale();
     this.scene.start(SceneKeys.Sales);
+  }
+
+  /** How much of the truck's hitbox (0 to 1) is inside the pickup square, sampled on a grid. */
+  pickupOverlap(): number {
+    const rad = Phaser.Math.DegToRad(this.heading);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const half = PICKUP_ZONE_SIZE / 2;
+    const steps = 10;
+    let inside = 0;
+    let total = 0;
+    for (let i = 0; i <= steps; i++) {
+      for (let j = 0; j <= steps; j++) {
+        const lx = (i / steps - 0.5) * 2 * TRUCK_HALF_LENGTH;
+        const ly = (j / steps - 0.5) * 2 * TRUCK_HALF_WIDTH;
+        const x = this.truck.x + lx * cos - ly * sin;
+        const y = this.truck.y + lx * sin + ly * cos;
+        total++;
+        if (Math.abs(x - this.pickupZone.x) <= half && Math.abs(y - this.pickupZone.y) <= half) inside++;
+      }
+    }
+    return inside / total;
   }
 
   /** An arrow at the screen edge points to the customer while they're off screen. */
