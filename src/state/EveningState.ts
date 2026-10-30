@@ -3,7 +3,7 @@ import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../conf
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import type { Difficulty } from './Difficulty';
-import { CURB_SPOTS, HOME_START, TILE_SIZE } from '../config/neighbourhood';
+import { WORCESTER } from '../config/worcester';
 import {
   COOLER_SLOTS,
   EVENING_END_HOUR,
@@ -29,7 +29,7 @@ export const EveningEvents = {
 } as const;
 
 /** A new curb customer appears at least this many tiles from the truck (so leaving the window never starts another sale on the spot). */
-const SPAWN_CLEAR_OF_TRUCK_TILES = 3;
+const SPAWN_CLEAR_OF_TRUCK_PX = 180;
 
 /** The four arrow keys (and W A S D): up is gas, down is brake and reverse, left and right steer (#32). */
 export type Facing = 'up' | 'down' | 'left' | 'right';
@@ -79,9 +79,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** The truck starts each evening on the road outside home (#9). */
   private truckPosition: TruckPosition = {
-    x: HOME_START.col * TILE_SIZE,
-    y: HOME_START.row * TILE_SIZE,
-    angle: 0,
+    x: WORCESTER.homeStart.x,
+    y: WORCESTER.homeStart.y,
+    angle: WORCESTER.homeStart.angle,
   };
 
   /** The cooler starts with the first three flavours selected and empty. */
@@ -258,13 +258,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
       // Never right where the truck is: a customer there would start a sale the
       // moment you leave the window (the spot just served was being picked again).
       const nearTruck = (i: number) => {
-        const s = CURB_SPOTS[i];
+        const s = WORCESTER.curbSpots[i];
         if (!s) return false;
-        const dx = (s.col + 0.5) * TILE_SIZE - this.truckPosition.x;
-        const dy = (s.row + 0.5) * TILE_SIZE - this.truckPosition.y;
-        return Math.hypot(dx, dy) < SPAWN_CLEAR_OF_TRUCK_TILES * TILE_SIZE;
+        return Math.hypot(s.x - this.truckPosition.x, s.y - this.truckPosition.y) < SPAWN_CLEAR_OF_TRUCK_PX;
       };
-      const choices = CURB_SPOTS.map((_, i) => i).filter((i) => i !== previous && !nearTruck(i));
+      const choices = WORCESTER.curbSpots.map((_, i) => i).filter((i) => i !== previous && !nearTruck(i));
       const spot = choices[Math.floor(Math.random() * choices.length)] ?? 0;
       this.roadCustomerNow = { spot };
     }
