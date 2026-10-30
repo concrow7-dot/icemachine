@@ -6,6 +6,7 @@ import { DIFFICULTIES, loadDifficulty, saveDifficulty, type Difficulty } from '.
 // Difficulty (PO, October 29): picked here, and only here, before starting.
 // SCREAM-6 (PO, October 30): LimeZu's ice cream truck sits beside the title, and
 // the LimeZu credit the licence asks for is shown at the bottom (decision 008).
+// SCREAM-10: the Worcester map's street data needs an OpenStreetMap credit too.
 
 const TRUCK_KEY = 'limezu-ice-cream-truck';
 
@@ -68,7 +69,7 @@ export class TitleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
+      .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)    Map data © OpenStreetMap contributors', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
       .setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
