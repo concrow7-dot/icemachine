@@ -53,6 +53,7 @@ export const TRUCK_BRAKING_SECONDS = 0.15;
  * The truck never quite stops on its own (PO, testing PR #58): letting go of the
  * gas slows it to this creep, in px/s, so you can still steer slowly. Only the
  * brake brings it to a full stop. First 60 (a tile a second); +20% to 72 in testing.
+ * The park brake (Q) works at this speed or slower, and in reverse (#64).
  */
 export const TRUCK_CREEP_SPEED = 72;
 
