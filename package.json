@@ -7,7 +7,8 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "node tests/e2e/run.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1"
