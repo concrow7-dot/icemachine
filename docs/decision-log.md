@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 010 — One way to drive: Easy mode removed (2026-10-30)
+
+**Decision:** The game has one way to drive: car-style, with gas, brake/reverse, steering and a park brake (the old Hard). Easy mode is gone, along with the difficulty choice on the title screen; the arrows pointed the way in Easy. The title now shows the controls. There's one high score table: the old Hard table, so those scores carry over. The Easy table is no longer shown. (Jira SCREAM-53.)
+
+**Options considered:** keep both difficulties, change Easy (on the Worcester map it became "arrows point the way, two together go diagonal"), or remove it.
+
+**Why (product owner's rationale):** removed "based on more feedback" from playtesting. *(The details of the feedback to be added.)*
+
+**Engineering notes:** the title, the evening state, the high scores and the results screen no longer know about difficulty. `icemachine.difficulty` and `icemachine.highscores.easy.v1` stay in players' browsers but aren't read.
+
+**Revisit if:** new players find car-style driving too hard to start with. A short driving tutorial (SCREAM-5) would be the first thing to try.
+
 ## 009 — The Worcester map: real streets at their real angles (2026-10-30)
 
 **Decision:** The driving map is the real neighbourhood bounded by June St, Pleasant St, Park Ave and Chandler St in Worcester, MA, with real street names (Jira SCREAM-10). Street shapes come from OpenStreetMap, simplified into straight segments that keep their real angles. The map is about twice the size of the old one: two 60 px lanes per road as before, 6,242 x 5,178 px. Houses, trees and grass are LimeZu sprites at the pack's 16 px size. Home is on Longfellow Road, in the middle of the area. That spot is engineering's proposal for the PO to confirm. Credits for OpenStreetMap ("Map data © OpenStreetMap contributors") and LimeZu are on the title screen, with the OSM credit also in a corner of the driving view.
@@ -16,7 +28,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Engineering notes:**
 - "On the road" no longer uses tiles: every point round the truck's outline must be on the asphalt (`src/state/RoadGeometry.ts`).
-- Easy driving: the arrows point the way, and two arrows together point between them (diagonals), so angled streets can be driven. The first version also followed the road by itself; the PO took that out after playtesting PR #80: "they should have to steer in all the directions".
+- Easy driving (removed since, decision 010): the arrows point the way, and two arrows together point between them (diagonals), so angled streets can be driven. The first version also followed the road by itself; the PO took that out after playtesting PR #80: "they should have to steer in all the directions".
 - Street corners are rounded (PO, testing PR #80: some corners were too sharp). The generator rounds every inside corner with a 48 px radius and draws the road surface as images; the road edge is read from a map made from the same shape, so the curb you see is the curb you hit.
 - Grinding along a curb you're already touching isn't a new hit: on slanted curbs the truck creeps along them, and it used to be charged again every 0.4 s.
 - The ground, roads, potholes, parked cars, houses, trees and names round the camera are painted into one image, which is repainted when the camera moves into a new 512 px square. Drawing 2,000 houses and trees separately every frame was about 3x slower than the old map; painted, it runs faster than the old map.

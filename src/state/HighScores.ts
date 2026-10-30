@@ -1,4 +1,3 @@
-import type { Difficulty } from './Difficulty';
 
 // Issue #16: the pinball-style high score table. Decision 004: scores are
 // kept on this computer only (in the browser), a top 5 for now (PO, October
@@ -16,20 +15,17 @@ export type HighScore = {
 };
 
 /**
- * One table per difficulty (PO, October 29), each kept for every build so
- * scores survive updates. Hard keeps the original key, so scores set before
- * difficulties existed (car-style driving) stay on the hard table. Bump a
- * version only if the saved format ever changes in a way old scores can't be read.
+ * One table, kept for every build so scores survive updates. SCREAM-53: Easy
+ * mode is gone, so this is the old Hard table (the original key); Easy's table
+ * (icemachine.highscores.easy.v1) is no longer read. Bump a version only if the
+ * saved format ever changes in a way old scores can't be read.
  */
-const STORAGE_KEYS: Record<Difficulty, string> = {
-  hard: 'icemachine.highscores.v1',
-  easy: 'icemachine.highscores.easy.v1',
-};
+const STORAGE_KEY = 'icemachine.highscores.v1';
 
 /** Reads the table. Storage can be missing or blocked (private windows), so failures give an empty table. */
-export function loadHighScores(difficulty: Difficulty): HighScore[] {
+export function loadHighScores(): HighScore[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEYS[difficulty]);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -47,9 +43,9 @@ export function loadHighScores(difficulty: Difficulty): HighScore[] {
   }
 }
 
-function saveHighScores(difficulty: Difficulty, scores: HighScore[]): void {
+function saveHighScores(scores: HighScore[]): void {
   try {
-    window.localStorage.setItem(STORAGE_KEYS[difficulty], JSON.stringify(scores));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   } catch {
     // Storage unavailable: the score just isn't kept.
   }
@@ -67,17 +63,16 @@ export function isHighScore(scoreCents: number, scores: readonly HighScore[]): b
  * older score. Returns the new table and where the new score landed (or -1).
  */
 export function addHighScore(
-  difficulty: Difficulty,
   initials: string,
   scoreCents: number,
   date = new Date(),
 ): { scores: HighScore[]; rank: number } {
   const entry: HighScore = { initials: initials.toUpperCase().slice(0, 3), scoreCents, date: date.toISOString() };
-  const scores = loadHighScores(difficulty);
+  const scores = loadHighScores();
   let at = scores.findIndex((s) => scoreCents > s.scoreCents);
   if (at === -1) at = scores.length;
   scores.splice(at, 0, entry);
   const kept = scores.slice(0, HIGH_SCORE_COUNT);
-  saveHighScores(difficulty, kept);
+  saveHighScores(kept);
   return { scores: kept, rank: at < HIGH_SCORE_COUNT ? at : -1 };
 }

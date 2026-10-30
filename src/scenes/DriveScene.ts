@@ -4,9 +4,6 @@ import { hitCostCents } from '../state/Damage';
 import { WORCESTER } from '../config/worcester';
 import { boxesOverlap, distanceToSegment, RoadNetwork, ROAD_HALF_WIDTH, type TurnedBox } from '../state/RoadGeometry';
 import {
-  EASY_ACCELERATION_SECONDS,
-  EASY_STOPPING_SECONDS,
-  EASY_TRUCK_SPEED,
   HIT_MIN_SPEED_FRACTION,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
@@ -68,8 +65,6 @@ const PICKUP_ZONE_SIZE = 50;
 /** SCREAM-16 (PO): at least half of the truck's hitbox must be in the pickup square. */
 const PICKUP_MIN_OVERLAP = 0.5;
 
-/** Easy driving: the way each arrow points the truck, in degrees. */
-const EASY_HEADING: Record<Facing, number> = { right: 0, down: 90, left: 180, up: -90 };
 
 const KEY_TO_FACING: Record<string, Facing> = {
   ArrowUp: 'up',
@@ -159,8 +154,8 @@ export class DriveScene extends Phaser.Scene {
     this.speed = 0;
     this.hitCooldownUntil = 0;
     this.scraping = false;
-    // Each drive (hard) starts with the park brake on, so the truck doesn't creep off by itself.
-    this.parkBrake = this.evening.difficulty === 'hard';
+    // Each drive starts with the park brake on, so the truck doesn't creep off by itself.
+    this.parkBrake = true;
     this.rolling = 1;
     this.brakeHeldStill = 0;
     this.held = [];
@@ -194,9 +189,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, this.evening.difficulty === 'easy'
-          ? 'Arrows / WASD: drive    Pull up beside a customer (!)    Mind the potholes and cars'
-          : '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -269,11 +262,7 @@ export class DriveScene extends Phaser.Scene {
     }
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
-    if (this.easy) {
-      this.driveEasy(dt);
-    } else {
-      this.driveHard(dt);
-    }
+    this.driveHard(dt);
 
     if (this.speed !== 0) {
       const rad = Phaser.Math.DegToRad(this.heading);
@@ -286,74 +275,7 @@ export class DriveScene extends Phaser.Scene {
     this.updatePointer();
   }
 
-  /** Easy (PO, October 29): the original driving. The newest arrow held points the truck that way; let go and it stops. */
-  private driveEasy(dt: number): void {
-    const heading = this.easyHeading();
-    if (heading === null) {
-      this.speed = Math.max(0, this.speed - (EASY_TRUCK_SPEED * dt) / EASY_STOPPING_SECONDS);
-      return;
-    }
-    if (this.turnTo(heading)) {
-      this.speed = Math.min(EASY_TRUCK_SPEED, this.speed + (EASY_TRUCK_SPEED * dt) / EASY_ACCELERATION_SECONDS);
-    }
-  }
-
-  /**
-   * Easy: the arrows point the way, and two arrows together point between them
-   * (SCREAM-10: angled streets need the diagonals). The player does the
-   * steering: the truck doesn't follow the road by itself (PO, testing PR #80).
-   */
-  private easyHeading(): number | null {
-    const newest = this.held.at(-1);
-    if (newest === undefined) return null;
-    let want = EASY_HEADING[newest];
-    const other = this.held.at(-2);
-    if (other !== undefined) {
-      const diff = Phaser.Math.Angle.ShortestBetween(want, EASY_HEADING[other]);
-      if (Math.abs(diff) === 90) want += diff / 2;
-    }
-    return Phaser.Math.Angle.WrapDegrees(want);
-  }
-
-  /**
-   * Easy: points the truck straight at `heading`. Right beside a curb there may
-   * be no room to swing round on the spot, so it tries stepping a few pixels
-   * the new way first, then toward the middle of the road. Returns false if
-   * the truck can't turn that way.
-   */
-  private turnTo(heading: number): boolean {
-    if (Math.abs(Phaser.Math.Angle.ShortestBetween(heading, this.heading)) < 0.01) return true;
-    const rad = Phaser.Math.DegToRad(heading);
-    // Step a few pixels the new way, or (SCREAM-10, angled curbs) toward the middle of the road.
-    const seg = this.roads.nearestSegment(this.truck.x, this.truck.y);
-    let midX = 0;
-    let midY = 0;
-    if (seg) {
-      const vx = seg.bx - seg.ax;
-      const vy = seg.by - seg.ay;
-      const t = Math.max(0, Math.min(1, ((this.truck.x - seg.ax) * vx + (this.truck.y - seg.ay) * vy) / (vx * vx + vy * vy || 1)));
-      const len = Math.hypot(seg.ax + t * vx - this.truck.x, seg.ay + t * vy - this.truck.y) || 1;
-      midX = (seg.ax + t * vx - this.truck.x) / len;
-      midY = (seg.ay + t * vy - this.truck.y) / len;
-    }
-    for (const [ux, uy] of [
-      [Math.cos(rad), Math.sin(rad)],
-      [midX, midY],
-    ] as const) {
-      for (let step = 0; step <= TRUCK_HALF_LENGTH - TRUCK_HALF_WIDTH + 1; step++) {
-        const x = this.truck.x + ux * step;
-        const y = this.truck.y + uy * step;
-        if (!this.obstacleAt(x, y, heading)) {
-          this.truck.setPosition(x, y);
-          this.setHeading(heading);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /** Hard (#32): car-style driving. */
+  /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */
   private driveHard(dt: number): void {
     const gas = this.held.includes('up');
     const brake = this.held.includes('down');
@@ -574,19 +496,13 @@ export class DriveScene extends Phaser.Scene {
     return this.add.container(0, 0, [body, roof, windscreen, bonnet, cone, scoop]).setDepth(10);
   }
 
-  /** Easy difficulty: the original arrows-point-the-way driving. */
-  private get easy(): boolean {
-    return this.evening.difficulty === 'easy';
-  }
-
-  /** Top speed for this difficulty: hits are priced against it. */
+  /** Top speed: hits are priced against it. */
   private get topSpeed(): number {
-    return this.easy ? EASY_TRUCK_SPEED : TRUCK_SPEED;
+    return TRUCK_SPEED;
   }
 
   /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */
   private toggleParkBrake(): void {
-    if (this.easy) return; // no park brake on easy: the truck stops when you let go
     if (this.parkBrake) {
       this.parkBrake = false;
     } else if (this.speed <= TRUCK_CREEP_SPEED + 1) {
