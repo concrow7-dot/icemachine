@@ -16,7 +16,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 009 — The Worcester map: real streets at their real angles (2026-10-30)
 
-**Decision:** The driving map is the real neighbourhood bounded by June St, Pleasant St, Park Ave and Chandler St in Worcester, MA, with real street names (Jira SCREAM-10). Street shapes come from OpenStreetMap, simplified into straight segments that keep their real angles. The map is about twice the size of the old one: two 60 px lanes per road as before, 6,242 x 5,178 px. Houses, trees and grass are LimeZu sprites at the pack's 16 px size. Home is on Longfellow Road, in the middle of the area. That spot is engineering's proposal for the PO to confirm. Credits for OpenStreetMap ("Map data © OpenStreetMap contributors") and LimeZu are on the title screen, with the OSM credit also in a corner of the driving view.
+**Decision:** The driving map is the real neighbourhood bounded by June St, Pleasant St, Park Ave and Chandler St in Worcester, MA, with real street names (Jira SCREAM-10). Street shapes come from OpenStreetMap, simplified into straight segments that keep their real angles. The map is about twice the size of the old one: two 60 px lanes per road as before, 6,242 x 5,178 px. Houses, trees and grass are LimeZu sprites at the pack's 16 px size. Home is on Longfellow Road, in the middle of the area (engineering's proposal, confirmed by the PO on October 30). Credits for OpenStreetMap ("Map data © OpenStreetMap contributors") and LimeZu are on the title screen, with the OSM credit also in a corner of the driving view.
 
 **Options considered:**
 - *Map shape:* roads straightened onto the tile grid (first choice) against roads at their real angles. On the grid, this area's diagonal streets (June, Pleasant, Chandler and many inside) became staircases, shown side by side in small and big steps.
@@ -24,7 +24,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - *Street names:* real, or changed slightly.
 - *Street data:* the PO exports it from openstreetmap.org, or the workspace fetches it (the workspace couldn't reach the site, so the PO exported it).
 
-**Why (product owner's rationale):** answered in the session on October 30. Real street names. About 40 seconds across rather than 20 or real scale. Simplified for driving. Then, after seeing the staircase layouts: angled roads, with the more work they need. *(The PO's reasons beyond these choices to be added.)*
+**Why (product owner's rationale):** answered in the session on October 30. Real street names. About 40 seconds across rather than 20 or real scale. Simplified for driving. Then, after seeing the staircase layouts: angled roads, with the more work they need. Why Worcester and real streets: the PO sold ice cream on these streets, and using a real place lets him draw on that experience so the neighbourhood feels real. Home on Longfellow Road: a good central location.
 
 **Engineering notes:**
 - "On the road" no longer uses tiles: every point round the truck's outline must be on the asphalt (`src/state/RoadGeometry.ts`).
