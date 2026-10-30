@@ -91,8 +91,10 @@ export class CoolerScene extends Phaser.Scene {
         locked ? 458 : 494,
         locked
           ? 'Stock and prices were locked when you left for the road.'
-          : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
-        { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' },
+          : !this.evening.isClockRunning
+            ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
+            : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
+        { fontFamily: 'monospace', fontSize: '13px', color: !locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
       )
       .setOrigin(0.5);
 

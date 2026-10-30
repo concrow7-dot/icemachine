@@ -58,6 +58,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Picked on the title screen; fixed for the evening (easy: arrows point the way, hard: car-style). */
   difficulty: Difficulty = 'hard';
   private elapsedMs = 0;
+  /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
+  private clockRunning = false;
   private ended = false;
   private readonly startCashCents = STARTING_CASH_CENTS;
   private cashCents = STARTING_CASH_CENTS;
@@ -107,9 +109,19 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.ended;
   }
 
+  /** Has the clock started? (It waits while you stock the cooler at the start, #66.) */
+  get isClockRunning(): boolean {
+    return this.clockRunning;
+  }
+
+  /** Starts the evening's clock: leaving the cooler for the first time (#66). Safe to call again. */
+  startClock(): void {
+    this.clockRunning = true;
+  }
+
   /** Advances the clock. Called every frame by the HUD, whatever phase the player is in. */
   tick(deltaMs: number): void {
-    if (this.ended) return;
+    if (this.ended || !this.clockRunning) return;
     this.nowMsValue += deltaMs;
     this.updateSale();
     if (this.endPending) return;

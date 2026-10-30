@@ -33,8 +33,8 @@ export function startEvening(from: Phaser.Scene): void {
   // The difficulty picked on the title screen; a restart keeps it (change it on the title).
   evening.difficulty = loadDifficulty();
   from.registry.set(STATE_KEY, evening);
-  // Pass the station explicitly: Phaser otherwise reuses the last start data.
-  from.scene.start(SceneKeys.Truck, { station: 'cooler' });
+  // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
+  from.scene.start(SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 
@@ -68,7 +68,8 @@ export function getEvening(scene: Phaser.Scene): EveningState {
 /** Stations inside the truck (issue #7). */
 export type Station = 'cooler' | 'driver' | 'window';
 
-/** Goes back to the truck interior with the given station highlighted. */
+/** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66). */
 export function returnToTruck(from: Phaser.Scene, station: Station): void {
+  getEvening(from).startClock();
   from.scene.start(SceneKeys.Truck, { station });
 }

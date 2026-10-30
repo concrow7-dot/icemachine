@@ -25,6 +25,9 @@ export class PauseScene extends Phaser.Scene {
   private selected = 0;
   /** Waiting for "Are you sure?" on restart or quit. */
   private confirming: Choice | null = null;
+  /** #68: the highlighted answer to "Are you sure?" (0 = Yes, 1 = No). No comes first, the safe choice. */
+  private answer = 1;
+  private answers: Phaser.GameObjects.Text[] = [];
   private items: Phaser.GameObjects.Text[] = [];
   private prompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
@@ -37,6 +40,7 @@ export class PauseScene extends Phaser.Scene {
     this.paused = data.paused ?? [];
     this.selected = 0;
     this.confirming = null;
+    this.answer = 1;
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x0b1220, 0.72).setOrigin(0, 0).setInteractive();
@@ -62,8 +66,26 @@ export class PauseScene extends Phaser.Scene {
         }),
     );
     this.prompt = this.add
-      .text(width / 2, height / 2 + 10, '', { fontFamily: 'monospace', fontSize: '20px', color: INK, align: 'center', lineSpacing: 8 })
+      .text(width / 2, height / 2 - 15, '', { fontFamily: 'monospace', fontSize: '20px', color: INK, align: 'center', lineSpacing: 8 })
       .setOrigin(0.5);
+    this.answers = ['Yes', 'No'].map((label, i) =>
+      this.add
+        .text(width / 2 + (i === 0 ? -70 : 70), height / 2 + 55, label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => {
+          if (this.confirming) {
+            this.answer = i;
+            this.refresh();
+          }
+        })
+        .on('pointerdown', () => {
+          if (this.confirming) {
+            this.answer = i;
+            this.answerChosen();
+          }
+        }),
+    );
     this.hint = this.add
       .text(width / 2, height / 2 + 120, '', { fontFamily: 'monospace', fontSize: '14px', color: QUIET })
       .setOrigin(0.5);
@@ -75,11 +97,12 @@ export class PauseScene extends Phaser.Scene {
   private onKey(event: KeyboardEvent): void {
     const key = event.key;
     if (this.confirming) {
-      if (key === 'y' || key === 'Y' || key === 'Enter') this.confirm();
-      else if (key === 'n' || key === 'N' || key === 'Escape') {
-        this.confirming = null;
+      if (key === 'y' || key === 'Y') this.confirm();
+      else if (key === 'n' || key === 'N' || key === 'Escape') this.cancelConfirm();
+      else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'A', 'd', 'D', 'w', 'W', 's', 'S'].includes(key)) {
+        this.answer = 1 - this.answer;
         this.refresh();
-      }
+      } else if (key === 'Enter') this.answerChosen();
       return;
     }
     if (key === 'Escape') this.resume();
@@ -98,8 +121,20 @@ export class PauseScene extends Phaser.Scene {
     if (choice === 'resume') this.resume();
     else {
       this.confirming = choice;
+      this.answer = 1;
       this.refresh();
     }
+  }
+
+  /** Enter or a click on Yes / No. */
+  private answerChosen(): void {
+    if (this.answer === 0) this.confirm();
+    else this.cancelConfirm();
+  }
+
+  private cancelConfirm(): void {
+    this.confirming = null;
+    this.refresh();
   }
 
   private refresh(): void {
@@ -110,9 +145,14 @@ export class PauseScene extends Phaser.Scene {
       t.setText(`${i === this.selected ? '> ' : '  '}${CHOICES[i]?.label ?? ''}${i === this.selected ? ' <' : '  '}`);
     });
     this.prompt.setVisible(asking);
-    if (this.confirming === 'restart') this.prompt.setText("Restart this evening?\nIt won't count for high scores.\n\nY: yes    N: no");
-    if (this.confirming === 'quit') this.prompt.setText("Quit to the title screen?\nThis evening won't count.\n\nY: yes    N: no");
-    this.hint.setText(asking ? '' : '↑ ↓: choose    Enter: select    Esc: resume');
+    if (this.confirming === 'restart') this.prompt.setText("Restart this evening?\nIt won't count for high scores.");
+    if (this.confirming === 'quit') this.prompt.setText("Quit to the title screen?\nThis evening won't count.");
+    this.answers.forEach((t, i) => {
+      const on = i === this.answer;
+      const word = i === 0 ? 'Yes' : 'No';
+      t.setVisible(asking).setColor(on ? HIGHLIGHT : INK).setText(on ? `> ${word} <` : `  ${word}  `);
+    });
+    this.hint.setText(asking ? '← →: choose    Enter: select    Y / N' : '↑ ↓: choose    Enter: select    Esc: resume');
   }
 
   private confirm(): void {
