@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { getEvening, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore } from '../state/HighScores';
+import type { Difficulty } from '../state/Difficulty';
 import { formatMoney } from '../util/format';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
@@ -13,6 +14,7 @@ const MONO = 'monospace';
 
 export class ResultsScene extends Phaser.Scene {
   private profit = 0;
+  private difficulty: Difficulty = 'hard';
   private entering = false;
   private initials = [0, 0, 0];
   private cursor = 0;
@@ -29,6 +31,7 @@ export class ResultsScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const evening = getEvening(this);
     this.profit = evening.profitCents;
+    this.difficulty = evening.difficulty;
     this.initials = [0, 0, 0];
     this.cursor = 0;
     this.letterTexts = [];
@@ -64,9 +67,9 @@ export class ResultsScene extends Phaser.Scene {
       .text(width / 2, height - 30, '', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' })
       .setOrigin(0.5);
 
-    this.entering = isHighScore(this.profit);
+    this.entering = isHighScore(this.profit, loadHighScores(this.difficulty));
     if (this.entering) this.showEntry();
-    else this.showTable(loadHighScores(), -1);
+    else this.showTable(loadHighScores(this.difficulty), -1);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
   }
@@ -140,7 +143,7 @@ export class ResultsScene extends Phaser.Scene {
   }
 
   private save(): void {
-    const { scores, rank } = addHighScore(this.initialsText, this.profit);
+    const { scores, rank } = addHighScore(this.difficulty, this.initialsText, this.profit);
     this.entering = false;
     this.entryGroup.forEach((o) => o.destroy());
     this.entryGroup = [];
@@ -154,7 +157,11 @@ export class ResultsScene extends Phaser.Scene {
     this.tableGroup = [];
     const add = <T extends Phaser.GameObjects.GameObject>(o: T) => (this.tableGroup.push(o), o);
 
-    add(this.add.text(700, 115, 'HIGH SCORES', { fontFamily: MONO, fontSize: '28px', color: '#ffe8a3' }).setOrigin(0.5));
+    add(
+      this.add
+        .text(700, 115, `HIGH SCORES \u00b7 ${this.difficulty.toUpperCase()}`, { fontFamily: MONO, fontSize: '26px', color: '#ffe8a3' })
+        .setOrigin(0.5),
+    );
     for (let i = 0; i < HIGH_SCORE_COUNT; i++) {
       const y = 165 + i * 44;
       const s = scores[i];
@@ -182,6 +189,6 @@ export class ResultsScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
     }
-    this.footer.setText('Enter: new evening    Esc: title screen');
+    this.footer.setText('Enter: new evening    Esc: title (change difficulty)');
   }
 }

@@ -3,6 +3,9 @@ import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
 import { CURB_SPOTS, NEIGHBOURHOOD_MAP, PARKED_CARS, POTHOLES, TILE_SIZE } from '../config/neighbourhood';
 import {
+  EASY_ACCELERATION_SECONDS,
+  EASY_STOPPING_SECONDS,
+  EASY_TRUCK_SPEED,
   HIT_MIN_SPEED_FRACTION,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
@@ -58,6 +61,9 @@ const DIRECTIONS: Record<Facing, { dx: number; dy: number; angle: number }> = {
   left: { dx: -1, dy: 0, angle: 180 },
   up: { dx: 0, dy: -1, angle: -90 },
 };
+
+/** Easy driving: the way each arrow points the truck, in degrees. */
+const EASY_HEADING: Record<Facing, number> = { right: 0, down: 90, left: 180, up: -90 };
 
 const KEY_TO_FACING: Record<string, Facing> = {
   ArrowUp: 'up',
@@ -116,8 +122,8 @@ export class DriveScene extends Phaser.Scene {
     this.evening = getEvening(this);
     this.speed = 0;
     this.hitCooldownUntil = 0;
-    // Each drive starts with the park brake on, so the truck doesn't creep off by itself.
-    this.parkBrake = true;
+    // Each drive (hard) starts with the park brake on, so the truck doesn't creep off by itself.
+    this.parkBrake = this.evening.difficulty === 'hard';
     this.rolling = 1;
     this.brakeHeldStill = 0;
     this.held = [];
@@ -149,7 +155,9 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, this.evening.difficulty === 'easy'
+          ? 'Arrows / WASD: drive    Pull up beside a customer (!)    Mind the potholes and cars'
+          : '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -169,7 +177,8 @@ export class DriveScene extends Phaser.Scene {
         padding: { x: 8, y: 4 },
       })
       .setScrollFactor(0)
-      .setDepth(20);
+      .setDepth(20)
+      .setVisible(this.parkBrake);
 
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown', (event: KeyboardEvent) => {
@@ -207,6 +216,57 @@ export class DriveScene extends Phaser.Scene {
     }
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
+    if (this.easy) {
+      this.driveEasy(dt);
+    } else {
+      this.driveHard(dt);
+    }
+
+    if (this.speed !== 0) {
+      const rad = Phaser.Math.DegToRad(this.heading);
+      const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
+      if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
+    }
+
+    this.checkPotholes();
+    this.checkCustomer();
+    this.updatePointer();
+  }
+
+  /** Easy (PO, October 29): the original driving. The newest arrow held points the truck that way; let go and it stops. */
+  private driveEasy(dt: number): void {
+    const steering = this.held.at(-1);
+    if (steering === undefined) {
+      this.speed = Math.max(0, this.speed - (EASY_TRUCK_SPEED * dt) / EASY_STOPPING_SECONDS);
+      return;
+    }
+    if (this.turnTo(EASY_HEADING[steering])) {
+      this.speed = Math.min(EASY_TRUCK_SPEED, this.speed + (EASY_TRUCK_SPEED * dt) / EASY_ACCELERATION_SECONDS);
+    }
+  }
+
+  /**
+   * Easy: points the truck straight at `heading`. Right beside a curb there may
+   * be no room to swing round on the spot, so it tries stepping a few pixels
+   * the new way first. Returns false if the truck can't turn that way.
+   */
+  private turnTo(heading: number): boolean {
+    if (Phaser.Math.Angle.WrapDegrees(heading) === this.heading) return true;
+    const rad = Phaser.Math.DegToRad(heading);
+    for (let step = 0; step <= TRUCK_HALF_LENGTH - TRUCK_HALF_WIDTH + 1; step++) {
+      const x = this.truck.x + Math.cos(rad) * step;
+      const y = this.truck.y + Math.sin(rad) * step;
+      if (!this.obstacleAt(x, y, heading)) {
+        this.truck.setPosition(x, y);
+        this.setHeading(heading);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Hard (#32): car-style driving. */
+  private driveHard(dt: number): void {
     const gas = this.held.includes('up');
     const brake = this.held.includes('down');
     const steer = (this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0);
@@ -257,15 +317,6 @@ export class DriveScene extends Phaser.Scene {
       if (this.speed > fast) this.speed = Math.max(fast, this.speed - TRUCK_SPEED * TURN_SPEED_LOSS_PER_SECOND * dt);
     }
 
-    if (this.speed !== 0) {
-      const rad = Phaser.Math.DegToRad(this.heading);
-      const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
-      if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
-    }
-
-    this.checkPotholes();
-    this.checkCustomer();
-    this.updatePointer();
   }
 
   // ---- Map ----
@@ -368,8 +419,19 @@ export class DriveScene extends Phaser.Scene {
     return this.add.container(0, 0, [body, stripe, cab]).setDepth(10);
   }
 
+  /** Easy difficulty: the original arrows-point-the-way driving. */
+  private get easy(): boolean {
+    return this.evening.difficulty === 'easy';
+  }
+
+  /** Top speed for this difficulty: hits are priced against it. */
+  private get topSpeed(): number {
+    return this.easy ? EASY_TRUCK_SPEED : TRUCK_SPEED;
+  }
+
   /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */
   private toggleParkBrake(): void {
+    if (this.easy) return; // no park brake on easy: the truck stops when you let go
     if (this.parkBrake) this.parkBrake = false;
     else if (this.speed === 0) this.parkBrake = true;
     this.parkLabel.setVisible(this.parkBrake);
@@ -454,7 +516,7 @@ export class DriveScene extends Phaser.Scene {
     const kind = (slideX ? this.obstacleAt(x, y + dy) : slideY ? this.obstacleAt(x + dx, y) : hit) ?? hit;
     const impact = Math.abs(this.speed) * intoIt;
     // One charge per hit: after a crash, a short cooldown stops a slow frame from charging twice.
-    if (impact >= TRUCK_SPEED * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) {
+    if (impact >= this.topSpeed * HIT_MIN_SPEED_FRACTION && this.time.now >= this.hitCooldownUntil) {
       this.crash(kind, impact, dx / distance, dy / distance);
     } else if (slideX || slideY) {
       // Sliding along the edge at the speed you're going along it. (It used to
@@ -513,7 +575,7 @@ export class DriveScene extends Phaser.Scene {
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
   private crash(kind: 'edge' | 'car', impact = Math.abs(this.speed), dirX = Math.cos(Phaser.Math.DegToRad(this.heading)), dirY = Math.sin(Phaser.Math.DegToRad(this.heading))): void {
     // Harder hits cost more (#32): priced from the speed going into the obstacle.
-    const cost = hitCostCents(kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS, impact, TRUCK_SPEED);
+    const cost = hitCostCents(kind === 'car' ? PARKED_CAR_DAMAGE_CENTS : ROAD_EDGE_DAMAGE_CENTS, impact, this.topSpeed);
     this.speed = 0;
     this.hitCooldownUntil = this.time.now + HIT_COOLDOWN_MS;
     this.cameras.main.shake(150, 0.006);
@@ -542,7 +604,7 @@ export class DriveScene extends Phaser.Scene {
       }
       if (distance > POTHOLE_REACH) continue;
       hole.armed = false;
-      const cost = hitCostCents(POTHOLE_DAMAGE_CENTS, Math.abs(this.speed), TRUCK_SPEED);
+      const cost = hitCostCents(POTHOLE_DAMAGE_CENTS, Math.abs(this.speed), this.topSpeed);
       this.speed = 0;
       this.spinning = true;
       this.cameras.main.shake(250, 0.01);
