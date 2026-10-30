@@ -11,6 +11,9 @@ import { formatMoney } from '../util/format';
 // (#14), comes back, and types what to charge.
 
 const INK = '#2b1d10';
+/** The window's buttons sit centred below the counter, above the key hints (ICE-14). */
+const BUTTON_X = 480;
+const BUTTON_Y = 478;
 /** Up to $999.99. */
 /** The paid flash (PO, doc 12 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
 const FLASH_IN_MS = 375;
@@ -28,7 +31,7 @@ export class SalesScene extends Phaser.Scene {
   private priceBox!: Phaser.GameObjects.Text;
   private chargeLabel!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
-  private sorryButton!: Phaser.GameObjects.Text;
+  private roadButton!: Phaser.GameObjects.Text;
   private coolerButton!: Phaser.GameObjects.Text;
   private typed = '';
   /**
@@ -100,10 +103,12 @@ export class SalesScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.priceBox.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.clickPrice(pointer));
 
-    this.sorryButton = this.add
-      .text(330, 330, "Sorry, ice cream's on me", {
+    // Below the window, centred, where GO TO THE COOLER sits (ICE-14, ICE-15). Shows once the
+    // sale is over, paid or not; the hint still says sorry when the ice cream ends up free.
+    this.roadButton = this.add
+      .text(BUTTON_X, BUTTON_Y, 'BACK ON THE ROAD', {
         fontFamily: 'monospace',
-        fontSize: '22px',
+        fontSize: '20px',
         color: '#ffffff',
         backgroundColor: '#1d5c8c',
         padding: { x: 14, y: 8 },
@@ -111,10 +116,10 @@ export class SalesScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
-    this.sorryButton.on('pointerdown', () => this.leave());
+    this.roadButton.on('pointerdown', () => this.leave());
 
     this.coolerButton = this.add
-      .text(330, 330, 'GO TO THE COOLER', {
+      .text(BUTTON_X, BUTTON_Y, 'GO TO THE COOLER', {
         fontFamily: 'monospace',
         fontSize: '20px',
         color: '#ffffff',
@@ -282,7 +287,7 @@ export class SalesScene extends Phaser.Scene {
     this.chargeLabel.setVisible(pricing);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
-    this.sorryButton.setVisible(freebie);
+    this.roadButton.setVisible(sale.phase === 'over');
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
 
     let hint = '';

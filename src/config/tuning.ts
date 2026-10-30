@@ -57,8 +57,11 @@ export const TRUCK_BRAKING_SECONDS = 0.15;
  */
 export const TRUCK_CREEP_SPEED = 72;
 
-/** Holding the brake once stopped reverses, up to this speed in px/s (about a third of the first top speed)... */
-export const TRUCK_REVERSE_SPEED = 175;
+/**
+ * Holding the brake once stopped reverses, up to this speed in px/s: a quarter of the forward
+ * top speed (PO, ICE-13; was 175). Hard mode only; Easy has no separate reverse.
+ */
+export const TRUCK_REVERSE_SPEED = TRUCK_SPEED / 4;
 /** Seconds to reach full reverse speed (reversing picks up quicker than going forward). */
 export const TRUCK_REVERSE_ACCELERATION_SECONDS = 0.5;
 /** ...after holding it this long at a stop, so a quick brake to stop doesn't back you up. */

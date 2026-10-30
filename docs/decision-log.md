@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 006 — The 3-day calendar becomes the extended game's beta (2026-10-30)
+
+**Decision:** The short 3-day calendar is no longer a P1 item of its own. It moves into the *New game mode: extended game* epic (Jira ICE-9, low priority) as that mode's beta: a 3-day experiment before the full 21-day summer. Tickets that assumed the calendar (carry cash, fuel, save, intro story, two game modes, game over) build on that beta. (Jira ICE-34, formerly GitHub #53.)
+
+**Changes:** decision Q3 in *18 - Next Phase Discussion*, which put the short calendar in P1.
+
+**Why (product owner's rationale):** "I cut the 3 day calendar, but I probably should've merged it. Maybe the beta version of the 21 days is a 3 day experiment." It was cut outright in the mid-P1 prioritization session, then folded into the extended game the same night.
+
+**Revisit if:** the extended game moves up in priority, or the beta shows a multi-day run isn't fun.
+
 ## 005 — The clock waits while you stock the cooler (2026-10-30)
 
 **Decision:** Each evening opens straight at the cooler with the clock stopped at 5:00 PM. The clock starts when you leave the cooler for the first time. Later trips back to the cooler still cost daylight. (Issue #66.)
