@@ -111,6 +111,7 @@ export class DriveScene extends Phaser.Scene {
   /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
   private rolling = 1;
   private parkLabel!: Phaser.GameObjects.Text;
+  private notice?: Phaser.GameObjects.Text;
   /** How long the brake has been held at a standstill (it reverses after a moment). */
   private brakeHeldStill = 0;
 
@@ -432,9 +433,34 @@ export class DriveScene extends Phaser.Scene {
   /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */
   private toggleParkBrake(): void {
     if (this.easy) return; // no park brake on easy: the truck stops when you let go
-    if (this.parkBrake) this.parkBrake = false;
-    else if (this.speed === 0) this.parkBrake = true;
+    if (this.parkBrake) {
+      this.parkBrake = false;
+    } else if (this.speed <= TRUCK_CREEP_SPEED + 1) {
+      // #64: works at a stop, while creeping, and in reverse (always slow), not
+      // only at a dead stop, which the creeping truck almost never reaches.
+      this.speed = 0;
+      this.parkBrake = true;
+    } else {
+      this.flashNotice('Slow to a creep to use the park brake');
+    }
     this.parkLabel.setVisible(this.parkBrake);
+  }
+
+  /** A short message above the controls hint that fades out. */
+  private flashNotice(message: string): void {
+    this.notice?.destroy();
+    const notice = this.add
+      .text(16, this.scale.height - HUD_HEIGHT - 66, message, {
+        fontFamily: 'monospace',
+        fontSize: '15px',
+        color: '#1b1b1b',
+        backgroundColor: '#ffe066',
+        padding: { x: 8, y: 4 },
+      })
+      .setScrollFactor(0)
+      .setDepth(21);
+    this.notice = notice;
+    this.tweens.add({ targets: notice, alpha: 0, delay: 1200, duration: 400, onComplete: () => notice.destroy() });
   }
 
   /** Points the truck `degrees` round from facing right (90 = down), any angle. */
