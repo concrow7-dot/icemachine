@@ -1,6 +1,7 @@
 // SCREAM-19: Story mode's wallet. Cash and stock carry from one evening to the
 // next, Restart evening goes back to how tonight started, running out of money
 // is game over, and Quick play is unchanged.
+// SCREAM-17: the run is saved at the end of each evening; Continue and New story.
 const { chromium } = require('playwright');
 (async () => {
   const [port, outDir] = process.argv.slice(2);
@@ -22,6 +23,7 @@ const { chromium } = require('playwright');
   const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await page.keyboard.press(k); await wait(60); } await wait(150); };
   const shift = async (d) => { await page.keyboard.down('Shift'); await page.keyboard.press('Digit' + d); await page.keyboard.up('Shift'); await wait(300); };
   const hudClock = () => sc('Hud', 's.clockText.text');
+  const saved = () => page.evaluate(() => { const r = localStorage.getItem('icemachine.story.v1'); if (!r) return 'none'; const d = JSON.parse(r); return d.day + ' ' + d.cashCents + ' ' + d.slots.map(s => s.quantity).join('/'); });
   let pass = 0, fail = 0;
   const check = (name, got, want) => { const ok = String(got) === String(want); ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(68) + ' got=' + got + (ok ? '' : ' want=' + want)); };
 
@@ -47,6 +49,8 @@ const { chromium } = require('playwright');
   check('...it says END OF DAY 1 and shows the wallet', /END OF DAY 1/.test(day1) && /WALLET/.test(day1) && /\$97\.00/.test(day1), true);
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
   check('...and Enter starts day 2', /Enter: start day 2/.test(day1), true);
+  check('...and says Game saved', /Game saved/.test(day1), true);
+  check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----
@@ -75,6 +79,8 @@ const { chromium } = require('playwright');
   check('...Enter goes back to the title', /Enter: back to the title/.test(last), true);
   await press('Enter'); await wait(300);
   check('Back at the title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
+  check('Run complete: the save is cleared', await saved(), 'none');
+  check('...so the title offers Story, not Continue', /Continue/.test(await texts('Title')), false);
 
   // ---- Out of money: game over ----
   await press('ArrowDown'); await press('Enter'); await wait(300);
@@ -83,6 +89,7 @@ const { chromium } = require('playwright');
   const over = await texts('DayEnd');
   check('Below $0 at the end of an evening: GAME OVER', /GAME OVER/.test(over) && /out of money/.test(over), true);
   check('...the run is over', await story('r.outcome'), 'broke');
+  check('...and nothing is saved', await saved(), 'none');
   await page.screenshot({ path: outDir + '/story_game_over.png' });
   await press('Enter'); await wait(300);
   check('...Enter: back to the title', await scenes(), 'Title');
@@ -103,9 +110,32 @@ const { chromium } = require('playwright');
   // ---- Quitting a Story run from the pause menu ----
   await press('Enter'); await wait(300); await press('Enter'); await wait(300);
   await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
-  check('Quit prompt says the Story run will end', /Story run will end/.test(await texts('Pause')), true);
+  check('Quit prompt says Continue picks up at the start of this evening', /Continue picks up at the start of this evening/.test(await texts('Pause')), true);
   await press('y'); await wait(300);
   check('Quit: title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
+
+  // ---- SCREAM-17: Continue ----
+  const withSave = await texts('Title');
+  check('Title offers Continue story (day 2, $0.50) and New story', /Continue story: day 2, \$0\.50/.test(withSave) && /New story/.test(withSave), true);
+  await page.screenshot({ path: outDir + '/story_title_continue.png' });
+  await press('ArrowDown'); await press('Enter'); await wait(300);
+  check('Continue: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
+  check('Continue: HUD says Day 2/3', /Day 2\/3/.test(await hudClock()), true);
+  // A reload (closing the browser) keeps the save too.
+  await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
+  check('After reloading the page the save is still there', /Continue story: day 2/.test(await texts('Title')), true);
+
+  // ---- SCREAM-17: New story asks first ----
+  await press('ArrowUp'); await press('Enter'); await wait(200);
+  check('New story over a save: asks first', /Start a new story\?/.test(await texts('Title')) && (await scenes()) === 'Title', true);
+  await page.screenshot({ path: outDir + '/story_new_confirm.png' });
+  await press('Enter'); await wait(200);
+  check('...Enter alone does not wipe the save', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0');
+  await press('n'); await wait(200);
+  check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0');
+  await press('Enter'); await wait(200); await press('y'); await wait(300);
+  check('...Y: a new run at day 1 with $100, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 10000 none');
+  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(300);
 
   // ---- Quick play unchanged ----
   check('Title remembers nothing: Quick play picked again', /> Quick play </.test(await texts('Title')), true);

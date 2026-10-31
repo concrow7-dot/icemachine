@@ -1,6 +1,7 @@
 import { FLAVOURS } from '../config/flavours';
 import { STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import { EveningState, type CoolerSlot } from './EveningState';
+import { clearStorySave, saveStory, type StorySave } from './StorySave';
 
 // SCREAM-19 (PO, October 31): Story mode. Several evenings in a row; the cash
 // and the ice cream left in the cooler carry from one evening to the next
@@ -32,6 +33,15 @@ export class StoryRun {
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
 
+  /** A new run at day 1, or (SCREAM-17) one picked up from a save. */
+  constructor(save?: StorySave) {
+    if (save) {
+      this.day = save.day;
+      this.cashCents = save.cashCents;
+      this.slots = save.slots.map((s) => ({ ...s }));
+    }
+  }
+
   /** A new evening built from what tonight started with. */
   newEvening(): EveningState {
     return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [] });
@@ -46,8 +56,14 @@ export class StoryRun {
         : 'next';
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
-    if (result === 'next') this.day += 1;
-    else this.outcome = result;
+    if (result === 'next') {
+      this.day += 1;
+      // SCREAM-17: save at the end of each evening, ready for the next one.
+      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots });
+    } else {
+      this.outcome = result;
+      clearStorySave(); // The run is over: start a new game next time.
+    }
     return result;
   }
 }
