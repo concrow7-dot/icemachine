@@ -58,8 +58,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
   private clockRunning = false;
   private ended = false;
-  private readonly startCashCents = STARTING_CASH_CENTS;
-  private cashCents = STARTING_CASH_CENTS;
+  private readonly startCashCents: number;
+  private cashCents: number;
   private customerAtWindow = false;
   private prepLocked = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
@@ -87,6 +87,25 @@ export class EveningState extends Phaser.Events.EventEmitter {
     quantity: 0,
     priceCents: defaultPriceCents(f.id),
   }));
+
+  /**
+   * Quick play starts every evening fresh. Story mode (SCREAM-19) passes in the
+   * cash and the cooler left over from the evening before.
+   */
+  constructor(carry?: { cashCents: number; slots: readonly Readonly<CoolerSlot>[] }) {
+    super();
+    this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
+    this.cashCents = this.startCashCents;
+    carry?.slots.forEach((slot, i) => {
+      const target = this.coolerSlots.at(i);
+      if (target) Object.assign(target, slot);
+    });
+  }
+
+  /** A copy of the cooler as it is now, to carry into the next evening (SCREAM-19). */
+  get slotsSnapshot(): CoolerSlot[] {
+    return this.coolerSlots.map((s) => ({ ...s }));
+  }
 
   // ---- Clock (#5) ----
 
