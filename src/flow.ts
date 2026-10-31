@@ -15,6 +15,7 @@ export const SceneKeys = {
   Results: 'Results',
   Pause: 'Pause',
   DayEnd: 'DayEnd',
+  StoryIntro: 'StoryIntro',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -41,7 +42,8 @@ export function startEvening(from: Phaser.Scene): void {
 export function startStory(from: Phaser.Scene): void {
   clearStorySave();
   from.registry.set(STORY_KEY, new StoryRun());
-  startStoryEvening(from);
+  // SCREAM-18: a new run opens with the story's intro; Enter there starts day 1.
+  from.scene.start(SceneKeys.StoryIntro);
 }
 
 /** SCREAM-17: carries on a saved run, at the start of the next evening. Returns false if there's no save. */

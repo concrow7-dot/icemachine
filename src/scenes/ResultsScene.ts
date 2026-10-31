@@ -1,18 +1,23 @@
 import * as Phaser from 'phaser';
-import { getEvening, SceneKeys, startEvening } from '../flow';
-import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore } from '../state/HighScores';
+import { BIKE_PRICE_CENTS } from '../config/tuning';
+import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
+import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
 // pinball-style top 5 on the right. A score that makes the top 5 (negative
 // ones too) asks for 3 initials first: ↑ ↓ change a letter, ← → move, or just
 // type them, Enter to save.
+// SCREAM-18 (PO, October 31): at the end of a Story run this screen shows the
+// whole run's stats and the Story table (score: cash at the end of the run).
+// Then you start a new game: Enter and Esc both go to the title.
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const MONO = 'monospace';
 
 export class ResultsScene extends Phaser.Scene {
   private profit = 0;
+  private table: ScoreTable = 'quick';
   private entering = false;
   private initials = [0, 0, 0];
   private cursor = 0;
@@ -25,16 +30,34 @@ export class ResultsScene extends Phaser.Scene {
     super(SceneKeys.Results);
   }
 
-  create(): void {
+  create(data?: { story?: boolean }): void {
     const { width, height } = this.scale;
-    const evening = getEvening(this);
-    this.profit = evening.profitCents;
+    const story = data?.story ? getStory(this) : null;
+    this.table = story ? 'story' : 'quick';
     this.initials = [0, 0, 0];
     this.cursor = 0;
     this.letterTexts = [];
     this.entryGroup = [];
     this.tableGroup = [];
 
+    this.footer = this.add
+      .text(width / 2, height - 30, '', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' })
+      .setOrigin(0.5);
+    if (story) this.showRunStats(story.totals, story.cashCents, story.days, story.canAffordBike);
+    else this.showTonight();
+
+    this.entering = isHighScore(this.profit, loadHighScores(this.table));
+    if (this.entering) this.showEntry();
+    else this.showTable(loadHighScores(this.table), -1);
+
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
+  }
+
+  /** Quick play: tonight's breakdown; the score is tonight's profit. */
+  private showTonight(): void {
+    const { width } = this.scale;
+    const evening = getEvening(this);
+    this.profit = evening.profitCents;
     this.add.text(width / 2, 50, 'THE SUN HAS SET', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
 
     // ---- Tonight's breakdown ----
@@ -59,20 +82,52 @@ export class ResultsScene extends Phaser.Scene {
       .text(420, 334, formatMoney(this.profit), { fontFamily: MONO, fontSize: '36px', color: this.profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
     this.add.text(110, 392, `Cash on hand: ${formatMoney(evening.moneyCents)}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+  }
 
-    this.footer = this.add
-      .text(width / 2, height - 30, '', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' })
-      .setOrigin(0.5);
-
-    this.entering = isHighScore(this.profit, loadHighScores());
-    if (this.entering) this.showEntry();
-    else this.showTable(loadHighScores(), -1);
-
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
+  /** SCREAM-18: the end of a Story run. The whole run's takings; the score is the cash at the end. */
+  private showRunStats(
+    t: { salesCents: number; tipsCents: number; stockCents: number; damageCents: number },
+    cashCents: number,
+    days: number,
+    bike: boolean,
+  ): void {
+    const { width } = this.scale;
+    this.profit = cashCents;
+    this.add.text(width / 2, 50, 'STORY COMPLETE', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
+    this.add.text(110, 110, `${days} DAYS`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    const rows: [string, number, string][] = [
+      ['Sales', t.salesCents, '#c8f7c5'],
+      ['Tips', t.tipsCents, '#c8f7c5'],
+      ['Stock', -t.stockCents, '#ff9c9c'],
+      ['Damage', -t.damageCents, '#ff9c9c'],
+    ];
+    rows.forEach(([label, cents, colour], i) => {
+      const y = 145 + i * 34;
+      this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
+      this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
+    });
+    this.add.rectangle(110, 288, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 302, 'Final cash', { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    this.add
+      .text(420, 334, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .setOrigin(1, 0);
+    this.add.text(110, 392, bike ? `New bike (${formatMoney(BIKE_PRICE_CENTS)}): you can buy it!` : `New bike (${formatMoney(BIKE_PRICE_CENTS)}): not this time`, {
+      fontFamily: MONO,
+      fontSize: '18px',
+      color: bike ? '#ffe066' : '#8a9bb3',
+    });
   }
 
   private onKey(event: KeyboardEvent): void {
     if (!this.entering) {
+      if (this.table === 'story') {
+        // SCREAM-18: the run is over; a new game starts from the title.
+        if (event.key === 'Enter' || event.key === 'Escape') {
+          clearStory(this);
+          this.scene.start(SceneKeys.Title);
+        }
+        return;
+      }
       if (event.key === 'Enter') startEvening(this);
       if (event.key === 'Escape') this.scene.start(SceneKeys.Title);
       return;
@@ -140,7 +195,7 @@ export class ResultsScene extends Phaser.Scene {
   }
 
   private save(): void {
-    const { scores, rank } = addHighScore(this.initialsText, this.profit);
+    const { scores, rank } = addHighScore(this.initialsText, this.profit, new Date(), this.table);
     this.entering = false;
     this.entryGroup.forEach((o) => o.destroy());
     this.entryGroup = [];
@@ -156,7 +211,7 @@ export class ResultsScene extends Phaser.Scene {
 
     add(
       this.add
-        .text(700, 115, 'HIGH SCORES', { fontFamily: MONO, fontSize: '26px', color: '#ffe8a3' })
+        .text(700, 115, this.table === 'story' ? 'STORY HIGH SCORES' : 'HIGH SCORES', { fontFamily: MONO, fontSize: '26px', color: '#ffe8a3' })
         .setOrigin(0.5),
     );
     for (let i = 0; i < HIGH_SCORE_COUNT; i++) {
@@ -186,6 +241,6 @@ export class ResultsScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
     }
-    this.footer.setText('Enter: new evening    Esc: title');
+    this.footer.setText(this.table === 'story' ? 'Enter: back to the title' : 'Enter: new evening    Esc: title');
   }
 }

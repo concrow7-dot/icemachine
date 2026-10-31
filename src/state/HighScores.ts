@@ -22,10 +22,17 @@ export type HighScore = {
  */
 const STORAGE_KEY = 'icemachine.highscores.v1';
 
+/**
+ * SCREAM-18: Story mode has its own top 5 (score: cash at the end of the run),
+ * separate from Quick play's (tonight's profit).
+ */
+export type ScoreTable = 'quick' | 'story';
+const KEYS: Record<ScoreTable, string> = { quick: STORAGE_KEY, story: 'icemachine.highscores.story.v1' };
+
 /** Reads the table. Storage can be missing or blocked (private windows), so failures give an empty table. */
-export function loadHighScores(): HighScore[] {
+export function loadHighScores(table: ScoreTable = 'quick'): HighScore[] {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(KEYS[table]);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -43,9 +50,9 @@ export function loadHighScores(): HighScore[] {
   }
 }
 
-function saveHighScores(scores: HighScore[]): void {
+function saveHighScores(scores: HighScore[], table: ScoreTable): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+    window.localStorage.setItem(KEYS[table], JSON.stringify(scores));
   } catch {
     // Storage unavailable: the score just isn't kept.
   }
@@ -66,13 +73,14 @@ export function addHighScore(
   initials: string,
   scoreCents: number,
   date = new Date(),
+  table: ScoreTable = 'quick',
 ): { scores: HighScore[]; rank: number } {
   const entry: HighScore = { initials: initials.toUpperCase().slice(0, 3), scoreCents, date: date.toISOString() };
-  const scores = loadHighScores();
+  const scores = loadHighScores(table);
   let at = scores.findIndex((s) => scoreCents > s.scoreCents);
   if (at === -1) at = scores.length;
   scores.splice(at, 0, entry);
   const kept = scores.slice(0, HIGH_SCORE_COUNT);
-  saveHighScores(kept);
+  saveHighScores(kept, table);
   return { scores: kept, rank: at < HIGH_SCORE_COUNT ? at : -1 };
 }

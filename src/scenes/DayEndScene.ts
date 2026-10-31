@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
+import { BIKE_PRICE_CENTS } from '../config/tuning';
 
 // SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
 // takings and what you carry into tomorrow: the wallet and the ice cream left
@@ -73,17 +74,21 @@ export class DayEndScene extends Phaser.Scene {
       this.outcome === 'broke'
         ? "You're out of money.\nThe truck stays parked."
         : this.outcome === 'complete'
-          ? `You made it through all ${story.days} days.`
+          ? story.canAffordBike // SCREAM-18: the bike (placeholder wording, SCREAM-76)
+            ? `School starts tomorrow.\nYou can buy the bike!`
+            : `School starts tomorrow.\nYou're ${formatMoney(BIKE_PRICE_CENTS - story.cashCents)} short of the bike.`
           : (stock > 0 ? 'Your cash and ice cream\ncarry over to tomorrow.' : 'Your cash carries over to tomorrow.') +
             '\n\nGame saved.'; // SCREAM-17: saved at the end of each evening
     this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
-    const footer = this.outcome === 'next' ? `Enter: start day ${story.day}` : 'Enter: back to the title';
+    const footer =
+      this.outcome === 'next' ? `Enter: start day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story high scores' : 'Enter: back to the title';
     this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (event.key !== 'Enter') return;
       if (this.outcome === 'next') startStoryEvening(this);
+      else if (this.outcome === 'complete') this.scene.start(SceneKeys.Results, { story: true }); // SCREAM-18
       else {
         clearStory(this);
         this.scene.start(SceneKeys.Title);

@@ -1,5 +1,6 @@
 import { FLAVOURS, type FlavourId } from '../config/flavours';
 import type { CoolerSlot } from './EveningState';
+import type { RunTotals } from './StoryRun';
 
 // SCREAM-17 (PO, October 31): Story mode is saved in the browser, the same way
 // high scores are (decision 004): no accounts, and clearing the browser's data
@@ -13,6 +14,8 @@ export type StorySave = {
   day: number;
   cashCents: number;
   slots: CoolerSlot[];
+  /** SCREAM-18: the run's takings so far. */
+  totals: RunTotals;
 };
 
 /** Bump the version only if the saved format changes in a way old saves can't be read. */
@@ -41,7 +44,14 @@ export function loadStory(): StorySave | null {
     if (!Number.isInteger(data.day) || (data.day as number) < 1) return null;
     if (!Number.isInteger(data.cashCents)) return null;
     if (!Array.isArray(data.slots) || !data.slots.every(isSlot)) return null;
-    return { day: data.day as number, cashCents: data.cashCents as number, slots: data.slots.map((s) => ({ ...s })) };
+    const t = (data.totals ?? {}) as Record<string, unknown>;
+    const cents = (v: unknown) => (Number.isInteger(v) ? (v as number) : 0);
+    return {
+      day: data.day as number,
+      cashCents: data.cashCents as number,
+      slots: data.slots.map((s) => ({ ...s })),
+      totals: { salesCents: cents(t.salesCents), tipsCents: cents(t.tipsCents), stockCents: cents(t.stockCents), damageCents: cents(t.damageCents) },
+    };
   } catch {
     return null;
   }
