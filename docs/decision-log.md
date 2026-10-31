@@ -24,14 +24,14 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - *Leftover ice cream:* keeps overnight, or some melts.
 - *Running out of money:* can't happen (you just can't spend what you don't have), or game over.
 
-**Why (product owner's rationale):** answered on October 31. Keep Quick play as it is and add Story beside it. 3 days first, "to keep it easier to test and build", then extend it later. $100 to start. Leftover ice cream keeps, for now. You can run out of money, and then it's game over. *(Why game over rather than carrying on in debt: to be added.)*
+**Why (product owner's rationale):** answered on October 31. Keep Quick play as it is and add Story beside it. 3 days first, "to keep it easier to test and build", then extend it later. $100 to start. Leftover ice cream keeps, for now. You can run out of money, and then it's game over. Why game over rather than carrying on in debt: the PO thinks it's a fun mechanic that makes players more careful with their driving and their spending. It also leaves room for power-ups he plans to add: if players could go into debt, they could buy every power-up.
 
 **Engineering's calls (proposals, not the PO's reasons):**
 - "Out of money" means: at the end of an evening, cash is below $0, or the cooler is empty and you can't afford even the cheapest ice cream ($1). During an evening you keep playing below $0, since you can still sell.
 - Between evenings an end-of-day screen shows tonight's takings, the wallet and the ice creams left. Story evenings don't go on the Quick play high score table.
 - Restart evening (pause menu) in Story puts the cash and stock back to how that evening started; Quit ends the run (until saving arrives, SCREAM-17).
 
-**Revisit if:** runs feel too easy or too hard once they're longer than 3 days, or once fuel (SCREAM-22) costs money each evening.
+**Revisit if:** runs feel too easy or too hard once they're longer than 3 days, once fuel (SCREAM-22) costs money each evening, or when power-ups are priced.
 
 ## 010 — One way to drive: Easy mode removed (2026-10-30)
 
