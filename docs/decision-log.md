@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** save at the end of each evening, or also mid-evening; one slot or several; accounts or the browser only.
 
-**Why (product owner's rationale):** the PO accepted engineering's proposal as written on October 31. *(Any reason of his own to be added.)*
+**Why (product owner's rationale):** the PO accepted engineering's proposal on October 31, mostly following engineering's lead because it was the simpler option. In his words, saving mid-evening "didn't seem all that important", and it "adds a wrinkle for the player to manage".
 
 **Engineering notes:** saved under `icemachine.story.v1` (`src/state/StorySave.ts`): the next day, the cash and the cooler. A save that can't be read (damaged, or from a future format) is ignored rather than crashing the title screen.
 
