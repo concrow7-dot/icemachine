@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { FUEL_FULL_TANK_CENTS, FUEL_STEP_CENTS } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
+import { MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../config/gasStation';
 import { EveningState } from '../state/EveningState';
 import { formatMoney } from '../util/format';
 
@@ -28,7 +29,8 @@ export class PumpScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (!this.textures.exists('map-pump')) this.load.image('map-pump', 'assets/limezu/map/pump.png');
+    // SCREAM-111: the pump comes from the map's picture sheet, already loaded on the road.
+    if (!this.textures.exists(MAP_ATLAS)) this.load.atlas(MAP_ATLAS, MAP_ATLAS_PNG, MAP_ATLAS_JSON);
   }
 
   create(): void {
@@ -43,7 +45,7 @@ export class PumpScene extends Phaser.Scene {
     this.add
       .text(width / 2, 79, 'GAS', { fontFamily: 'monospace', fontSize: '34px', color: '#ffffff', fontStyle: 'bold' })
       .setOrigin(0.5);
-    const pump = this.add.image(170, 470, 'map-pump').setOrigin(0.5, 1).setScale(9);
+    const pump = this.add.image(170, 470, MAP_ATLAS, 'pump').setOrigin(0.5, 1).setScale(9).setName('pump');
     pump.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
     // The pump's display.
