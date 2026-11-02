@@ -16,7 +16,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 **Why (product owner's rationale):**
 - *Budgeting for gas alongside stock:* from the ticket's user story (October 29).
 - *A station on the map, so stopping costs daylight; part tanks in $5 steps, $30 full; crawling to the pumps when dry, no tow fee for now; day 1 with $100 and a quarter tank:* the PO's decisions on October 29 (doc 10).
-- *Both modes, Quick play full:* the PO's call (November 2). Quick play is a learning area: less is at stake, so players can see how much gas a day burns through without _[the PO's sentence trailed off here; waiting on the rest]_.
+- *Both modes, Quick play full:* the PO's call (November 2). Quick play is a learning area: less is at stake, so players can see how much gas a day burns through without wasting time or money in Story mode.
 - *The Speedway at Park Ave and Chandler:* the PO's call (November 2). He wanted it toward the edge of the map on a main road, and not near home, so the player has to explore a bit.
 - *Pump screen with the clock running:* the PO's call (November 2), which keeps October 29's "stopping costs daylight".
 - *The tank carries over in Story:* the PO's call (November 2). Like stock and money, it's all part of a few continuous days.
