@@ -67,6 +67,8 @@ export class DayEndScene extends Phaser.Scene {
       fontSize: '40px',
       color: evening.moneyCents < 0 ? '#ff9c9c' : '#c8f7c5',
     });
+    this.drawBikeBadge(width - 120, 95);
+
     const stock = evening.stockLeft;
     this.add.text(540, 230, `Ice creams left: ${stock}`, { fontFamily: MONO, fontSize: '20px', color: '#d6deeb' });
 
@@ -94,5 +96,34 @@ export class DayEndScene extends Phaser.Scene {
         this.scene.start(SceneKeys.Title);
       }
     });
+  }
+
+  /**
+   * SCREAM-18 (PO, November 2, from his sketch): the goal, "Bike $200", in a
+   * red starburst in the top-right corner. Shown here only, not on the top bar.
+   */
+  private drawBikeBadge(x: number, y: number): void {
+    const points: Phaser.Math.Vector2[] = [];
+    const spikes = 14;
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? 82 : 60;
+      points.push(new Phaser.Math.Vector2(x + Math.cos(angle) * r * 1.15, y + Math.sin(angle) * r * 0.8));
+    }
+    const g = this.add.graphics();
+    g.fillStyle(0x3a1620, 1);
+    g.fillPoints(points, true);
+    g.lineStyle(3, 0xff4d4d, 1);
+    g.strokePoints(points, true);
+    this.add
+      .text(x, y, `Bike\n${formatMoney(BIKE_PRICE_CENTS)}`, {
+        fontFamily: MONO,
+        fontSize: '24px',
+        color: '#ff7a7a',
+        align: 'center',
+        lineSpacing: 2,
+      })
+      .setOrigin(0.5)
+      .setName('bike-badge');
   }
 }

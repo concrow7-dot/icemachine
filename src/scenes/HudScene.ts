@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { BIKE_PRICE_CENTS, PATIENCE_WARNING_SECONDS } from '../config/tuning';
+import { PATIENCE_WARNING_SECONDS } from '../config/tuning';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
@@ -23,7 +23,8 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     const story = getStory(this);
-    this.dayLabel = story ? `   Day ${story.day}/${story.days}   Bike ${formatMoney(BIKE_PRICE_CENTS)}` : ''; // SCREAM-18: the goal
+    // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
+    this.dayLabel = story ? `   Day ${story.day}/${story.days}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);

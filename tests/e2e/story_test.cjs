@@ -58,7 +58,7 @@ const { chromium } = require('playwright');
   check('Story starts on day 1 of 3', await story('r.day + "/" + r.days'), '1/3');
   check('Story starts with $100', await ev('e.moneyCents'), 10000);
   check('HUD shows the day beside the clock', /Day 1\/3/.test(await hudClock()), true);
-  check('HUD shows the bike goal', /Bike \$200\.00/.test(await hudClock()), true);
+  check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
   // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
   check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: end evening');
   check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
@@ -71,6 +71,7 @@ const { chromium } = require('playwright');
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
   check('...and Enter starts day 2', /Enter: start day 2/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
+  check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
   check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
