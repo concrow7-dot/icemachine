@@ -77,7 +77,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - *A chance each second, not speed:* speed still matters, because a truck driving fast spends less time near each person and the rules already lower its chances; he didn't want velocity to be the measure (November 2).
 - *Indoors half as likely:* people at home are less likely to hear the truck, for example because they have the AC on (November 2).
 - *Highest chance at first, then less and less:* someone is most likely to want ice cream the instant they hear the truck. Their mind may still change after that, but at a decreasing rate; that's been the PO's experience (November 2). Overall, the longer someone hears the truck, the more likely they've come out.
-- *No limit on waiting customers, and no new customers if you stay in one spot long enough:* the PO's rules (November 2). **Why:** _waiting on the PO._
+- *No limit on waiting customers, and no new customers if you stay in one spot long enough:* the PO's rules (November 2). He wants it to feel more realistic: sometimes a bunch of customers are waiting for you, and some leave because you take too long; and the longer you sit in one place, the longer the people around you have to hear the music. Tuning the numbers to match is SCREAM-114.
 - *Music pulled into this work:* the PO's call (November 2); the truck's music is how customers know it's near (his idea on SCREAM-24, October 29). More than one song; no songs with a bad origin.
 
 **Engineering's calls (proposals, not the PO's reasons):**
