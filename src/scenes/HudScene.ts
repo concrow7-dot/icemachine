@@ -105,7 +105,7 @@ export class HudScene extends Phaser.Scene {
    */
   private addDebugKeys(): void {
     this.debugText = this.add
-      .text(0, 22, 'DEBUG Shift+3: end evening', {
+      .text(0, 22, 'DEBUG Shift+3: End Evening', {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#d9a0ff',

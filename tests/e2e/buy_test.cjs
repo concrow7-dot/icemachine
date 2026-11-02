@@ -55,7 +55,7 @@ const { chromium } = require('playwright');
 
   // --- SCREAM-72: no "$4" warning; a price over $4 just shows its profit ---
   const hint = await page.evaluate(() => { const s = window.__game.scene.getScene('Cooler'); const keep = s.order.slots[0].priceCents; s.order.slots[0].priceCents = 450; s.refresh(); const t = s.columns[0].margin.text; s.order.slots[0].priceCents = keep; s.refresh(); return t; });
-  check('A price over $4.00: no "customers refuse" warning, just the profit', /refuse/.test(hint) + ' ' + /^profit /.test(hint), 'false true');
+  check('A price over $4.00: no "customers refuse" warning, just the profit', /refuse/.test(hint) + ' ' + /^Profit /.test(hint), 'false true');
 
   // --- Draft can't overspend ---
   await press('+', 15); await press('ArrowRight'); await press('+', 15); await press('ArrowRight'); await press('+', 15);

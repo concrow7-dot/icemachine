@@ -237,7 +237,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     add(
       this.add
-        .text(700, 330, '↑ ↓ change   ← → move\nor type letters   Enter: save', {
+        .text(700, 330, '↑ ↓ Change   ← → Move\nOr Type Letters   Enter: Save', {
           fontFamily: MONO,
           fontSize: '16px',
           color: '#8a9bb3',
@@ -305,10 +305,10 @@ export class ResultsScene extends Phaser.Scene {
     if (!this.entering && highlight === -1 && isHighScore(this.profit, scores) === false) {
       add(
         this.add
-          .text(700, 400, 'Not in the top 5 this time', { fontFamily: MONO, fontSize: '16px', color: '#8a9bb3' })
+          .text(700, 400, 'Not in the top 5 this time.', { fontFamily: MONO, fontSize: '16px', color: '#8a9bb3' })
           .setOrigin(0.5),
       );
     }
-    this.footer.setText(this.table === 'story' ? 'Enter: back to the title' : 'Enter: new evening    Esc: title');
+    this.footer.setText(this.table === 'story' ? 'Enter: Back To The Title' : 'Enter: New Evening    Esc: Title');
   }
 }

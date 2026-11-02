@@ -62,7 +62,7 @@ export class CoolerScene extends Phaser.Scene {
     this.focus = this.add.rectangle(0, 0, 270, 40, 0xffe066, 0.55);
 
     this.add
-      .text(width / 2, 70, locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  -  PREP', {
+      .text(width / 2, 70, locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP', {
         fontFamily: 'monospace',
         fontSize: '24px',
         color: INK,
@@ -107,8 +107,8 @@ export class CoolerScene extends Phaser.Scene {
         width / 2,
         height - 18,
         locked
-          ? 'B or Backspace: back to the truck'
-          : '↑↓←→ move   + / − change   Enter: buy stock   B: cancel and go back',
+          ? 'B Or Backspace: Back To The Truck'
+          : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
         { fontFamily: 'monospace', fontSize: '15px', color: INK },
       )
       .setOrigin(0.5);
@@ -264,7 +264,7 @@ export class CoolerScene extends Phaser.Scene {
       const flavour = getFlavour(slot.flavour);
       // Long names (e.g. Cookie Ice Cream Sandwich) shrink to fit between the arrows.
       column.name.setText(flavour.name).setFontSize(flavour.name.length > 18 ? 13 : 17);
-      column.cost.setText(`costs you ${formatMoney(flavour.costCents)} each`);
+      column.cost.setText(`Costs you ${formatMoney(flavour.costCents)} each`);
       column.quantity.setText(`${slot.quantity} / ${SLOT_CAPACITY}`);
       const owned = this.order.ownedQuantity(i);
       column.owned.setText(owned > 0 && !this.evening.isPrepLocked ? `${owned} already bought` : '');
@@ -276,9 +276,9 @@ export class CoolerScene extends Phaser.Scene {
       const profitEach = slot.priceCents - flavour.costCents;
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
       if (profitEach <= 0) {
-        column.margin.setText('no profit at this price').setColor('#b3261e');
+        column.margin.setText('No profit at this price').setColor('#b3261e');
       } else {
-        column.margin.setText(`profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');
+        column.margin.setText(`Profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');
       }
     });
 

@@ -11,8 +11,8 @@ type Choice = 'resume' | 'restart' | 'quit';
 
 const CHOICES: { id: Choice; label: string }[] = [
   { id: 'resume', label: 'Resume' },
-  { id: 'restart', label: 'Restart evening' },
-  { id: 'quit', label: 'Quit to title' },
+  { id: 'restart', label: 'Restart Evening' },
+  { id: 'quit', label: 'Quit To Title' },
 ];
 
 const INK = '#ffffff';
@@ -164,7 +164,7 @@ export class PauseScene extends Phaser.Scene {
       const word = i === 0 ? 'Yes' : 'No';
       t.setVisible(asking).setColor(on ? HIGHLIGHT : INK).setText(on ? `> ${word} <` : `  ${word}  `);
     });
-    this.hint.setText(asking ? '← →: choose    Enter: select    Y / N' : '↑ ↓: choose    Enter: select    Esc: resume');
+    this.hint.setText(asking ? '← →: Choose    Enter: Select    Y / N' : '↑ ↓: Choose    Enter: Select    Esc: Resume');
   }
 
   private confirm(): void {

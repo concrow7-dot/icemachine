@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 023 — On-screen text style (2026-11-02)
+
+**Decision (Jira SCREAM-96, PO's picks in sheet 16):**
+- Headings and buttons stay in ALL CAPS (THE COOLER, BUY STOCK, CHARGE).
+- Menu choices: a capital on each word (Quick Play, New Story, Restart Evening, Quit To Title).
+- Key hints at the bottom: key name, colon, then a capital on each word (Enter: Start Day 2, B: Drive Off).
+- Short status lines: a capital first letter, no full stop (No tip, Costs you $1.00 each).
+- Full sentences and customer speech: a capital first letter and a full stop, question mark or exclamation mark.
+- A proper dash in headings: THE COOLER – PREP.
+
+**Engineering's calls (proposals, not the PO's reasons):** "each word" was applied literally, small words included (Quit To Title, Back To The Title); they can go lowercase if the PO prefers. The flavour names (SpongePop, Lil Explorer Pop) and the Story placeholder text (SCREAM-76) are unchanged.
+
+**Why (product owner's rationale):** _waiting on the PO._
+
 ## 022 — Loading screens: the truck laps the screen and fills it with music notes; the $4 warning goes (2026-11-02)
 
 **Decision (Jira SCREAM-75, SCREAM-72):**

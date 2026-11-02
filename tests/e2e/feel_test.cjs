@@ -75,7 +75,7 @@ const { TRACK } = require('./track.cjs');
   check('Gas releases the park brake and drives off', (await drive('s.parkBrake')) + ' ' + (r2.at(-1)[3] > 0), 'false true');
   await drive("(s.speed = 200, s.toggleParkBrake(), true)");
   check('Q faster than a creep: not engaged', await drive('s.parkBrake'), false);
-  check('...and a message says to slow down first', await drive("s.notice && s.notice.active && s.notice.text"), 'Slow to a creep to use the park brake');
+  check('...and a message says to slow down first', await drive("s.notice && s.notice.active && s.notice.text"), 'Slow to a creep to use the park brake.');
   await drive("(s.parkBrake = false, s.held = [], s.speed = 72, s.toggleParkBrake(), true)");
   r2 = await sim("s.held = []", 20);
   check('Q while creeping (#64): park brake on, truck stops on the spot', (await drive('s.parkBrake')) + ' ' + r2.at(-1)[3] + ' ' + (r2.at(-1)[0] === r2[0][0]), 'true 0 true');

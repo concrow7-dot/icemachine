@@ -45,7 +45,7 @@ export class TruckScene extends Phaser.Scene {
     ];
 
     this.add
-      .text(width / 2, height - 22, '← → choose    Enter: go    or use the mouse', {
+      .text(width / 2, height - 22, '← → Choose    Enter: Go    Or Use The Mouse', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#2b1d10',

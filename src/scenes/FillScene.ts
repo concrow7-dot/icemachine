@@ -38,7 +38,7 @@ export class FillScene extends Phaser.Scene {
 
     this.add.rectangle(0, 44, width, height - 44, 0xd8eef5).setOrigin(0, 0);
     this.add
-      .text(width / 2, 104, 'THE COOLER  -  FILL THE ORDER', { fontFamily: 'monospace', fontSize: '24px', color: INK })
+      .text(width / 2, 104, 'THE COOLER  –  FILL THE ORDER', { fontFamily: 'monospace', fontSize: '24px', color: INK })
       .setOrigin(0.5);
     this.tipBar = new TipBar(this, 270, 66);
 
@@ -57,7 +57,7 @@ export class FillScene extends Phaser.Scene {
     this.serveButton.on('pointerdown', () => this.serve());
 
     this.add
-      .text(width / 2, height - 18, '← → choose    + / − or ↑ ↓: take out / put back    Enter: serve    B: back to the window', {
+      .text(width / 2, height - 18, '← → Choose    + / − Or ↑ ↓: Take Out / Put Back    Enter: Serve    B: Back To The Window', {
         fontFamily: 'monospace',
         fontSize: '14px',
         color: INK,

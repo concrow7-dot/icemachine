@@ -255,7 +255,7 @@ export class SalesScene extends Phaser.Scene {
       });
     };
     flash(`+${formatMoney(priceCents)}`, 300, '#2e7d32', 0);
-    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'no tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
+    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'No tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
   }
 
   private driveOff(): void {
@@ -294,15 +294,15 @@ export class SalesScene extends Phaser.Scene {
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
 
     let hint = '';
-    if (sale.phase === 'ordering') hint = 'Remember the order!    C or Enter: go to the cooler now    B: drive off';
+    if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
     if (sale.phase === 'deciding') {
       const canAsk = !sale.askedAgain && !sale.retryUsed;
-      hint = `C or Enter: go to the cooler    ${canAsk ? 'R: ask again (no tip)    ' : ''}B: drive off`;
+      hint = `C Or Enter: Go To The Cooler    ${canAsk ? 'R: Ask Again (No Tip)    ' : ''}B: Drive Off`;
     }
     if (pricing) {
-      hint = 'Type the price (7.25) or click the keys    Enter: charge    Backspace: undo    B: drive off';
+      hint = 'Type the price (7.25) or click the keys.    Enter: Charge    Backspace: Undo    B: Drive Off';
     }
-    if (sale.phase === 'over') hint = freebie ? "Enter: say sorry, it's on the house" : 'Enter: back on the road';
+    if (sale.phase === 'over') hint = freebie ? "Enter: Say Sorry, It's On The House" : 'Enter: Back On The Road';
     this.hint.setText(hint);
   }
 }
