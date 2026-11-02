@@ -20,6 +20,9 @@ export const STORY_START_CASH_CENTS = 10000;
  */
 export const STORY_DAYS = 3;
 
+/** SCREAM-18 (PO, October 31): the story's goal, a new bike, costs $200. */
+export const BIKE_PRICE_CENTS = 20000;
+
 /** Issue #8: the cooler has 3 flavour slots holding 15 bars each. */
 export const COOLER_SLOTS = 3;
 export const SLOT_CAPACITY = 15;

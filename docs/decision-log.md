@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 013 — The story: save up for a $200 bike, 3 days, its own high scores (2026-10-31)
+
+**Decision:** Story mode has a goal: the player is saving up for a new bike that costs $200 before school starts (Jira SCREAM-18). A new run opens with a plain text intro screen; the top bar shows the bike's price during the run. The run is 3 days for now (decision 011), then it ends: the last day's screen says whether you can afford the bike, then a results screen shows the whole run's stats and a Story top-5 table, separate from Quick play's. After that you start a new game from the title. The bike price is `BIKE_PRICE_CENTS` in `tuning.ts`.
+
+**Options considered:**
+- *Length:* 21 days (the original idea) or 3 to start.
+- *Reaching $200 early:* end the run with a win, or play on to the last day.
+- *Story text and art:* engineering drafts it, or the PO writes it.
+
+**Why (product owner's rationale):** answered on October 31. The goal is a new bike, $200. 3 days for now, "to keep it easier to test and build". At the end you see your stats and compare Story high scores, then start a new game. The PO writes the story and provides the art himself (SCREAM-76, under SCREAM-6); plain text screens until then. Why school as the deadline: the PO drove an ice cream truck as a summer job in high school, and ice cream trucks mostly make their money in the summer, so the start of school is a natural countdown to the end of it. It gives the game a little story. Why a bike: cheap enough that a high school kid would really work towards it. He considered something like a PlayStation, but plans to build the story out more later, so the bike is a quick goal for now.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- The Story score is the cash at the end of the run. Reaching $200 early doesn't end the run.
+- Game over (out of money) doesn't go on the Story table.
+- The intro text in the game is engineering's placeholder, marked as one on screen.
+
+**Revisit if:** the PO's own text arrives (SCREAM-76), the story is built out further (the goal may change), or the run grows towards 21 days.
+
 ## 012 — Story mode is saved in the browser, at the end of each evening (2026-10-31)
 
 **Decision:** A Story run is saved in the browser, the same way high scores are (decision 004): no accounts, one save slot, and clearing the browser's data loses it (Jira SCREAM-17). The game saves automatically at the end of each evening, so quitting mid-evening means replaying that evening. With a save, the title screen offers "Continue story" (showing the day and the cash) and "New story"; New story asks first, and only the Y key confirms. The save is cleared when a run ends (the last day, or game over). Quick play never touches the save.

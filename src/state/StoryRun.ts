@@ -1,5 +1,5 @@
 import { FLAVOURS } from '../config/flavours';
-import { STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
+import { BIKE_PRICE_CENTS, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import { EveningState, type CoolerSlot } from './EveningState';
 import { clearStorySave, saveStory, type StorySave } from './StorySave';
 
@@ -23,6 +23,9 @@ export function isBroke(cashCents: number, stockLeft: number): boolean {
   return cashCents < 0 || (stockLeft === 0 && cashCents < CHEAPEST_COST_CENTS);
 }
 
+/** Sales, tips, stock and damage added up over every evening of a run. */
+export type RunTotals = { salesCents: number; tipsCents: number; stockCents: number; damageCents: number };
+
 export class StoryRun {
   /** Which evening this is, from 1. */
   day = 1;
@@ -32,6 +35,8 @@ export class StoryRun {
   slots: CoolerSlot[] | null = null;
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
+  /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
+  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, damageCents: 0 };
 
   /** A new run at day 1, or (SCREAM-17) one picked up from a save. */
   constructor(save?: StorySave) {
@@ -39,6 +44,7 @@ export class StoryRun {
       this.day = save.day;
       this.cashCents = save.cashCents;
       this.slots = save.slots.map((s) => ({ ...s }));
+      this.totals = { ...save.totals };
     }
   }
 
@@ -56,14 +62,26 @@ export class StoryRun {
         : 'next';
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
+    const b = evening.breakdown;
+    this.totals = {
+      salesCents: this.totals.salesCents + b.salesCents,
+      tipsCents: this.totals.tipsCents + b.tipsCents,
+      stockCents: this.totals.stockCents + b.stockCents,
+      damageCents: this.totals.damageCents + b.damageCents,
+    };
     if (result === 'next') {
       this.day += 1;
       // SCREAM-17: save at the end of each evening, ready for the next one.
-      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots });
+      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, totals: this.totals });
     } else {
       this.outcome = result;
       clearStorySave(); // The run is over: start a new game next time.
     }
     return result;
+  }
+
+  /** SCREAM-18: can the player afford the bike with the cash they have? */
+  get canAffordBike(): boolean {
+    return this.cashCents >= BIKE_PRICE_CENTS;
   }
 }

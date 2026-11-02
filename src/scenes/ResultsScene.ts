@@ -1,18 +1,24 @@
 import * as Phaser from 'phaser';
-import { getEvening, SceneKeys, startEvening } from '../flow';
-import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore } from '../state/HighScores';
+import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
+import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
 // pinball-style top 5 on the right. A score that makes the top 5 (negative
 // ones too) asks for 3 initials first: ↑ ↓ change a letter, ← → move, or just
 // type them, Enter to save.
+// SCREAM-18 (PO, October 31): at the end of a Story run this screen shows the
+// whole run's stats and the Story table (score: cash at the end of the run).
+// Then you start a new game: Enter and Esc both go to the title.
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const MONO = 'monospace';
+/** Loaded by the title screen; the texture is shared by every scene. */
+const TRUCK_KEY = 'limezu-ice-cream-truck';
 
 export class ResultsScene extends Phaser.Scene {
   private profit = 0;
+  private table: ScoreTable = 'quick';
   private entering = false;
   private initials = [0, 0, 0];
   private cursor = 0;
@@ -25,16 +31,34 @@ export class ResultsScene extends Phaser.Scene {
     super(SceneKeys.Results);
   }
 
-  create(): void {
+  create(data?: { story?: boolean }): void {
     const { width, height } = this.scale;
-    const evening = getEvening(this);
-    this.profit = evening.profitCents;
+    const story = data?.story ? getStory(this) : null;
+    this.table = story ? 'story' : 'quick';
     this.initials = [0, 0, 0];
     this.cursor = 0;
     this.letterTexts = [];
     this.entryGroup = [];
     this.tableGroup = [];
 
+    this.footer = this.add
+      .text(width / 2, height - 30, '', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' })
+      .setOrigin(0.5);
+    if (story) this.showRunStats(story.totals, story.cashCents, story.days, story.canAffordBike);
+    else this.showTonight();
+
+    this.entering = isHighScore(this.profit, loadHighScores(this.table));
+    if (this.entering) this.showEntry();
+    else this.showTable(loadHighScores(this.table), -1);
+
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
+  }
+
+  /** Quick play: tonight's breakdown; the score is tonight's profit. */
+  private showTonight(): void {
+    const { width } = this.scale;
+    const evening = getEvening(this);
+    this.profit = evening.profitCents;
     this.add.text(width / 2, 50, 'THE SUN HAS SET', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
 
     // ---- Tonight's breakdown ----
@@ -59,20 +83,117 @@ export class ResultsScene extends Phaser.Scene {
       .text(420, 334, formatMoney(this.profit), { fontFamily: MONO, fontSize: '36px', color: this.profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
     this.add.text(110, 392, `Cash on hand: ${formatMoney(evening.moneyCents)}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+  }
 
-    this.footer = this.add
-      .text(width / 2, height - 30, '', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' })
-      .setOrigin(0.5);
+  /** SCREAM-18: the end of a Story run. The whole run's takings; the score is the cash at the end. */
+  private showRunStats(
+    t: { salesCents: number; tipsCents: number; stockCents: number; damageCents: number },
+    cashCents: number,
+    days: number,
+    bike: boolean,
+  ): void {
+    const { width } = this.scale;
+    this.profit = cashCents;
+    this.add.text(width / 2, 50, 'STORY COMPLETE', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
+    this.add.text(110, 110, `${days} DAY${days === 1 ? '' : 'S'}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    const rows: [string, number, string][] = [
+      ['Sales', t.salesCents, '#c8f7c5'],
+      ['Tips', t.tipsCents, '#c8f7c5'],
+      ['Stock', -t.stockCents, '#ff9c9c'],
+      ['Damage', -t.damageCents, '#ff9c9c'],
+    ];
+    rows.forEach(([label, cents, colour], i) => {
+      const y = 145 + i * 34;
+      this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
+      this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
+    });
+    this.add.rectangle(110, 288, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 302, 'Final cash', { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    this.add
+      .text(420, 334, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .setOrigin(1, 0);
+    // SCREAM-94 (PO, November 2): "New Bike!!!!" with a victory lap, or "Maybe Next Summer" and an F stamp.
+    if (bike) {
+      this.add.text(110, 388, 'New Bike!!!!', { fontFamily: MONO, fontSize: '26px', color: '#ffe066' }).setName('bike-line');
+      this.victoryLap();
+    } else {
+      this.add.text(110, 388, 'Maybe Next Summer', { fontFamily: MONO, fontSize: '26px', color: '#8a9bb3' }).setName('bike-line');
+      this.stampF(505, 410);
+    }
+  }
 
-    this.entering = isHighScore(this.profit, loadHighScores());
-    if (this.entering) this.showEntry();
-    else this.showTable(loadHighScores(), -1);
+  /** SCREAM-94: short of the bike. A red "F" in a circle stamps down between the stats and the initials. */
+  private stampF(x: number, y: number): void {
+    const stamp = this.add.container(x, y).setName('f-stamp').setDepth(5);
+    const ring = this.add.graphics();
+    ring.lineStyle(8, 0xe23b3b, 1);
+    ring.strokeCircle(0, 0, 70);
+    ring.lineStyle(3, 0xe23b3b, 1);
+    ring.strokeCircle(0, 0, 58);
+    const letter = this.add.text(0, 4, 'F', { fontFamily: MONO, fontSize: '96px', color: '#e23b3b', fontStyle: 'bold' }).setOrigin(0.5);
+    stamp.add([ring, letter]);
+    stamp.setScale(3).setAlpha(0).setAngle(-30);
+    this.tweens.add({
+      targets: stamp,
+      scale: 1,
+      alpha: 0.9,
+      angle: -12,
+      delay: 500,
+      duration: 260,
+      ease: 'Quad.easeIn',
+      onComplete: () => this.cameras.main.shake(180, 0.008),
+    });
+  }
 
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
+  /**
+   * SCREAM-94: got the bike. The ice cream truck drives back and forth across
+   * the screen, top to bottom, with Ws trailing behind it, again and again.
+   */
+  private victoryLap(): void {
+    const { width, height } = this.scale;
+    const truck = this.add.image(-120, 70, TRUCK_KEY).setScale(0.45).setDepth(10).setName('victory-truck');
+    this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    const rows = [70, height / 2, height - 90];
+    const legs = rows.map((y, i) => ({ y, rightward: i % 2 === 0 }));
+    let leg = 0;
+    const drive = (): void => {
+      const { y, rightward } = legs[leg % legs.length] ?? { y: 70, rightward: true };
+      leg += 1;
+      truck.setFlipX(!rightward).setPosition(rightward ? -120 : width + 120, y);
+      this.tweens.add({ targets: truck, x: rightward ? width + 120 : -120, duration: 2600, ease: 'Linear', onComplete: drive });
+    };
+    drive();
+    // A W pops out behind the truck every so often and floats away.
+    this.time.addEvent({
+      delay: 140,
+      loop: true,
+      callback: () => {
+        const behind = truck.flipX ? 1 : -1;
+        const w = this.add
+          .text(truck.x + behind * truck.displayWidth * 0.5, truck.y + Phaser.Math.Between(-14, 14), 'W', {
+            fontFamily: MONO,
+            fontSize: '26px',
+            color: '#ffe066',
+            fontStyle: 'bold',
+          })
+          .setOrigin(0.5)
+          .setDepth(9)
+          .setName('victory-w');
+        this.tweens.add({ targets: w, y: w.y - 30, alpha: 0, scale: 1.4, duration: 900, onComplete: () => w.destroy() });
+      },
+    });
   }
 
   private onKey(event: KeyboardEvent): void {
     if (!this.entering) {
+      if (this.table === 'story') {
+        // SCREAM-18: the run is over; a new game starts from the title.
+        if (event.key === 'Enter' || event.key === 'Escape') {
+          clearStory(this);
+          this.scene.start(SceneKeys.Title);
+        }
+        return;
+      }
       if (event.key === 'Enter') startEvening(this);
       if (event.key === 'Escape') this.scene.start(SceneKeys.Title);
       return;
@@ -140,7 +261,7 @@ export class ResultsScene extends Phaser.Scene {
   }
 
   private save(): void {
-    const { scores, rank } = addHighScore(this.initialsText, this.profit);
+    const { scores, rank } = addHighScore(this.initialsText, this.profit, new Date(), this.table);
     this.entering = false;
     this.entryGroup.forEach((o) => o.destroy());
     this.entryGroup = [];
@@ -156,7 +277,7 @@ export class ResultsScene extends Phaser.Scene {
 
     add(
       this.add
-        .text(700, 115, 'HIGH SCORES', { fontFamily: MONO, fontSize: '26px', color: '#ffe8a3' })
+        .text(700, 115, this.table === 'story' ? 'STORY HIGH SCORES' : 'HIGH SCORES', { fontFamily: MONO, fontSize: '26px', color: '#ffe8a3' })
         .setOrigin(0.5),
     );
     for (let i = 0; i < HIGH_SCORE_COUNT; i++) {
@@ -186,6 +307,6 @@ export class ResultsScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
     }
-    this.footer.setText('Enter: new evening    Esc: title');
+    this.footer.setText(this.table === 'story' ? 'Enter: back to the title' : 'Enter: new evening    Esc: title');
   }
 }

@@ -23,6 +23,7 @@ export class HudScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     const story = getStory(this);
+    // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
     this.dayLabel = story ? `   Day ${story.day}/${story.days}` : '';
     const { width } = this.scale;
 

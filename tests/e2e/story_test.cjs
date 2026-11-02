@@ -2,6 +2,7 @@
 // next, Restart evening goes back to how tonight started, running out of money
 // is game over, and Quick play is unchanged.
 // SCREAM-17: the run is saved at the end of each evening; Continue and New story.
+// SCREAM-18: the bike story: intro screen, bike goal, end of run with the Story high scores.
 const { chromium } = require('playwright');
 (async () => {
   const [port, outDir] = process.argv.slice(2);
@@ -44,12 +45,20 @@ const { chromium } = require('playwright');
   check('Mouse over Story picks it', /> Story </.test(await texts('Title')), true);
   await page.mouse.move(5, 5); await wait(100);
 
+  // ---- SCREAM-18: the intro ----
+  await press('Enter'); await wait(300);
+  const intro = await texts('StoryIntro');
+  check('A new story opens with the intro screen', await scenes(), 'StoryIntro');
+  check('...about the $200 bike and school in 3 days, marked as a placeholder', /\$200\.00/.test(intro) && /School starts in 3 days/.test(intro) && /Placeholder/.test(intro), true);
+  await page.screenshot({ path: outDir + '/story_intro.png' });
+
   // ---- Day 1 ----
   await press('Enter'); await wait(300);
-  check('Story starts at the cooler', (await scenes()).startsWith('Cooler'), true);
+  check('Enter: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
   check('Story starts on day 1 of 3', await story('r.day + "/" + r.days'), '1/3');
   check('Story starts with $100', await ev('e.moneyCents'), 10000);
   check('HUD shows the day beside the clock', /Day 1\/3/.test(await hudClock()), true);
+  check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
   // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
   check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: end evening');
   check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
@@ -62,6 +71,7 @@ const { chromium } = require('playwright');
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
   check('...and Enter starts day 2', /Enter: start day 2/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
+  check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
   check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
@@ -91,7 +101,23 @@ const { chromium } = require('playwright');
   await shift(3); await wait(300);
   const last = await texts('DayEnd');
   check('After day 3: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
-  check('...Enter goes back to the title', /Enter: back to the title/.test(last), true);
+  check('...short of the bike ($97 of $200: $103 short)', /\$103\.00 short of the bike/.test(last), true);
+  check('...Enter goes to the Story high scores', /Enter: Story high scores/.test(last), true);
+  await press('Enter'); await wait(300);
+  check('Story results screen', await scenes(), 'Results');
+  const runRes = await texts('Results');
+  check('...run stats: 3 days, $3 stock, final cash $97, no bike', /3 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$97\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
+  // SCREAM-94: short of the bike, the F stamp lands (after a short pause).
+  await wait(1000);
+  check('...the F stamp is on screen, landed', await sc('Results', "(() => { const f = s.children.getByName('f-stamp'); return !!f && f.scale === 1 && f.alpha > 0.8; })()"), true);
+  check('...and no victory truck', await sc('Results', "!s.children.getByName('victory-truck')"), true);
+  await page.screenshot({ path: outDir + '/story_results_f.png' });
+  check('...first Story score: asks for initials', await sc('Results', 's.entering'), true);
+  await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
+  check('...saved to the Story table, not the Quick play one',
+    await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v1') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON9700 null');
+  check('...STORY HIGH SCORES, Enter: back to the title', /STORY HIGH SCORES/.test(await texts('Results')) && /Enter: back to the title/.test(await texts('Results')), true);
+  await page.screenshot({ path: outDir + '/story_results.png' });
   await press('Enter'); await wait(300);
   check('Back at the title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
   check('Run complete: the save is cleared', await saved(), 'none');
@@ -99,6 +125,7 @@ const { chromium } = require('playwright');
 
   // ---- Out of money: game over ----
   await press('ArrowDown'); await press('Enter'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
   await ev('(e.cashCents = -100, true)');
   await shift(3); await wait(300);
   const over = await texts('DayEnd');
@@ -111,12 +138,14 @@ const { chromium } = require('playwright');
 
   // Empty cooler and less than the cheapest bar ($1): game over too.
   await press('ArrowDown'); await press('Enter'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
   await ev('(e.cashCents = 50, true)');
   await shift(3); await wait(300);
   check('Empty cooler and $0.50: GAME OVER', /GAME OVER/.test(await texts('DayEnd')), true);
   await press('Enter'); await wait(300);
   // ...but with stock left, $0.50 isn't game over: you can still sell.
   await press('ArrowDown'); await press('Enter'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
   await press('+', 2); await press('Enter'); await wait(300);
   await ev('(e.cashCents = 50, true)');
   await shift(3); await wait(300);
@@ -135,7 +164,7 @@ const { chromium } = require('playwright');
   check('Title offers Continue story (Day 2, $0.50) and New story', /Continue story: Day 2, \$0\.50/.test(withSave) && /New story/.test(withSave), true);
   await page.screenshot({ path: outDir + '/story_title_continue.png' });
   await press('ArrowDown'); await press('Enter'); await wait(300);
-  check('Continue: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
+  check('Continue skips the intro: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
   check('Continue: HUD says Day 2/3', /Day 2\/3/.test(await hudClock()), true);
   // A reload (closing the browser) keeps the save too.
   await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
@@ -155,8 +184,30 @@ const { chromium } = require('playwright');
   await page.mouse.click(noAt[0], noAt[1]); await wait(200);
   check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0');
   await press('Enter'); await wait(200); await press('y'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
   check('...Y: a new run at day 1 with $100, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 10000 none');
   await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(300);
+
+  // ---- SCREAM-94: reaching $200 gets a victory lap ----
+  await press('ArrowDown'); await press('Enter'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
+  await story('(r.days = 1, true)'); // a one-day run, to reach the end quickly
+  await ev('(e.cashCents = 25000, true)');
+  await shift(3); await wait(300);
+  check('Day 1 of a 1-day run with $250: you can buy the bike', /You can buy the bike/.test(await texts('DayEnd')), true);
+  await press('Enter'); await wait(500);
+  const winRes = await texts('Results');
+  check('Story results say New Bike!!!!', /New Bike!!!!/.test(winRes) && !/Maybe Next Summer/.test(winRes), true);
+  check('...no F stamp', await sc('Results', "!s.children.getByName('f-stamp')"), true);
+  const t0 = await sc('Results', "Math.round(s.children.getByName('victory-truck').x)");
+  await wait(600);
+  const t1 = await sc('Results', "Math.round(s.children.getByName('victory-truck').x)");
+  check('...the truck drives across the screen', t1 !== t0, true);
+  check('...with Ws trailing behind it', await sc('Results', "s.children.list.filter(o => o.name === 'victory-w').length > 0"), true);
+  await page.screenshot({ path: outDir + '/story_results_win.png' });
+  await page.keyboard.type('WIN', { delay: 80 }); await press('Enter'); await wait(200);
+  await press('Enter'); await wait(300);
+  check('...then back to the title', await scenes(), 'Title');
 
   // ---- Quick play unchanged ----
   check('Title remembers nothing: Quick play picked again', /> Quick play </.test(await texts('Title')), true);

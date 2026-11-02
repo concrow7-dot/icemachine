@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
+import { BIKE_PRICE_CENTS } from '../config/tuning';
 
 // SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
 // takings and what you carry into tomorrow: the wallet and the ice cream left
@@ -66,6 +67,8 @@ export class DayEndScene extends Phaser.Scene {
       fontSize: '40px',
       color: evening.moneyCents < 0 ? '#ff9c9c' : '#c8f7c5',
     });
+    this.drawBikeBadge(width - 120, 95);
+
     const stock = evening.stockLeft;
     this.add.text(540, 230, `Ice creams left: ${stock}`, { fontFamily: MONO, fontSize: '20px', color: '#d6deeb' });
 
@@ -73,21 +76,54 @@ export class DayEndScene extends Phaser.Scene {
       this.outcome === 'broke'
         ? "You're out of money.\nThe truck stays parked."
         : this.outcome === 'complete'
-          ? `You made it through all ${story.days} days.`
+          ? story.canAffordBike // SCREAM-18: the bike (placeholder wording, SCREAM-76)
+            ? `School starts tomorrow.\nYou can buy the bike!`
+            : `School starts tomorrow.\nYou're ${formatMoney(BIKE_PRICE_CENTS - story.cashCents)} short of the bike.`
           : (stock > 0 ? 'Your cash and ice cream\ncarry over to tomorrow.' : 'Your cash carries over to tomorrow.') +
             '\n\nGame saved.'; // SCREAM-17: saved at the end of each evening
     this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
-    const footer = this.outcome === 'next' ? `Enter: start day ${story.day}` : 'Enter: back to the title';
+    const footer =
+      this.outcome === 'next' ? `Enter: start day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story high scores' : 'Enter: back to the title';
     this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (event.key !== 'Enter') return;
       if (this.outcome === 'next') startStoryEvening(this);
+      else if (this.outcome === 'complete') this.scene.start(SceneKeys.Results, { story: true }); // SCREAM-18
       else {
         clearStory(this);
         this.scene.start(SceneKeys.Title);
       }
     });
+  }
+
+  /**
+   * SCREAM-18 (PO, November 2, from his sketch): the goal, "Bike $200", in a
+   * red starburst in the top-right corner. Shown here only, not on the top bar.
+   */
+  private drawBikeBadge(x: number, y: number): void {
+    const points: Phaser.Math.Vector2[] = [];
+    const spikes = 14;
+    for (let i = 0; i < spikes * 2; i++) {
+      const angle = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+      const r = i % 2 === 0 ? 82 : 60;
+      points.push(new Phaser.Math.Vector2(x + Math.cos(angle) * r * 1.15, y + Math.sin(angle) * r * 0.8));
+    }
+    const g = this.add.graphics();
+    g.fillStyle(0x3a1620, 1);
+    g.fillPoints(points, true);
+    g.lineStyle(3, 0xff4d4d, 1);
+    g.strokePoints(points, true);
+    this.add
+      .text(x, y, `Bike\n${formatMoney(BIKE_PRICE_CENTS)}`, {
+        fontFamily: MONO,
+        fontSize: '24px',
+        color: '#ff7a7a',
+        align: 'center',
+        lineSpacing: 2,
+      })
+      .setOrigin(0.5)
+      .setName('bike-badge');
   }
 }
