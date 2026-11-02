@@ -6,7 +6,8 @@ import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
 import { Calculator, type CalculatorKey } from '../ui/Calculator';
 import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
-import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
+import { loadResidentSheet } from '../ui/residentLook';
+import { smoothCustomerTexture, SMOOTH_FACTOR } from '../ui/smoothPixels';
 
 // Issues #13 and #15: the sales screen, zoomed in on the window (PO sketch in
 // doc 08): a speech bubble on the left, the customer on the right of the
@@ -24,7 +25,7 @@ const CALC_Y = 278;
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
 const TIP_FLASH_DELAY_MS = 1050;
-/** SCREAM-106: the customer in the right half of the window, their map sprite blown up. */
+/** SCREAM-106: the customer in the right half of the window, their map sprite blown up 13x (SCREAM-110: smoothed). */
 const CUSTOMER_X = 756;
 const CUSTOMER_SCALE = 13;
 /** Only the top 29 of the frame's 32 px rows show (head to hips): the counter hides the feet. */
@@ -68,12 +69,16 @@ export class SalesScene extends Phaser.Scene {
     const customer = this.evening.customer;
     if (customer) {
       const look = customer.resident.look;
+      // SCREAM-110 (PO, November 2): drawn from smoothed, 8x frames, so the edges are rounded, not blocky.
+      const key = smoothCustomerTexture(this, look);
+      const scale = CUSTOMER_SCALE / SMOOTH_FACTOR;
       const person = this.add
-        .sprite(CUSTOMER_X, COUNTER_TOP - CUSTOMER_ROWS * CUSTOMER_SCALE, RESIDENTS_KEY, residentFrame(look, false, 'down', 0))
+        .sprite(CUSTOMER_X, COUNTER_TOP - CUSTOMER_ROWS * CUSTOMER_SCALE, key, 0)
         .setOrigin(0.5, 0)
-        .setScale(CUSTOMER_SCALE);
-      person.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
-      const show = (step: number) => person.setFrame(residentFrame(look, false, 'down', step)).setCrop(0, 0, 16, CUSTOMER_ROWS);
+        .setScale(scale)
+        .setName('customer');
+      const show = (step: number) =>
+        person.setFrame(step % 6).setCrop(0, 0, person.frame.width, CUSTOMER_ROWS * SMOOTH_FACTOR);
       show(0);
       // Standing at the window, breathing (the same idle frames as on the map).
       let step = 0;
