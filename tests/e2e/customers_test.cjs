@@ -23,11 +23,14 @@ const { chromium } = require('playwright');
   // ---- The chance formula (PO, November 2) ----
   await page.click('canvas'); await press('Enter'); await wait(200);
   const chance = (h, l, indoors) => ev(`Math.round(e.residents.constructor.chance(${h}, ${l}, ${indoors}) * 10000) / 10000`);
-  check('First second heard: 5% (likelihood 100%, outside)', await chance(1, 1, false), 0.05);
+  check('First second heard: 25%, the most likely moment (likelihood 100%, outside)', await chance(1, 1, false), 0.25);
   const c = []; for (const h of [1, 2, 3, 6, 12, 30, 120]) c.push(await chance(h, 1, false));
-  check('The chance grows the longer they hear the truck', c.every((x, i) => i === 0 || x > c[i - 1]), true);
-  check('...each second adding less than the last (diminishing)', (c[1] - c[0]) > (c[2] - c[1]), true);
-  check('...toward 25%, never past it', c[6] <= 0.25 && c[6] > 0.24, true);
+  check('The chance falls each second after that', c.every((x, i) => i === 0 || x < c[i - 1]), true);
+  check('...by less each second (diminishing)', (c[0] - c[1]) > (c[1] - c[2]), true);
+  check('...toward 5%, never below it', c[6] >= 0.05 && c[6] < 0.051, true);
+  // The chance they've come out after hearing it for n seconds in a row: 1 minus the chance they said no every second.
+  const comeOut = await ev('(() => { const f = e.residents.constructor.chance; const out = n => { let stay = 1; for (let h = 1; h <= n; h++) stay *= 1 - f(h, 1, false); return 1 - stay; }; return [out(1), out(5), out(15)]; })()');
+  check('Overall, the longer they hear it, the more likely they come out', comeOut[0] < comeOut[1] && comeOut[1] < comeOut[2], true);
   check('Indoors: half as likely', Math.abs((await chance(5, 1, true)) - (await chance(5, 1, false)) / 2) < 0.0002, true);
   check("The resident's likelihood scales it (40%)", Math.abs((await chance(5, 0.4, false)) - (await chance(5, 1, false)) * 0.4) < 0.0002, true);
   check('Likelihood 0%: never', await chance(30, 0, false), 0);

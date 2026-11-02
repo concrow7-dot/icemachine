@@ -165,15 +165,18 @@ export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 export const MUSIC_RING_RADIUS = 300;
 
 /**
- * Each second someone hears the truck, the chance they want ice cream. It starts at
- * CUSTOMER_CHANCE_START and grows toward CUSTOMER_CHANCE_CAP the longer they keep
- * hearing it, each second adding less than the last (PO: diminishing returns). About
- * two thirds of the way there after CUSTOMER_CHANCE_GROWTH_SECONDS. Engineering's numbers.
- * Then multiplied by the resident's likelihood from the residents sheet (doc 38).
+ * Each second someone hears the truck, the chance they want ice cream. PO, November 2:
+ * people are most likely to want ice cream the moment they hear the truck; after that
+ * they may still change their mind, but less and less often. So the chance is
+ * CUSTOMER_CHANCE_FIRST in the first second, then falls toward CUSTOMER_CHANCE_FLOOR,
+ * each second by less than the last (about two thirds of the way down after
+ * CUSTOMER_CHANCE_SETTLE_SECONDS). Overall, the longer someone hears the truck, the
+ * more likely they've come out. Engineering's numbers. Then multiplied by the
+ * resident's likelihood from the residents sheet (doc 38).
  */
-export const CUSTOMER_CHANCE_START = 0.05;
-export const CUSTOMER_CHANCE_CAP = 0.25;
-export const CUSTOMER_CHANCE_GROWTH_SECONDS = 6;
+export const CUSTOMER_CHANCE_FIRST = 0.25;
+export const CUSTOMER_CHANCE_FLOOR = 0.05;
+export const CUSTOMER_CHANCE_SETTLE_SECONDS = 6;
 
 /** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
 export const CUSTOMER_INDOORS_FACTOR = 0.5;

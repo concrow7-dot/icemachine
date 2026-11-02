@@ -11,9 +11,9 @@
 // the evening (EveningState), so they carry on where they were after a sale.
 
 import {
-  CUSTOMER_CHANCE_CAP,
-  CUSTOMER_CHANCE_GROWTH_SECONDS,
-  CUSTOMER_CHANCE_START,
+  CUSTOMER_CHANCE_FIRST,
+  CUSTOMER_CHANCE_FLOOR,
+  CUSTOMER_CHANCE_SETTLE_SECONDS,
   CUSTOMER_INDOORS_FACTOR,
   CUSTOMER_RUN_SPEED,
   CUSTOMER_WAIT_SECONDS,
@@ -99,14 +99,14 @@ interface Running extends ResidentNow {
 const between = (rnd: () => number, [low, high]: readonly [number, number]) => low + rnd() * (high - low);
 
 /**
- * The chance, each second, that someone who has heard the truck for `heard` seconds
- * in a row wants ice cream (PO, November 2): it grows the longer they hear it, each
- * second adding less than the last, from CUSTOMER_CHANCE_START toward CUSTOMER_CHANCE_CAP.
+ * The chance, in a second, that someone who has heard the truck for `heard` seconds in
+ * a row wants ice cream (PO, November 2): highest the moment they hear it, then falling,
+ * each second by less than the last, from CUSTOMER_CHANCE_FIRST toward CUSTOMER_CHANCE_FLOOR.
  * Then times their likelihood from the sheet, and halved while they're indoors.
  */
 export function customerChance(heard: number, likelihood: number, indoors: boolean): number {
-  const growth = 1 - Math.exp(-Math.max(0, heard - 1) / CUSTOMER_CHANCE_GROWTH_SECONDS);
-  const base = CUSTOMER_CHANCE_START + (CUSTOMER_CHANCE_CAP - CUSTOMER_CHANCE_START) * growth;
+  const settled = 1 - Math.exp(-Math.max(0, heard - 1) / CUSTOMER_CHANCE_SETTLE_SECONDS);
+  const base = CUSTOMER_CHANCE_FIRST - (CUSTOMER_CHANCE_FIRST - CUSTOMER_CHANCE_FLOOR) * settled;
   return base * likelihood * (indoors ? CUSTOMER_INDOORS_FACTOR : 1);
 }
 
@@ -217,7 +217,7 @@ export class Residents {
       const indoors = !p.outside;
       const [x, y] = indoors ? p.resident.door : [p.x, p.y];
       const inRing = !!ring && Math.hypot(x - ring.x, y - ring.y) <= ring.radius;
-      // "The longer someone hears the truck": counted in a row, so it starts again once the truck has gone.
+      // Seconds heard are counted in a row, so someone who hears the truck again later gets a fresh first-second chance.
       p.heard = inRing ? p.heard + 1 : 0;
       if (!inRing || !ring?.open || this.hearingOff) continue;
       if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors)) this.wantIceCream(p);
