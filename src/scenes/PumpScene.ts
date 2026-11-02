@@ -70,7 +70,7 @@ export class PumpScene extends Phaser.Scene {
     // (the up and down arrow keys still do the same), or scroll the mouse wheel.
     this.lessButton = this.stepButton(330, '▼  $5 less', -FUEL_STEP_CENTS);
     this.moreButton = this.stepButton(490, '▲  $5 more', FUEL_STEP_CENTS);
-    this.add.text(650, 401, 'or ↑ ↓ / mouse wheel', { fontFamily: 'monospace', fontSize: '14px', color: '#8a6a4a' });
+    this.add.text(650, 401, 'Or ↑ ↓ / Mouse Wheel', { fontFamily: 'monospace', fontSize: '14px', color: '#8a6a4a' });
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
       if (dy !== 0) this.change(dy < 0 ? FUEL_STEP_CENTS : -FUEL_STEP_CENTS);
     });
@@ -78,7 +78,7 @@ export class PumpScene extends Phaser.Scene {
     this.payButton = this.button(470, 478, '', '#2e7d32', () => this.pay());
     this.button(760, 478, 'DRIVE OFF', '#1d5c8c', () => this.leave());
     this.add
-      .text(width / 2, 522, 'Enter: pay and drive off    B: drive off without gas    The clock is running', {
+      .text(width / 2, 522, 'Enter: Pay And Drive Off    B: Drive Off Without Gas    The clock is running.', {
         fontFamily: 'monospace',
         fontSize: '14px',
         color: '#ffffff',
@@ -132,7 +132,7 @@ export class PumpScene extends Phaser.Scene {
     const now = this.evening.fuel;
     const adds = this.amount / FUEL_FULL_TANK_CENTS;
     this.amountText.setText(formatMoney(this.amount));
-    this.addsText.setText(this.amount <= 0 ? '' : this.amount >= FUEL_FULL_TANK_CENTS ? 'a full tank' : `+${tankFraction(this.amount)} tank`);
+    this.addsText.setText(this.amount <= 0 ? '' : this.amount >= FUEL_FULL_TANK_CENTS ? 'A full tank' : `+${tankFraction(this.amount)} tank`);
     this.noteText.setText(
       max === 0
         ? now >= 1 - FUEL_STEP_CENTS / FUEL_FULL_TANK_CENTS + 1e-6

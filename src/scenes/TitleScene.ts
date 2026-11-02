@@ -67,12 +67,12 @@ export class TitleScene extends Phaser.Scene {
     const save = loadStory();
     this.options = save
       ? [
-          { id: 'quick', label: 'Quick play' },
-          { id: 'continue', label: `Continue story: Day ${save.day}, ${formatMoney(save.cashCents)}` },
-          { id: 'story', label: 'New story' },
+          { id: 'quick', label: 'Quick Play' },
+          { id: 'continue', label: `Continue Story: Day ${save.day}, ${formatMoney(save.cashCents)}` },
+          { id: 'story', label: 'New Story' },
         ]
       : [
-          { id: 'quick', label: 'Quick play' },
+          { id: 'quick', label: 'Quick Play' },
           { id: 'story', label: 'Story' },
         ];
 
@@ -83,7 +83,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.rectangle(width / 2, 238, 520, 150, 0x1f2a44).setStrokeStyle(2, 0x4d5a70);
     this.add.text(width / 2, 186, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '24px', color: '#ffe066' }).setOrigin(0.5);
     this.add
-      .text(width / 2, 252, '↑ gas      ↓ brake / reverse\n← → steer      Q park brake\n\nPull up beside a customer and stop', {
+      .text(width / 2, 252, '↑ Gas      ↓ Brake / Reverse\n← → Steer      Q Park Brake\n\nPull up beside a customer and stop.', {
         fontFamily: 'monospace',
         fontSize: '17px',
         color: '#d6deeb',
@@ -111,7 +111,7 @@ export class TitleScene extends Phaser.Scene {
     );
     this.refreshModes();
     this.add
-      .text(width / 2, height - 32, '↑ ↓ or mouse: choose    Press Enter or click to start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
+      .text(width / 2, height - 32, '↑ ↓ Or Mouse: Choose    Press Enter Or Click To Start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
       .setOrigin(0.5);
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)    Map data © OpenStreetMap contributors', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
@@ -168,7 +168,7 @@ export class TitleScene extends Phaser.Scene {
         .setOrigin(0.5),
       // SCREAM-90: click Yes or No, or press Y or N.
       this.add
-        .text(width / 2 - 110, height / 2 + 50, 'Yes, start over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .text(width / 2 - 110, height / 2 + 50, 'Yes, Start Over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.start('story')),

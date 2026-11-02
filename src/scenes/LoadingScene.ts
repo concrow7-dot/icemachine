@@ -31,7 +31,7 @@ export class LoadingScene extends Phaser.Scene {
     this.scene.bringToTop();
     const layer = this.add.container(0, 0).setAlpha(0).setName('loading-layer');
     layer.add(this.add.rectangle(0, 0, width, height, 0x1b2230).setOrigin(0, 0));
-    layer.add(this.add.text(width / 2, height - 28, 'Loading...', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5));
+    layer.add(this.add.text(width / 2, height - 28, 'Loading…', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5));
     this.time.delayedCall(SHOW_AFTER_MS, () => layer.setAlpha(1));
 
     this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);

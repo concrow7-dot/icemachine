@@ -283,7 +283,7 @@ export class DriveScene extends Phaser.Scene {
     camera.setZoom(DRIVE_CAMERA_ZOOM);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake  ← → steer  Q park  M mute  N next song   People in your ring may want ice cream (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song   People in your ring may want ice cream (!)', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -308,7 +308,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.parkLabel = this.add
-      .text(16, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas or Q to release', {
+      .text(16, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas Or Q To Release', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -662,7 +662,7 @@ export class DriveScene extends Phaser.Scene {
       this.speed = 0;
       this.parkBrake = true;
     } else {
-      this.flashNotice('Slow to a creep to use the park brake');
+      this.flashNotice('Slow to a creep to use the park brake.');
     }
     this.parkLabel.setVisible(this.parkBrake);
   }

@@ -31,7 +31,7 @@ const { chromium } = require('playwright');
   // ---- Title: two modes ----
   await page.click('canvas'); await wait(200);
   const title = await texts('Title');
-  check('Title shows Quick play (picked) and Story', /> Quick play </.test(title) && /Story/.test(title), true);
+  check('Title shows Quick play (picked) and Story', /> Quick Play </.test(title) && /Story/.test(title), true);
   await press('ArrowDown');
   check('Down arrow picks Story', /> Story </.test(await texts('Title')), true);
   await page.screenshot({ path: outDir + '/story_title.png' });
@@ -43,9 +43,9 @@ const { chromium } = require('playwright');
   check('...in its lanes, clear of the menu', await sc('Title', "(() => { const t = s.children.getByName('title-truck'); const top = t.y - t.displayHeight / 2, bottom = t.y + t.displayHeight / 2; return s.modeTexts.every(m => m.y + m.height / 2 < top || m.y - m.height / 2 > bottom); })()"), true);
   // SCREAM-90: the mouse. Pointing at an option picks it.
   const optionAt = (label) => sc('Title', `(() => { const t = s.modeTexts.find(o => o.text.includes('${label}')); return [Math.round(t.x), Math.round(t.y)]; })()`);
-  const [qx, qy] = await optionAt('Quick play');
+  const [qx, qy] = await optionAt('Quick Play');
   await page.mouse.move(qx, qy); await wait(150);
-  check('Mouse over Quick play picks it', /> Quick play </.test(await texts('Title')), true);
+  check('Mouse over Quick play picks it', /> Quick Play </.test(await texts('Title')), true);
   const [sx, sy] = await optionAt('Story');
   await page.mouse.move(sx, sy); await wait(150);
   check('Mouse over Story picks it', /> Story </.test(await texts('Title')), true);
@@ -66,7 +66,7 @@ const { chromium } = require('playwright');
   check('HUD shows the day beside the clock', /Day 1\/3/.test(await hudClock()), true);
   check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
   // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
-  check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: end evening');
+  check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: End Evening');
   check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '9700 3');
@@ -75,7 +75,7 @@ const { chromium } = require('playwright');
   const day1 = await texts('DayEnd');
   check('...it says END OF DAY 1 and shows the wallet', /END OF DAY 1/.test(day1) && /WALLET/.test(day1) && /\$97\.00/.test(day1), true);
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
-  check('...and Enter starts day 2', /Enter: start day 2/.test(day1), true);
+  check('...and Enter starts day 2', /Enter: Start Day 2/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
@@ -109,7 +109,7 @@ const { chromium } = require('playwright');
   const last = await texts('DayEnd');
   check('After day 3: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
   check('...short of the bike ($97 of $200: $103 short)', /\$103\.00 short of the bike/.test(last), true);
-  check('...Enter goes to the Story high scores', /Enter: Story high scores/.test(last), true);
+  check('...Enter goes to the Story high scores', /Enter: Story High Scores/.test(last), true);
   await press('Enter'); await wait(300);
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');
@@ -123,7 +123,7 @@ const { chromium } = require('playwright');
   await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
   check('...saved to the Story table, not the Quick play one',
     await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v1') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON9700 null');
-  check('...STORY HIGH SCORES, Enter: back to the title', /STORY HIGH SCORES/.test(await texts('Results')) && /Enter: back to the title/.test(await texts('Results')), true);
+  check('...STORY HIGH SCORES, Enter: back to the title', /STORY HIGH SCORES/.test(await texts('Results')) && /Enter: Back To The Title/.test(await texts('Results')), true);
   await page.screenshot({ path: outDir + '/story_results.png' });
   await press('Enter'); await wait(300);
   check('Back at the title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
@@ -168,14 +168,14 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-17: Continue ----
   const withSave = await texts('Title');
-  check('Title offers Continue story (Day 2, $0.50) and New story', /Continue story: Day 2, \$0\.50/.test(withSave) && /New story/.test(withSave), true);
+  check('Title offers Continue story (Day 2, $0.50) and New story', /Continue Story: Day 2, \$0\.50/.test(withSave) && /New Story/.test(withSave), true);
   await page.screenshot({ path: outDir + '/story_title_continue.png' });
   await press('ArrowDown'); await press('Enter'); await wait(300);
   check('Continue skips the intro: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
   check('Continue: HUD says Day 2/3', /Day 2\/3/.test(await hudClock()), true);
   // A reload (closing the browser) keeps the save too.
   await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
-  check('After reloading the page the save is still there', /Continue story: Day 2/.test(await texts('Title')), true);
+  check('After reloading the page the save is still there', /Continue Story: Day 2/.test(await texts('Title')), true);
 
   // ---- SCREAM-17: New story asks first ----
   await press('ArrowUp'); await press('Enter'); await wait(200);
@@ -217,9 +217,9 @@ const { chromium } = require('playwright');
   check('...then back to the title', await scenes(), 'Title');
 
   // ---- Quick play unchanged ----
-  check('Title remembers nothing: Quick play picked again', /> Quick play </.test(await texts('Title')), true);
+  check('Title remembers nothing: Quick play picked again', /> Quick Play </.test(await texts('Title')), true);
   // SCREAM-90: click to start.
-  const [cx, cy] = await optionAt('Quick play');
+  const [cx, cy] = await optionAt('Quick Play');
   await page.mouse.click(cx, cy); await wait(300);
   check('Quick play: $50, no Story run', (await ev('e.moneyCents')) + ' ' + (await story('r')), '5000 null');
   check('Quick play: HUD shows no day', /Day/.test(await hudClock()), false);

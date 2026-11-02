@@ -95,7 +95,7 @@ export class DayEndScene extends Phaser.Scene {
     this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
     const footer =
-      this.outcome === 'next' ? `Enter: start day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story high scores' : 'Enter: back to the title';
+      this.outcome === 'next' ? `Enter: Start Day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';
     this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
