@@ -33,7 +33,7 @@ const { chromium } = require('playwright');
   const title = await texts('Title');
   check('Title: no difficulty choice (no EASY / HARD)', /EASY|HARD|Choose a difficulty/.test(title), false);
   check('Title: shows HOW TO DRIVE with the car-style controls', /HOW TO DRIVE/.test(title) && /gas/.test(title) && /Q park brake/.test(title), true);
-  check('Title: Press Enter to start, credits still shown', /Press Enter to start/.test(title) && /LimeZu/.test(title) && /OpenStreetMap/.test(title), true);
+  check('Title: Press Enter or click to start, credits still shown', /Press Enter or click to start/.test(title) && /LimeZu/.test(title) && /OpenStreetMap/.test(title), true);
   await page.screenshot({ path: outDir + '/title_oneway.png' });
   await page.click('canvas'); await press('ArrowLeft'); await press('ArrowRight');
   check('Arrow keys on the title do nothing (still on the title)', await scenes(), 'Title');

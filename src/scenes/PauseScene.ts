@@ -66,7 +66,15 @@ export class PauseScene extends Phaser.Scene {
         }),
     );
     this.prompt = this.add
-      .text(width / 2, height / 2 - 15, '', { fontFamily: 'monospace', fontSize: '20px', color: INK, align: 'center', lineSpacing: 8 })
+      // SCREAM-89: wrap inside the box, so a long question never runs off it.
+      .text(width / 2, height / 2 - 15, '', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: INK,
+        align: 'center',
+        lineSpacing: 8,
+        wordWrap: { width: 390 },
+      })
       .setOrigin(0.5);
     this.answers = ['Yes', 'No'].map((label, i) =>
       this.add
@@ -146,10 +154,10 @@ export class PauseScene extends Phaser.Scene {
     });
     this.prompt.setVisible(asking);
     if (this.confirming === 'restart') {
-      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash and stock go back to how it started.' : "Restart this evening?\nIt won't count for high scores.");
+      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash and stock go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
     }
     if (this.confirming === 'quit') {
-      this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at the start of this evening.' : "Quit to the title screen?\nThis evening won't count.");
+      this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at\nthe start of this evening.' : "Quit to the title screen?\nThis evening won't count.");
     }
     this.answers.forEach((t, i) => {
       const on = i === this.answer;

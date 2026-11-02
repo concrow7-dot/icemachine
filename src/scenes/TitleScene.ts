@@ -14,6 +14,8 @@ import { formatMoney } from '../util/format';
 // Quick play is picked first, so Enter alone starts it as before.
 // SCREAM-17 (PO, October 31): with a saved Story run, the menu offers Continue
 // and New story; New story asks before it overwrites the save.
+// SCREAM-90 (PO, November 1): the mouse works too: point at an option to pick
+// it, click to start; the New story question has Yes and No to click.
 
 type Mode = 'quick' | 'story' | 'continue';
 type Option = { id: Mode; label: string };
@@ -79,11 +81,22 @@ export class TitleScene extends Phaser.Scene {
     this.modeTexts = this.options.map((m, i) =>
       this.add
         .text(width / 2, 372 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
-        .setOrigin(0.5),
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => {
+          if (this.starting || this.confirming) return;
+          this.selected = i;
+          this.refreshModes();
+        })
+        .on('pointerdown', () => {
+          if (this.starting || this.confirming) return;
+          this.selected = i;
+          this.chooseSelected();
+        }),
     );
     this.refreshModes();
     this.add
-      .text(width / 2, height - 58, '↑ ↓ choose    Press Enter to start', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' })
+      .text(width / 2, height - 58, '↑ ↓ or mouse: choose    Press Enter or click to start', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' })
       .setOrigin(0.5);
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)    Map data © OpenStreetMap contributors', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
@@ -100,14 +113,16 @@ export class TitleScene extends Phaser.Scene {
       const n = this.options.length;
       if (key === 'ArrowUp') this.selected = (this.selected - 1 + n) % n;
       else if (key === 'ArrowDown') this.selected = (this.selected + 1) % n;
-      else if (key === 'Enter') {
-        const id = this.options[this.selected]?.id ?? 'quick';
-        // A new story over a saved run asks first (SCREAM-17).
-        if (id === 'story' && loadStory()) return this.openConfirm();
-        return this.start(id);
-      }
+      else if (key === 'Enter') return this.chooseSelected();
       this.refreshModes();
     });
+  }
+
+  /** Enter or a click on the picked option. A new story over a saved run asks first (SCREAM-17). */
+  private chooseSelected(): void {
+    const id = this.options[this.selected]?.id ?? 'quick';
+    if (id === 'story' && loadStory()) return this.openConfirm();
+    this.start(id);
   }
 
   private start(id: Mode): void {
@@ -136,9 +151,17 @@ export class TitleScene extends Phaser.Scene {
           lineSpacing: 8,
         })
         .setOrigin(0.5),
+      // SCREAM-90: click Yes or No, or press Y or N.
       this.add
-        .text(width / 2, height / 2 + 50, 'Y: yes, start over    N: no', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5),
+        .text(width / 2 - 110, height / 2 + 50, 'Yes, start over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.start('story')),
+      this.add
+        .text(width / 2 + 140, height / 2 + 50, 'No (N)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.closeConfirm()),
     ];
   }
 
