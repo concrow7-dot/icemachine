@@ -37,10 +37,14 @@ const { TRACK } = require('./track.cjs');
   const sim = (setup, frames) => run(setup, frames);
 
   // ---- Momentum: let go of the gas and the truck rolls ----
-  let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 40);
+  // SCREAM-114 (PO, November 2): it keeps 90% of its speed every half second, so it rolls on
+  // almost as fast until you brake, and takes about 10 s to roll down to a creep.
+  let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 31);
+  near('Let go at top speed: half a second later it still has about 90% of its speed (px/s)', r.at(-1)[3], 485, 500);
+  r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 700);
   const creepAt = r.findIndex(f => f[3] === 72);
-  near('Let go at top speed: slows to a creep in about 0.43 s (frames)', creepAt + 1, 26, 29);
-  check('...and keeps creeping (never stops on its own)', r.at(-1)[3] + ' ' + (r.at(-1)[0] > r.at(-2)[0]), '72 true');
+  near('...and rolls down to a creep only after about 10 s (s)', Math.round((creepAt + 1) * 0.016), 8, 11);
+  check('...then keeps creeping (never stops on its own)', r.at(-1)[3], 72); // 10 s of rolling runs off the test track, so check the speed
   r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 72; s.parkBrake = false; s.held = ['right']", 20);
   near('Steering while creeping still turns the truck (degrees)', r.at(-1)[2], 25, 40);
 
@@ -90,7 +94,7 @@ const { TRACK } = require('./track.cjs');
   r = await run("s.truck.setPosition(400, 180); s.setHeading(0); s.held = ['left']", 5, 300);
   near('Left turns the other way (anticlockwise)', r.at(-1)[2], -18, -13);
 
-  const [T1, T2, T3] = [22, 20, 50]; // frames of 16 ms for each leg of the three-point turn
+  const [T1, T2, T3] = [18, 20, 50]; // frames of 16 ms for each leg of the three-point turn
   // ---- Turning round on a two-lane street ----
   // SCREAM-114 (PO, November 2): the truck is 1.3x bigger, so like a real truck it can't
   // U-turn in one sweep any more: full lock stops short, facing the curb. A three-point
@@ -161,12 +165,15 @@ const { TRACK } = require('./track.cjs');
   await wait(200);
   await page.keyboard.down('ArrowUp'); await wait(800);
   const xAtRelease = await drive('s.truck.x');
+  const speedAtRelease = await drive('s.speed');
   await page.keyboard.up('ArrowUp'); await wait(700);
-  near('Real keys: after letting go, the truck rolls on and keeps creeping (px)', Math.round((await drive('s.truck.x')) - xAtRelease), 100, 260);
-  check('...at creep speed', Math.round(await drive('s.speed')), 72);
+  near('Real keys: after letting go, the truck rolls on (px)', Math.round((await drive('s.truck.x')) - xAtRelease), 150, 560);
+  check('...still near the speed it had (momentum, SCREAM-114)', (await drive('s.speed')) > speedAtRelease * 0.8, true);
+  // To stop, brake down to a creep first, then Q.
+  await page.keyboard.down('ArrowDown'); await wait(250); await page.keyboard.up('ArrowDown'); await wait(150);
   await page.keyboard.press('q'); await wait(400);
   const xStopped = await drive('Math.round(s.truck.x)'); await wait(400);
-  check('Real keys: while creeping, a single Q stops it and it stays stopped', (await drive('Math.round(s.truck.x)')) - xStopped + ' ' + (await drive('s.parkLabel.visible')), '0 true');
+  check('Real keys: braked to a creep, a single Q stops it and it stays stopped', (await drive('Math.round(s.truck.x)')) - xStopped + ' ' + (await drive('s.parkLabel.visible')), '0 true');
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();

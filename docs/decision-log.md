@@ -11,7 +11,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - The driving view is zoomed in 1.2x.
 - Gas burns 1.5x as fast: a full tank drives 78,000 px (about a full evening of driving). Then 15% faster again (PO, November 2): 67,800 px; then 25% faster again: 54,200 px.
 - Top speed is 10% higher, then 15% higher again: 547 px/s (was 433). It also burns gas faster per second at top speed.
-- 25% more momentum (PO, November 2): letting go of the gas, the truck rolls down to a creep over 0.5 s (was 0.4). Engineering read "momentum" as this roll; braking is unchanged.
+- Momentum (PO, November 2): first 25% more (rolling down to a creep over 0.5 s, was 0.4); then much more: let go of the gas and the truck keeps 90% of its speed every half second, so it rolls on almost at the same speed until you brake, taking about 10 s to roll down to a creep. (The PO wrote "lose 90% per .5 seconds"; engineering read it as keeping 90%, which matches "basically keep that speed", and the PO agreed.) Braking is unchanged; to use the park brake, brake to a creep first.
 - Each resident buys at most once a night (PO, November 2): already the rule since decision 015, and tested.
 - Kept as they were (PO, November 2): how fast people come out while you're parked, speed not mattering much, and the 300 px music ring.
 

@@ -20,6 +20,8 @@ import {
   TRUCK_REVERSE_DELAY_SECONDS,
   TRUCK_REVERSE_SPEED,
   TRUCK_SPEED,
+  TRUCK_COAST_KEEP,
+  TRUCK_COAST_KEEP_SECONDS,
   TRUCK_SCALE,
   PARKED_CAR_SCALE,
   DRIVE_CAMERA_ZOOM,
@@ -422,8 +424,10 @@ export class DriveScene extends Phaser.Scene {
       this.brakeHeldStill = 0;
       const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
       const creep = this.rolling * TRUCK_CREEP_SPEED;
-      // Faster than a creep: slow down to it. Slower (just set off, or after a stop): ease up to it.
-      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED) this.speed -= Math.sign(this.speed) * Math.min(roll, Math.abs(this.speed) - TRUCK_CREEP_SPEED);
+      // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
+      // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
+      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED)
+        this.speed = Math.sign(this.speed) * Math.max(TRUCK_CREEP_SPEED, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
       else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
     if (this.speed !== 0) this.rolling = Math.sign(this.speed);

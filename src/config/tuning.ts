@@ -59,6 +59,17 @@ export const TRUCK_ACCELERATION_SECONDS = 2.5;
  */
 export const TRUCK_COAST_SECONDS = 0.5;
 
+/**
+ * SCREAM-114 (PO, November 2): much more momentum. Let go of every key and the truck keeps
+ * this share of its speed every TRUCK_COAST_KEEP_SECONDS, so it rolls on almost at the
+ * same speed until you brake (a creep is still the slowest it rolls). Read as "loses 10% per
+ * half second": from top speed it takes about 10 s to roll down to a creep.
+ * TRUCK_COAST_SECONDS above still sets how fast it eases up to a creep from a stop, and how
+ * an empty tank drops it to its crawl.
+ */
+export const TRUCK_COAST_KEEP = 0.9;
+export const TRUCK_COAST_KEEP_SECONDS = 0.5;
+
 /** The brake (down arrow): top speed to a stop in this many seconds. */
 export const TRUCK_BRAKING_SECONDS = 0.15;
 
