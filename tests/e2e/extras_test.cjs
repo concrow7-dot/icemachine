@@ -63,7 +63,8 @@ const { TRACK } = require('./track.cjs');
   const truckX = await drive('Math.round(s.truck.x)');
   const carPop = (await popups()).find(p => p.startsWith('-$10.00'));
   check('Parked car: "-$10.00" pops up', !!carPop, true);
-  near('...at the front of the truck, where it hit (x)', Number(carPop?.split('@')[1].split(',')[0]), truckX, truckX + 29); // the nose is 28.6 px ahead (SCREAM-114)
+  const nose = Math.ceil(await drive('s.truckHalf.length'));
+  near('...at the front of the truck, where it hit (x)', Number(carPop?.split('@')[1].split(',')[0]), truckX, truckX + nose + 1); // the nose is truckHalf.length ahead (52 px since SCREAM-115)
   await page.screenshot({ path: outDir + '/extras_car_cost.png' });
   await wait(1500);
   check('...and fades away', (await popups()).length, 0);
