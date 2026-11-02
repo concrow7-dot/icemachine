@@ -3,6 +3,8 @@ import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../conf
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { WORCESTER } from '../config/worcester';
+import { RESIDENTS } from '../config/residents';
+import { Residents } from './Residents';
 import {
   COOLER_SLOTS,
   EVENING_END_HOUR,
@@ -80,6 +82,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     y: WORCESTER.homeStart.y,
     angle: WORCESTER.homeStart.angle,
   };
+
+  /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
+  readonly residents = new Residents(RESIDENTS);
 
   /** The cooler starts with the first three flavours selected and empty. */
   private readonly coolerSlots: CoolerSlot[] = FLAVOURS.slice(0, COOLER_SLOTS).map((f) => ({

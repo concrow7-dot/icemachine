@@ -140,3 +140,21 @@ export const HIT_MIN_SPEED_FRACTION = 0.25;
 
 /** How long the truck spins after hitting a pothole, in seconds. */
 export const POTHOLE_SPIN_SECONDS = 0.6;
+
+// ---- Residents (SCREAM-59, SCREAM-73) ----
+// Engineering's starting values, to tune after the PO's first test.
+
+/** How fast residents walk around their yard, in px per second (the truck's top speed is far higher). */
+export const RESIDENT_WALK_SPEED = 22;
+
+/** Once outside, a resident stays out this many seconds (somewhere in the range) before going back in. */
+export const RESIDENT_OUTSIDE_SECONDS: readonly [number, number] = [25, 70];
+
+/** Once inside, a resident stays in this many seconds before coming out again. */
+export const RESIDENT_INSIDE_SECONDS: readonly [number, number] = [20, 60];
+
+/** Between walks, a resident stands still this many seconds. */
+export const RESIDENT_IDLE_SECONDS: readonly [number, number] = [2, 7];
+
+/** At the start of an evening, this share of residents are already outside. */
+export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;

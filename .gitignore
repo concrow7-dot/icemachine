@@ -4,3 +4,4 @@ dist/
 *.log
 tests/e2e/.run/
 tests/e2e/.shots/
+__pycache__/

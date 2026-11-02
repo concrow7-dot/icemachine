@@ -24,6 +24,8 @@ import {
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState, type Facing } from '../state/EveningState';
+import { RESIDENT_FRAME, RESIDENT_LOOKS_ACROSS } from '../config/residents';
+import type { ResidentFacing } from '../state/Residents';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to drive into a waiting customer.
@@ -90,6 +92,18 @@ const COLOURS = {
  * extra for the camera shake.
  */
 const MAP_SQUARE = 512;
+
+/** The residents' sprite sheet (SCREAM-59): LimeZu Modern Interiors characters. */
+const RESIDENTS_KEY = 'residents';
+/** Each look's frames run right, up, left, down, six frames each. */
+const FACING_COLUMN: Record<ResidentFacing, number> = { right: 0, up: 1, left: 2, down: 3 };
+/** Residents (and the houses and trees in front of them) are drawn between the map (0) and the curb customer (6). */
+const RESIDENT_DEPTH = 5;
+/** Depth added per px down the map, so lower on screen means in front: the map is under 10,000 px tall. */
+const DEPTH_PER_PX = 10000;
+/** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
+const OCCLUDER_CELL = 128;
+const OBJECT_SIZES = new Map(WORCESTER.sprites.map((s) => [s.key, s] as const));
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
@@ -103,6 +117,12 @@ export class DriveScene extends Phaser.Scene {
   private speed = 0;
   /** Driving keys currently held: up = gas, down = brake/reverse, left/right = steer. */
   private held: Facing[] = [];
+  /** One sprite per resident, in the same order as evening.residents.all. */
+  private residentSprites: Phaser.GameObjects.Sprite[] = [];
+  /** Houses and trees by 128 px square, as indexes into WORCESTER.objects, for finding what stands in front of a resident. */
+  private objectGrid = new Map<string, number[]>();
+  /** Copies of houses and trees drawn over a resident who is behind them (SCREAM-104), by object index. */
+  private occluders = new Map<number, Phaser.GameObjects.Image>();
   /** The customer, standing on the sidewalk. */
   private customer!: Phaser.GameObjects.Container;
   /** The patch of road beside them where the truck pulls in to pick them up. */
@@ -147,6 +167,10 @@ export class DriveScene extends Phaser.Scene {
     this.load.image('map-grass', 'assets/limezu/map/grass.png');
     for (const { key } of WORCESTER.sprites) this.load.image(`map-${key}`, `assets/limezu/map/${key}.png`);
     for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
+    this.load.spritesheet(RESIDENTS_KEY, 'assets/limezu/residents.png', {
+      frameWidth: RESIDENT_FRAME.width,
+      frameHeight: RESIDENT_FRAME.height,
+    });
   }
 
   create(): void {
@@ -168,6 +192,26 @@ export class DriveScene extends Phaser.Scene {
     this.drawNeighbourhood(worldWidth, worldHeight);
     this.placeObstacles();
     this.customer = this.makeCustomer();
+    this.residentSprites = this.evening.residents.all.map(() =>
+      this.add.sprite(0, 0, RESIDENTS_KEY, 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
+    );
+    this.occluders.clear();
+    this.objectGrid.clear();
+    WORCESTER.objects.forEach((o, i) => {
+      const size = OBJECT_SIZES.get(o.key);
+      if (!size) return;
+      const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
+      const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
+      const top = Math.floor((o.y - size.h) / OCCLUDER_CELL);
+      const bottom = Math.floor(o.y / OCCLUDER_CELL);
+      for (let cx = left; cx <= right; cx++)
+        for (let cy = top; cy <= bottom; cy++) {
+          const key = `${cx},${cy}`;
+          const list = this.objectGrid.get(key);
+          if (list) list.push(i);
+          else this.objectGrid.set(key, [i]);
+        }
+    });
     this.truck = this.makeTruck();
 
     const { x, y, angle } = this.evening.truck;
@@ -253,9 +297,11 @@ export class DriveScene extends Phaser.Scene {
     this.refreshCustomer();
   }
 
-  update(_time: number, deltaMs: number): void {
+  update(time: number, deltaMs: number): void {
     this.refreshVisibleMap();
     if (this.leaving) return;
+    this.evening.residents.update(Math.min(deltaMs, 100) / 1000);
+    this.drawResidents(time);
     if (this.spinning) {
       this.updatePointer();
       return;
@@ -703,6 +749,64 @@ export class DriveScene extends Phaser.Scene {
       });
       return;
     }
+  }
+
+  // ---- Residents (SCREAM-59, SCREAM-73) ----
+
+  /**
+   * Draws the residents who are outside and near the view. Frames are picked by
+   * hand rather than with Phaser animations (160 people x 8 animations would be a lot):
+   * each look is two rows in residents.png, idle then walk, with six frames each
+   * for right, up, left and down.
+   */
+  private drawResidents(timeMs: number): void {
+    const view = this.cameras.main.worldView;
+    const across = RESIDENT_LOOKS_ACROSS * 24;
+    const inFront = new Set<number>();
+    this.evening.residents.all.forEach((p, i) => {
+      const sprite = this.residentSprites[i];
+      const near =
+        p.outside && p.x > view.x - 40 && p.x < view.right + 40 && p.y > view.y - 10 && p.y < view.bottom + 50;
+      sprite.setVisible(near);
+      if (!near) return;
+      const look = p.resident.look;
+      const row = Math.floor(look / RESIDENT_LOOKS_ACROSS) * 2 + (p.walking ? 1 : 0);
+      const step = Math.floor(timeMs / (p.walking ? 110 : 160) + i * 2) % 6;
+      const frame = row * across + (look % RESIDENT_LOOKS_ACROSS) * 24 + FACING_COLUMN[p.facing] * 6 + step;
+      const x = Math.round(p.x);
+      const y = Math.round(p.y);
+      // Front to back (SCREAM-104): the lower someone's feet on screen, the more in front they are.
+      sprite.setPosition(x, y).setFrame(frame).setDepth(RESIDENT_DEPTH + y / DEPTH_PER_PX);
+      this.findInFront(x, y, inFront);
+    });
+    // Houses and trees are painted into the map image, under everyone. Any whose base is
+    // lower on screen than a visible resident's feet is drawn again over them.
+    for (const [i, image] of this.occluders) if (!inFront.has(i)) image.setVisible(false);
+    for (const i of inFront) {
+      let image = this.occluders.get(i);
+      if (!image) {
+        const o = WORCESTER.objects[i];
+        image = this.add.image(o.x, o.y, `map-${o.key}`).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH + o.y / DEPTH_PER_PX);
+        this.occluders.set(i, image);
+      }
+      image.setVisible(true);
+    }
+  }
+
+  /** Adds to `out` the houses and trees that overlap a person standing at (x, y) and stand in front of them. */
+  private findInFront(x: number, y: number, out: Set<number>): void {
+    const left = Math.floor((x - 8) / OCCLUDER_CELL);
+    const right = Math.floor((x + 8) / OCCLUDER_CELL);
+    const top = Math.floor((y - 32) / OCCLUDER_CELL);
+    const bottom = Math.floor(y / OCCLUDER_CELL);
+    for (let cx = left; cx <= right; cx++)
+      for (let cy = top; cy <= bottom; cy++)
+        for (const i of this.objectGrid.get(`${cx},${cy}`) ?? []) {
+          const o = WORCESTER.objects[i];
+          const size = OBJECT_SIZES.get(o.key);
+          if (!size || o.y <= y) continue;
+          if (x + 8 > o.x - size.w / 2 && x - 8 < o.x + size.w / 2 && y > o.y - size.h && y - 32 < o.y) out.add(i);
+        }
   }
 
   // ---- Customer at the curb (#12) ----
