@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { EveningState } from './state/EveningState';
+import { StoryRun } from './state/StoryRun';
 
 /** Scene names, kept in one place so a typo can't break the flow. */
 export const SceneKeys = {
@@ -12,6 +13,7 @@ export const SceneKeys = {
   Hud: 'Hud',
   Results: 'Results',
   Pause: 'Pause',
+  DayEnd: 'DayEnd',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -25,22 +27,55 @@ export const EVENING_SCENES: string[] = [
 ];
 
 const STATE_KEY = 'evening';
+/** SCREAM-19: the Story run in progress, or null in Quick play. */
+const STORY_KEY = 'story';
 
-/** Starts a brand-new evening from any screen: fresh clock, $0, everything reset. */
+/** Quick play: starts a brand-new evening from any screen, everything reset. */
 export function startEvening(from: Phaser.Scene): void {
-  const evening = new EveningState();
+  from.registry.set(STORY_KEY, null);
+  beginEvening(from, new EveningState());
+}
+
+/** Story mode (SCREAM-19): starts a new run at day 1. */
+export function startStory(from: Phaser.Scene): void {
+  from.registry.set(STORY_KEY, new StoryRun());
+  startStoryEvening(from);
+}
+
+/** Story mode: starts tonight's evening with the cash and stock carried over. */
+export function startStoryEvening(from: Phaser.Scene): void {
+  beginEvening(from, getStory(from)?.newEvening() ?? new EveningState());
+}
+
+/** Restart evening (pause menu): Quick play starts fresh; Story goes back to how tonight started. */
+export function restartEvening(from: Phaser.Scene): void {
+  if (getStory(from)) startStoryEvening(from);
+  else startEvening(from);
+}
+
+/** The Story run in progress, or null in Quick play. */
+export function getStory(scene: Phaser.Scene): StoryRun | null {
+  return (scene.registry.get(STORY_KEY) as StoryRun | null | undefined) ?? null;
+}
+
+/** Leaves Story mode (back to the title after a run, or quitting). */
+export function clearStory(scene: Phaser.Scene): void {
+  scene.registry.set(STORY_KEY, null);
+}
+
+function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   from.registry.set(STATE_KEY, evening);
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
   from.scene.start(SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 
-/** Stops every evening scene and shows the results screen. */
+/** Stops every evening scene and shows the results screen (Quick play) or the end-of-day screen (Story). */
 export function endEvening(from: Phaser.Scene): void {
   for (const key of EVENING_SCENES) {
     if (key !== from.scene.key) from.scene.stop(key);
   }
-  from.scene.start(SceneKeys.Results);
+  from.scene.start(getStory(from) ? SceneKeys.DayEnd : SceneKeys.Results);
 }
 
 /**

@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { PATIENCE_WARNING_SECONDS } from '../config/tuning';
-import { endEvening, getEvening, SceneKeys, pauseEvening } from '../flow';
+import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 
@@ -8,6 +8,9 @@ import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 // every evening phase and is what keeps the clock moving in all of them.
 export class HudScene extends Phaser.Scene {
   private evening!: EveningState;
+  /** SCREAM-19: "  Day 1/3" beside the clock in Story mode; empty in Quick play. */
+  private dayLabel = '';
+  private debugText?: Phaser.GameObjects.Text;
   private clockText!: Phaser.GameObjects.Text;
   private moneyText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
@@ -19,6 +22,8 @@ export class HudScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
+    const story = getStory(this);
+    this.dayLabel = story ? `   Day ${story.day}/${story.days}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);
@@ -80,17 +85,20 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
-   * TEMPORARY debug keys, available on every evening screen. Remove once real
-   * sales (#15), damage (#10) and customers (#12) exist.
+   * TEMPORARY debug keys, available on every evening screen.
+   * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
+   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00) and Shift+4 (serve
+   * now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
-    this.add
-      .text(140, 22, 'DEBUG (Shift+)  1:+$4.50  2:-$2.00  3:end evening  4:serve now', {
+    this.debugText = this.add
+      .text(0, 22, 'DEBUG Shift+3: end evening', {
         fontFamily: 'monospace',
         fontSize: '11px',
         color: '#d9a0ff',
       })
       .setOrigin(0, 0.5);
+    this.placeDebugText();
 
     // Shift + number, so the plain number keys are free for typing prices (PO, doc 12 Q30).
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
@@ -118,9 +126,15 @@ export class HudScene extends Phaser.Scene {
     this.scene.bringToTop();
   }
 
+  /** SCREAM-88: keeps the debug hint just right of the clock (and the day, in Story), never on top of it. */
+  private placeDebugText(): void {
+    this.debugText?.setX(this.clockText.x + this.clockText.width + 24);
+  }
+
   update(_time: number, delta: number): void {
     this.evening.tick(delta);
-    this.clockText.setText(formatClock(this.evening.clockMinutes));
+    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel);
+    this.placeDebugText();
     const sale = this.evening.sale;
     const warn =
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
@@ -128,7 +142,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private refresh(): void {
-    this.clockText.setText(formatClock(this.evening.clockMinutes));
+    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel);
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');

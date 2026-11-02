@@ -8,8 +8,17 @@ export const EVENING_LENGTH_SECONDS = 300;
 export const EVENING_START_HOUR = 17;
 export const EVENING_END_HOUR = 20;
 
-/** Issue #21: cash the player starts with, in cents ($50). Resets each evening for now. */
+/** Issue #21: cash the player starts with, in cents ($50). Quick play: resets each evening. */
 export const STARTING_CASH_CENTS = 5000;
+
+/** SCREAM-19 (PO, October 31): Story mode starts with $100; cash and stock then carry over. */
+export const STORY_START_CASH_CENTS = 10000;
+
+/**
+ * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run is 3 evenings for now,
+ * to grow to 21 later. Lower it to 1 or 2 to test the end of a run quickly.
+ */
+export const STORY_DAYS = 3;
 
 /** Issue #8: the cooler has 3 flavour slots holding 15 bars each. */
 export const COOLER_SLOTS = 3;

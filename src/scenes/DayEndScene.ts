@@ -1,0 +1,93 @@
+import * as Phaser from 'phaser';
+import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
+import type { DayOutcome } from '../state/StoryRun';
+import { formatMoney } from '../util/format';
+
+// SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
+// takings and what you carry into tomorrow: the wallet and the ice cream left
+// in the cooler. Out of money is game over. After the last evening the run is
+// complete (SCREAM-18 adds the story's ending and its high score table).
+
+const MONO = 'monospace';
+
+export class DayEndScene extends Phaser.Scene {
+  private outcome: DayOutcome = 'next';
+
+  constructor() {
+    super(SceneKeys.DayEnd);
+  }
+
+  create(): void {
+    const { width, height } = this.scale;
+    const evening = getEvening(this);
+    const story = getStory(this);
+    if (!story) {
+      this.scene.start(SceneKeys.Title);
+      return;
+    }
+    const finishedDay = story.day;
+    this.outcome = story.finishDay(evening);
+
+    const heading =
+      this.outcome === 'broke' ? 'GAME OVER' : this.outcome === 'complete' ? 'STORY COMPLETE' : `END OF DAY ${finishedDay}`;
+    this.add
+      .text(width / 2, 50, heading, { fontFamily: MONO, fontSize: '36px', color: this.outcome === 'broke' ? '#ff9c9c' : '#ffe8a3' })
+      .setOrigin(0.5);
+    this.add
+      .text(width / 2, 92, `Day ${finishedDay} of ${story.days}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' })
+      .setOrigin(0.5);
+
+    // ---- Tonight ----
+    const b = evening.breakdown;
+    const rows: [string, number, string][] = [
+      ['Sales', b.salesCents, '#c8f7c5'],
+      ['Tips', b.tipsCents, '#c8f7c5'],
+      ['Stock', -b.stockCents, '#ff9c9c'],
+      ['Damage', -b.damageCents, '#ff9c9c'],
+    ];
+    this.add.text(110, 130, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    rows.forEach(([label, cents, colour], i) => {
+      const y = 165 + i * 34;
+      this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
+      this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
+    });
+    this.add.rectangle(110, 308, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 322, "Tonight's profit", { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    const profit = evening.profitCents;
+    this.add
+      .text(420, 354, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .setOrigin(1, 0);
+
+    // ---- The wallet and the cooler ----
+    this.add.text(540, 130, 'WALLET', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    this.add.text(540, 160, formatMoney(evening.moneyCents), {
+      fontFamily: MONO,
+      fontSize: '40px',
+      color: evening.moneyCents < 0 ? '#ff9c9c' : '#c8f7c5',
+    });
+    const stock = evening.stockLeft;
+    this.add.text(540, 230, `Ice creams left: ${stock}`, { fontFamily: MONO, fontSize: '20px', color: '#d6deeb' });
+
+    const message =
+      this.outcome === 'broke'
+        ? "You're out of money.\nThe truck stays parked."
+        : this.outcome === 'complete'
+          ? `You made it through all ${story.days} days.`
+          : stock > 0
+            ? 'Your cash and ice cream\ncarry over to tomorrow.'
+            : 'Your cash carries over to tomorrow.';
+    this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
+
+    const footer = this.outcome === 'next' ? `Enter: start day ${story.day}` : 'Enter: back to the title';
+    this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
+
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') return;
+      if (this.outcome === 'next') startStoryEvening(this);
+      else {
+        clearStory(this);
+        this.scene.start(SceneKeys.Title);
+      }
+    });
+  }
+}

@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { EVENING_SCENES, SceneKeys, startEvening } from '../flow';
+import { clearStory, EVENING_SCENES, getStory, restartEvening, SceneKeys } from '../flow';
 
 // Issue #19 (PO decisions in doc 18, Q7-Q9): Esc pauses the evening on any
 // screen except results. The clock, the truck and every timer stop while the
@@ -66,7 +66,15 @@ export class PauseScene extends Phaser.Scene {
         }),
     );
     this.prompt = this.add
-      .text(width / 2, height / 2 - 15, '', { fontFamily: 'monospace', fontSize: '20px', color: INK, align: 'center', lineSpacing: 8 })
+      // SCREAM-89: wrap inside the box, so a long question never runs off it.
+      .text(width / 2, height / 2 - 15, '', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: INK,
+        align: 'center',
+        lineSpacing: 8,
+        wordWrap: { width: 390 },
+      })
       .setOrigin(0.5);
     this.answers = ['Yes', 'No'].map((label, i) =>
       this.add
@@ -145,8 +153,12 @@ export class PauseScene extends Phaser.Scene {
       t.setText(`${i === this.selected ? '> ' : '  '}${CHOICES[i]?.label ?? ''}${i === this.selected ? ' <' : '  '}`);
     });
     this.prompt.setVisible(asking);
-    if (this.confirming === 'restart') this.prompt.setText("Restart this evening?\nIt won't count for high scores.");
-    if (this.confirming === 'quit') this.prompt.setText("Quit to the title screen?\nThis evening won't count.");
+    if (this.confirming === 'restart') {
+      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash and stock go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
+    }
+    if (this.confirming === 'quit') {
+      this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nThis Story run will end.' : "Quit to the title screen?\nThis evening won't count.");
+    }
     this.answers.forEach((t, i) => {
       const on = i === this.answer;
       const word = i === 0 ? 'Yes' : 'No';
@@ -160,9 +172,10 @@ export class PauseScene extends Phaser.Scene {
     this.confirming = null;
     if (choice === 'restart') {
       this.stopEvening();
-      startEvening(this);
+      restartEvening(this);
     } else if (choice === 'quit') {
       this.stopEvening();
+      clearStory(this);
       this.scene.start(SceneKeys.Title);
     }
   }
