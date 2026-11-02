@@ -6,6 +6,7 @@ import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
 import { Calculator, type CalculatorKey } from '../ui/Calculator';
 import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
+import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
 
 // Issues #13 and #15: the sales screen, zoomed in on the window (PO sketch in
 // doc 12): a speech bubble on the left, the customer on the right of the
@@ -23,6 +24,13 @@ const CALC_Y = 278;
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
 const TIP_FLASH_DELAY_MS = 1050;
+/** SCREAM-106: the customer in the right half of the window, their map sprite blown up. */
+const CUSTOMER_X = 756;
+const CUSTOMER_SCALE = 13;
+/** Only the top 29 of the frame's 32 px rows show (head to hips): the counter hides the feet. */
+const CUSTOMER_ROWS = 29;
+/** The top of the counter, where the cropped sprite's bottom edge sits. */
+const COUNTER_TOP = 418;
 
 export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -40,6 +48,10 @@ export class SalesScene extends Phaser.Scene {
     super(SceneKeys.Sales);
   }
 
+  preload(): void {
+    loadResidentSheet(this);
+  }
+
   create(): void {
     this.evening = getEvening(this);
     this.typed = '';
@@ -51,14 +63,24 @@ export class SalesScene extends Phaser.Scene {
     this.add.rectangle(612, 255, 10, 330, 0x5a4636);
     this.add.rectangle(480, 427, 860, 18, 0x8a6a4a); // the counter
 
-    // The customer, on the right side of the window.
-    this.add.circle(770, 210, 46, 0xffd1b0).setStrokeStyle(4, 0x2b1d10);
-    this.add.ellipse(770, 380, 190, 150, 0xff8fbf).setStrokeStyle(4, 0x2b1d10);
-    // SCREAM-99 (PO, November 2): the customer's name on screen while they order, as a name tag.
+    // The customer, on the right side of the window. SCREAM-106 (PO, November 2): the
+    // same person you saw on the map, in their own look, from the head down to the counter.
     const customer = this.evening.customer;
     if (customer) {
+      const look = customer.resident.look;
+      const person = this.add
+        .sprite(CUSTOMER_X, COUNTER_TOP - CUSTOMER_ROWS * CUSTOMER_SCALE, RESIDENTS_KEY, residentFrame(look, false, 'down', 0))
+        .setOrigin(0.5, 0)
+        .setScale(CUSTOMER_SCALE);
+      person.texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+      const show = (step: number) => person.setFrame(residentFrame(look, false, 'down', step)).setCrop(0, 0, 16, CUSTOMER_ROWS);
+      show(0);
+      // Standing at the window, breathing (the same idle frames as on the map).
+      let step = 0;
+      this.time.addEvent({ delay: 160, loop: true, callback: () => show(++step) });
+      // SCREAM-99 (PO, November 2): the customer's name on screen while they order, as a name tag.
       this.add
-        .text(770, 350, customer.resident.name, {
+        .text(CUSTOMER_X, 392, customer.resident.name, {
           fontFamily: 'monospace',
           fontSize: '17px',
           color: INK,
@@ -66,6 +88,10 @@ export class SalesScene extends Phaser.Scene {
           padding: { x: 8, y: 4 },
         })
         .setOrigin(0.5);
+    } else {
+      // A sale with nobody from the map (the debug serve key): a plain stand-in.
+      this.add.circle(CUSTOMER_X, 210, 46, 0xffd1b0).setStrokeStyle(4, 0x2b1d10);
+      this.add.ellipse(CUSTOMER_X, 380, 190, 150, 0xff8fbf).setStrokeStyle(4, 0x2b1d10);
     }
 
     // The speech bubble, reaching across from the customer.

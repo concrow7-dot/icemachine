@@ -25,8 +25,8 @@ import {
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
-import { RESIDENT_FRAME, RESIDENT_LOOKS_ACROSS } from '../config/residents';
-import type { ResidentFacing, ResidentNow } from '../state/Residents';
+import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
+import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
@@ -99,10 +99,6 @@ const COLOURS = {
  */
 const MAP_SQUARE = 512;
 
-/** The residents' sprite sheet (SCREAM-59): LimeZu Modern Interiors characters. */
-const RESIDENTS_KEY = 'residents';
-/** Each look's frames run right, up, left, down, six frames each. */
-const FACING_COLUMN: Record<ResidentFacing, number> = { right: 0, up: 1, left: 2, down: 3 };
 /** Residents (and the houses and trees in front of them) are drawn between the map (0) and the curb customer (6). */
 const RESIDENT_DEPTH = 5;
 /** Depth added per px down the map, so lower on screen means in front: the map is under 10,000 px tall. */
@@ -175,10 +171,7 @@ export class DriveScene extends Phaser.Scene {
     this.load.image('map-grass', 'assets/limezu/map/grass.png');
     for (const { key } of WORCESTER.sprites) this.load.image(`map-${key}`, `assets/limezu/map/${key}.png`);
     for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
-    this.load.spritesheet(RESIDENTS_KEY, 'assets/limezu/residents.png', {
-      frameWidth: RESIDENT_FRAME.width,
-      frameHeight: RESIDENT_FRAME.height,
-    });
+    loadResidentSheet(this);
   }
 
   create(): void {
@@ -789,7 +782,6 @@ export class DriveScene extends Phaser.Scene {
    */
   private drawResidents(timeMs: number): void {
     const view = this.cameras.main.worldView;
-    const across = RESIDENT_LOOKS_ACROSS * 24;
     const inFront = new Set<number>();
     this.evening.residents.all.forEach((p, i) => {
       const sprite = this.residentSprites[i];
@@ -797,10 +789,8 @@ export class DriveScene extends Phaser.Scene {
         p.outside && p.x > view.x - 40 && p.x < view.right + 40 && p.y > view.y - 10 && p.y < view.bottom + 50;
       sprite.setVisible(near);
       if (!near) return;
-      const look = p.resident.look;
-      const row = Math.floor(look / RESIDENT_LOOKS_ACROSS) * 2 + (p.walking ? 1 : 0);
       const step = Math.floor(timeMs / (p.walking ? 110 : 160) + i * 2) % 6;
-      const frame = row * across + (look % RESIDENT_LOOKS_ACROSS) * 24 + FACING_COLUMN[p.facing] * 6 + step;
+      const frame = residentFrame(p.resident.look, p.walking, p.facing, step);
       const x = Math.round(p.x);
       const y = Math.round(p.y);
       // Front to back (SCREAM-104): the lower someone's feet on screen, the more in front they are.
