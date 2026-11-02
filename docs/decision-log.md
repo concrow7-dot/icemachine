@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 026 — Overcharging gets a second chance, without a tip (2026-11-02)
+
+**Decision (Jira SCREAM-120, PO, November 2):** the first time the player charges more than the order costs, the customer says "That's more than it's supposed to be. Try again?" and the player can type the price again, but loses the tip. Overcharging a second time ends the sale as before: the customer leaves with the ice cream for free.
+
+**Why (product owner's rationale):** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):** this chance is separate from the one for handing over the wrong items (both can happen in one sale); the customer's wording.
+
 ## 025 — Out of gas ends the evening; gas runs out 30% faster (2026-11-02)
 
 **Decision (Jira SCREAM-119, PO, November 2):**

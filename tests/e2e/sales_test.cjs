@@ -138,12 +138,17 @@ const { chromium } = require('playwright');
   check('...tip countdown starts then (20%)', await sc('Fill', 's.tipBar.label.text'), '20%');
   await press('b'); await wait(300); await press('b'); await wait(300);
 
-  // ---- Sale 3: overcharge -> they leave with it for free ----
+  // ---- Sale 3: overcharge twice -> they leave with it for free ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
   await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
   const c3 = await cash();
   await page.keyboard.type('999'); await press('Enter');
-  check('Overcharge: "That\'s more than it\'s supposed to be."', await ev('e.sale.line'), "That's more than it's supposed to be.");
+  // SCREAM-120 (PO): the first overcharge gets a second chance, but no tip.
+  check('First overcharge: the customer says so and you can try again (SCREAM-120)', (await ev('e.sale.line')) + ' | ' + (await ev('e.sale.phase')), "That's more than it's supposed to be. Try again? | pricing");
+  check('...the tip is gone', (await ev('e.sale.tipPercent(e.nowMs)')) + ' ' + (await sc('Sales', 's.tipBar.label.text')), '0 No tip');
+  check('...and the price display is cleared', await sc('Sales', 's.typed'), '');
+  await page.keyboard.type('999'); await press('Enter');
+  check('Overcharge again: "That\'s more than it\'s supposed to be."', await ev('e.sale.line'), "That's more than it's supposed to be.");
   check('...the button says BACK ON THE ROAD; the hint still says sorry', (await sc('Sales', 's.roadButton.visible')) + ' ' + (await sc('Sales', 's.hint.text')), "true Enter: Say Sorry, It's On The House");
   await page.screenshot({ path: outDir + '/sale_overcharge.png' });
   const rb = await sc('Sales', '[s.roadButton.x, s.roadButton.y]'); const bb = await (await page.$('canvas')).boundingBox();
@@ -151,6 +156,15 @@ const { chromium } = require('playwright');
   check('Clicking BACK ON THE ROAD leaves the window', await scenes(), 'Drive,Hud');
   check('...no money, and the ice cream is gone', ((await cash()) - c3) + ' ' + (await stock()), '0 7,4,4');
 
+  // ---- Sale 3b (SCREAM-120): overcharge, then fix the price: paid, no tip ----
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
+  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  const c3b = await cash();
+  await page.keyboard.type('999'); await press('Enter');
+  await page.keyboard.type('1'); await press('Enter');
+  check('Overcharge, then a fair price: paid, with no tip (SCREAM-120)', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.tipCents')) + ' ' + ((await cash()) - c3b), 'paid 0 100');
+  await press('Enter'); await wait(300);
+  
   // ---- Sale 4: ask again (R), then wrong -> no retry, given away ----
   await serveNow(); await setOrder([{ slot: 1, flavour: 'spongepop', count: 2 }]); await tick(5100);
   await press('r');
@@ -161,7 +175,7 @@ const { chromium } = require('playwright');
   await page.keyboard.type('5'); await press('Enter');
   check('After R, a wrong order fails: "That\'s not what I asked for."', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.line')), "wrong-order That's not what I asked for.");
   await press('Enter'); await wait(300);
-  check('...the wrong item is given away', await stock(), '7,3,4');
+  check('...the wrong item is given away', await stock(), '6,3,4');
 
   // ---- Sale 5: the minute runs out while at the cooler ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 3 }]); await tick(5100);
@@ -174,7 +188,7 @@ const { chromium } = require('playwright');
   check('Time\'s up: back at the window, "Sorry, I have to go."', (await scenes()) + ' ' + (await ev('e.sale.line')), 'Sales,Hud Sorry, I have to go.');
   check('...warning gone', await sc('Hud', 's.patienceWarning.visible'), false);
   await press('Enter'); await wait(300);
-  check('...the picked ice cream goes back in the cooler', await stock(), '7,3,4');
+  check('...the picked ice cream goes back in the cooler', await stock(), '6,3,4');
 
   // ---- Sale 6: drive off ----
   await serveNow(); await tick(5100); const c6 = await cash();
