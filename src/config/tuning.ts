@@ -199,6 +199,12 @@ export const CUSTOMER_RUN_SPEED = 75;
 /** PO: a customer waits at the curb this long, then walks home. */
 export const CUSTOMER_WAIT_SECONDS = 30;
 
+/**
+ * SCREAM-118 (PO, November 2): while you serve someone at the window, people waiting at
+ * the curb are willing to wait this many times longer (their 30 seconds run at half speed).
+ */
+export const SERVING_PATIENCE = 2;
+
 // ---- Fuel (SCREAM-22, PO October 29 and November 2) ----
 
 /** PO: a full tank costs $30. */

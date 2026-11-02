@@ -30,10 +30,11 @@ const { chromium } = require('playwright');
   const check = (name, got, want) => { const ok = String(got) === String(want); ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(68) + ' got=' + got + (ok ? '' : ' want=' + want)); };
 
   // ---- Title: no choice, just how to drive ----
+  // (SCREAM-96: key hints have a capital on each word.)
   const title = await texts('Title');
   check('Title: no difficulty choice (no EASY / HARD)', /EASY|HARD|Choose a difficulty/.test(title), false);
-  check('Title: shows HOW TO DRIVE with the car-style controls', /HOW TO DRIVE/.test(title) && /gas/.test(title) && /Q park brake/.test(title), true);
-  check('Title: Press Enter or click to start, credits still shown', /Press Enter or click to start/.test(title) && /LimeZu/.test(title) && /OpenStreetMap/.test(title), true);
+  check('Title: shows HOW TO DRIVE with the car-style controls', /HOW TO DRIVE/.test(title) && /Gas/.test(title) && /Q Park Brake/.test(title), true);
+  check('Title: Press Enter or click to start, credits still shown', /Press Enter Or Click To Start/.test(title) && /LimeZu/.test(title) && /OpenStreetMap/.test(title), true);
   await page.screenshot({ path: outDir + '/title_oneway.png' });
   await page.click('canvas'); await press('ArrowLeft'); await press('ArrowRight');
   check('Arrow keys on the title do nothing (still on the title)', await scenes(), 'Title');
@@ -45,7 +46,7 @@ const { chromium } = require('playwright');
   // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
   await ev('(e.residents.hearingOff = true, true)');
   check('Driving: park brake on at the start, sign showing', (await sc('Drive', 's.parkBrake')) + ' ' + (await sc('Drive', 's.parkLabel.visible')), 'true true');
-  check('Driving: the hint shows the car-style controls', /↑ gas/.test(await texts('Drive')), true);
+  check('Driving: the hint shows the car-style controls', /↑ Gas/.test(await texts('Drive')), true);
   const t0 = await truck();
   await page.keyboard.down('ArrowRight'); await wait(300); await page.keyboard.up('ArrowRight'); await wait(150);
   check('Right at a standstill does not turn the truck (no arrows-point-the-way)', (await truck())[2], t0[2]);

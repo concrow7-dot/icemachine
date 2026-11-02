@@ -42,7 +42,7 @@ const { chromium } = require('playwright');
   check('On the road with stock: people may want ice cream', await ev('e.acceptingCustomers'), true);
   check('The music ring is round the truck, 300 px', await drive('[s.ring.visible, Math.round(s.ring.radius), Math.round(s.ring.x) === Math.round(s.truck.x)].join()'), 'true,300,true');
   check('No pointer arrow (SCREAM-68)', await drive('s.pointer'), undefined);
-  check('Hint line explains the ring and the music keys', await drive("s.children.list.some(o => o.type === 'Text' && /ring/.test(o.text) && /M mute/.test(o.text))"), true);
+  check('Hint line explains the ring and the music keys', await drive("s.children.list.some(o => o.type === 'Text' && /ring/.test(o.text) && /M Mute/.test(o.text))"), true);
 
   // ---- Curb spots: every resident has one ----
   const curbs = await drive(`(() => { let stand = 0, square = 0, cars = 0;
@@ -143,11 +143,19 @@ const { chromium } = require('playwright');
   const other = await ev(`(() => { const p = e.residents.all.find((q, i) => i !== ${idx} && q.customer === 'none'); e.residents.callNow(p); return e.residents.all.indexOf(p); })()`);
   const w0 = await ev(`e.residents.all[${other}].waitLeft`); await wait(1500);
   const w1 = await ev(`e.residents.all[${other}].waitLeft`);
-  check('At the window, another waiting customer keeps counting down (SCREAM-114)', w1 < w0 - 0.8, true);
-  check('...and nobody new comes out while the music is off', await ev(`e.residents.all.filter(p => p.customer === 'running').length`), 0);
+  // SCREAM-118 (PO): while you serve, waiting customers are willing to wait twice as long (half speed).
+  check('At the window, another waiting customer counts down at half speed (SCREAM-114, 118)', (w0 - w1) > 0.5 && (w0 - w1) < 1.05, true);
+  // SCREAM-118: the music keeps playing at the window, and the ring is open, so people can still come out.
+  const ring = await page.evaluate(() => new Promise(done => { const e = window.__game.registry.get('evening'); const r = e.residents; const real = r.update; r.update = function (dt, ring) { r.update = real; done(JSON.stringify({ open: ring.open, patience: ring.patience })); return real.call(this, dt, ring); }; }));
+  check('...the music ring stays open while serving (people can come out), patience 2', ring, JSON.stringify({ open: true, patience: 2 }));
+  check('The music keeps playing at the window (SCREAM-118)', await page.evaluate(() => window.__game.registry.get('music').playing), true);
+  await press('m'); await wait(100);
+  check('...M mutes it there too', await page.evaluate(() => window.__game.registry.get('music').muted), true);
+  await press('m'); await wait(100);
   await press('Escape'); await wait(200);
   const w2 = await ev(`e.residents.all[${other}].waitLeft`); await wait(1000);
   check('...but paused, their wait stops too', await ev(`e.residents.all[${other}].waitLeft`), w2);
+  check('...and the music stops while paused', await page.evaluate(() => window.__game.registry.get('music').playing), false);
   await press('Escape'); await wait(200);
 
   // Drive off without serving: they walk home; no second sale from them tonight

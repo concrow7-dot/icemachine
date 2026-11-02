@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS } from '../config/tuning';
+import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE } from '../config/tuning';
+import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
@@ -90,7 +91,14 @@ export class HudScene extends Phaser.Scene {
     this.evening.once(EveningEvents.Ended, onEnded);
 
     // Stop listening when this scene closes, so old evenings can't affect new ones.
+    // SCREAM-118: off the road the HUD plays the music, so it stops while paused and when the evening ends.
+    const stopMusic = () => {
+      if (!this.scene.isActive(SceneKeys.Drive)) musicFor(this).stop();
+    };
+    this.events.on(Phaser.Scenes.Events.PAUSE, stopMusic);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(Phaser.Scenes.Events.PAUSE, stopMusic);
+      musicFor(this).stop();
       this.evening.off(EveningEvents.MoneyChanged, onMoney);
       this.evening.off(EveningEvents.CoolerChanged, onStock);
       this.evening.off(EveningEvents.Ended, onEnded);
@@ -119,6 +127,11 @@ export class HudScene extends Phaser.Scene {
       if (event.key === 'Escape') {
         pauseEvening(this);
         return;
+      }
+      // SCREAM-118: M mutes and N skips the song off the road too (the driving view handles them on the road).
+      if (!this.scene.isActive(SceneKeys.Drive) && !event.shiftKey) {
+        if (event.key === 'm' || event.key === 'M') musicFor(this).toggleMute();
+        if (event.key === 'n' || event.key === 'N') musicFor(this).skip();
       }
       if (!event.shiftKey) return;
       if (event.code === 'Digit1') this.evening.changeMoney(450, 'Sale');
@@ -156,6 +169,7 @@ export class HudScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
+    this.keepMusicGoing();
     this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel);
     this.placeDebugText();
     const sale = this.evening.sale;
@@ -168,13 +182,41 @@ export class HudScene extends Phaser.Scene {
   /**
    * SCREAM-114 (PO, November 2): the neighbourhood keeps going while you're off the road
    * (the window, the cooler, the pump, the truck), so customers waiting at the curb can give
-   * up while you serve someone. The music is off there, so nobody new comes out. On the road,
-   * the driving view does this itself, with the music on; paused, the HUD is paused too.
+   * up while you serve someone. On the road, the driving view does this itself; paused, the
+   * HUD is paused too.
+   * SCREAM-118 (PO, November 2): the music keeps playing off the road, and while you serve
+   * someone, people in the ring still hear it and may come out, and those already waiting
+   * wait twice as long (SERVING_PATIENCE). Elsewhere off the road (the hub, the pump), nobody
+   * new comes out, as before.
    */
   private keepNeighbourhoodGoing(deltaMs: number): void {
     if (this.scene.isActive(SceneKeys.Drive) || !this.evening.isClockRunning || this.evening.isOver) return;
     const truck = this.evening.truck;
-    this.evening.residents.update(Math.min(deltaMs, 100) / 1000, { x: truck.x, y: truck.y, radius: MUSIC_RING_RADIUS, open: false });
+    const sale = this.evening.sale;
+    const serving = !!sale && sale.phase !== 'over';
+    this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
+      x: truck.x,
+      y: truck.y,
+      radius: MUSIC_RING_RADIUS,
+      open: serving && this.evening.acceptingCustomers,
+      patience: serving ? SERVING_PATIENCE : 1,
+    });
+  }
+
+  /**
+   * SCREAM-118: the truck's music off the road. It plays once the truck has been out on the
+   * road this evening (not while stocking up before the first drive), and the driving view
+   * plays it on the road. The song carries on from where it was.
+   */
+  private keepMusicGoing(): void {
+    if (this.scene.isActive(SceneKeys.Drive)) return;
+    const music = musicFor(this);
+    if (this.evening.isPrepLocked && this.evening.isClockRunning && !this.evening.isOver) {
+      music.start();
+      music.tick();
+    } else {
+      music.stop();
+    }
   }
 
   /** SCREAM-22: the gauge, while driving or at the pump. Red when low; flashing when empty. */

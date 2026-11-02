@@ -54,7 +54,9 @@ export class Music {
     if (this.songIndex < 0) this.nextSong();
     if (this.ctx) {
       if (this.ctx.state === 'suspended') void this.ctx.resume();
-      this.nextTime = this.ctx.currentTime + 0.1;
+      // SCREAM-118: when the HUD takes over from the driving view (or back), notes already
+      // scheduled are still to come: carry on after them, so the song neither skips nor doubles.
+      this.nextTime = Math.max(this.nextTime, this.ctx.currentTime + 0.1);
     }
   }
 
