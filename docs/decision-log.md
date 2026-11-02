@@ -2,6 +2,29 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 014 — Residents: named people with homes, edited in a sheet, drawn with LimeZu Modern Interiors (2026-11-02)
+
+**Decision:** The neighbourhood has residents (Jira SCREAM-59, SCREAM-73; doc 37). There is about one per house: 160, since the map has 161 houses and one is home. Each has a name, a house (and so a street), an age (adult or kid) and their own likelihood of buying ice cream. They stay near their home all evening: they go in and out of their house and wander their yard. They are drawn with LimeZu's Modern Interiors character generator, each with their own combination of body, clothes and hair. The list lives in a Google Sheet the PO can edit (doc 38, "38 - Residents"); "sync residents" copies it into `tools/residents/residents.csv` and rebuilds the game's data with `tools/residents/build_residents.py`. Buying (the sonar ring, the chance check) comes next, in SCREAM-67.
+
+**Options considered:**
+- *Art:* LimeZu Modern Interiors ($1.50 minimum), free packs (Modern Chibis, Kenney's RPG Urban Kit), or another paid pack (comparison in doc 37).
+- *Customers:* random people appearing anywhere, or named residents tied to houses.
+- *Getting sheet edits into the game:* engineering syncs it on request; a script the PO runs; or the live game reads the sheet each time it loads.
+
+**Why (product owner's rationale):**
+- *Named residents tied to houses:* the PO asked for this on SCREAM-59 (November 2): everyone appears on the map, has a name, and is near their home; there are about as many as houses; and he wants a sheet where he can change their names and likelihood to buy. **Why:** _waiting on the PO._
+- *LimeZu Modern Interiors:* the PO followed engineering's recommendation (November 2).
+- *Engineering syncs the sheet on request, about 1 in 3 are kids, residents first and buying second:* the PO agreed to engineering's proposals (November 2).
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- Why LimeZu: nearly free, and the only pack that matches the map's art exactly; the generator can give every resident a different look.
+- Left out of the looks: grey, pink and blue skin; bright anime hair colours; work uniforms; costume hoods; and a red cap that looks like a famous game character's.
+- Starting likelihoods: adults 20 to 70%, kids 50 to 95%. Names are made up.
+- Timings (in `tuning.ts`): out for 25 to 70 seconds, in for 20 to 60, half outside when the evening starts.
+- Yard spots are chosen so no walk crosses a house or a road; doors are on the front (bottom) wall, as in the art.
+
+**Revisit if:** the PO wants more than one person per house, residents tied to particular houses by name (SCREAM-73's fuller version), or the sheet read live by the game.
+
 ## 013 — The story: save up for a $200 bike, 3 days, its own high scores (2026-10-31)
 
 **Decision:** Story mode has a goal: the player is saving up for a new bike that costs $200 before school starts (Jira SCREAM-18). A new run opens with a plain text intro screen; the top bar shows the bike's price during the run. The run is 3 days for now (decision 011), then it ends: the last day's screen says whether you can afford the bike, then a results screen shows the whole run's stats and a Story top-5 table, separate from Quick play's. After that you start a new game from the title. The bike price is `BIKE_PRICE_CENTS` in `tuning.ts`.

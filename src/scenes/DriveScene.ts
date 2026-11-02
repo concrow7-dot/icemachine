@@ -24,6 +24,8 @@ import {
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState, type Facing } from '../state/EveningState';
+import { RESIDENT_FRAME, RESIDENT_LOOKS_ACROSS } from '../config/residents';
+import type { ResidentFacing } from '../state/Residents';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to drive into a waiting customer.
@@ -90,6 +92,11 @@ const COLOURS = {
  * extra for the camera shake.
  */
 const MAP_SQUARE = 512;
+
+/** The residents' sprite sheet (SCREAM-59): LimeZu Modern Interiors characters. */
+const RESIDENTS_KEY = 'residents';
+/** Each look's frames run right, up, left, down, six frames each. */
+const FACING_COLUMN: Record<ResidentFacing, number> = { right: 0, up: 1, left: 2, down: 3 };
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
@@ -103,6 +110,8 @@ export class DriveScene extends Phaser.Scene {
   private speed = 0;
   /** Driving keys currently held: up = gas, down = brake/reverse, left/right = steer. */
   private held: Facing[] = [];
+  /** One sprite per resident, in the same order as evening.residents.all. */
+  private residentSprites: Phaser.GameObjects.Sprite[] = [];
   /** The customer, standing on the sidewalk. */
   private customer!: Phaser.GameObjects.Container;
   /** The patch of road beside them where the truck pulls in to pick them up. */
@@ -147,6 +156,10 @@ export class DriveScene extends Phaser.Scene {
     this.load.image('map-grass', 'assets/limezu/map/grass.png');
     for (const { key } of WORCESTER.sprites) this.load.image(`map-${key}`, `assets/limezu/map/${key}.png`);
     for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
+    this.load.spritesheet(RESIDENTS_KEY, 'assets/limezu/residents.png', {
+      frameWidth: RESIDENT_FRAME.width,
+      frameHeight: RESIDENT_FRAME.height,
+    });
   }
 
   create(): void {
@@ -168,6 +181,9 @@ export class DriveScene extends Phaser.Scene {
     this.drawNeighbourhood(worldWidth, worldHeight);
     this.placeObstacles();
     this.customer = this.makeCustomer();
+    this.residentSprites = this.evening.residents.all.map(() =>
+      this.add.sprite(0, 0, RESIDENTS_KEY, 0).setOrigin(0.5, 1).setDepth(5).setVisible(false),
+    );
     this.truck = this.makeTruck();
 
     const { x, y, angle } = this.evening.truck;
@@ -253,9 +269,11 @@ export class DriveScene extends Phaser.Scene {
     this.refreshCustomer();
   }
 
-  update(_time: number, deltaMs: number): void {
+  update(time: number, deltaMs: number): void {
     this.refreshVisibleMap();
     if (this.leaving) return;
+    this.evening.residents.update(Math.min(deltaMs, 100) / 1000);
+    this.drawResidents(time);
     if (this.spinning) {
       this.updatePointer();
       return;
@@ -703,6 +721,31 @@ export class DriveScene extends Phaser.Scene {
       });
       return;
     }
+  }
+
+  // ---- Residents (SCREAM-59, SCREAM-73) ----
+
+  /**
+   * Draws the residents who are outside and near the view. Frames are picked by
+   * hand rather than with Phaser animations (160 people x 8 animations would be a lot):
+   * each look is two rows in residents.png, idle then walk, with six frames each
+   * for right, up, left and down.
+   */
+  private drawResidents(timeMs: number): void {
+    const view = this.cameras.main.worldView;
+    const across = RESIDENT_LOOKS_ACROSS * 24;
+    this.evening.residents.all.forEach((p, i) => {
+      const sprite = this.residentSprites[i];
+      const near =
+        p.outside && p.x > view.x - 40 && p.x < view.right + 40 && p.y > view.y - 10 && p.y < view.bottom + 50;
+      sprite.setVisible(near);
+      if (!near) return;
+      const look = p.resident.look;
+      const row = Math.floor(look / RESIDENT_LOOKS_ACROSS) * 2 + (p.walking ? 1 : 0);
+      const step = Math.floor(timeMs / (p.walking ? 110 : 160) + i * 2) % 6;
+      const frame = row * across + (look % RESIDENT_LOOKS_ACROSS) * 24 + FACING_COLUMN[p.facing] * 6 + step;
+      sprite.setPosition(Math.round(p.x), Math.round(p.y)).setFrame(frame);
+    });
   }
 
   // ---- Customer at the curb (#12) ----

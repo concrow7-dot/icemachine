@@ -14,3 +14,8 @@ lives in a private repository and must not be copied into this one.
   16 px art, so these are shrunk back to 16 px, which matches the size of the driving truck:
   `Camping_48x48_Mobile_House_Small_1/3/5/7`, `Villas_48x48_Villa_1-5`, `Villas_48x48_Tree_1-4`,
   and a 64 px grass patch made from `Terrains_and_Fences_48x48_Grass_1_9-12/22`.
+- `residents.png`: the neighbourhood's residents (SCREAM-59, SCREAM-73), from **Modern
+  Interiors** by LimeZu (same licence and credit, also bought by the project owner).
+  Each look combines the character generator's layers (body, eyes, outfit, hairstyle,
+  accessory); only the idle and walk frames are kept, shrunk to 16 px. Written by
+  `tools/residents/build_residents.py`.
