@@ -107,7 +107,7 @@ const { chromium } = require('playwright');
   const runRes = await texts('Results');
   check('...run stats: 3 days, $3 stock, final cash $97, no bike', /3 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$97\.00/.test(runRes) && /not this time/.test(runRes), true);
   check('...first Story score: asks for initials', await sc('Results', 's.entering'), true);
-  await page.keyboard.type('CON'); await press('Enter'); await wait(200);
+  await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
   check('...saved to the Story table, not the Quick play one',
     await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v1') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON9700 null');
   check('...STORY HIGH SCORES, Enter: back to the title', /STORY HIGH SCORES/.test(await texts('Results')) && /Enter: back to the title/.test(await texts('Results')), true);
