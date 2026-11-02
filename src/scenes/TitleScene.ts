@@ -10,6 +10,8 @@ import { SceneKeys, startEvening, startStory } from '../flow';
 // SCREAM-19 / SCREAM-21 (PO, October 31): two modes. Quick play is the
 // one-evening game; Story carries cash and stock over several evenings.
 // Quick play is picked first, so Enter alone starts it as before.
+// SCREAM-90 (PO, November 1): the mouse works too: point at an option to pick
+// it, click to start.
 
 type Mode = 'quick' | 'story';
 const MODES: { id: Mode; label: string }[] = [
@@ -60,11 +62,21 @@ export class TitleScene extends Phaser.Scene {
     this.modeTexts = MODES.map((m, i) =>
       this.add
         .text(width / 2, 380 + i * 36, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
-        .setOrigin(0.5),
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => {
+          if (this.starting) return;
+          this.selected = i;
+          this.refreshModes();
+        })
+        .on('pointerdown', () => {
+          this.selected = i;
+          this.startSelected();
+        }),
     );
     this.refreshModes();
     this.add
-      .text(width / 2, height - 58, '↑ ↓ choose    Press Enter to start', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' })
+      .text(width / 2, height - 58, '↑ ↓ or mouse: choose    Press Enter or click to start', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' })
       .setOrigin(0.5);
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)    Map data © OpenStreetMap contributors', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
@@ -76,11 +88,16 @@ export class TitleScene extends Phaser.Scene {
         this.selected = (this.selected + 1) % MODES.length;
         this.refreshModes();
       } else if (event.key === 'Enter') {
-        this.starting = true;
-        if (MODES[this.selected]?.id === 'story') startStory(this);
-        else startEvening(this);
+        this.startSelected();
       }
     });
+  }
+
+  private startSelected(): void {
+    if (this.starting) return;
+    this.starting = true;
+    if (MODES[this.selected]?.id === 'story') startStory(this);
+    else startEvening(this);
   }
 
   private refreshModes(): void {

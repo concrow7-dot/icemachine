@@ -32,6 +32,15 @@ const { chromium } = require('playwright');
   await press('ArrowDown');
   check('Down arrow picks Story', /> Story </.test(await texts('Title')), true);
   await page.screenshot({ path: outDir + '/story_title.png' });
+  // SCREAM-90: the mouse. Pointing at an option picks it.
+  const optionAt = (label) => sc('Title', `(() => { const t = s.modeTexts.find(o => o.text.includes('${label}')); return [Math.round(t.x), Math.round(t.y)]; })()`);
+  const [qx, qy] = await optionAt('Quick play');
+  await page.mouse.move(qx, qy); await wait(150);
+  check('Mouse over Quick play picks it', /> Quick play </.test(await texts('Title')), true);
+  const [sx, sy] = await optionAt('Story');
+  await page.mouse.move(sx, sy); await wait(150);
+  check('Mouse over Story picks it', /> Story </.test(await texts('Title')), true);
+  await page.mouse.move(5, 5); await wait(100);
 
   // ---- Day 1 ----
   await press('Enter'); await wait(300);
@@ -39,6 +48,9 @@ const { chromium } = require('playwright');
   check('Story starts on day 1 of 3', await story('r.day + "/" + r.days'), '1/3');
   check('Story starts with $100', await ev('e.moneyCents'), 10000);
   check('HUD shows the day beside the clock', /Day 1\/3/.test(await hudClock()), true);
+  // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
+  check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: end evening');
+  check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '9700 3');
   await shift(3); await wait(300);
@@ -63,6 +75,9 @@ const { chromium } = require('playwright');
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '9600 4');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150);
   check('Restart prompt explains Story restarts', /Cash and stock go back/.test(await texts('Pause')), true);
+  // SCREAM-89: the question stays inside the pause box (420 px wide, centred).
+  check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
+  await page.screenshot({ path: outDir + '/story_pause_restart.png' });
   await press('y'); await wait(400);
   check('Restart: back to $97 and 3 bars, still day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')) + ' ' + (await story('r.day')), '9700 3 2');
 
@@ -109,7 +124,9 @@ const { chromium } = require('playwright');
 
   // ---- Quick play unchanged ----
   check('Title remembers nothing: Quick play picked again', /> Quick play </.test(await texts('Title')), true);
-  await press('Enter'); await wait(300);
+  // SCREAM-90: click to start.
+  const [cx, cy] = await optionAt('Quick play');
+  await page.mouse.click(cx, cy); await wait(300);
   check('Quick play: $50, no Story run', (await ev('e.moneyCents')) + ' ' + (await story('r')), '5000 null');
   check('Quick play: HUD shows no day', /Day/.test(await hudClock()), false);
   await shift(3); await wait(300);
