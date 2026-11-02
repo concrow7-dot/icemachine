@@ -8,13 +8,13 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** every style that fits; lean on the tall Victorian houses (like Worcester's triple-deckers); or keep the mobile homes and only add colour.
 
-**Why (product owner's rationale):** the PO chose "everything that fits" (November 2); the ticket asks for as many different assets as possible. **Why:** _waiting on the PO._
+**Why (product owner's rationale):** the PO chose "everything that fits" (November 2); the ticket asks for as many different assets as possible. It makes the map more interesting and worth exploring, and the streets more memorable and different from each other.
 
 **Engineering's calls (proposals, not the PO's reasons):**
 - Every house keeps its lot and its place in the list, because the residents sheet (doc 15) numbers houses in map order; a bigger house grows away from the street. Trees a bigger house now stands on were taken out.
 - The map generator does this as a last step with its own random numbers, so the roads, potholes and parked cars are unchanged. Houses, trees, ornaments and the gas pump are packed into one picture sheet, because 150-odd separate files made the first drive slow to load.
 - Residents can't stand on an ornament but can walk past one. Lots with a shallow front lawn get ornaments only at the sides, away from the front corners. Every yard spot is within 100 px of the door.
-- Two corner houses now count as being on the cross street (R013, R017); the residents sheet's Street column is for reading only.
+- Two corner houses now count as being on the cross street (R013 Brownell St, R017 Berkmans St); the PO had sheet 15 updated to match (November 2).
 
 **Revisit if:** the PO wants a particular style or colour on a particular street, or the map grows (SCREAM-66).
 
