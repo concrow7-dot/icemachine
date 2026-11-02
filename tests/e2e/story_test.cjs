@@ -155,14 +155,14 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-17: Continue ----
   const withSave = await texts('Title');
-  check('Title offers Continue story (day 2, $0.50) and New story', /Continue story: day 2, \$0\.50/.test(withSave) && /New story/.test(withSave), true);
+  check('Title offers Continue story (Day 2, $0.50) and New story', /Continue story: Day 2, \$0\.50/.test(withSave) && /New story/.test(withSave), true);
   await page.screenshot({ path: outDir + '/story_title_continue.png' });
   await press('ArrowDown'); await press('Enter'); await wait(300);
   check('Continue skips the intro: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
   check('Continue: HUD says Day 2/3', /Day 2\/3/.test(await hudClock()), true);
   // A reload (closing the browser) keeps the save too.
   await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
-  check('After reloading the page the save is still there', /Continue story: day 2/.test(await texts('Title')), true);
+  check('After reloading the page the save is still there', /Continue story: Day 2/.test(await texts('Title')), true);
 
   // ---- SCREAM-17: New story asks first ----
   await press('ArrowUp'); await press('Enter'); await wait(200);
