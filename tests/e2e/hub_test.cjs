@@ -62,7 +62,7 @@ const { chromium } = require('playwright');
   check("Enter on driver's seat opens driving view", await scenes(), 'Drive,Hud');
   const c1 = await clock(); await wait(1200); const c2 = await clock();
   check('Clock keeps running while driving', Number(c2) > Number(c1), true);
-  await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots[0].quantity = 3; e.spawnRoadCustomer(); }); await wait(100);
+  await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots[0].quantity = 3; e.residents.callNow(e.residents.all.find(p => p.customer === 'none')); }); await wait(200);
   await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); (s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true); }); await wait(300);
   check('Reaching a customer opens the sales screen', await scenes(), 'Sales,Hud');
   const c3 = await clock(); await wait(1200); const c4 = await clock();

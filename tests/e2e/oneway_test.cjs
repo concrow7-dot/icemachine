@@ -42,7 +42,8 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('Enter starts the evening at the cooler', (await scenes()).startsWith('Cooler'), true);
   await press('+', 5); await press('Enter'); await wait(200); await press('ArrowRight'); await press('Enter'); await wait(800);
-  await ev("(e.roadCustomerNow = { spot: 2 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
+  await ev('(e.residents.hearingOff = true, true)');
   check('Driving: park brake on at the start, sign showing', (await sc('Drive', 's.parkBrake')) + ' ' + (await sc('Drive', 's.parkLabel.visible')), 'true true');
   check('Driving: the hint shows the car-style controls', /↑ gas/.test(await texts('Drive')), true);
   const t0 = await truck();

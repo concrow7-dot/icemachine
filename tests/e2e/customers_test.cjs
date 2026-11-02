@@ -1,114 +1,160 @@
+// SCREAM-67, 68, 24, 99: customers are the residents. The truck's music ring, the
+// once-a-second chance, running to the curb, waiting 30 seconds, the pink square,
+// no pointer arrow, the music, and the customer's name at the window.
 const { chromium } = require('playwright');
 (async () => {
   const [port, outDir] = process.argv.slice(2);
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  // These checks cover hard (car-style) driving; the title remembers the last difficulty picked
-  await page.evaluate(() => localStorage.setItem('icemachine.difficulty', 'hard')); await page.reload();
+  await page.evaluate(() => localStorage.removeItem('icemachine.music.muted.v1'));
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const scenes = () => page.evaluate(() => window.__game.scene.getScenes(true).map(s => s.scene.key).join(','));
   const drive = (fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('Drive'); return ${fn}; })()`);
   const wait = ms => page.waitForTimeout(ms);
   const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await page.keyboard.press(k); await wait(40); } await wait(80); };
-  const pickup = async () => { await drive('(s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true)'); await wait(300); };
   let pass = 0, fail = 0;
   const check = (name, got, want) => { const ok = String(got) === String(want); ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(64) + ' got=' + got + (ok ? '' : ' want=' + want)); };
 
-  // Map helpers (from the game's own map; SCREAM-10: roads by centre line, not tiles)
-  const onRoad = (x, y) => page.evaluate(([x, y]) => window.__game.scene.getScene('Drive').roads.onRoad(x, y), [x, y]);
-  const onSidewalk = (x, y) => page.evaluate(([x, y]) => { const r = window.__game.scene.getScene('Drive').roads; const g = r.nearestSegment(x, y); if (!g || r.onRoad(x, y)) return false; const vx = g.bx - g.ax, vy = g.by - g.ay, L2 = vx * vx + vy * vy; const t = Math.max(0, Math.min(1, ((x - g.ax) * vx + (y - g.ay) * vy) / L2)); return Math.hypot(x - g.ax - t * vx, y - g.ay - t * vy) <= 74; }, [x, y]);
-
+  // ---- The chance formula (PO, November 2) ----
   await page.click('canvas'); await press('Enter'); await wait(200);
-  check('Evening start: no customer at the curb yet', await ev('e.roadCustomer'), null);
-  check('...and no SOLD OUT badge during prep', await page.evaluate(() => window.__game.scene.getScene('Hud').soldOutText.visible), false);
+  const chance = (h, l, indoors) => ev(`Math.round(e.residents.constructor.chance(${h}, ${l}, ${indoors}) * 10000) / 10000`);
+  check('First second heard: 5% (likelihood 100%, outside)', await chance(1, 1, false), 0.05);
+  const c = []; for (const h of [1, 2, 3, 6, 12, 30, 120]) c.push(await chance(h, 1, false));
+  check('The chance grows the longer they hear the truck', c.every((x, i) => i === 0 || x > c[i - 1]), true);
+  check('...each second adding less than the last (diminishing)', (c[1] - c[0]) > (c[2] - c[1]), true);
+  check('...toward 25%, never past it', c[6] <= 0.25 && c[6] > 0.24, true);
+  check('Indoors: half as likely', Math.abs((await chance(5, 1, true)) - (await chance(5, 1, false)) / 2) < 0.0002, true);
+  check("The resident's likelihood scales it (40%)", Math.abs((await chance(5, 0.4, false)) - (await chance(5, 1, false)) * 0.4) < 0.0002, true);
+  check('Likelihood 0%: never', await chance(30, 0, false), 0);
 
-  // Prep: buy 4 eclairs
-  // The title now opens the cooler directly (#66)
-  await press('+', 4); await press('Enter'); await wait(200);
-  check('Bought 4 bars', await ev('e.stockLeft'), 4);
-  check('Still no customer while in the truck before driving', await ev('e.roadCustomer'), null);
+  // ---- In the cooler, before driving: nobody wants ice cream yet ----
+  check('Before driving, no new customers', await ev('e.acceptingCustomers'), false);
+  await press('+', 6); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(400);
-  check('Driving off: one customer appears', await ev('e.roadCustomer !== null'), true);
-  const spot1 = await ev('e.roadCustomer.spot');
-  const hud = (fn) => page.evaluate(`(() => { const h = window.__game.scene.getScene('Hud'); return ${fn}; })()`);
-  check('No customer timer in the HUD (curb customers wait until picked up)', await hud('h.patience === undefined'), true);
+  check('On the road with stock: people may want ice cream', await ev('e.acceptingCustomers'), true);
+  check('The music ring is round the truck, 300 px', await drive('[s.ring.visible, Math.round(s.ring.radius), Math.round(s.ring.x) === Math.round(s.truck.x)].join()'), 'true,300,true');
+  check('No pointer arrow (SCREAM-68)', await drive('s.pointer'), undefined);
+  check('Hint line explains the ring and the music keys', await drive("s.children.list.some(o => o.type === 'Text' && /ring/.test(o.text) && /M mute/.test(o.text))"), true);
 
-  // Placement: customer on the sidewalk (a non-road tile), pickup zone in the road
-  const cust = await drive('[s.customer.x, s.customer.y]');
-  const zone = await drive('[s.pickupZone.x, s.pickupZone.y]');
-  check('Customer stands on the sidewalk (not the road)', await onSidewalk(cust[0], cust[1]), true);
-  check('Pickup zone is in the road', await onRoad(zone[0], zone[1]), true);
-  check('Customer is right beside the pickup zone (35px)', Math.round(Math.hypot(cust[0] - zone[0], cust[1] - zone[1])), 35);
-  await drive('s.truck.setPosition(s.pickupZone.x - 300 < 100 ? s.pickupZone.x + 300 : s.pickupZone.x - 300, s.pickupZone.y)');
-  await wait(400);
-  await page.screenshot({ path: outDir + '/customer_curb.png' });
+  // ---- Curb spots: every resident has one ----
+  const curbs = await drive(`(() => { let stand = 0, square = 0, cars = 0;
+    for (const p of s.evening.residents.all) { const [sx, sy, qx, qy] = p.resident.curb;
+      const g = s.roads.nearestSegment(sx, sy); const vx = g.bx - g.ax, vy = g.by - g.ay, L2 = vx * vx + vy * vy;
+      const t = Math.max(0, Math.min(1, ((sx - g.ax) * vx + (sy - g.ay) * vy) / L2)); const d = Math.hypot(sx - g.ax - t * vx, sy - g.ay - t * vy);
+      if (!s.roads.onRoad(sx, sy) && d <= 74) stand++;
+      if (s.roads.onRoad(qx, qy)) square++;
+      if (s.map.parkedCars.every(c => Math.hypot(c.x - qx, c.y - qy) >= 59)) cars++; }
+    return [stand, square, cars].join(); })()`);
+  check('All 160: stand on the sidewalk, square on the road, clear of parked cars', curbs, '160,160,160');
 
-  // Every curb spot: sidewalk + road check, by forcing each spot
-  const nSpots = await drive('s.map.curbSpots.length');
-  let goodSpots = 0;
-  for (let i = 0; i < nSpots; i++) {
-    await ev(`(e.roadCustomerNow = { spot: ${i}, sinceMs: e.elapsedMs }, e.emit('road-customer-changed'))`);
-    await wait(30);
-    const c = await drive('[s.customer.x, s.customer.y]');
-    const z = await drive('[s.pickupZone.x, s.pickupZone.y]');
-    if ((await onSidewalk(c[0], c[1])) && (await onRoad(z[0], z[1]))) goodSpots++;
-  }
-  check(`All ${nSpots} curb spots: customer on sidewalk, pickup in road`, goodSpots, nSpots);
-  check('Worcester has 34 curb spots, each on a named street', await drive("s.map.curbSpots.length + ' ' + s.map.curbSpots.every(c => s.roads.streetAt(c.x, c.y) !== '')"), '34 true');
+  // ---- A simulation: a parked truck in a fresh neighbourhood ----
+  const sim = await ev(`(() => {
+    const R = e.residents.constructor; let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const list = e.residents.all.map(p => p.resident);
+    const busiest = list.map(q => list.filter(o => Math.hypot(o.door[0] - q.door[0], o.door[1] - q.door[1]) < 300).length); const r = new R(list, rnd); const home = list[busiest.indexOf(Math.max(...busiest))].door; const ring = { x: home[0], y: home[1], radius: 300, open: true };
+    let became = 0, outsideRing = 0, backToNone = 0, late = 0, gaveUp = 0, atCurb = true; const was = r.all.map(p => p.customer);
+    for (let t = 0; t < 600 * 10; t++) {
+      r.update(0.1, ring);
+      r.all.forEach((p, i) => {
+        if (p.customer !== was[i]) {
+          if (was[i] === 'none') { became++; if (t > 450 * 10) late++;
+            const [x, y] = p.outside ? [p.x, p.y] : p.resident.door; if (Math.hypot(x - ring.x, y - ring.y) > 310) outsideRing++; }
+          if (p.customer === 'none') backToNone++;
+          if (was[i] === 'waiting' && p.customer === 'done') gaveUp++;
+          if (p.customer === 'waiting' && (Math.abs(p.x - p.resident.curb[0]) > 1 || Math.abs(p.y - p.resident.curb[1]) > 1)) atCurb = false;
+          was[i] = p.customer; }
+      });
+    }
+    const inRing = list.filter(q => Math.hypot(q.door[0] - ring.x, q.door[1] - ring.y) < 250).length;
+    return { became, inRing, outsideRing, backToNone, gaveUp, late, atCurb };
+  })()`);
+  check('Parked 10 minutes: people near the truck come out for ice cream', sim.became >= Math.min(5, sim.inRing), true);
+  check('...only people who could hear it', sim.outsideRing, 0);
+  check('...nobody is a customer twice in one evening', sim.backToNone, 0);
+  check('...waiting customers stand at their curb spot', sim.atCurb, true);
+  check('...unserved customers give up and walk home', sim.gaveUp, sim.became);
+  check('...and staying put runs out of customers (none in the last 2.5 min)', sim.late, 0);
+  const many = await ev(`(() => {
+    const R = e.residents.constructor; let seed = 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const list = e.residents.all.map(p => ({ ...p.resident, likelihood: 1 }));
+    const busiest = list.map(q => list.filter(o => Math.hypot(o.door[0] - q.door[0], o.door[1] - q.door[1]) < 300).length); const r = new R(list, rnd); const home = list[busiest.indexOf(Math.max(...busiest))].door; const ring = { x: home[0], y: home[1], radius: 300, open: true };
+    let most = 0; for (let t = 0; t < 120 * 10; t++) { r.update(0.1, ring); most = Math.max(most, r.waiting.length); } return most; })()`);
+  check('No limit on customers waiting at once (more than 3 seen)', many > 3, true);
+  const closed = await ev(`(() => { const R = e.residents.constructor; const r = new R(e.residents.all.map(p => ({ ...p.resident, likelihood: 1 })));
+    const home = r.all[40].resident.door; for (let t = 0; t < 600; t++) r.update(0.1, { x: home[0], y: home[1], radius: 300, open: false });
+    return r.all.filter(p => p.customer !== 'none').length; })()`);
+  check('Ring closed (sold out, after 8 PM): nobody new', closed, 0);
+  const away = await ev(`(() => { const R = e.residents.constructor; const r = new R(e.residents.all.map(p => ({ ...p.resident, likelihood: 1 })));
+    for (let t = 0; t < 600; t++) r.update(0.1); return r.all.filter(p => p.customer !== 'none').length; })()`);
+  check('No truck nearby: nobody wants ice cream', away, 0);
 
-  // Random spawns never repeat the same spot twice in a row
-  let repeats = 0; let last = await ev('e.roadCustomer.spot');
-  const seen = new Set();
-  for (let i = 0; i < 40; i++) {
-    await ev('e.spawnRoadCustomer()');
-    const s = await ev('e.roadCustomer.spot'); seen.add(s);
-    if (s === last) repeats++; last = s;
-  }
-  check('40 random spawns: never the same spot twice in a row', repeats, 0);
-  check('...and they spread across the map (10+ different spots)', seen.size >= 10, true);
+  // ---- In the game: a customer at the curb ----
+  await ev('(e.residents.hearingOff = true, true)');
+  const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
+  const name = await ev(`e.residents.all[${idx}].resident.name`);
+  await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);
+  check('A waiting customer gets a pink square in the curb lane', await drive(`(z => !!z && z.visible && s.roads.onRoad(z.x, z.y))(s.pickupZones.get(${idx}))`), true);
+  check('...and a "!" thought bubble over their head', await drive(`(b => !!b && b.visible)(s.bubbles.get(${idx}))`), true);
+  check('...standing on the sidewalk beside it', await ev(`(p => Math.hypot(p.x - p.resident.curb[0], p.y - p.resident.curb[1]) < 1)(e.residents.all[${idx}])`), true);
 
-  // Curb customers wait as long as it takes (PO decision while testing PR #37)
-  await ev('e.spawnRoadCustomer()');
-  const before = await ev('e.roadCustomer.spot');
-  await ev('e.tick(150000)'); await wait(700);
-  check('After 2.5 minutes the same customer is still waiting', await ev('e.roadCustomer.spot'), before);
-  check('...and is not flashing', await drive('s.customer.alpha'), 1);
-
-  // SCREAM-16: the sale starts only at a full stop, with at least half the truck in the pink square
-  check('Rolling through the square (creep speed): no sale', await drive('(s.setHeading(0), s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.parkBrake = false, s.speed = 72, s.checkCustomer(), s.leaving)'), false);
-  check('Stopped with under half the truck in the square: no sale', await drive('(s.truck.setPosition(s.pickupZone.x + 30, s.pickupZone.y), s.speed = 0, s.parkBrake = true, s.checkCustomer(), [s.pickupOverlap() < 0.5, s.leaving].join())'), 'true,false');
+  // Truck in the far lane (60 px over, toward the road's middle) does not pick up
+  await drive(`(z => { const [sx, sy] = s.evening.residents.all[${idx}].resident.curb; const dx = z.x - sx, dy = z.y - sy, L = Math.hypot(dx, dy);
+    s.truck.setPosition(z.x + dx / L * 60, z.y + dy / L * 60); s.setHeading(z.angle); s.speed = 0; s.parkBrake = true; })(s.pickupZones.get(${idx}))`);
   await wait(300);
-  check('...still driving', await scenes(), 'Drive,Hud');
-  await drive('(s.truck.setPosition(s.pickupZone.x + 20, s.pickupZone.y), s.speed = 0, s.parkBrake = true)'); await wait(300);
-  check('Stopped with over half the truck in the square: the sales screen opens straight away', (await scenes()) + ' ' + (await ev('e.sale !== null')), 'Sales,Hud true');
-  check('No customer at the curb while one is at the window', await ev('e.roadCustomer'), null);
+  check('Truck in the far lane (60 px from the square) does not pick up', await scenes(), 'Drive,Hud');
+  await drive(`(z => { const r = z.rotation; s.truck.setPosition(z.x - Math.cos(r) * 90, z.y - Math.sin(r) * 90); s.setHeading(z.angle); s.speed = 0; s.parkBrake = true; })(s.pickupZones.get(${idx}))`);
+  await wait(400);
+  await page.screenshot({ path: outDir + '/customer_waiting.png' });
+  check('Truck short of the square: no sale yet', await scenes(), 'Drive,Hud');
 
-  // Drive off -> next customer at the curb
-  const cashBefore = await ev('e.moneyCents');
-  await press('b'); await wait(300);
-  check('Driving off unserved: no money, next customer appears', ((await ev('e.moneyCents')) - cashBefore) + ' ' + (await ev('e.roadCustomer !== null')), '0 true');
+  // Rolling through the square doesn't count until fully stopped; then the window opens
+  await drive(`(z => { s.truck.setPosition(z.x, z.y); s.speed = 30; s.parkBrake = false; })(s.pickupZones.get(${idx}))`); await wait(30);
+  await drive(`(z => { s.truck.setPosition(z.x, z.y); s.speed = 0; s.parkBrake = true; })(s.pickupZones.get(${idx}))`); await wait(400);
+  check('Stopped in the square: the sales window opens', await scenes(), 'Sales,Hud');
+  check("...the window knows who's there", await ev('e.customer && e.customer.resident.name'), name);
+  check('...and shows their name (SCREAM-99)', await page.evaluate((n) => window.__game.scene.getScene('Sales').children.list.some(o => o.type === 'Text' && o.text === n && o.visible), name), true);
+  await page.screenshot({ path: outDir + '/customer_name.png' });
+  check('...and they are off the map while at the window', await ev(`e.residents.all[${idx}].outside`), false);
 
+  // Drive off without serving: they walk home; no second sale from them tonight
+  await wait(400); await press('b'); await wait(400);
+  check('B: back on the road', await scenes(), 'Drive,Hud');
+  check('The customer is done for the evening', await ev(`e.residents.all[${idx}].customer`), 'done');
+  check('...their square and bubble are gone', await drive(`[s.pickupZones.has(${idx}) && s.pickupZones.get(${idx}).visible, s.bubbles.has(${idx}) && s.bubbles.get(${idx}).visible].join()`), 'false,false');
+  check('...and the truck sitting in their square starts no sale', await scenes(), 'Drive,Hud');
 
-  // Pickup zone needs the curb lane: a truck in the far lane doesn't trigger it
-  const z2 = await drive('[s.pickupZone.x, s.pickupZone.y, s.customer.x, s.customer.y]');
-  const awayX = z2[0] - (z2[2] - z2[0]) * 60 / 35, awayY = z2[1] - (z2[3] - z2[1]) * 60 / 35;
-  await drive(`s.truck.setPosition(${awayX}, ${awayY})`); await wait(300);
-  check('Truck in the far lane (60px from the zone) does not pick up', await scenes(), 'Drive,Hud');
+  // Waiting 30 seconds, then giving up
+  const idx2 = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
+  await ev(`e.residents.callNow(e.residents.all[${idx2}])`);
+  await ev('e.residents.update(25)'); await wait(200);
+  check('After 25 s at the curb, still waiting', await ev(`e.residents.all[${idx2}].customer`), 'waiting');
+  await ev('e.residents.update(6)'); await wait(200);
+  check('After 30 s, they give up and walk home', await ev(`e.residents.all[${idx2}].customer`), 'done');
+  check('...and their square is gone', await drive(`s.pickupZones.get(${idx2}).visible`), false);
 
-  // Sold out: new evening, buy one ice cream (the cooler can't be left empty), then empty the cooler and drive
-  await page.keyboard.down('Shift'); await page.keyboard.press('Digit3'); await page.keyboard.up('Shift'); await wait(300); await page.evaluate(() => { const s = window.__game.scene.getScene('Results'); if (s.entering) s.save(); }); await wait(100); await press('Enter'); await wait(300);
-  await press('+'); await press('Enter'); await wait(200);
-  await page.evaluate(() => { window.__game.registry.get('evening').coolerSlots.forEach(s => { s.quantity = 0; }); });
-  await press('ArrowRight'); await press('Enter'); await wait(400);
-  check('Empty cooler on the road: no customers', await ev('e.roadCustomer'), null);
+  // ---- Music (SCREAM-24) ----
+  const songs = ['The Entertainer', 'Take Me Out to the Ball Game', 'Für Elise', 'Pop Goes the Weasel'];
+  const title = await drive('s.music.song && s.music.song.title');
+  check('Music plays while driving: one of the 4 songs', songs.includes(title), true);
+  await press('n'); await wait(200);
+  check('N: the next song', (await drive('s.music.song.title')) !== title, true);
+  check('...its name is shown', await drive("s.songLabel.text.startsWith('♪') && s.songLabel.alpha > 0"), true);
+  await press('m'); await wait(100);
+  check('M: music off', await drive('s.music.muted'), true);
+  check('...remembered in the browser', await page.evaluate(() => localStorage.getItem('icemachine.music.muted.v1')), '1');
+  await press('m'); await wait(100);
+  check('M again: music back on', await drive('s.music.muted'), false);
+
+  // ---- Sold out ----
+  await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots.forEach(s => { s.quantity = 0; }); e.emit('cooler-changed'); });
+  await wait(200);
+  check('Empty cooler on the road: no new customers', await ev('e.acceptingCustomers'), false);
   check('...and the HUD says SOLD OUT', await page.evaluate(() => window.__game.scene.getScene('Hud').soldOutText.visible), true);
-  check('...marker and pointer hidden', (await drive('s.customer.visible')) + ' ' + (await drive('s.pointer.visible')), 'false false');
-  await page.screenshot({ path: outDir + '/sold_out.png' });
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();

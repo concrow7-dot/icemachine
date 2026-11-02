@@ -23,7 +23,8 @@ const { TRACK } = require('./track.cjs');
   // The title now opens the cooler directly (#66)
   await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(1200);
-  await ev("(e.roadCustomerNow = { spot: 13 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
+  await ev('(e.residents.hearingOff = true, true)');
 
   // Frame-by-frame checks: drive the scene's own update with fixed 16 ms frames on an open stretch (top road).
   // The game loop is paused for these so only our frames move the truck.

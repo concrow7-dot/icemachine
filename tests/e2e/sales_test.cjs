@@ -61,6 +61,7 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter'); await wait(400);
 
   // ---- Sale 1: perfect and fast ----
+  await ev("e.residents.callNow(e.residents.all.find(p => p.customer === 'none'))"); await wait(200);
   await sc('Drive', '(s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true)'); await wait(400);
   check('Pulling up to a customer opens the sales screen (no hub)', await scenes(), 'Sales,Hud');
   check('The customer gives an order', await ev('e.sale.phase') + ' ' + (await ev('e.sale.order.length > 0')), 'ordering true');
@@ -106,7 +107,7 @@ const { chromium } = require('playwright');
   check('...GO TO THE COOLER is hidden now', await sc('Sales', 's.coolerButton.visible'), false);
   await wait(400); await page.screenshot({ path: outDir + '/sale_paid.png' });
   await press('Enter'); await wait(400);
-  check('Enter: straight back on the road, next customer waiting', (await scenes()) + ' ' + (await ev('e.roadCustomer !== null')), 'Drive,Hud true');
+  check('Enter: straight back on the road, the customer has gone', (await scenes()) + ' ' + (await ev('e.customer === null')), 'Drive,Hud true');
   check('Sold ice creams are gone from stock', await stock(), '8,4,5');
 
   // ---- Sale 2: wrong items once -> corrected order, retry, undercharge accepted with no tip ----

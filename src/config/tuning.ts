@@ -158,3 +158,28 @@ export const RESIDENT_IDLE_SECONDS: readonly [number, number] = [2, 7];
 
 /** At the start of an evening, this share of residents are already outside. */
 export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
+
+// ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 37) ----
+
+/** How far the truck's music reaches, in px from the truck: residents inside this ring can hear it. Engineering's value. */
+export const MUSIC_RING_RADIUS = 300;
+
+/**
+ * Each second someone hears the truck, the chance they want ice cream. It starts at
+ * CUSTOMER_CHANCE_START and grows toward CUSTOMER_CHANCE_CAP the longer they keep
+ * hearing it, each second adding less than the last (PO: diminishing returns). About
+ * two thirds of the way there after CUSTOMER_CHANCE_GROWTH_SECONDS. Engineering's numbers.
+ * Then multiplied by the resident's likelihood from the residents sheet (doc 38).
+ */
+export const CUSTOMER_CHANCE_START = 0.05;
+export const CUSTOMER_CHANCE_CAP = 0.25;
+export const CUSTOMER_CHANCE_GROWTH_SECONDS = 6;
+
+/** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
+export const CUSTOMER_INDOORS_FACTOR = 0.5;
+
+/** How fast a customer runs to the curb, in px per second. */
+export const CUSTOMER_RUN_SPEED = 75;
+
+/** PO: a customer waits at the curb this long, then walks home. */
+export const CUSTOMER_WAIT_SECONDS = 30;

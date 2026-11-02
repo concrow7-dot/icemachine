@@ -51,10 +51,10 @@ const { TRACK } = require('./track.cjs');
   check('Camera sits below the HUD (y=44, height 496)', cam, '44,496');
   await page.screenshot({ path: outDir + '/drive_start.png' });
 
-  check('A customer is waiting at the curb', await page.evaluate(() => window.__game.scene.getScene('Drive').customer.visible), true);
+  check('The music ring is drawn round the truck (SCREAM-67)', await drive('s.ring.visible && Math.round(s.ring.x) === Math.round(s.truck.x) && Math.round(s.ring.y) === Math.round(s.truck.y)'), true);
 
-  // Park the customer far from the test route so driving doesn't start a sale by accident
-  await ev("(e.roadCustomerNow = { spot: 2 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during the driving checks, so driving never starts a sale by accident
+  await ev('(e.residents.hearingOff = true, true)');
   // The driving checks below run on the test track (the old map's straight roads), from the old Home spot.
   await drive(TRACK);
   await drive('(s.truck.setPosition(450, 840), s.setHeading(0), s.speed = 0, s.parkBrake = true, true)');
@@ -97,8 +97,7 @@ const { TRACK } = require('./track.cjs');
   // Map edge: along the middle road to the far-left road, then up its open lane to the top road
   await aim(450, 840, 180); await driveUntilStop('ArrowUp');
   near('Left edge stops the truck at its nose (x about 142)', (await truck()).x, 140, 146);
-  check('Pointer arrow shows while customer is off screen', await page.evaluate(() => window.__game.scene.getScene('Drive').pointer.visible), true);
-  await page.screenshot({ path: outDir + '/drive_pointer.png' });
+  check('No pointer arrow (SCREAM-68)', await page.evaluate(() => window.__game.scene.getScene('Drive').pointer), undefined);
   await aim(210, 840, -90); await driveUntilStop('ArrowUp');
   near('Top edge stops the truck at its nose (y about 142)', (await truck()).y, 140, 146);
   const camScroll = await page.evaluate(() => window.__game.scene.getScene('Drive').cameras.main.scrollY);
@@ -107,10 +106,11 @@ const { TRACK } = require('./track.cjs');
   // Pull into the customer's pickup zone
   const clockBefore = await ev('e.clockMinutes');
   await wait(1000);
+  await ev("e.residents.callNow(e.residents.all.find(p => p.customer === 'none'))"); await wait(200);
   await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); (s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true); }); await wait(300);
   check('Driving into the customer opens the sales screen', await scenes(), 'Sales,Hud');
   check('...with a customer at the window', await ev('e.customerWaiting'), true);
-  check('...nobody else at the curb during the sale', await ev('e.roadCustomer'), null);
+  check('...and the window knows which resident it is', await ev("e.customer && e.customer.customer"), 'window');
   const parked = await ev('JSON.stringify({x: Math.round(e.truck.x), y: Math.round(e.truck.y)})');
   near('Clock kept running while driving', (await ev('e.clockMinutes')) - clockBefore, 0.3, 30);
 
@@ -118,7 +118,7 @@ const { TRACK } = require('./track.cjs');
   await wait(500); await press('b'); await wait(300);
   check('B: drive off, straight back on the road, no money', (await scenes()) + ' ' + ((await ev('e.moneyCents')) - cashBefore), 'Drive,Hud 0');
   check('Truck resumes where it stopped', JSON.stringify({ x: (await truck()).x, y: (await truck()).y }), parked);
-  check('Next customer is waiting at the curb', await page.evaluate(() => window.__game.scene.getScene('Drive').customer.visible), true);
+  check('The customer walks home afterwards (no second sale)', await ev("e.residents.all.filter(p => p.customer === 'done').length"), 1);
 
   // Evening ends while driving (debug is Shift+3 now)
   await page.keyboard.down('Shift'); await page.keyboard.press('Digit3'); await page.keyboard.up('Shift'); await wait(300);
@@ -126,7 +126,7 @@ const { TRACK } = require('./track.cjs');
   // A first evening makes the (empty) high score table: save the initials to continue (#16)
   await page.evaluate(() => { const s = window.__game.scene.getScene('Results'); if (s.entering) s.save(); }); await wait(100); 
   await press('Enter'); await wait(300);
-  check('New evening: truck back at Home, no customer until you drive', (await ev('JSON.stringify([Math.round(e.truck.x), Math.round(e.truck.y), Math.round(e.truck.angle), e.roadCustomer])')), JSON.stringify([home.x, home.y, home.angle, null]));
+  check('New evening: truck back at Home, no customer until you drive', (await ev('JSON.stringify([Math.round(e.truck.x), Math.round(e.truck.y), Math.round(e.truck.angle), e.residents.waiting.length])')), JSON.stringify([home.x, home.y, home.angle, 0]));
 
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);

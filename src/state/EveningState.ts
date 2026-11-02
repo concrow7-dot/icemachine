@@ -4,7 +4,7 @@ import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { WORCESTER } from '../config/worcester';
 import { RESIDENTS } from '../config/residents';
-import { Residents } from './Residents';
+import { Residents, type ResidentNow } from './Residents';
 import {
   COOLER_SLOTS,
   EVENING_END_HOUR,
@@ -23,23 +23,15 @@ export const EveningEvents = {
   CustomerChanged: 'customer-changed',
   /** () — a cooler slot's flavour, quantity or price changed */
   CoolerChanged: 'cooler-changed',
-  /** () — the customer waiting at the curb appeared, moved, gave up or was picked up (#12) */
-  RoadCustomerChanged: 'road-customer-changed',
   /** () — the sale at the window changed phase or ended (#13-#15) */
   SaleChanged: 'sale-changed',
 } as const;
-
-/** A new curb customer appears at least this many tiles from the truck (so leaving the window never starts another sale on the spot). */
-const SPAWN_CLEAR_OF_TRUCK_PX = 180;
 
 /** The four arrow keys (and W A S D): up is gas, down is brake and reverse, left and right steer (#32). */
 export type Facing = 'up' | 'down' | 'left' | 'right';
 
 /** Where the truck is parked in the neighbourhood, in pixels, and the way it points in degrees (0 = right, 90 = down). */
 export type TruckPosition = { x: number; y: number; angle: number };
-
-/** The one customer waiting at the curb (#12): which CURB_SPOTS entry. They wait until picked up. */
-export type RoadCustomer = { spot: number };
 
 /** One of the cooler's flavour slots (issue #8). */
 export type CoolerSlot = {
@@ -65,7 +57,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private customerAtWindow = false;
   private prepLocked = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
-  private roadCustomerNow: RoadCustomer | null = null;
+  /** SCREAM-67: the resident being served at the window, or null. */
+  private servingNow: ResidentNow | null = null;
   /** Keeps running after 8 PM, so a sale in progress can finish (#15). */
   private nowMsValue = 0;
   private endPending = false;
@@ -234,17 +227,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.customerAtWindow;
   }
 
-  /** Sets whether a customer is at the window. When they leave, the next one appears at the curb (#12). */
+  /** Sets whether a customer is at the window. */
   setCustomerWaiting(waiting: boolean): void {
     if (this.customerAtWindow === waiting) return;
     this.customerAtWindow = waiting;
     this.emit(EveningEvents.CustomerChanged, waiting);
-    if (!waiting) this.spawnRoadCustomer();
-  }
-
-  /** The customer waiting at the curb, or null if there isn't one (#12: one at a time). */
-  get roadCustomer(): Readonly<RoadCustomer> | null {
-    return this.roadCustomerNow;
   }
 
   /** Total ice creams left in the cooler. */
@@ -258,36 +245,17 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /**
-   * The truck drove into the curb customer (PO decision on #9): they step up
-   * to the window. The next one appears once this sale is over.
+   * SCREAM-67: whether anyone new may start wanting ice cream when they hear the
+   * truck: only once the truck is on the road, with stock to sell, before 8 PM.
+   * Customers already at the curb keep waiting either way.
    */
-  meetCustomer(): void {
-    if (!this.roadCustomerNow) return;
-    this.roadCustomerNow = null;
-    this.emit(EveningEvents.RoadCustomerChanged);
-    this.setCustomerWaiting(true);
+  get acceptingCustomers(): boolean {
+    return this.prepLocked && !this.ended && !this.isAfterHours && !this.isSoldOut;
   }
 
-  /**
-   * Puts the next customer at a random curb spot, different from the last one.
-   * Only while on the road, with stock to sell, before 8 PM and with nobody at the window.
-   */
-  private spawnRoadCustomer(): void {
-    const previous = this.roadCustomerNow?.spot;
-    this.roadCustomerNow = null;
-    if (!this.ended && !this.isAfterHours && !this.isSoldOut && this.prepLocked && !this.customerAtWindow) {
-      // Never right where the truck is: a customer there would start a sale the
-      // moment you leave the window (the spot just served was being picked again).
-      const nearTruck = (i: number) => {
-        const s = WORCESTER.curbSpots[i];
-        if (!s) return false;
-        return Math.hypot(s.x - this.truckPosition.x, s.y - this.truckPosition.y) < SPAWN_CLEAR_OF_TRUCK_PX;
-      };
-      const choices = WORCESTER.curbSpots.map((_, i) => i).filter((i) => i !== previous && !nearTruck(i));
-      const spot = choices[Math.floor(Math.random() * choices.length)] ?? 0;
-      this.roadCustomerNow = { spot };
-    }
-    this.emit(EveningEvents.RoadCustomerChanged);
+  /** The resident being served at the window (SCREAM-99 shows their name), or null. */
+  get customer(): ResidentNow | null {
+    return this.servingNow;
   }
 
   // ---- Selling (#13-#15) ----
@@ -301,8 +269,13 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * The truck reached a customer: they step up to the window and order from
    * what's in the cooler (PO, doc 12 Q22: straight to the sales screen).
    */
-  startSale(): Sale {
-    this.meetCustomer();
+  startSale(customer?: ResidentNow): Sale {
+    // SCREAM-67: the resident steps up to the window (the Shift+4 debug key starts a sale with nobody).
+    if (customer) {
+      this.residents.startServing(customer);
+      this.servingNow = customer;
+    }
+    this.setCustomerWaiting(true);
     this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
@@ -355,6 +328,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!sale.itemsGivenAway && sale.outcome?.kind !== 'paid') this.returnBagToStock(sale);
     this.saleNow = null;
     this.lastSalePhase = null;
+    if (this.servingNow) this.residents.finishServing(this.servingNow);
+    this.servingNow = null;
     this.setCustomerWaiting(false);
     this.emit(EveningEvents.SaleChanged);
     if (this.endPending) {
@@ -408,11 +383,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.prepLocked;
   }
 
-  /** Called when the player first heads for the road; the first customer appears then. */
+  /** Called when the player first heads for the road; from then on, people who hear the truck may want ice cream. */
   lockPrep(): void {
-    if (this.prepLocked) return;
     this.prepLocked = true;
-    this.spawnRoadCustomer();
   }
 
   /** Total spent on the stock currently in the cooler. */
