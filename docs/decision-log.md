@@ -2,6 +2,37 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 018 — A second gas station, on June Street; stations placed by the map generator (2026-11-02)
+
+**Decision:** There are two gas stations (Jira SCREAM-109): the Speedway on Park Avenue (decision 016) and a second one on June Street, the main road along the map's west edge. Both work the same way and look the same: two pumps on a forecourt, a GAS sign and a yellow bay.
+
+**Options considered:** the other real station in the map data (on Park Ave near Pleasant St, on the same east edge as the Speedway); an invented spot on the west side; or a spot the PO names.
+
+**Why (product owner's rationale):** the PO chose the west side (November 2), so there's gas near both ends of the map. His reason for the Speedway (decision 016) also guided where on the west side: on a main road at the edge of the map, away from home, so the player explores.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- The map generator now places the stations (`gasStations` in `worcester.ts`) on the side of the road away from the middle of the map. The June Street one is about 2,000 px from home.
+- A house standing on a forecourt moves to the nearest free spot along the same street and keeps its number in the residents sheet, so its resident moves with it. This also fixes a resident who lived "inside" the Speedway after decision 016 (house 146; house 148 moved too).
+- Customers' pink squares are kept off the pump bays.
+
+**Revisit if:** gas feels too far away or too close (move a station, or add one), or the map grows (SCREAM-66).
+
+## 017 — Varied houses and yards; houses keep their lots (2026-11-02)
+
+**Decision:** The neighbourhood's houses are no longer all small mobile homes (Jira SCREAM-108). Every lot gets a house picked from every style in the LimeZu pack that fits there: small, medium and big mobile homes, Victorian houses and villas (the terraced houses are too big for any lot). Each style comes in its own colours plus three of six wall-and-roof colour schemes. Yards get one to three garden ornaments: mailboxes, flower pots, sunflowers, bird houses, sheds, bushes, benches and fountains.
+
+**Options considered:** every style that fits; lean on the tall Victorian houses (like Worcester's triple-deckers); or keep the mobile homes and only add colour.
+
+**Why (product owner's rationale):** the PO chose "everything that fits" (November 2); the ticket asks for as many different assets as possible. It makes the map more interesting and worth exploring, and the streets more memorable and different from each other.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- Every house keeps its lot and its place in the list, because the residents sheet (doc 15) numbers houses in map order; a bigger house grows away from the street. Trees a bigger house now stands on were taken out.
+- The map generator does this as a last step with its own random numbers, so the roads, potholes and parked cars are unchanged. Houses, trees, ornaments and the gas pump are packed into one picture sheet, because 150-odd separate files made the first drive slow to load.
+- Residents can't stand on an ornament but can walk past one. Lots with a shallow front lawn get ornaments only at the sides, away from the front corners. Every yard spot is within 100 px of the door.
+- Two corner houses now count as being on the cross street (R013 Brownell St, R017 Berkmans St); the PO had sheet 15 updated to match (November 2).
+
+**Revisit if:** the PO wants a particular style or colour on a particular street, or the map grows (SCREAM-66).
+
 ## 016 — Fuel: a tank to budget for, and the Speedway on Park Avenue (2026-11-02)
 
 **Decision:** The truck has a gas tank (Jira SCREAM-22). Driving uses gas by distance; with an empty tank the truck crawls at a quarter of its top speed. Gas is bought at a gas station on the map: the real Speedway on Park Avenue at Chandler Street, drawn as two of LimeZu's charging stations side by side as pumps, on a concrete forecourt with a GAS sign. Stop in the yellow bay beside the pumps and the pump screen opens; gas is bought in $5 steps, $30 for a full tank, and the clock keeps running while you're there. Both modes have fuel: Quick play starts each evening with a full tank; Story starts day 1 with $100 and a quarter tank, and whatever is left carries over to the next evening (and into the save). Gas spent gets its own line on the results and end-of-day screens.

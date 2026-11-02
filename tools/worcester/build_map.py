@@ -15,7 +15,7 @@ PO decisions (October 30, 2026; Jira SCREAM-10):
 - Roads keep their real angles as straight segments (not a staircase on a tile grid).
 - About twice as big as the old map.
 """
-import json, math, os, random, sys
+import json, math, os, random, re, sys
 import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -371,12 +371,276 @@ def build(art):
         cx, cy = random.uniform(0, W), random.uniform(0, H)
         if fits(cx, cy, sp['w'] * 0.7, sp['h'] * 0.8, gap=0): put(sp, cx, cy)
 
+    # 8. SCREAM-108 (PO, November 2): variety. Every house keeps its lot and its place in
+    # the list (the residents sheet numbers houses in map order), but the house standing on
+    # it is picked from every style in the pack that fits there (mobile homes in three sizes,
+    # Victorian houses, terraced houses, villas), some in new colours, and yards get garden
+    # ornaments. Its own random numbers, so steps 1 to 7 come out exactly as before.
+    vr = random.Random(108)
+    by_name = {f.replace('_48x48', ''): f for f in os.listdir(art) if f.endswith('.png')}
+    def art_file(name):
+        return by_name[name + '.png']
+    # (wall colour, roof colour) schemes painted onto a house's pale walls and its grey roof.
+    PALETTES = [((255, 236, 196), (168, 62, 50)),   # cream walls, brick-red roof
+                ((206, 238, 214), (52, 102, 70)),   # mint walls, green roof
+                ((206, 226, 250), (48, 70, 120)),   # sky-blue walls, navy roof
+                ((250, 214, 222), (110, 74, 60)),   # pink walls, brown roof
+                ((250, 240, 170), (70, 92, 128)),   # butter-yellow walls, slate-blue roof
+                ((226, 214, 244), (64, 60, 70))]    # lavender walls, charcoal roof
+    def recolour(sp, key, palette):
+        """A copy of a house with new wall and roof colours. Only greys are painted (pale ones are
+        walls, darker ones roof), keeping their shading; windows, doors and outlines stay."""
+        wall, roof = palette
+        im = Image.open(os.path.join(OUT_ART, sp['key'] + '.png')).convert('RGBA')
+        a = np.asarray(im).astype(np.float32)
+        rgb = a[:, :, :3] / 255
+        mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+        sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+        lum = rgb.mean(axis=2)
+        grey = (sat < 0.22) & (a[:, :, 3] > 0)
+        walls, roofs = grey & (lum > 0.68), grey & (lum > 0.28) & (lum <= 0.68)
+        out = rgb.copy()
+        out[walls] = (rgb[walls] * (np.array(wall) / 255)[None, :]) ** 0.9
+        out[roofs] = np.clip(rgb[roofs] / 0.5 * (np.array(roof) / 255)[None, :], 0, 1)
+        res = np.dstack([(out * 255).clip(0, 255), a[:, :, 3]]).astype(np.uint8)
+        Image.fromarray(res, 'RGBA').save(os.path.join(OUT_ART, key + '.png'), optimize=True)
+        return {'key': key, 'w': sp['w'], 'h': sp['h']}
+    families = {
+        'small': houses + [sprite(art_file(f'ME_Singles_Camping_Mobile_House_Small_{i}'), f'house_small_{i}') for i in (2, 4, 6, 8)],
+        'medium': [sprite(art_file(f'ME_Singles_Camping_Mobile_House_Medium_{i}'), f'house_medium_{i}') for i in range(1, 9)],
+        'big': [sprite(art_file(f'ME_Singles_Camping_Mobile_House_Big_{i}'), f'house_big_{i}') for i in range(1, 9)],
+        'victorian': [sprite(art_file(f'24_Additional_Houses_Victorian_House_{i}'), f'house_victorian_{i}') for i in range(1, 8)],
+        'terraced': [sprite(art_file(f'24_Additional_Houses_Terraced_House_{i}'), f'house_terraced_{i}') for i in range(1, 7)],
+        'villa': villas,
+    }
+    # Each house in its own colours plus three of the schemes above.
+    for fam, sps in families.items():
+        sps += [recolour(sp, f"{sp['key']}_c{n}", PALETTES[n]) for sp in list(sps) for n in sorted(vr.sample(range(len(PALETTES)), 3))]
+    house_sprites = [sp for sps in families.values() for sp in sps]
+    size = {sp['key']: sp for sp in house_sprites + trees}
+
+    def rect(o, sp=None):
+        sp = sp or size[o['key']]
+        return (o['x'] - sp['w'] / 2, o['y'] - sp['h'], o['x'] + sp['w'] / 2, o['y'])
+    def overlaps(a, b, gap=0):
+        return not (a[2] + gap < b[0] or a[0] - gap > b[2] or a[3] + gap < b[1] or a[1] - gap > b[3])
+    def lawn_ok(l, t, r, b):
+        """Off roads, sidewalks, parks and fields, and on the map."""
+        if l < 0 or t < 0 or r > W or b > H: return False
+        for x in range(int(l), int(r) + 1, 8):
+            for y in (t, b, (t + b) / 2):
+                if on_sidewalk_or_road(x, y): return False
+        for y in range(int(t), int(b) + 1, 8):
+            for x in (l, r):
+                if on_sidewalk_or_road(x, y): return False
+        for a in areas:
+            poly = list(zip(a['points'][::2], a['points'][1::2]))
+            if inside(poly, ((l + r) / 2, (t + b) / 2)) or inside(poly, ((l + r) / 2, b)): return False
+        return True
+    def road_side(o):
+        """Which way the nearest road is from a house: 'down', 'up', 'left' or 'right'."""
+        sp = size[o['key']]; cx, cy = o['x'], o['y'] - sp['h'] / 2
+        best = None
+        for _, pts in pieces:
+            for a, b in zip(pts, pts[1:]):
+                vx, vy = b[0] - a[0], b[1] - a[1]; L2 = vx * vx + vy * vy or 1
+                t2 = max(0, min(1, ((cx - a[0]) * vx + (cy - a[1]) * vy) / L2))
+                px, py = a[0] + t2 * vx, a[1] + t2 * vy
+                d = math.hypot(px - cx, py - cy)
+                if best is None or d < best[0]: best = (d, px - cx, py - cy)
+        _, dx, dy = best
+        return ('down' if dy > 0 else 'up') if abs(dy) >= abs(dx) else ('right' if dx > 0 else 'left')
+
+    lots = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa')) and o is not home_obj]
+    house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+    for i in lots:
+        o = objects[i]
+        old = rect(o)
+        side = road_side(o)
+        others = [rect(objects[j]) for j in house_idx if j != i]
+        def placed_at(sp):
+            """Where `sp` stands on this lot: its front edge stays where the old house's was."""
+            l, t, r, b = old
+            if side == 'down': return ((l + r) / 2, b)
+            if side == 'up': return ((l + r) / 2, t + sp['h'])
+            if side == 'right': return (r - sp['w'] / 2, b)
+            return (l + sp['w'] / 2, b)
+        fitting = {}
+        for fam, sps in families.items():
+            for sp in sps:
+                cx, bottom = placed_at(sp)
+                rr = (cx - sp['w'] / 2, bottom - sp['h'], cx + sp['w'] / 2, bottom)
+                if lawn_ok(rr[0] - 6, rr[1] - 6, rr[2] + 6, rr[3] + 6) and not any(overlaps(rr, q, 8) for q in others):
+                    fitting.setdefault(fam, []).append((sp, cx, bottom))
+        if not fitting: continue
+        # Any style that fits is as likely as any other, so the rarer big ones still show up.
+        sp, cx, bottom = vr.choice(fitting[vr.choice(sorted(fitting))])
+        objects[i] = {'key': sp['key'], 'x': r1(cx), 'y': r1(bottom)}
+    # Trees a bigger house now stands on come out.
+    house_rects = [rect(objects[j]) for j in house_idx]
+    def tree_rect(o):
+        sp = size[o['key']]; w, h = sp['w'] * 0.7, sp['h'] * 0.8
+        return (o['x'] - w / 2, o['y'] - h, o['x'] + w / 2, o['y'])
+    objects = [o for o in objects if not o['key'].startswith('tree') or not any(overlaps(tree_rect(o), q, 2) for q in house_rects)]
+    house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+
+    # 9. Gas stations (SCREAM-22, SCREAM-109): a forecourt with two pumps beside a main road, a
+    # bay in the curb lane, and a GAS sign. A house standing on a forecourt moves to the nearest
+    # free spot along the same street (it keeps its number, so its resident just moves with it);
+    # trees there come out. Each is given by a point on the road and is on the side away from
+    # the middle of the map, at the edge.
+    STATIONS = [
+        # PO (November 2): the real Speedway, just past the Chandler corner; here just north of it.
+        {'name': 'Speedway', 'road': 'Park Avenue', 'near': (5540.8, 4656.3)},
+        # PO (November 2, SCREAM-109): a second one on the west side, also on a main road and away from home.
+        {'name': 'June Street', 'road': 'June Street', 'near': (1805.0, 2322.0)},
+    ]
+    PAD_LEN, PAD_DEPTH = 150, 76
+    gas_stations = []
+    for st in STATIONS:
+        best = None
+        for name, pts in pieces:
+            if name != st['road']: continue
+            for a2, b2 in zip(pts, pts[1:]):
+                vx, vy = b2[0] - a2[0], b2[1] - a2[1]; L2 = vx * vx + vy * vy or 1
+                tt = max(0, min(1, ((st['near'][0] - a2[0]) * vx + (st['near'][1] - a2[1]) * vy) / L2))
+                px, py = a2[0] + tt * vx, a2[1] + tt * vy
+                d = math.dist((px, py), st['near'])
+                if best is None or d < best[0]: best = (d, (px, py), (vx / math.sqrt(L2), vy / math.sqrt(L2)))
+        if best is None: sys.exit(f"gas station road not found: {st['road']}")
+        _, (px, py), (ux, uy) = best
+        nx, ny = -uy, ux
+        if (px + nx - W / 2) ** 2 + (py + ny - H / 2) ** 2 < (px - W / 2) ** 2 + (py - H / 2) ** 2: nx, ny = -nx, -ny
+        at = lambda side, along=0: (r1(px + ux * along + nx * side), r1(py + uy * along + ny * side))
+        ang = r1(math.degrees(math.atan2(uy, ux)))
+        pad_c = at(118)
+        corners = [(pad_c[0] + ux * a3 + nx * b3, pad_c[1] + uy * a3 + ny * b3) for a3 in (-PAD_LEN / 2, PAD_LEN / 2) for b3 in (-PAD_DEPTH / 2, PAD_DEPTH / 2)]
+        box = (min(c[0] for c in corners) - 10, min(c[1] for c in corners) - 10, max(c[0] for c in corners) + 10, max(c[1] for c in corners) + 10)
+        st_out = {'name': st['name'], 'bay': {'x': at(30)[0], 'y': at(30)[1], 'angle': ang},
+                  'pad': {'x': pad_c[0], 'y': pad_c[1], 'length': PAD_LEN, 'depth': PAD_DEPTH, 'angle': ang},
+                  'pumps': [dict(zip('xy', at(112, -28))), dict(zip('xy', at(112, 28)))],
+                  'sign': dict(zip('xy', at(118, 4)))}
+        gas_stations.append(st_out)
+        # Clear the forecourt (plus room for the pumps and sign to stand up from it).
+        site = (box[0], box[1] - 40, box[2], box[3])
+        objects = [o for o in objects if not (o['key'].startswith('tree') and overlaps(tree_rect(o), site))]
+        for j, o in enumerate(objects):
+            if not o['key'].startswith(('house', 'villa')) or not overlaps(rect(o), site): continue
+            sp = size[o['key']]
+            moved = None
+            for along in sorted(range(-900, 901, 20), key=abs):
+                if moved: break
+                for depth in (8, 20, 34, 60):
+                    cx = px + ux * along + nx * (edge + depth + sp['w'] / 2 * abs(nx))
+                    cy = py + uy * along + ny * (edge + depth + sp['h'] / 2 * abs(ny)) + sp['h'] / 2
+                    rr = (cx - sp['w'] / 2, cy - sp['h'], cx + sp['w'] / 2, cy)
+                    if (lawn_ok(rr[0] - 6, rr[1] - 6, rr[2] + 6, rr[3] + 6) and not overlaps(rr, site, 8)
+                            and not any(overlaps(rr, rect(q), 8) for k, q in enumerate(objects) if k != j and q['key'].startswith(('house', 'villa')))
+                            and all(not overlaps(rr, (g['pad']['x'] - 100, g['pad']['y'] - 100, g['pad']['x'] + 100, g['pad']['y'] + 100)) for g in gas_stations)):
+                        moved = (r1(cx), r1(cy)); break
+            if not moved: sys.exit(f"no room to move the house off the {st['name']} gas station")
+            objects[j] = {'key': o['key'], 'x': moved[0], 'y': moved[1]}
+            objects = [q for q in objects if not (q['key'].startswith('tree') and overlaps(tree_rect(q), rect(objects[j]), 2))]
+    house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+    STATION_CLEAR = [(g['pad']['x'], g['pad']['y'], 200) for g in gas_stations]  # (x, y, radius): no ornaments here
+
+    # Yard ornaments: one to three per house, beside the front and sides, off the path to the door.
+    ornament_names = (
+        [f'22_Post_Office_{c}_Mailbox_{n}_Front' for c in ('Black', 'Blue', 'Red') for n in (1, 2)]
+        + ['24_Additional_Houses_Terraced_House_Mailbox', '24_Additional_Houses_Terraced_House_Potted_Plant_3',
+           '24_Additional_Houses_Terraced_House_Potted_Plant_4', '24_Additional_Houses_Modern_House_Potted_Plant',
+           '24_Additional_Houses_Modern_House_Potted_Plant_Bloomed', 'ME_Singles_Villas_Potted_Plant_1', 'ME_Singles_Villas_Potted_Plant_2']
+        + [f'ME_Singles_Garden_{s}_{c}_Flower_Vase' for s in ('Big', 'Medium') for c in ('Light_Blue', 'Pink', 'Red', 'White', 'Yellow')]
+        + ['ME_Singles_Garden_Big_Sunflower', 'ME_Singles_Garden_Big_Sunflower_Vase', 'ME_Singles_Garden_Medium_Sunflower']
+        + [f'ME_Singles_Garden_{c}_{s}_Bird_House' for c in ('Blue', 'Brown', 'Pink', 'Red') for s in ('Big', 'Little')]
+        + [f'ME_Singles_Garden_{c}_Vase_{n}_{k}_Flowers' for c in ('Blue', 'Red') for n in (1, 2) for k in ('Three', 'Four')]
+        + [f'ME_Singles_Garden_{c}_Wood_Storage' for c in ('Blue_Brown', 'Blue_White', 'Brown', 'Red_Brown', 'Red_White', 'White')]
+        + [f'ME_Singles_Garden_Bush_{n}' for n in range(1, 24)] + [f'ME_Singles_Garden_Bush_Potted_{n}' for n in range(1, 10)]
+        + ['ME_Singles_Garden_Small_Bench_Horizontal', 'ME_Singles_Garden_Flowers_Bench_Horizontal', 'ME_Singles_Garden_Sunflower_Bench',
+           'ME_Singles_Garden_Green_Watering_Can_Left_Full', 'ME_Singles_Garden_Green_Watering_Can_Right_Full',
+           'ME_Singles_Garden_Wood_Box_Full_1', 'ME_Singles_Garden_Small_Wood_Cart_Full_1', 'ME_Singles_City_Props_Fountain_1',
+           'ME_Singles_City_Props_Fountain_2']
+        + [f'ME_Singles_Graveyard_{c}_Flowers_Pot' for c in ('Pink', 'Red', 'Violet', 'White_1')]
+    )
+    DOOR_CLEAR = 36  # px each side of a front door kept free of ornaments, so residents can get out
+    ornaments = []
+    for name in ornament_names:
+        if name + '.png' not in by_name: sys.exit(f'ornament not found in the pack: {name}')
+        key = 'orn_' + re.sub(r'^(ME_Singles_|22_Post_Office_|24_Additional_Houses_)', '', name).lower()
+        sp = sprite(art_file(name), key)
+        if sp['w'] <= 56 and sp['h'] <= 56: ornaments.append(sp)
+    size.update({sp['key']: sp for sp in ornaments})
+    blocking = [rect(o) for o in objects if o['key'].startswith(('house', 'villa'))] + [tree_rect(o) for o in objects if o['key'].startswith('tree')]
+    added = []
+    for j in house_idx:
+        o = objects[j]
+        if any(math.hypot(o['x'] - x, o['y'] - y) < r for x, y, r in STATION_CLEAR): continue
+        l, t, r, b = rect(o)
+        cx = (l + r) / 2
+        # A shallow front lawn (road close to the front door) gets ornaments only at the sides,
+        # so residents can still get round from the door to their yard.
+        door_to_road = min(math.dist((cx, b + 4), (a2[0] + max(0, min(1, ((cx - a2[0]) * (b2[0] - a2[0]) + (b + 4 - a2[1]) * (b2[1] - a2[1]))
+                                                              / (math.dist(a2, b2) ** 2 or 1))) * (b2[0] - a2[0]),
+                                                  a2[1] + max(0, min(1, ((cx - a2[0]) * (b2[0] - a2[0]) + (b + 4 - a2[1]) * (b2[1] - a2[1]))
+                                                              / (math.dist(a2, b2) ** 2 or 1))) * (b2[1] - a2[1])))
+                           for _, pts2 in pieces for a2, b2 in zip(pts2, pts2[1:]))
+        shallow = door_to_road - edge <= 40
+        spots = ('left', 'right') if shallow else ('front', 'front', 'left', 'right')
+        for _ in range(vr.randint(1, 3)):
+            sp = vr.choice(ornaments)
+            for _try in range(12):
+                spot = vr.choice(spots)
+                if spot == 'front':
+                    x = vr.choice((vr.uniform(l + sp['w'] / 2, cx - DOOR_CLEAR - sp['w'] / 2), vr.uniform(cx + DOOR_CLEAR + sp['w'] / 2, r - sp['w'] / 2)))
+                    y = b + vr.uniform(sp['h'] * 0.3 + 4, sp['h'] * 0.3 + 18)
+                else:
+                    x = l - 6 - sp['w'] / 2 - vr.uniform(0, 10) if spot == 'left' else r + 6 + sp['w'] / 2 + vr.uniform(0, 10)
+                    # On a shallow lot the front corners stay clear too: they're the residents' yard.
+                    y = vr.uniform(t + sp['h'] + (b - t) * 0.4, b - 24 if shallow else b + 10)
+                orr = (x - sp['w'] / 2, y - sp['h'], x + sp['w'] / 2, y)
+                if (lawn_ok(*orr) and not any(overlaps(orr, q, 3) for q in blocking)
+                        and not any(math.hypot(x - sx, y - sy) < rr for sx, sy, rr in STATION_CLEAR)):
+                    added.append({'key': sp['key'], 'x': r1(x), 'y': r1(y)}); blocking.append(orr); break
+    objects += added
+    used = {o['key'] for o in objects}
+    sprites_out = [sp for sp in house_sprites + trees + ornaments if sp['key'] in used or sp['key'] in ('villa_4',)]
+    for f in os.listdir(OUT_ART):
+        k = f[:-4]
+        # Only sprites this script makes; anything else in the folder (the gas pump) stays.
+        if f.endswith('.png') and k.startswith(('house', 'villa', 'tree', 'orn_')) and k not in {sp['key'] for sp in sprites_out}:
+            os.remove(os.path.join(OUT_ART, f))
+
+    # One picture sheet (a texture atlas) for every house, tree and ornament, plus the gas pump:
+    # 150-odd separate files made the first drive slow to load (SCREAM-108).
+    pack = [dict(sp) for sp in sprites_out]
+    if os.path.exists(os.path.join(OUT_ART, 'pump.png')):
+        pump_im = Image.open(os.path.join(OUT_ART, 'pump.png'))
+        pack.append({'key': 'pump', 'w': pump_im.width, 'h': pump_im.height})
+    ATLAS_W, PAD = 1024, 2
+    x = y = row_h = 0
+    for sp in sorted(pack, key=lambda q: (-q['h'], q['key'])):
+        if x + sp['w'] > ATLAS_W: x, y, row_h = 0, y + row_h + PAD, 0
+        sp['ax'], sp['ay'] = x, y
+        x += sp['w'] + PAD; row_h = max(row_h, sp['h'])
+    atlas = Image.new('RGBA', (ATLAS_W, y + row_h))
+    frames = {}
+    for sp in pack:
+        atlas.paste(Image.open(os.path.join(OUT_ART, sp['key'] + '.png')).convert('RGBA'), (sp['ax'], sp['ay']))
+        frames[sp['key']] = {'frame': {'x': sp['ax'], 'y': sp['ay'], 'w': sp['w'], 'h': sp['h']}, 'rotated': False, 'trimmed': False,
+                             'spriteSourceSize': {'x': 0, 'y': 0, 'w': sp['w'], 'h': sp['h']}, 'sourceSize': {'w': sp['w'], 'h': sp['h']}}
+    atlas.save(os.path.join(OUT_ART, 'atlas.png'), optimize=True)
+    json.dump({'frames': frames, 'meta': {'image': 'atlas.png', 'size': {'w': ATLAS_W, 'h': atlas.height}, 'scale': '1'}},
+              open(os.path.join(OUT_ART, 'atlas.json'), 'w'), separators=(',', ':'))
+    for f in os.listdir(OUT_ART):
+        if f.endswith('.png') and f[:-4].startswith(('house', 'villa', 'tree', 'orn_')):
+            os.remove(os.path.join(OUT_ART, f))
+
     out = {
         'width': W, 'height': H,
         'roads': [{'name': n, 'points': [c for p in pts for c in p]} for n, pts in pieces],
         'labels': labels, 'areas': areas, 'homeStart': home_start,
-        'home': home_obj, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
-        'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in houses + villas + trees],
+        'home': home_obj, 'gasStations': gas_stations, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
+        'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in sprites_out],
         'roadTiles': road_tiles, 'roadTileScale': RASTER,
         'roadMask': {'scale': RASTER, 'rows': road_rows},
     }

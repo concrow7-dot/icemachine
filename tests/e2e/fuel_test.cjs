@@ -25,8 +25,8 @@ const { chromium } = require('playwright');
   const check = (name, got, want) => { const ok = String(got) === String(want); ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(64) + ' got=' + got + (ok ? '' : ' want=' + want)); };
   const near = (name, got, lo, hi) => { const ok = got >= lo && got <= hi; ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(64) + ' got=' + got + (ok ? '' : ` want ${lo}..${hi}`)); };
   // Parks the truck in the pump bay, stopped, facing up Park Avenue.
-  const intoBay = () => drive(`(() => { const b = s.pumpBay; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 0; s.parkBrake = true; return true; })()`);
-  const awayFromBay = () => drive(`(() => { const b = s.pumpBay; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); s.speed = 0; s.parkBrake = true; return true; })()`);
+  const intoBay = () => drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 0; s.parkBrake = true; return true; })()`);
+  const awayFromBay = () => drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); s.speed = 0; s.parkBrake = true; return true; })()`);
   const fuel = async () => Math.round((await ev('e.fuel')) * 10000) / 10000;
 
   // ---- Quick play: a full tank ----
@@ -64,15 +64,18 @@ const { chromium } = require('playwright');
   await drive('(s.speed = 0, s.parkBrake = true, true)');
 
   // ---- The gas station ----
-  const station = await drive(`[s.roads.onRoad(s.pumpBay.x, s.pumpBay.y), s.sortedObjects.filter(o => o.key === 'pump').length, s.sortedObjects.some(o => o.key === 'house_small_3' && Math.abs(o.x - 5685.5) < 1)].join()`);
-  check('The pump bay is on the road; two pumps; the house on that spot is gone', station, 'true,2,false');
-  check('A GAS sign is on the map', await drive("s.mapTexts.some(t => t.obj.text === 'GAS')"), true);
-  await drive(`(() => { const b = s.pumpBay; s.truck.setPosition(b.x + Math.cos(b.rotation) * 90, b.y + Math.sin(b.rotation) * 90); s.setHeading(b.angle + 180); return true; })()`); await wait(500);
+  // SCREAM-109: two stations, the Speedway on Park Ave and one on June Street, each with two pumps on a clear forecourt.
+  check('Two gas stations: Park Avenue and June Street (SCREAM-109)', await drive("s.map.gasStations.map(g => g.name).join()"), 'Speedway,June Street');
+  check('Each bay is on the road; two pumps each', await drive("[s.pumpBays.every(b => s.roads.onRoad(b.x, b.y)), s.sortedObjects.filter(o => o.key === 'pump').length].join()"), 'true,4');
+  check('No house, tree or ornament stands on a forecourt', await drive(`s.map.gasStations.every(g => s.map.objects.every(o => Math.hypot(o.x - g.pad.x, o.y - g.pad.y) > 70))`), true);
+  check('No resident lives or walks on a forecourt', await drive(`s.map.gasStations.every(g => s.evening.residents.all.every(p => { const r = p.resident; const pts = [r.door, ...Array.from({ length: r.yard.length / 2 }, (_, i) => [r.yard[i * 2], r.yard[i * 2 + 1]])]; return pts.every(([x, y]) => Math.hypot(x - g.pad.x, y - g.pad.y) > 70); }))`), true);
+  check('A GAS sign at each station', await drive("s.mapTexts.filter(t => t.obj.text === 'GAS').length"), 2);
+  await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 90, b.y + Math.sin(b.rotation) * 90); s.setHeading(b.angle + 180); return true; })()`); await wait(500);
   await page.screenshot({ path: outDir + '/fuel_station.png' });
-  const curbClash = await drive(`s.evening.residents.all.filter(p => Math.hypot(p.resident.curb[2] - s.pumpBay.x, p.resident.curb[3] - s.pumpBay.y) < 60).length`);
+  const curbClash = await drive(`s.evening.residents.all.filter(p => s.pumpBays.some(b => Math.hypot(p.resident.curb[2] - b.x, p.resident.curb[3] - b.y) < 60)).length`);
   check("No customer's pink square overlaps the pump bay", curbClash, 0);
   // Rolling through doesn't count; stopped in the bay, the pump opens.
-  await drive(`(() => { const b = s.pumpBay; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 40; s.parkBrake = false; return true; })()`); await wait(40);
+  await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 40; s.parkBrake = false; return true; })()`); await wait(40);
   check('Rolling through the bay: no pump', (await scenes()).includes('Pump'), false);
   await drive('(s.leaving = false, true)');
   await intoBay();
@@ -106,6 +109,14 @@ const { chromium } = require('playwright');
   const cash1 = await ev('e.moneyCents');
   await press('b'); await wait(300);
   check('B: drives off without buying', (await scenes()) + ' ' + ((await ev('e.moneyCents')) === cash1), 'Drive,Hud true');
+  // The June Street station works the same way.
+  await awayFromBay(); await wait(200);
+  await drive(`(() => { const b = s.pumpBays[1]; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 0; s.parkBrake = true; return true; })()`);
+  check('Stopped in the June Street bay: the pump opens too', await until(async () => (await scenes()) === 'Pump,Hud'), true);
+  await page.screenshot({ path: outDir + '/fuel_pump_june.png' });
+  await press('b'); await wait(300);
+  await drive(`(() => { const b = s.pumpBays[1]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 90, b.y + Math.sin(b.rotation) * 90); s.setHeading(b.angle + 180); s.speed = 0; s.parkBrake = true; return true; })()`); await wait(500);
+  await page.screenshot({ path: outDir + '/fuel_station_june.png' });
 
   // ---- What can be bought ----
   check('Gas only in $5 steps', await ev('e.buyGas(300)'), false);

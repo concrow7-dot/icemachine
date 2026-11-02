@@ -229,8 +229,12 @@ def yard(m, segs, house, others, rnd):
                  and min(sg[2], sg[4]) - 400 < y < max(sg[2], sg[4]) + 400]
     near_houses = [o for o in others if abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
     near_trees = [o for o in m['objects'] if o['key'].startswith('tree') and abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
+    # SCREAM-108: yard ornaments (mailboxes, planters, sheds); people walk round them.
+    sizes = {sp['key']: sp for sp in m['sprites']}
+    near_orns = [(o['x'], o['y'], sizes[o['key']]['w'], sizes[o['key']]['h']) for o in m['objects']
+                 if o['key'].startswith('orn_') and abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
 
-    def feet_ok(px, py):
+    def feet_ok(px, py, standing=True):
         """A spot a person can stand on: off every road and sidewalk, not on a house, not on a
         tree trunk. Standing in front of or behind a house or tree is fine: the game draws
         front to back (SCREAM-104)."""
@@ -241,13 +245,16 @@ def yard(m, segs, house, others, rnd):
         if any(o['x'] - o['w'] / 2 - 6 < px < o['x'] + o['w'] / 2 + 6 and o['y'] - o['h'] - 2 < py < o['y'] + 3
                for o in near_houses):
             return False
+        # Nobody stands on an ornament, but walking past one is fine (drawn front to back).
+        if standing and any(ox - ow / 2 - 4 < px < ox + ow / 2 + 4 and oy - oh - 2 < py < oy + 3 for ox, oy, ow, oh in near_orns):
+            return False
         # Off tree trunks: people walk behind or in front of a tree, not through its trunk.
         return not any(abs(px - t['x']) < 11 and t['y'] - 14 < py < t['y'] + 4 for t in near_trees)
 
     def clear(a, b):
         """A straight walk from a to b that never crosses a house or a road."""
         steps = max(1, int(math.dist(a, b) // 4))
-        return all(feet_ok(a[0] + (b[0] - a[0]) * k / steps, a[1] + (b[1] - a[1]) * k / steps) for k in range(steps + 1))
+        return all(feet_ok(a[0] + (b[0] - a[0]) * k / steps, a[1] + (b[1] - a[1]) * k / steps, standing=False) for k in range(steps + 1))
 
     # The door: the sprites' doors are on the bottom (front) wall.
     door = (x, y + 4)
@@ -265,8 +272,31 @@ def yard(m, segs, house, others, rnd):
         hx, hy = w / 2, h / 2
         s = min(hx / abs(math.cos(a)) if math.cos(a) else 1e9, hy / abs(math.sin(a)) if math.sin(a) else 1e9)
         p = (round(cx + math.cos(a) * (s + r), 1), round(cy + math.sin(a) * (s + r) + 16, 1))
-        if feet_ok(*p) and all(math.dist(p, q) > 14 for q in pts) and clear(door, p) and all(clear(p, q) for q in pts):
+        # Within 100 px of the door, so people stay near home even beside a big house (SCREAM-108).
+        if (math.dist(door, p) <= 100 and feet_ok(*p) and all(math.dist(p, q) > 14 for q in pts)
+                and clear(door, p) and all(clear(p, q) for q in pts)):
             pts.append(p)
+    # SCREAM-108: a wide house with a small front lawn may leave no room in front; then try
+    # beside it as well (only for these lots, so everyone else's yard stays as it was).
+    for _ in range(600 if len(pts) < 2 else 0):
+        if len(pts) >= 2:
+            break
+        a = rnd.choice((0.0, math.pi)) + rnd.gauss(0, 0.5)
+        r = rnd.uniform(6, 30)
+        s = min(w / 2 / abs(math.cos(a)) if math.cos(a) else 1e9, h / 2 / abs(math.sin(a)) if math.sin(a) else 1e9)
+        p = (round(cx + math.cos(a) * (s + r), 1), round(cy + math.sin(a) * (s + r) + 16, 1))
+        if (math.dist(door, p) <= 100 and feet_ok(*p) and all(math.dist(p, q) > 14 for q in pts)
+                and clear(door, p) and all(clear(p, q) for q in pts)):
+            pts.append(p)
+    # Last resort for a tight lot: spots along the front of the house, either side of the door.
+    for d in (18, -18, 30, -30, 42, -42, 54, -54):
+        if len(pts) >= 2:
+            break
+        for e in (0, 4, 8):
+            p = (round(door[0] + d, 1), round(door[1] + e, 1))
+            if feet_ok(*p) and all(math.dist(p, q) > 14 for q in pts) and clear(door, p) and all(clear(p, q) for q in pts):
+                pts.append(p)
+                break
     return [round(door[0], 1), round(door[1], 1)], [c for p in pts for c in p]
 
 
@@ -327,6 +357,9 @@ def curb(m, segs, door, blocks):
                 if not on_asphalt(*square):
                     continue
                 if any(math.dist(square, (c['x'], c['y'])) < CAR_CLEAR for c in m['parkedCars']):
+                    continue
+                # Off the gas stations' pump bays (SCREAM-109), so a customer never waits in one.
+                if any(math.dist(square, (g['bay']['x'], g['bay']['y'])) < CAR_CLEAR for g in m.get('gasStations', [])):
                     continue
                 if strict and through_house(door, stand):
                     continue
