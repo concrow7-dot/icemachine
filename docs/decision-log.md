@@ -9,14 +9,15 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Every resident's likelihood in the residents sheet (doc 15) was cut by 40%, rounded to 5% (average 52% became 31%).
 - The truck is 1.3x bigger (60 x 36 px); parked cars are 0.8x (43 x 26 px), and there are twice as many (80). Lanes stay 60 px, so the truck can't U-turn in one sweep any more: turning round takes a three-point turn.
 - The driving view is zoomed in 1.2x.
-- Gas burns 1.5x as fast: a full tank drives 78,000 px (about a full evening of driving). Then 15% faster again (PO, November 2): 67,800 px.
-- Top speed is 10% higher: 476 px/s (was 433). It also burns gas faster per second at top speed.
+- Gas burns 1.5x as fast: a full tank drives 78,000 px (about a full evening of driving). Then 15% faster again (PO, November 2): 67,800 px; then 25% faster again: 54,200 px.
+- Top speed is 10% higher, then 15% higher again: 547 px/s (was 433). It also burns gas faster per second at top speed.
+- 25% more momentum (PO, November 2): letting go of the gas, the truck rolls down to a creep over 0.5 s (was 0.4). Engineering read "momentum" as this roll; braking is unchanged.
 - Each resident buys at most once a night (PO, November 2): already the rule since decision 015, and tested.
 - Kept as they were (PO, November 2): how fast people come out while you're parked, speed not mattering much, and the 300 px music ring.
 
 **Options considered:** for serving, keep the neighbourhood frozen or let it run; for parked, a steady trickle, a rush then a trickle, or as is; for driving, slower being better, about the same, or as is; for the ring, 300, 400 or 500 px; for the truck, 1.15x (U-turns still work), 1.3x with three-point turns, or 1.3x with wider lanes.
 
-**Why (product owner's rationale):** to feel more realistic (decision 015's reason): sometimes a bunch of customers are waiting and some leave because you take too long, which only happens if waiting continues while you serve. The PO asked for fewer willing customers, a bigger truck, smaller and more parked cars, a view closer to the street, and quicker gas use (comment on SCREAM-114), then a 10% faster truck and gas 15% quicker again (in chat). **Why, for each of those:** _waiting on the PO._
+**Why (product owner's rationale):** to feel more realistic (decision 015's reason): sometimes a bunch of customers are waiting and some leave because you take too long, which only happens if waiting continues while you serve. The PO asked for fewer willing customers, a bigger truck, smaller and more parked cars, a view closer to the street, and quicker gas use (comment on SCREAM-114), then a 10% faster truck and gas 15% quicker again, then another 15% speed, 25% more momentum and gas 25% quicker (in chat). **Why, for each of those:** _waiting on the PO._
 
 **Engineering's calls (proposals, not the PO's reasons):**
 - The amounts (1.3x, 0.8x, 80 cars, 1.2x zoom, 40% fewer, 1.5x gas) are starting points, all in `tuning.ts` or the residents sheet, to change after playing.

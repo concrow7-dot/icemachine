@@ -53,17 +53,17 @@ const { TRACK } = require('./track.cjs');
   await drive(`(${TRACK}, s.potholes = [{ x: 1230, y: 150, armed: true }], s.cars = [{ x: 870, y: 220, angle: 0, halfLength: 27, halfWidth: 16 }], true)`);
 
   // ---- Cost shown at the point of contact ----
-  await place(700, 220, 'right', 476);
+  await place(700, 220, 'right', 547);
   await hold('ArrowUp', 1200);
   const truckX = await drive('Math.round(s.truck.x)');
   const carPop = (await popups()).find(p => p.startsWith('-$10.00'));
   check('Parked car: "-$10.00" pops up', !!carPop, true);
-  near('...at the front of the truck, where it hit (x)', Number(carPop?.split('@')[1].split(',')[0]), truckX, truckX + 22);
+  near('...at the front of the truck, where it hit (x)', Number(carPop?.split('@')[1].split(',')[0]), truckX, truckX + 29); // the nose is 28.6 px ahead (SCREAM-114)
   await page.screenshot({ path: outDir + '/extras_car_cost.png' });
   await wait(1500);
   check('...and fades away', (await popups()).length, 0);
 
-  await place(1080, 150, 'right', 476);
+  await place(1080, 150, 'right', 547);
   await page.keyboard.down('ArrowUp');
   for (let i = 0; i < 40 && !(await popups()).length; i++) await wait(50);
   await page.keyboard.up('ArrowUp');
@@ -71,7 +71,7 @@ const { TRACK } = require('./track.cjs');
   check('Pothole: "-$5.00" pops up', holePop.split('@')[0], '-$5.00');
   near('...on the pothole (x near 1230)', Number(holePop.split('@')[1]?.split(',')[0]), 1220, 1240);
   await wait(1500);
-  await place(600, 840, 'down', 476); await hold('ArrowUp', 1000);
+  await place(600, 840, 'down', 547); await hold('ArrowUp', 1000);
   check('Road edge: its cost (-$1.00 to -$2.00) pops up', /^-\$(1\.\d\d|2\.00)$/.test(((await popups())[0] ?? '').split('@')[0]), true);
   await wait(1500);
 

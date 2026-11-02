@@ -37,27 +37,27 @@ const { TRACK } = require('./track.cjs');
   const sim = (setup, frames) => run(setup, frames);
 
   // ---- Momentum: let go of the gas and the truck rolls ----
-  let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 476; s.parkBrake = false; s.held = []", 40);
+  let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 40);
   const creepAt = r.findIndex(f => f[3] === 72);
-  near('Let go at top speed: slows to a creep in about 0.34 s (frames)', creepAt + 1, 20, 23);
+  near('Let go at top speed: slows to a creep in about 0.43 s (frames)', creepAt + 1, 26, 29);
   check('...and keeps creeping (never stops on its own)', r.at(-1)[3] + ' ' + (r.at(-1)[0] > r.at(-2)[0]), '72 true');
   r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 72; s.parkBrake = false; s.held = ['right']", 20);
   near('Steering while creeping still turns the truck (degrees)', r.at(-1)[2], 25, 40);
 
   // ---- Slow to pick up speed, like a train ----
   r = await sim("s.truck.setPosition(150, 180); s.setHeading(0); s.speed = 0; s.held = ['up']", 165);
-  near('Gas from a stop: after 1 s, only about 40% of top speed (px/s)', r[61][3], 182, 200);
-  near('...full speed takes about 2.5 s (frames of 16 ms)', r.findIndex(f => f[3] === 476) + 1, 150, 160);
+  near('Gas from a stop: after 1 s, only about 40% of top speed (px/s)', r[61][3], 209, 230);
+  near('...full speed takes about 2.5 s (frames of 16 ms)', r.findIndex(f => f[3] === 547) + 1, 150, 160);
 
   // ---- Brake, then reverse ----
-  r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 476; s.parkBrake = false; s.held = ['down']", 50);
+  r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = ['down']", 50);
   const stopped = r.findIndex(f => f[3] <= 0);
   near('Down arrow at speed: brakes to a full stop in about 0.15 s (frames)', stopped + 1, 9, 11);
   near('...sliding only about 33 px', r[stopped][0] - 400, 26, 38);
   check('...waits a moment at a stop (0.4 s) before reversing', r[stopped + 20][3], 0);
   check('...then reverses: backwards, still facing forward', (r.at(-1)[0] < r[stopped][0]) + ' ' + r.at(-1)[2] + ' ' + (r.at(-1)[3] < 0), 'true 0 true');
   r = await sim("s.truck.setPosition(700, 180); s.setHeading(0); s.speed = 0; s.parkBrake = false; s.held = ['down']", 90);
-  check('Reverse tops out at a quarter of top speed: 476 / 4, about 119 px/s (ICE-13)', -Math.min(...r.map(f => f[3])), Math.round(476 / 4));
+  check('Reverse tops out at a quarter of top speed: 547 / 4, about 137 px/s (ICE-13)', -Math.min(...r.map(f => f[3])), Math.round(547 / 4));
   r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 60; s.parkBrake = false; s.held = ['down']", 8);
   let r2 = await sim("s.held = []", 40);
   check('Brake to a stop, then let go: it rolls on at a creep (no park brake)', r2.at(-1)[3] + ' ' + (r2.at(-1)[0] > r2[0][0]), '72 true');
@@ -111,9 +111,9 @@ const { TRACK } = require('./track.cjs');
   // ---- Turns get wider at speed ----
   const radiusAt = async (speed) => drive(`(() => { s.parkBrake = false; s.truck.setPosition(1200, 840); s.setHeading(0); s.held = ['right']; let path = 0; for (let i = 0; i < 10; i++) { s.speed = ${speed}; const x = s.truck.x, y = s.truck.y; s.update(0, 16); path += Math.hypot(s.truck.x - x, s.truck.y - y); } return Math.round(path / (s.heading * Math.PI / 180)); })()`);
   near('Tightest turn (slow): radius about 40 px', await radiusAt(100), 35, 45);
-  near('At top speed the turn is wider: radius about 124 px', await radiusAt(476), 110, 135);
-  r = await sim("s.truck.setPosition(1200, 840); s.setHeading(0); s.speed = 476; s.held = ['up', 'right']", 1);
-  near('Turning hard at top speed scrubs a little speed off', r[0][3], 462, 475);
+  near('At top speed the turn is wider: radius about 150 px', await radiusAt(547), 138, 162);
+  r = await sim("s.truck.setPosition(1200, 840); s.setHeading(0); s.speed = 547; s.held = ['up', 'right']", 1);
+  near('Turning hard at top speed scrubs a little speed off', r[0][3], 532, 546);
 
   // ---- In reverse, the wheel works the other way round ----
   r = await run("s.truck.setPosition(600, 840); s.setHeading(0); s.held = ['right']", 5, -100);
@@ -145,10 +145,10 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Harder hits cost more ----
   const hit = async (kind, speed) => drive(`(() => { const before = e.damageCents; s.setHeading(0); s.speed = ${speed}; s.crash('${kind}'); return e.damageCents - before; })()`);
-  check('Parked car at top speed: full $10.00', await hit('car', 476), 1000);
-  check('Parked car at half speed: $6.75 (between half and full)', await hit('car', 476 / 2), 675);
+  check('Parked car at top speed: full $10.00', await hit('car', 547), 1000);
+  check('Parked car at half speed: $6.75 (between half and full)', await hit('car', 547 / 2), 675);
   check('Parked car at the slowest hit that counts (1/4 speed): half, $5.00', await hit('car', 108.25), 500);
-  check('Curb at top speed: $2.00', await hit('edge', 476), 200);
+  check('Curb at top speed: $2.00', await hit('edge', 547), 200);
   check('Curb at 1/4 speed: $1.00', await hit('edge', 108.25), 100);
   const holeCost = await drive(`(() => { const before = e.damageCents; const h = s.potholes[0]; h.armed = true; s.truck.setPosition(h.x, h.y); s.speed = 40; s.checkPotholes(); return e.damageCents - before; })()`);
   check('Pothole crept over slowly: half price, $2.50', holeCost, 250);
@@ -157,12 +157,12 @@ const { TRACK } = require('./track.cjs');
 
   // ---- With real keys, in the running game ----
   await drive("(s.held = [], s.speed = 0, s.spinning = false, s.tweens.killAll(), s.setHeading(0), s.truck.setPosition(400, 180), s.scene.resume(), true)");
-  await drive('(s.speed = 476, s.parkBrake = false, true)');
+  await drive('(s.speed = 547, s.parkBrake = false, true)');
   await wait(200);
   await page.keyboard.down('ArrowUp'); await wait(800);
   const xAtRelease = await drive('s.truck.x');
   await page.keyboard.up('ArrowUp'); await wait(700);
-  near('Real keys: after letting go, the truck rolls on and keeps creeping (px)', Math.round((await drive('s.truck.x')) - xAtRelease), 70, 170);
+  near('Real keys: after letting go, the truck rolls on and keeps creeping (px)', Math.round((await drive('s.truck.x')) - xAtRelease), 100, 260);
   check('...at creep speed', Math.round(await drive('s.speed')), 72);
   await page.keyboard.press('q'); await wait(400);
   const xStopped = await drive('Math.round(s.truck.x)'); await wait(400);

@@ -39,9 +39,9 @@ export const REFUSE_ABOVE_CENTS = 400;
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
  * testing (PR #38), then while testing driving feel (PR #58): x1.75 to 525,
  * x0.75 to 394, then +10% to 433, about 6.5 seconds across the map. SCREAM-114 (PO,
- * November 2): +10% again, to 476.
+ * November 2): +10% again, to 476, then +15% to 547.
  */
-export const TRUCK_SPEED = 476;
+export const TRUCK_SPEED = 547;
 
 /**
  * Issue #9: seconds to reach top speed from a stop. First 0.25 s; raised to
@@ -55,9 +55,9 @@ export const TRUCK_ACCELERATION_SECONDS = 2.5;
 /**
  * Letting go of the gas: the truck rolls down from top speed over this many
  * seconds (to a creep, below). First 0.2 s (half a tile, Q16); doubled to 0.4 s
- * while testing PR #58.
+ * while testing PR #58; SCREAM-114 (PO, November 2): 25% more momentum, 0.5 s.
  */
-export const TRUCK_COAST_SECONDS = 0.4;
+export const TRUCK_COAST_SECONDS = 0.5;
 
 /** The brake (down arrow): top speed to a stop in this many seconds. */
 export const TRUCK_BRAKING_SECONDS = 0.15;
@@ -202,9 +202,9 @@ export const FUEL_STEP_CENTS = 500;
  * 300 s evening at top speed (433 px/s) is about 78,000 px. It was 117,000 (2/3 of a
  * tank); SCREAM-114 (PO, November 2): gas should burn quicker, so now a full evening
  * of driving uses about a full tank (1.5x as fast). Then (PO, November 2) 15% faster
- * again: 78,000 / 1.15 = 67,800 px. Tune after playing.
+ * again: 78,000 / 1.15 = 67,800 px, then 25% faster: 54,200 px. Tune after playing.
  */
-export const FUEL_TANK_PX = 67800;
+export const FUEL_TANK_PX = 54200;
 
 /** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
 export const FUEL_STORY_START = 0.25;
