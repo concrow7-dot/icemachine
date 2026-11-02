@@ -64,19 +64,37 @@ def repaint(im, roof_end, red_rows_to_body):
 
 
 def cone(side):
-    """The cone and scoop from the side view's roof (everything above the roof line)."""
-    top = side.crop((0, 0, side.width, 30))
+    """
+    The cone, scoop, cherry and melted splat from the side view's roof (not the roof
+    itself, nor the megaphone). SCREAM-115 (PO testing): the first cut stopped at 30 px,
+    which clipped the scoop, and was wider than the van, so the front and back views cut
+    it off at the sides.
+    """
+    top = side.crop((14, 0, 66, 42))
     px = top.load()
-    keep = Image.new('RGBA', top.size)
-    kp = keep.load()
-    teal = {hx(c) for c in ('367f82', '5ea592', '49928f', '2e7177', '3a3a50', '46465e', '565972', '7d7f99')}
-    for y in range(top.height):
-        for x in range(top.width):
-            p = px[x, y]
-            if p[3] and p[:3] not in teal:
-                kp[x, y] = p
-    bb = keep.getbbox()
-    return keep.crop(bb)
+    roof = {hx(c) for c in ('367f82', '5ea592', '49928f', '2e7177', '3a3a50', '46465e', '565972', '7d7f99')}
+    keep = {(x, y) for y in range(top.height) for x in range(top.width) if px[x, y][3] and px[x, y][:3] not in roof}
+    # Only the biggest connected piece: drops stray roof highlights.
+    best, seen = set(), set()
+    for start in keep:
+        if start in seen:
+            continue
+        piece, todo = set(), [start]
+        while todo:
+            q = todo.pop()
+            if q in seen or q not in keep:
+                continue
+            seen.add(q)
+            piece.add(q)
+            x, y = q
+            todo += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x + 1, y + 1), (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1)]
+        if len(piece) > len(best):
+            best = piece
+    out = Image.new('RGBA', top.size)
+    op = out.load()
+    for q in best:
+        op[q] = px[q]
+    return out.crop(out.getbbox())
 
 
 def main(zip_path):
@@ -85,7 +103,8 @@ def main(zip_path):
     down = repaint(load(z, 'Ambulance_Down_1.png'), 60, set())
     up = repaint(load(z, 'Ambulance_Up_1.png'), 63, set(range(70, 82)))
     c = cone(side)
-    for v, roof_mid in ((down, 30), (up, 33)):
+    assert c.width <= down.width, f'cone {c.width} px is wider than the van ({down.width} px)'
+    for v, roof_mid in ((down, 32), (up, 35)):
         v.alpha_composite(c, ((v.width - c.width) // 2, roof_mid - c.height // 2))
     right = side
     left = side.transpose(Image.FLIP_LEFT_RIGHT)

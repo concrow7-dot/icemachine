@@ -10,7 +10,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** for loading, a spinning ice cream cone (the ticket's description) or the truck covering the page (its newer title); the PO picked the truck (November 2).
 
-**Why (product owner's rationale):** the $4 warning: players should organically figure out the price ceiling (doc 08, Q11). The loading screen: _waiting on the PO._
+**Why (product owner's rationale):** the $4 warning: players should organically figure out the price ceiling (doc 08, Q11). The loading screen: the game had no spinners yet, and he likes the truck as a transition design better.
 
 ## 021 — Largest sale: tonight's and an all-time record, tip included, in both modes (2026-11-02)
 
@@ -30,7 +30,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** full size tilted, full size snapping to four directions, 3/4 size, or today's size; growing the bump box or keeping it (picture overlapping parked cars).
 
-**Why (product owner's rationale):** the PO likes the title screen's truck and wants the driving truck to look as good, in any direction (November 2). Full size and the bigger bump box: _waiting on the PO_ (he picked engineering's recommended options).
+**Why (product owner's rationale):** the PO likes the title screen's truck and wants the driving truck to look as good, in any direction (November 2). Full size: he likes the larger truck, and will play with it to check the size is right. The bigger bump box: so what hits matches what you see.
 
 **Engineering's calls (proposals, not the PO's reasons):**
 - Turning round on a two-lane street still works, now in two or three moves. Every street stays reachable (checked by the extras suite).
