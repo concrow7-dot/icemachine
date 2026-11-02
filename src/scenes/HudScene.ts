@@ -74,13 +74,13 @@ export class HudScene extends Phaser.Scene {
 
     const onStock = () => this.refresh();
     this.evening.on(EveningEvents.MoneyChanged, onMoney);
-    this.evening.on(EveningEvents.RoadCustomerChanged, onStock);
+    this.evening.on(EveningEvents.CoolerChanged, onStock);
     this.evening.once(EveningEvents.Ended, onEnded);
 
     // Stop listening when this scene closes, so old evenings can't affect new ones.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.evening.off(EveningEvents.MoneyChanged, onMoney);
-      this.evening.off(EveningEvents.RoadCustomerChanged, onStock);
+      this.evening.off(EveningEvents.CoolerChanged, onStock);
       this.evening.off(EveningEvents.Ended, onEnded);
     });
   }
@@ -116,13 +116,14 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
-  /** Debug: skip the drive and start a sale with the waiting customer right away. */
+  /** Debug: skip the drive and start a sale right away, with a waiting customer if there is one. */
   private serveNow(): void {
-    if (this.evening.sale || !this.evening.roadCustomer) return;
+    if (this.evening.sale || !this.evening.isPrepLocked) return;
+    const customer = this.evening.residents.waiting[0];
     for (const key of [SceneKeys.Truck, SceneKeys.Cooler, SceneKeys.Drive]) {
       if (this.scene.isActive(key)) this.scene.stop(key);
     }
-    this.evening.startSale();
+    this.evening.startSale(customer);
     this.scene.launch(SceneKeys.Sales);
     this.scene.bringToTop();
   }

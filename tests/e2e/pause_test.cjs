@@ -41,7 +41,8 @@ const { chromium } = require('playwright');
   // ---- Driving ----
   await press('Enter'); await wait(200); await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(800);
-  await ev("(e.roadCustomerNow = { spot: 2 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
+  await ev('(e.residents.hearingOff = true, true)');
   await page.keyboard.down('ArrowUp'); await wait(800);
   await press('Escape');
   const x0 = await sc('Drive', 'Math.round(s.truck.x)');

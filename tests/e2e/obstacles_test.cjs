@@ -28,7 +28,8 @@ const { TRACK } = require('./track.cjs');
   await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(1200);
   // Keep the customer out of the way of these tests
-  await ev("(e.roadCustomerNow = { spot: 13 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
+  await ev('(e.residents.hearingOff = true, true)');
   // SCREAM-10: the Worcester map (twice the size) has 14 potholes and 40 parked cars.
   check('14 potholes and 40 parked cars on the Worcester map', (await drive('s.potholes.length')) + ' ' + (await drive('s.cars.length')), '14 40');
   check('...every pothole and parked car on the road', await drive("s.potholes.every(h => s.roads.onRoad(h.x, h.y)) && s.cars.every(c => s.roads.onRoad(c.x, c.y))"), true);

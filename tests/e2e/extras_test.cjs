@@ -28,7 +28,8 @@ const { TRACK } = require('./track.cjs');
   // The title now opens the cooler directly (#66)
   await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(1200);
-  await ev("(e.roadCustomerNow = { spot: 13 }, e.emit('road-customer-changed'), true)");
+  // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
+  await ev('(e.residents.hearingOff = true, true)');
 
   // ---- SCREAM-10: every street on the Worcester map can be reached ----
   const blocked = await page.evaluate(() => {
@@ -111,23 +112,6 @@ const { TRACK } = require('./track.cjs');
   check('Paid flash: the price is held on screen about 1.5 s in', await flashAt(), 100);
   await wait(1400);
   check('...and it flashes only once (gone by 2.5 s, no second flash)', await flashAt(), -1);
-
-  // ---- A new curb customer never appears right where the truck is parked ----
-  const nearCount = await page.evaluate(() => {
-    const e = window.__game.registry.get('evening'); const d = window.__game.scene.getScene('Drive'); let bad = 0;
-    // Where each curb spot's pickup square is.
-    const spots = d.map.curbSpots.map(c => [c.x, c.y]);
-    for (let i = 0; i < 340; i++) {
-      const [x, y] = spots[i % spots.length];
-      e.parkTruck({ x, y, angle: 0 });
-      e.roadCustomerNow = null; e.spawnRoadCustomer();
-      const n = e.roadCustomer; if (!n) continue;
-      const [nx, ny] = spots[n.spot];
-      if (Math.hypot(nx - x, ny - y) < 180) bad++;
-    }
-    return bad + ' of ' + spots.length + ' spots';
-  });
-  check('New customers never appear within 180 px of the parked truck (340 tries)', nearCount, '0 of 34 spots');
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();

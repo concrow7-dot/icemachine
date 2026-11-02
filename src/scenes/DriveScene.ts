@@ -5,6 +5,7 @@ import { WORCESTER } from '../config/worcester';
 import { boxesOverlap, distanceToSegment, RoadNetwork, ROAD_HALF_WIDTH, type TurnedBox } from '../state/RoadGeometry';
 import {
   HIT_MIN_SPEED_FRACTION,
+  MUSIC_RING_RADIUS,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
   POTHOLE_SPIN_SECONDS,
@@ -23,12 +24,18 @@ import {
   TURN_SPEED_LOSS_PER_SECOND,
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
-import { EveningEvents, EveningState, type Facing } from '../state/EveningState';
+import { EveningState, type Facing } from '../state/EveningState';
 import { RESIDENT_FRAME, RESIDENT_LOOKS_ACROSS } from '../config/residents';
-import type { ResidentFacing } from '../state/Residents';
+import type { ResidentFacing, ResidentNow } from '../state/Residents';
+import { musicFor, type Music } from '../audio/Music';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
-// The only way back into the truck is to drive into a waiting customer.
+// The only way back into the truck is to pick up a waiting customer.
+// SCREAM-67 (PO, November 2): customers are the residents. A faint ring round the
+// truck shows how far its music reaches; people inside it may want ice cream, and
+// then a "!" pops up and they run to the curb. Stop fully, with half the truck in
+// the pink square beside them, to serve them. The pointer arrow is gone (SCREAM-68).
+// SCREAM-24: the truck plays music while you drive; M mutes it, N skips a song.
 // Issue #10: potholes ($5, spin and stop), parked cars ($10) and the road
 // edge ($2 a hit) cost money. Cars and the road edge stop the truck.
 // SCREAM-10 (PO, October 30): the map is the real streets around June St,
@@ -61,7 +68,6 @@ for (let l = -TRUCK_HALF_LENGTH; l <= TRUCK_HALF_LENGTH; l += TRUCK_HALF_LENGTH 
 for (const w of [-TRUCK_HALF_WIDTH / 2, 0, TRUCK_HALF_WIDTH / 2]) TRUCK_OUTLINE.push([-TRUCK_HALF_LENGTH, w], [TRUCK_HALF_LENGTH, w]);
 /** After a crash, no new charge for this long (one bump = one charge). */
 const HIT_COOLDOWN_MS = 400;
-/** How close (in pixels) the truck's centre must get to the pickup zone: pulling into the curb lane beside the customer (#12). */
 /** The pink pickup square beside a curb customer, in px (it pulses bigger on screen; this is its real size). */
 const PICKUP_ZONE_SIZE = 50;
 /** SCREAM-16 (PO): at least half of the truck's hitbox must be in the pickup square. */
@@ -123,13 +129,15 @@ export class DriveScene extends Phaser.Scene {
   private objectGrid = new Map<string, number[]>();
   /** Copies of houses and trees drawn over a resident who is behind them (SCREAM-104), by object index. */
   private occluders = new Map<number, Phaser.GameObjects.Image>();
-  /** The customer, standing on the sidewalk. */
-  private customer!: Phaser.GameObjects.Container;
-  /** The patch of road beside them where the truck pulls in to pick them up. */
-  private pickupZone!: Phaser.GameObjects.Rectangle;
-  private customerLabel!: Phaser.GameObjects.Text;
-  private labelBob?: Phaser.Tweens.Tween;
-  private pointer!: Phaser.GameObjects.Triangle;
+  /** SCREAM-67: the faint ring round the truck: how far its music reaches. */
+  private ring!: Phaser.GameObjects.Arc;
+  /** The pink square in the curb lane beside each waiting customer, by resident index. */
+  private pickupZones = new Map<number, Phaser.GameObjects.Rectangle>();
+  /** The "!" thought bubble over each customer running to (or waiting at) the curb, by resident index. */
+  private bubbles = new Map<number, Phaser.GameObjects.Container>();
+  private music!: Music;
+  private songLabel!: Phaser.GameObjects.Text;
+  private songLabelTween?: Phaser.Tweens.Tween;
   private leaving = false;
   private cars: TurnedBox[] = [];
   /** The map being driven (SCREAM-10: Worcester). */
@@ -191,7 +199,10 @@ export class DriveScene extends Phaser.Scene {
 
     this.drawNeighbourhood(worldWidth, worldHeight);
     this.placeObstacles();
-    this.customer = this.makeCustomer();
+    this.pickupZones.clear();
+    this.bubbles.clear();
+    this.ring = this.add.circle(0, 0, MUSIC_RING_RADIUS).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
+    this.tweens.add({ targets: this.ring, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.residentSprites = this.evening.residents.all.map(() =>
       this.add.sprite(0, 0, RESIDENTS_KEY, 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
     );
@@ -226,16 +237,10 @@ export class DriveScene extends Phaser.Scene {
     camera.setBounds(0, 0, worldWidth, worldHeight);
     camera.startFollow(this.truck, true, 0.15, 0.15);
 
-    this.pointer = this.add
-      .triangle(0, 0, 0, -14, 24, 0, 0, 14, 0xff4f9a)
-      .setStrokeStyle(2, 0xffffff)
-      .setScrollFactor(0)
-      .setDepth(20);
-
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake/reverse  ← → steer  Q park brake    Pull up beside a customer (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake  ← → steer  Q park  M mute  N next song   People in your ring may want ice cream (!)', {
         fontFamily: 'monospace',
-        fontSize: '15px',
+        fontSize: '13px',
         color: '#ffffff',
         backgroundColor: '#00000099',
         padding: { x: 8, y: 3 },
@@ -269,9 +274,29 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20)
       .setVisible(this.parkBrake);
 
+    // SCREAM-24: the music, with the song's name shown for a moment when it starts.
+    this.songLabel = this.add
+      .text(this.scale.width - 6, 22, '', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#ffffff',
+        backgroundColor: '#00000088',
+        padding: { x: 5, y: 2 },
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(20)
+      .setAlpha(0);
+    this.music = musicFor(this);
+    this.music.onSong = (title) => this.showSong(title);
+    this.music.start();
+    if (this.music.song) this.showSong(this.music.song.title);
+
     const keyboard = this.input.keyboard;
     keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (event.key === 'q' || event.key === 'Q') this.toggleParkBrake();
+      if (event.key === 'm' || event.key === 'M') this.showSong(this.music.toggleMute() ? 'Music off (M)' : (this.music.song?.title ?? ''));
+      if (event.key === 'n' || event.key === 'N') this.music.skip();
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir && !this.held.includes(dir)) this.held.push(dir);
     });
@@ -284,28 +309,32 @@ export class DriveScene extends Phaser.Scene {
     // Keys let go of while paused never reached this screen: start clean on resume (#19).
     this.events.on(Phaser.Scenes.Events.RESUME, this.releaseKeys, this);
 
-    const onCustomer = () => this.refreshCustomer();
-    this.evening.on(EveningEvents.CustomerChanged, onCustomer);
-    this.evening.on(EveningEvents.RoadCustomerChanged, onCustomer);
+    // The music stops while paused and when leaving the road; the song carries on next time.
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.music.stop());
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.music.start());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.evening.off(EveningEvents.CustomerChanged, onCustomer);
-      this.evening.off(EveningEvents.RoadCustomerChanged, onCustomer);
+      this.music.stop();
+      this.music.onSong = undefined;
       this.game.events.off(Phaser.Core.Events.BLUR, this.releaseKeys, this);
       this.evening.parkTruck({ x: this.truck.x, y: this.truck.y, angle: this.heading });
     });
 
-    this.refreshCustomer();
   }
 
   update(time: number, deltaMs: number): void {
     this.refreshVisibleMap();
     if (this.leaving) return;
-    this.evening.residents.update(Math.min(deltaMs, 100) / 1000);
+    this.music.tick();
+    this.ring.setPosition(this.truck.x, this.truck.y);
+    this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
+      x: this.truck.x,
+      y: this.truck.y,
+      radius: MUSIC_RING_RADIUS,
+      open: this.evening.acceptingCustomers,
+    });
     this.drawResidents(time);
-    if (this.spinning) {
-      this.updatePointer();
-      return;
-    }
+    this.drawCustomers();
+    if (this.spinning) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
     this.driveHard(dt);
@@ -318,7 +347,6 @@ export class DriveScene extends Phaser.Scene {
 
     this.checkPotholes();
     this.checkCustomer();
-    this.updatePointer();
   }
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */
@@ -809,83 +837,112 @@ export class DriveScene extends Phaser.Scene {
         }
   }
 
-  // ---- Customer at the curb (#12) ----
+  // ---- Customers at the curb (#12, SCREAM-67) ----
 
-  private makeCustomer(): Phaser.GameObjects.Container {
-    // The pickup zone: a soft pink patch in the curb lane, pulsing so it's easy to aim for.
-    this.pickupZone = this.add
-      .rectangle(0, 0, PICKUP_ZONE_SIZE, PICKUP_ZONE_SIZE, 0xff4f9a, 0.18)
-      .setStrokeStyle(3, 0xff4f9a)
-      .setDepth(4);
-    this.tweens.add({ targets: this.pickupZone, scale: 1.2, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
-
-    const person = this.add.circle(0, 0, 14, 0xffd1e3).setStrokeStyle(3, 0xff4f9a);
-    const bang = this.add
-      .text(0, -1, '!', { fontFamily: 'monospace', fontSize: '20px', color: '#c2185b', fontStyle: 'bold' })
-      .setOrigin(0.5);
-    this.customerLabel = this.add
-      .text(0, -34, 'CUSTOMER', {
-        fontFamily: 'monospace',
-        fontSize: '13px',
-        color: '#ffffff',
-        backgroundColor: '#c2185b',
-        padding: { x: 4, y: 1 },
-      })
-      .setOrigin(0.5);
-    return this.add.container(0, 0, [person, bang, this.customerLabel]).setDepth(6);
+  /** The pink square beside the nearest waiting customer (tests use this), or undefined. */
+  get pickupZone(): Phaser.GameObjects.Rectangle | undefined {
+    let best: Phaser.GameObjects.Rectangle | undefined;
+    let bestDist = Infinity;
+    for (const zone of this.pickupZones.values()) {
+      if (!zone.visible) continue;
+      const d = Math.hypot(zone.x - this.truck.x, zone.y - this.truck.y);
+      if (d < bestDist) {
+        best = zone;
+        bestDist = d;
+      }
+    }
+    return best;
   }
 
   /**
-   * Places the customer on the sidewalk at their curb spot, with the pickup
-   * zone in the road tile beside them. Hidden when nobody is waiting at the
-   * curb, or while a customer is at the window.
+   * Draws a "!" thought bubble over everyone who wants ice cream, and a pink square
+   * in the curb lane beside everyone waiting there. The bubble flashes in the last
+   * few seconds before a customer gives up.
    */
-  private refreshCustomer(): void {
-    const road = this.evening.roadCustomer;
-    const spot = road ? WORCESTER.curbSpots.at(road.spot) : undefined;
-    const visible = !!spot && !this.evening.customerWaiting;
-    this.customer.setVisible(visible).setAlpha(1);
-    this.pickupZone.setVisible(visible);
-    if (!spot) return;
-
-    // The pickup square sits in the curb lane, turned to the road; the customer is on the sidewalk beside it.
-    this.pickupZone.setPosition(spot.x, spot.y).setAngle(spot.angle);
-    this.customer.setPosition(spot.customerX, spot.customerY);
-
-    // The label sits on the far side of the customer from the road, so it never covers the pickup zone.
-    const labelY = spot.customerY > spot.y + 10 ? 34 : -34;
-    this.labelBob?.remove();
-    this.customerLabel.setY(labelY);
-    this.labelBob = this.tweens.add({
-      targets: this.customerLabel,
-      y: labelY + (labelY > 0 ? 6 : -6),
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+  private drawCustomers(): void {
+    this.evening.residents.all.forEach((p, i) => {
+      const wants = p.outside && (p.customer === 'running' || p.customer === 'waiting');
+      let bubble = this.bubbles.get(i);
+      if (wants && !bubble) {
+        bubble = this.makeBubble();
+        this.bubbles.set(i, bubble);
+      }
+      if (bubble) {
+        bubble.setVisible(wants);
+        if (wants) {
+          bubble.setPosition(Math.round(p.x) + 8, Math.round(p.y) - 38);
+          const hurry = p.customer === 'waiting' && p.waitLeft < 5;
+          bubble.setAlpha(hurry ? 0.4 + 0.6 * Math.abs(Math.sin(this.time.now / 150)) : 1);
+        }
+      }
+      const waiting = p.customer === 'waiting';
+      let zone = this.pickupZones.get(i);
+      if (waiting && !zone) {
+        const [, , zx, zy, angle] = p.resident.curb;
+        zone = this.add
+          .rectangle(zx, zy, PICKUP_ZONE_SIZE, PICKUP_ZONE_SIZE, 0xff4f9a, 0.18)
+          .setStrokeStyle(3, 0xff4f9a)
+          .setAngle(angle)
+          .setDepth(4);
+        this.tweens.add({ targets: zone, scale: 1.2, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
+        this.pickupZones.set(i, zone);
+      }
+      zone?.setVisible(waiting);
     });
+  }
+
+  /** A little thought bubble with a "!" in it (PO, November 2). */
+  private makeBubble(): Phaser.GameObjects.Container {
+    const g = this.add.graphics();
+    g.fillStyle(0xffffff, 1).lineStyle(2, 0xc2185b, 1);
+    g.fillEllipse(0, 0, 22, 20).strokeEllipse(0, 0, 22, 20);
+    g.fillCircle(-7, 13, 3).strokeCircle(-7, 13, 3);
+    g.fillCircle(-10, 18, 1.8).strokeCircle(-10, 18, 1.8);
+    const bang = this.add
+      .text(0, 0, '!', { fontFamily: 'monospace', fontSize: '16px', color: '#c2185b', fontStyle: 'bold' })
+      .setOrigin(0.5);
+    return this.add.container(0, 0, [g, bang]).setDepth(7);
+  }
+
+  /** The song's name, top right, for a few seconds. */
+  private showSong(title: string): void {
+    if (!title) return;
+    this.songLabel.setText(`♪ ${title}`).setAlpha(1);
+    this.songLabelTween?.remove();
+    this.songLabelTween = this.tweens.add({ targets: this.songLabel, alpha: 0, delay: 3000, duration: 800 });
   }
 
   /**
    * SCREAM-16 (PO, October 30): the sales window opens only once the truck has
-   * come to a complete stop with at least half its hitbox in the pickup square,
-   * and then straight away (no "press Enter to serve").
+   * come to a complete stop with at least half its hitbox in a customer's pickup
+   * square, and then straight away (no "press Enter to serve").
    */
   private checkCustomer(): void {
-    if (!this.customer.visible || this.speed !== 0) return;
-    if (this.pickupOverlap() < PICKUP_MIN_OVERLAP) return;
+    if (this.speed !== 0) return;
+    const people = this.evening.residents.all;
+    for (const [i, zone] of this.pickupZones) {
+      const p = people[i];
+      if (!zone.visible || !p || p.customer !== 'waiting') continue;
+      if (this.pickupOverlap(zone) < PICKUP_MIN_OVERLAP) continue;
+      this.serve(p);
+      return;
+    }
+  }
+
+  private serve(customer: ResidentNow): void {
     this.leaving = true;
-    this.evening.startSale();
+    this.evening.startSale(customer);
     this.scene.start(SceneKeys.Sales);
   }
 
-  /** How much of the truck's hitbox (0 to 1) is inside the pickup square, sampled on a grid. */
-  pickupOverlap(): number {
+  /** How much of the truck's hitbox (0 to 1) is inside a pickup square, sampled on a grid. */
+  pickupOverlap(zone: Phaser.GameObjects.Rectangle | undefined = this.pickupZone): number {
+    if (!zone) return 0;
     const rad = Phaser.Math.DegToRad(this.heading);
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     const half = PICKUP_ZONE_SIZE / 2;
-    const zoneRad = this.pickupZone.rotation;
+    const zoneRad = zone.rotation;
     const zoneCos = Math.cos(zoneRad);
     const zoneSin = Math.sin(zoneRad);
     const steps = 10;
@@ -899,30 +956,11 @@ export class DriveScene extends Phaser.Scene {
         const y = this.truck.y + lx * sin + ly * cos;
         total++;
         // In the pickup square's own frame (it's turned to the road).
-        const ox = x - this.pickupZone.x;
-        const oy = y - this.pickupZone.y;
+        const ox = x - zone.x;
+        const oy = y - zone.y;
         if (Math.abs(ox * zoneCos + oy * zoneSin) <= half && Math.abs(-ox * zoneSin + oy * zoneCos) <= half) inside++;
       }
     }
     return inside / total;
-  }
-
-  /** An arrow at the screen edge points to the customer while they're off screen. */
-  private updatePointer(): void {
-    const camera = this.cameras.main;
-    const view = camera.worldView;
-    const onScreen = view.contains(this.customer.x, this.customer.y);
-    this.pointer.setVisible(this.customer.visible && !onScreen);
-    if (!this.pointer.visible) return;
-
-    const angle = Phaser.Math.Angle.Between(view.centerX, view.centerY, this.customer.x, this.customer.y);
-    const margin = 28;
-    const halfW = camera.width / 2 - margin;
-    const halfH = camera.height / 2 - margin;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const scale = Math.min(halfW / Math.abs(cos || 1e-6), halfH / Math.abs(sin || 1e-6));
-    this.pointer.setPosition(camera.width / 2 + cos * scale, camera.height / 2 + sin * scale);
-    this.pointer.setRotation(angle);
   }
 }

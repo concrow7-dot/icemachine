@@ -54,6 +54,19 @@ export class SalesScene extends Phaser.Scene {
     // The customer, on the right side of the window.
     this.add.circle(770, 210, 46, 0xffd1b0).setStrokeStyle(4, 0x2b1d10);
     this.add.ellipse(770, 380, 190, 150, 0xff8fbf).setStrokeStyle(4, 0x2b1d10);
+    // SCREAM-99 (PO, November 2): the customer's name on screen while they order, as a name tag.
+    const customer = this.evening.customer;
+    if (customer) {
+      this.add
+        .text(770, 350, customer.resident.name, {
+          fontFamily: 'monospace',
+          fontSize: '17px',
+          color: INK,
+          backgroundColor: '#fffdf9',
+          padding: { x: 8, y: 4 },
+        })
+        .setOrigin(0.5);
+    }
 
     // The speech bubble, reaching across from the customer.
     this.add.rectangle(330, 200, 480, 150, 0xfffdf9).setStrokeStyle(4, 0x2b1d10);

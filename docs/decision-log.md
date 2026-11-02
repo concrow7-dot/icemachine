@@ -2,6 +2,35 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 015 — Customers come from the music ring; the arrow goes; the truck plays music (2026-11-02)
+
+**Decision:** Customers are the residents (decision 014), and the truck's music is how they find out it's near (Jira SCREAM-67, 68, 24, 99; doc 37). A faint ring round the truck shows how far the music reaches. Every second a resident is inside it, the game rolls a chance that they want ice cream: it's highest the moment they first hear it (25%) and then falls toward 5%, each second by less than the last, times their likelihood from the residents sheet, and halved while they're indoors. If they want some, a "!" thought bubble pops up and they run to the curb and wait; after 30 seconds they give up and walk home. There's no limit on how many wait at once, but nobody is a customer twice in one evening, so a parked truck runs out of customers. A sale starts as before: stop fully with half the truck in the pink square beside them. Their name shows at the window. The pink pointer arrow is gone. The truck plays chiptune versions of public-domain tunes while you drive, shuffled; M mutes (remembered), N skips.
+
+**Options considered:**
+- *Finding customers:* follow an arrow to a marker, or watch the neighbourhood.
+- *What makes someone come out:* the truck's speed, or a chance each second they hear it.
+- *How many at once:* a cap (engineering suggested 3), or no limit.
+- *Music:* make, commission or licence it; always on, or on a key; which songs.
+
+**Why (product owner's rationale):**
+- *Watching the neighbourhood, not a beacon:* from the PO's user story (October 29): "I find customers by watching the neighbourhood, not by following a beacon." On the arrow (October 28): nice in early testing, but it should be hidden later; it's removed together with the ring (October 29) so players always have a way to find customers.
+- *A chance each second, not speed:* speed still matters, because a truck driving fast spends less time near each person and the rules already lower its chances; he didn't want velocity to be the measure (November 2).
+- *Indoors half as likely:* people at home are less likely to hear the truck, for example because they have the AC on (November 2).
+- *Highest chance at first, then less and less:* someone is most likely to want ice cream the instant they hear the truck. Their mind may still change after that, but at a decreasing rate; that's been the PO's experience (November 2). Overall, the longer someone hears the truck, the more likely they've come out.
+- *No limit on waiting customers, and no new customers if you stay in one spot long enough:* the PO's rules (November 2). **Why:** _waiting on the PO._
+- *Music pulled into this work:* the PO's call (November 2); the truck's music is how customers know it's near (his idea on SCREAM-24, October 29). More than one song; no songs with a bad origin.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- Numbers (all in `tuning.ts`): ring 300 px; 25% in the first second falling to 5%, about two thirds of the way down after 6 seconds; running 75 px a second.
+- Seconds heard are counted in a row: someone who hears the truck again later gets a fresh first-second chance.
+- The first version had this the wrong way round (5% growing to 25%); the PO's reason showed the chance should start high. Fixed before merging.
+- "Once per evening" is how staying in one spot runs out of customers. Giving up counts as their turn.
+- Each resident has their own curb spot (where they stand, and the pink square beside them in the curb lane, clear of parked cars), worked out by `tools/residents/build_residents.py`.
+- Songs: The Entertainer, Take Me Out to the Ball Game, Für Elise and Pop Goes the Weasel. Maple Leaf Rag and In the Good Old Summer Time were swapped out because they're hard to arrange well from memory. Turkey in the Straw (and Do Your Ears Hang Low, the same tune) and Stephen Foster's minstrel songs are left out for their history.
+- The name at the window is a name tag on the customer's shirt.
+
+**Revisit if:** customers feel too rare or too common (tune the numbers), named residents get days out (SCREAM-101) or parties (SCREAM-103), or sound effects arrive.
+
 ## 014 — Residents: named people with homes, edited in a sheet, drawn with LimeZu Modern Interiors (2026-11-02)
 
 **Decision:** The neighbourhood has residents (Jira SCREAM-59, SCREAM-73; doc 37). There is about one per house: 160, since the map has 161 houses and one is home. Each has a name, a house (and so a street), an age (adult or kid) and their own likelihood of buying ice cream. They stay near their home all evening: they go in and out of their house and wander their yard. They are drawn with LimeZu's Modern Interiors character generator, each with their own combination of body, clothes and hair. The list lives in a Google Sheet the PO can edit (doc 38, "38 - Residents"); "sync residents" copies it into `tools/residents/residents.csv` and rebuilds the game's data with `tools/residents/build_residents.py`. Buying (the sonar ring, the chance check) comes next, in SCREAM-67.
