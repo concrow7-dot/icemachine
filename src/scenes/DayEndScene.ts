@@ -7,6 +7,7 @@ import { formatMoney } from '../util/format';
 // takings and what you carry into tomorrow: the wallet and the ice cream left
 // in the cooler. Out of money is game over. After the last evening the run is
 // complete (SCREAM-18 adds the story's ending and its high score table).
+// SCREAM-17: the run is saved here, or the save cleared when the run ends.
 
 const MONO = 'monospace';
 
@@ -73,9 +74,8 @@ export class DayEndScene extends Phaser.Scene {
         ? "You're out of money.\nThe truck stays parked."
         : this.outcome === 'complete'
           ? `You made it through all ${story.days} days.`
-          : stock > 0
-            ? 'Your cash and ice cream\ncarry over to tomorrow.'
-            : 'Your cash carries over to tomorrow.';
+          : (stock > 0 ? 'Your cash and ice cream\ncarry over to tomorrow.' : 'Your cash carries over to tomorrow.') +
+            '\n\nGame saved.'; // SCREAM-17: saved at the end of each evening
     this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
     const footer = this.outcome === 'next' ? `Enter: start day ${story.day}` : 'Enter: back to the title';

@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 012 — Story mode is saved in the browser, at the end of each evening (2026-10-31)
+
+**Decision:** A Story run is saved in the browser, the same way high scores are (decision 004): no accounts, one save slot, and clearing the browser's data loses it (Jira SCREAM-17). The game saves automatically at the end of each evening, so quitting mid-evening means replaying that evening. With a save, the title screen offers "Continue story" (showing the day and the cash) and "New story"; New story asks first, and only the Y key confirms. The save is cleared when a run ends (the last day, or game over). Quick play never touches the save.
+
+**Options considered:** save at the end of each evening, or also mid-evening; one slot or several; accounts or the browser only.
+
+**Why (product owner's rationale):** the PO accepted engineering's proposal on October 31, mostly following engineering's lead because it was the simpler option. In his words, saving mid-evening "didn't seem all that important", and it "adds a wrinkle for the player to manage".
+
+**Engineering notes:** saved under `icemachine.story.v1` (`src/state/StorySave.ts`): the next day, the cash and the cooler. A save that can't be read (damaged, or from a future format) is ignored rather than crashing the title screen.
+
+**Revisit if:** runs get long (21 days) and replaying a whole evening after quitting feels harsh.
+
 ## 011 — Two modes: Quick play and Story, with a wallet that carries over (2026-10-31)
 
 **Decision:** The title screen offers two modes (Jira SCREAM-19, SCREAM-21). Quick play is the one-evening game as it was, with its $50 start and its high score table. Story is a run of evenings in a row: it starts with $100, and the cash and the ice cream left in the cooler carry from one evening to the next. Leftover ice cream keeps overnight. Running out of money is game over. A run is 3 evenings for now (decision 006, SCREAM-65), growing to 21 later; the number is `STORY_DAYS` in `tuning.ts`.

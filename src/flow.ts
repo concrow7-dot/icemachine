@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { EveningState } from './state/EveningState';
 import { StoryRun } from './state/StoryRun';
+import { clearStorySave, loadStory } from './state/StorySave';
 
 /** Scene names, kept in one place so a typo can't break the flow. */
 export const SceneKeys = {
@@ -36,10 +37,20 @@ export function startEvening(from: Phaser.Scene): void {
   beginEvening(from, new EveningState());
 }
 
-/** Story mode (SCREAM-19): starts a new run at day 1. */
+/** Story mode (SCREAM-19): starts a new run at day 1, replacing any save (SCREAM-17). */
 export function startStory(from: Phaser.Scene): void {
+  clearStorySave();
   from.registry.set(STORY_KEY, new StoryRun());
   startStoryEvening(from);
+}
+
+/** SCREAM-17: carries on a saved run, at the start of the next evening. Returns false if there's no save. */
+export function continueStory(from: Phaser.Scene): boolean {
+  const save = loadStory();
+  if (!save) return false;
+  from.registry.set(STORY_KEY, new StoryRun(save));
+  startStoryEvening(from);
+  return true;
 }
 
 /** Story mode: starts tonight's evening with the cash and stock carried over. */
