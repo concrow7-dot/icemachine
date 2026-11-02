@@ -1,5 +1,5 @@
 import { FLAVOURS } from '../config/flavours';
-import { BIKE_PRICE_CENTS, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
+import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import { EveningState, type CoolerSlot } from './EveningState';
 import { clearStorySave, saveStory, type StorySave } from './StorySave';
 
@@ -73,7 +73,8 @@ export class StoryRun {
         : 'next';
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
-    this.fuel = evening.fuel;
+    // SCREAM-119: out of gas (or nearly), the next day starts with 1/8 of a tank, enough to reach a station.
+    this.fuel = Math.max(evening.fuel, FUEL_STORY_MIN_START);
     const b = evening.breakdown;
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,

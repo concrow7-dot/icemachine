@@ -56,6 +56,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
   private clockRunning = false;
   private ended = false;
+  /** SCREAM-119: the evening ended because the tank ran empty. */
+  private ranOutOfGas = false;
   private readonly startCashCents: number;
   private cashCents: number;
   private customerAtWindow = false;
@@ -247,10 +249,23 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.fuelLeft <= 0;
   }
 
-  /** Uses up the gas for driving this many px (forward or back). */
+  /** SCREAM-119: true if the evening ended because the tank ran empty. */
+  get endedOutOfGas(): boolean {
+    return this.ranOutOfGas;
+  }
+
+  /**
+   * Uses up the gas for driving this many px (forward or back). SCREAM-119 (PO, November 2):
+   * when the tank runs empty, the evening ends (it used to let the truck crawl to the pumps).
+   */
   burnFuel(px: number): void {
     if (this.ended || px <= 0) return;
+    const before = this.fuelLeft;
     this.fuelLeft = Math.max(0, this.fuelLeft - px / FUEL_TANK_PX);
+    if (before > 0 && this.fuelLeft <= 0) {
+      this.ranOutOfGas = true;
+      this.endNow();
+    }
   }
 
   /** The most gas the player can buy now, in cents: whole $5 steps that fit in the tank and in the wallet. */
