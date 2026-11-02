@@ -84,6 +84,10 @@ const { chromium } = require('playwright');
   check('Inside residents are never drawn', await drive('s.evening.residents.all.every((p, i) => p.outside || !s.residentSprites[i].visible)'), true);
   check('Far-away residents are not drawn', await drive('s.evening.residents.all.every((p, i) => !s.residentSprites[i].visible || (Math.abs(p.x - s.truck.x) < 700 && Math.abs(p.y - s.truck.y) < 500))'), true);
   check('Residents are drawn under the truck', await drive('s.residentSprites[0].depth < s.truck.depth'), true);
+  // SCREAM-108: houses in many styles and colours, with ornaments in the yards.
+  check('Houses come in 40+ different styles and colours (SCREAM-108)', await drive("new Set(s.map.objects.filter(o => /^(house|villa)/.test(o.key)).map(o => o.key)).size >= 40"), true);
+  check('...including Victorian houses and bigger mobile homes', await drive("['house_victorian', 'house_medium', 'house_big'].every(k => s.map.objects.some(o => o.key.startsWith(k)))"), true);
+  check('...and 150+ yard ornaments of 40+ kinds', await drive("(o => o.length >= 150 && new Set(o.map(x => x.key)).size >= 40)(s.map.objects.filter(o => o.key.startsWith('orn_')))"), true);
   await page.screenshot({ path: outDir + '/residents.png' });
 
   // The same people carry on after a trip back into the truck
