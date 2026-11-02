@@ -229,10 +229,10 @@ export const FUEL_STORY_START = 0.25;
 
 /**
  * SCREAM-119 (PO, November 2): running out of gas ends the evening, and the next Story day
- * starts with 1/8 of a tank, just enough to reach a gas station. Engineering's call: a day
+ * starts with 1/6 of a tank (PO raised it from 1/8 after running dry on the way), enough to reach a gas station. Engineering's call: a day
  * never starts with less than this, however the last one ended.
  */
-export const FUEL_STORY_MIN_START = 0.125;
+export const FUEL_STORY_MIN_START = 1 / 6;
 
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;

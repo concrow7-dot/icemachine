@@ -73,7 +73,7 @@ export class StoryRun {
         : 'next';
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
-    // SCREAM-119: out of gas (or nearly), the next day starts with 1/8 of a tank, enough to reach a station.
+    // SCREAM-119: out of gas (or nearly), the next day starts with 1/6 of a tank, enough to reach a station.
     this.fuel = Math.max(evening.fuel, FUEL_STORY_MIN_START);
     const b = evening.breakdown;
     this.totals = {
