@@ -12,7 +12,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - *Getting sheet edits into the game:* engineering syncs it on request; a script the PO runs; or the live game reads the sheet each time it loads.
 
 **Why (product owner's rationale):**
-- *Named residents tied to houses:* the PO asked for this on SCREAM-59 (November 2): everyone appears on the map, has a name, and is near their home; there are about as many as houses; and he wants a sheet where he can change their names and likelihood to buy. **Why:** _waiting on the PO._
+- *Named residents tied to houses:* the PO asked for this on SCREAM-59 (November 2): everyone appears on the map, has a name, and is near their home; there are about as many as houses; and he wants a sheet where he can change their names and likelihood to buy. **Why** (November 2): he wants it to feel like an actual place, so that when a player does more than one run, they start to learn the people. Ideas he plans for later customer updates: the customer's name on screen when they ask for their order, and dialog that hints at a pricey ice cream someone wants or a party they're holding on a certain day of the run (a party means more people and more orders in a row).
 - *LimeZu Modern Interiors:* the PO followed engineering's recommendation (November 2).
 - *Engineering syncs the sheet on request, about 1 in 3 are kids, residents first and buying second:* the PO agreed to engineering's proposals (November 2).
 
