@@ -16,6 +16,7 @@ export const SceneKeys = {
   Pause: 'Pause',
   DayEnd: 'DayEnd',
   StoryIntro: 'StoryIntro',
+  Pump: 'Pump',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -25,6 +26,7 @@ export const EVENING_SCENES: string[] = [
   SceneKeys.Sales,
   SceneKeys.Fill,
   SceneKeys.Drive,
+  SceneKeys.Pump,
   SceneKeys.Hud,
 ];
 

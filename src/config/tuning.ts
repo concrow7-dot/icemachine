@@ -49,7 +49,7 @@ export const TRUCK_SPEED = 433;
  */
 export const TRUCK_ACCELERATION_SECONDS = 2.5;
 
-// ---- Driving feel (#32): PO decisions in doc 18, then car-style steering after testing PR #58 ----
+// ---- Driving feel (#32): PO decisions in doc 10, then car-style steering after testing PR #58 ----
 
 /**
  * Letting go of the gas: the truck rolls down from top speed over this many
@@ -101,7 +101,7 @@ export const HIT_COST_MIN_FRACTION = 0.5;
 /** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
 export const PLACEHOLDER_SALE_CENTS = 400;
 
-// ---- Selling (#13-#15), decided in doc 12 ----
+// ---- Selling (#13-#15), decided in doc 08 ----
 
 /** How long the customer's order stays in the speech bubble, in seconds. */
 export const ORDER_SHOW_SECONDS = 5;
@@ -159,7 +159,7 @@ export const RESIDENT_IDLE_SECONDS: readonly [number, number] = [2, 7];
 /** At the start of an evening, this share of residents are already outside. */
 export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 
-// ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 37) ----
+// ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 14) ----
 
 /** How far the truck's music reaches, in px from the truck: residents inside this ring can hear it. Engineering's value. */
 export const MUSIC_RING_RADIUS = 300;
@@ -172,7 +172,7 @@ export const MUSIC_RING_RADIUS = 300;
  * each second by less than the last (about two thirds of the way down after
  * CUSTOMER_CHANCE_SETTLE_SECONDS). Overall, the longer someone hears the truck, the
  * more likely they've come out. Engineering's numbers. Then multiplied by the
- * resident's likelihood from the residents sheet (doc 38).
+ * resident's likelihood from the residents sheet (doc 15).
  */
 export const CUSTOMER_CHANCE_FIRST = 0.25;
 export const CUSTOMER_CHANCE_FLOOR = 0.05;
@@ -186,3 +186,31 @@ export const CUSTOMER_RUN_SPEED = 75;
 
 /** PO: a customer waits at the curb this long, then walks home. */
 export const CUSTOMER_WAIT_SECONDS = 30;
+
+// ---- Fuel (SCREAM-22, PO October 29 and November 2) ----
+
+/** PO: a full tank costs $30. */
+export const FUEL_FULL_TANK_CENTS = 3000;
+
+/** PO: gas is bought in $5 steps (so $5 is a sixth of a tank). */
+export const FUEL_STEP_CENTS = 500;
+
+/**
+ * How far a full tank goes, in px of driving. PO: a full evening of driving uses
+ * about 2/3 of a tank. Engineering's guess at "a full evening": moving 60% of the
+ * 300 s evening at top speed (433 px/s) is about 78,000 px, which is 2/3 of this.
+ * Tune after playing.
+ */
+export const FUEL_TANK_PX = 117000;
+
+/** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
+export const FUEL_STORY_START = 0.25;
+
+/** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
+export const FUEL_QUICK_PLAY_START = 1;
+
+/** PO: with an empty tank the truck crawls at a quarter of its top speed (no tow, for now). */
+export const FUEL_EMPTY_SPEED_FRACTION = 0.25;
+
+/** The HUD's gauge turns red at or below this much of a tank. */
+export const FUEL_LOW = 0.15;

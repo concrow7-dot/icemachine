@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
   await shift(3);
   check('Evening over: results screen', await scenes(), 'Results');
   check('Breakdown: sales $2.00, tips $0.40, stock $2.00, damage $5.00',
-    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, damageCents: 500 }));
+    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500 }));
   check("Tonight's profit = sales + tips - stock - damage (-$4.60)", await ev('e.profitCents'), -460);
   check('Empty table: even a negative evening makes the top 5', await res('s.entering'), true);
   await page.screenshot({ path: outDir + '/scores_entry.png' });

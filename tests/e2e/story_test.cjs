@@ -88,7 +88,7 @@ const { chromium } = require('playwright');
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '9600 4');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150);
-  check('Restart prompt explains Story restarts', /Cash and stock go back/.test(await texts('Pause')), true);
+  check('Restart prompt explains Story restarts', /Cash, stock and gas go back/.test(await texts('Pause')), true);
   // SCREAM-89: the question stays inside the pause box (420 px wide, centred).
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
   await page.screenshot({ path: outDir + '/story_pause_restart.png' });

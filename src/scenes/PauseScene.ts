@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { clearStory, EVENING_SCENES, getStory, restartEvening, SceneKeys } from '../flow';
 
-// Issue #19 (PO decisions in doc 18, Q7-Q9): Esc pauses the evening on any
+// Issue #19 (PO decisions in doc 10, Q7-Q9): Esc pauses the evening on any
 // screen except results. The clock, the truck and every timer stop while the
 // menu is open. Restart and Quit ask "Are you sure?" first, and an evening
 // that's quit or restarted doesn't go on the high score table (it never
@@ -154,7 +154,7 @@ export class PauseScene extends Phaser.Scene {
     });
     this.prompt.setVisible(asking);
     if (this.confirming === 'restart') {
-      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash and stock go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
+      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash, stock and gas go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
     }
     if (this.confirming === 'quit') {
       this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at\nthe start of this evening.' : "Quit to the title screen?\nThis evening won't count.");

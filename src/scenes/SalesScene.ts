@@ -9,7 +9,7 @@ import { formatMoney } from '../util/format';
 import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
 
 // Issues #13 and #15: the sales screen, zoomed in on the window (PO sketch in
-// doc 12): a speech bubble on the left, the customer on the right of the
+// doc 08): a speech bubble on the left, the customer on the right of the
 // window frame. The customer gives their order, the player goes to the cooler
 // (#14), comes back, and types what to charge.
 
@@ -20,7 +20,7 @@ const BUTTON_Y = 478;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
 const CALC_X = 390;
 const CALC_Y = 278;
-/** The paid flash (PO, doc 12 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
+/** The paid flash (PO, doc 08 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
 const TIP_FLASH_DELAY_MS = 1050;
@@ -226,7 +226,7 @@ export class SalesScene extends Phaser.Scene {
     if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents);
   }
 
-  /** PO, doc 12 Q16: the payment flashes on screen, then the tip. */
+  /** PO, doc 08 Q16: the payment flashes on screen, then the tip. */
   private celebrate(priceCents: number, tipCents: number): void {
     const flash = (text: string, y: number, colour: string, delay: number) => {
       const t = this.add

@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
+import type { RunTotals } from '../state/StoryRun';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
 // pinball-style top 5 on the right. A score that makes the top 5 (negative
@@ -13,6 +14,8 @@ import { formatMoney } from '../util/format';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const MONO = 'monospace';
+/** Space between the breakdown's rows: 27 px since Gas made it five (SCREAM-22). */
+const ROW_GAP = 27;
 /** Loaded by the title screen; the texture is shared by every scene. */
 const TRUCK_KEY = 'limezu-ice-cream-truck';
 
@@ -67,11 +70,12 @@ export class ResultsScene extends Phaser.Scene {
       ['Sales', b.salesCents, '#c8f7c5'],
       ['Tips', b.tipsCents, '#c8f7c5'],
       ['Stock', -b.stockCents, '#ff9c9c'],
+      ['Gas', -b.gasCents, '#ff9c9c'],
       ['Damage', -b.damageCents, '#ff9c9c'],
     ];
     this.add.text(110, 110, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     rows.forEach(([label, cents, colour], i) => {
-      const y = 145 + i * 34;
+      const y = 145 + i * ROW_GAP;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add
         .text(420, y, cents < 0 ? `-${formatMoney(-cents)}` : formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour })
@@ -87,7 +91,7 @@ export class ResultsScene extends Phaser.Scene {
 
   /** SCREAM-18: the end of a Story run. The whole run's takings; the score is the cash at the end. */
   private showRunStats(
-    t: { salesCents: number; tipsCents: number; stockCents: number; damageCents: number },
+    t: RunTotals,
     cashCents: number,
     days: number,
     bike: boolean,
@@ -100,10 +104,11 @@ export class ResultsScene extends Phaser.Scene {
       ['Sales', t.salesCents, '#c8f7c5'],
       ['Tips', t.tipsCents, '#c8f7c5'],
       ['Stock', -t.stockCents, '#ff9c9c'],
+      ['Gas', -t.gasCents, '#ff9c9c'],
       ['Damage', -t.damageCents, '#ff9c9c'],
     ];
     rows.forEach(([label, cents, colour], i) => {
-      const y = 145 + i * 34;
+      const y = 145 + i * ROW_GAP;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });

@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser';
-import { PATIENCE_WARNING_SECONDS } from '../config/tuning';
+import { FUEL_LOW, PATIENCE_WARNING_SECONDS } from '../config/tuning';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
+
+/** SCREAM-22: where the fuel gauge's bar starts, and its size. */
+const FUEL_GAUGE = { x: 530, w: 110, h: 14 };
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
@@ -15,6 +18,9 @@ export class HudScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
   private patienceWarning!: Phaser.GameObjects.Container;
+  /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
+  private fuelGauge!: Phaser.GameObjects.Container;
+  private fuelBar!: Phaser.GameObjects.Graphics;
 
   constructor() {
     super(SceneKeys.Hud);
@@ -63,6 +69,12 @@ export class HudScene extends Phaser.Scene {
     this.patienceWarning = this.add.container(0, 22, [warnCircle, warnMark]).setVisible(false);
     this.tweens.add({ targets: this.patienceWarning, scale: 1.3, duration: 300, yoyo: true, repeat: -1 });
 
+    // SCREAM-22: E [====    ] F, in the middle of the top bar.
+    this.fuelBar = this.add.graphics();
+    const gaugeText = (x: number, text: string) =>
+      this.add.text(x, 0, text, { fontFamily: 'monospace', fontSize: '16px', color: '#ffe8a3' }).setOrigin(0.5);
+    this.fuelGauge = this.add.container(FUEL_GAUGE.x, 22, [gaugeText(-10, 'E'), this.fuelBar, gaugeText(FUEL_GAUGE.w + 10, 'F')]);
+
     this.refresh();
     this.addDebugKeys();
 
@@ -101,7 +113,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
     this.placeDebugText();
 
-    // Shift + number, so the plain number keys are free for typing prices (PO, doc 12 Q30).
+    // Shift + number, so the plain number keys are free for typing prices (PO, doc 08 Q30).
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       // Esc pauses the evening from any screen (#19). The HUD runs during every evening screen, so it listens here.
       if (event.key === 'Escape') {
@@ -141,6 +153,23 @@ export class HudScene extends Phaser.Scene {
     const warn =
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
     this.patienceWarning.setVisible(warn).setX(this.moneyText.x - this.moneyText.width - 30);
+    this.drawFuel();
+  }
+
+  /** SCREAM-22: the gauge, while driving or at the pump. Red when low; flashing when empty. */
+  private drawFuel(): void {
+    const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump);
+    this.fuelGauge.setVisible(show);
+    if (!show) return;
+    const fuel = this.evening.fuel;
+    const { w, h } = FUEL_GAUGE;
+    const g = this.fuelBar.clear();
+    g.fillStyle(0x000000, 0.5).fillRect(0, -h / 2, w, h);
+    g.fillStyle(fuel <= FUEL_LOW ? 0xff5252 : 0xf5a623, 1).fillRect(0, -h / 2, w * fuel, h);
+    g.lineStyle(1, 0xffe8a3, 0.8);
+    for (let i = 1; i < 4; i++) g.lineBetween((w * i) / 4, -h / 2, (w * i) / 4, -h / 2 + 4);
+    const flash = fuel <= 0 && Math.floor(this.time.now / 300) % 2 === 0;
+    g.lineStyle(2, flash ? 0xff5252 : 0xffe8a3, 1).strokeRect(0, -h / 2, w, h);
   }
 
   private refresh(): void {

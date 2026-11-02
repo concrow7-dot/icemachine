@@ -10,6 +10,10 @@ import {
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
+  FUEL_FULL_TANK_CENTS,
+  FUEL_QUICK_PLAY_START,
+  FUEL_STEP_CENTS,
+  FUEL_TANK_PX,
   STARTING_CASH_CENTS,
 } from '../config/tuning';
 
@@ -67,6 +71,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private salesTotalCents = 0;
   private tipsTotalCents = 0;
   private stockSpentCents = 0;
+  /** SCREAM-22: gas in the tank, from 0 (empty) to 1 (full). */
+  private fuelLeft: number;
+  private gasSpentCents = 0;
   private lastSalePhase: string | null = null;
 
   /** The truck starts each evening on the road outside home (#9). */
@@ -90,10 +97,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * Quick play starts every evening fresh. Story mode (SCREAM-19) passes in the
    * cash and the cooler left over from the evening before.
    */
-  constructor(carry?: { cashCents: number; slots: readonly Readonly<CoolerSlot>[] }) {
+  constructor(carry?: { cashCents: number; slots: readonly Readonly<CoolerSlot>[]; fuel: number }) {
     super();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
+    this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);
     carry?.slots.forEach((slot, i) => {
       const target = this.coolerSlots.at(i);
       if (target) Object.assign(target, slot);
@@ -153,7 +161,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.finishEvening();
   }
 
-  /** 8 PM: the evening ends, unless a sale is under way, which finishes first (PO, doc 12 Q31). */
+  /** 8 PM: the evening ends, unless a sale is under way, which finishes first (PO, doc 08 Q31). */
   private finishEvening(): void {
     if (this.saleNow) {
       this.endPending = true;
@@ -211,13 +219,48 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /** Tonight's breakdown for the results screen (#16). */
-  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; damageCents: number } {
+  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number } {
     return {
       salesCents: this.salesTotalCents,
       tipsCents: this.tipsTotalCents,
       stockCents: this.stockSpentCents,
+      gasCents: this.gasSpentCents,
       damageCents: this.damageTotalCents,
     };
+  }
+
+  // ---- Fuel (SCREAM-22) ----
+
+  /** Gas in the tank, from 0 (empty) to 1 (full). */
+  get fuel(): number {
+    return this.fuelLeft;
+  }
+
+  get isOutOfFuel(): boolean {
+    return this.fuelLeft <= 0;
+  }
+
+  /** Uses up the gas for driving this many px (forward or back). */
+  burnFuel(px: number): void {
+    if (this.ended || px <= 0) return;
+    this.fuelLeft = Math.max(0, this.fuelLeft - px / FUEL_TANK_PX);
+  }
+
+  /** The most gas the player can buy now, in cents: whole $5 steps that fit in the tank and in the wallet. */
+  get maxGasCents(): number {
+    // The small extra lets a tank that's exactly a step short still take that step, despite rounding.
+    const room = Math.floor(((1 - this.fuelLeft) * FUEL_FULL_TANK_CENTS) / FUEL_STEP_CENTS + 1e-6) * FUEL_STEP_CENTS;
+    const affordable = Math.floor(Math.max(0, this.cashCents) / FUEL_STEP_CENTS) * FUEL_STEP_CENTS;
+    return Math.max(0, Math.min(room, affordable));
+  }
+
+  /** Buys gas at the pump: a whole number of $5 steps, no more than maxGasCents. Returns false, changing nothing, otherwise. */
+  buyGas(cents: number): boolean {
+    if (this.ended || cents <= 0 || cents % FUEL_STEP_CENTS !== 0 || cents > this.maxGasCents) return false;
+    this.fuelLeft = Math.min(1, this.fuelLeft + cents / FUEL_FULL_TANK_CENTS);
+    this.gasSpentCents += cents;
+    this.changeMoney(-cents, 'Gas');
+    return true;
   }
 
   // ---- Customers (#7, set for real by #12) ----
@@ -267,7 +310,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /**
    * The truck reached a customer: they step up to the window and order from
-   * what's in the cooler (PO, doc 12 Q22: straight to the sales screen).
+   * what's in the cooler (PO, doc 08 Q22: straight to the sales screen).
    */
   startSale(customer?: ResidentNow): Sale {
     // SCREAM-67: the resident steps up to the window (the Shift+4 debug key starts a sale with nobody).

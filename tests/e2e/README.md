@@ -1,9 +1,9 @@
 # Browser tests
 
-13 suites, 453 checks, that play the game in a headless Chromium (Playwright) and
+14 suites, 504 checks, that play the game in a headless Chromium (Playwright) and
 check what happens: driving feel, the map, obstacles, customers, the truck hub,
-selling, the cooler, high scores, pause, the one way to drive, Story mode, and the
-residents.
+selling, the cooler, high scores, pause, the one way to drive, Story mode, the
+residents, and fuel.
 
 ```
 node tests/e2e/run.mjs              # every suite

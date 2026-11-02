@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { HudScene } from './scenes/HudScene';
 import { PauseScene } from './scenes/PauseScene';
 import { CoolerScene } from './scenes/CoolerScene';
+import { PumpScene } from './scenes/PumpScene';
 import { DriveScene } from './scenes/DriveScene';
 import { FillScene } from './scenes/FillScene';
 import { SalesScene } from './scenes/SalesScene';
@@ -39,6 +40,7 @@ const config: Phaser.Types.Core.GameConfig = {
     SalesScene,
     FillScene,
     DriveScene,
+    PumpScene,
     ResultsScene,
     DayEndScene,
     StoryIntroScene,
