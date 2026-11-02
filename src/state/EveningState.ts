@@ -70,6 +70,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private damageTotalCents = 0;
   private salesTotalCents = 0;
   private tipsTotalCents = 0;
+  /** SCREAM-93: the most paid for one order tonight, price plus tip. */
+  private largestSaleTotalCents = 0;
   private stockSpentCents = 0;
   /** SCREAM-22: gas in the tank, from 0 (empty) to 1 (full). */
   private fuelLeft: number;
@@ -218,6 +220,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.damageTotalCents;
   }
 
+  /** SCREAM-93: the most paid for one order tonight (price plus tip), in cents. */
+  get largestSaleCents(): number {
+    return this.largestSaleTotalCents;
+  }
+
   /** Tonight's breakdown for the results screen (#16). */
   get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number } {
     return {
@@ -350,6 +357,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.salesTotalCents += sale.outcome.priceCents;
       if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
       this.tipsTotalCents += sale.outcome.tipCents;
+      this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
     }
     this.afterSaleChange();
   }

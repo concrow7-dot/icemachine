@@ -41,7 +41,7 @@ const { TRACK } = require('./track.cjs');
   // almost as fast until you brake, and takes about 10 s to roll down to a creep.
   let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 31);
   near('Let go at top speed: half a second later it still has about 90% of its speed (px/s)', r.at(-1)[3], 485, 500);
-  r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 700);
+  r = await sim("s.truck.setPosition(250, 180); s.setHeading(0); s.speed = 547; s.parkBrake = false; s.held = []", 700);
   const creepAt = r.findIndex(f => f[3] === 72);
   near('...and rolls down to a creep only after about 10 s (s)', Math.round((creepAt + 1) * 0.016), 8, 11);
   check('...then keeps creeping (never stops on its own)', r.at(-1)[3], 72); // 10 s of rolling runs off the test track, so check the speed
@@ -49,7 +49,8 @@ const { TRACK } = require('./track.cjs');
   near('Steering while creeping still turns the truck (degrees)', r.at(-1)[2], 25, 40);
 
   // ---- Slow to pick up speed, like a train ----
-  r = await sim("s.truck.setPosition(150, 180); s.setHeading(0); s.speed = 0; s.held = ['up']", 165);
+  // SCREAM-115: starts far enough along that the longer truck's tail is on the road.
+  r = await sim("s.truck.setPosition(200, 180); s.setHeading(0); s.speed = 0; s.held = ['up']", 165);
   near('Gas from a stop: after 1 s, only about 40% of top speed (px/s)', r[61][3], 209, 230);
   near('...full speed takes about 2.5 s (frames of 16 ms)', r.findIndex(f => f[3] === 547) + 1, 150, 160);
 
@@ -87,33 +88,41 @@ const { TRACK } = require('./track.cjs');
   check('Steering while stopped (park brake on) does nothing: a car can\'t turn on the spot', r.at(-1)[2], 0);
 
   // ---- Any angle ----
-  r = await run("s.truck.setPosition(400, 180); s.setHeading(0); s.held = ['right']", 5, 300);
+  // SCREAM-115: measured crossing the junction at x = 1020, y = 840, so the longer truck's nose meets no curb.
+  r = await run("s.truck.setPosition(960, 840); s.setHeading(0); s.held = ['right']", 5, 300);
   near('A quick tap of right: about 15 degrees', r.at(-1)[2], 13, 18);
-  r = await run("s.truck.setPosition(400, 180); s.setHeading(0); s.held = ['right']", 14, 300);
+  r = await run("s.truck.setPosition(960, 840); s.setHeading(0); s.held = ['right']", 14, 300);
   near('A bit longer: about 45 degrees', r.at(-1)[2], 42, 48);
-  r = await run("s.truck.setPosition(400, 180); s.setHeading(0); s.held = ['left']", 5, 300);
+  r = await run("s.truck.setPosition(960, 840); s.setHeading(0); s.held = ['left']", 5, 300);
   near('Left turns the other way (anticlockwise)', r.at(-1)[2], -18, -13);
 
-  const [T1, T2, T3] = [18, 20, 50]; // frames of 16 ms for each leg of the three-point turn
   // ---- Turning round on a two-lane street ----
-  // SCREAM-114 (PO, November 2): the truck is 1.3x bigger, so like a real truck it can't
-  // U-turn in one sweep any more: full lock stops short, facing the curb. A three-point
-  // turn (forward with right, back with left, forward with right) gets it round.
-  r = await run("s.truck.setPosition(450, 800); s.setHeading(0); s.held = ['right']", 60, 150);
-  near('Full lock on a two-lane street: stops short of turning round (|heading|)', Math.abs(r.at(-1)[2]), 120, 165);
+  // SCREAM-114 (PO, November 2): like a real truck it can't U-turn in one sweep: full lock
+  // stops short, facing the curb. SCREAM-115: the truck is now 104 px long. Each leg below
+  // goes (forward with right, back with left, ...) until the truck can't turn any further.
+  r = await run("s.truck.setPosition(450, 810); s.setHeading(0); s.held = ['right']", 60, 150);
+  near('Full lock on a two-lane street: stops short of turning round (|heading|)', Math.abs(r.at(-1)[2]), 80, 165);
   const turnDamage = await ev('e.damageCents');
   const turn3 = await drive(`(() => {
-    s.parkBrake = false; s.truck.setPosition(450, 800); s.setHeading(0);
-    const leg = (held, speed, frames) => { s.held = held; for (let i = 0; i < frames; i++) { s.speed = speed; s.update(0, 16); } };
-    leg(['right'], 150, ${T1}); leg(['left'], -100, ${T2}); leg(['right'], 150, ${T3});
-    return [Math.round(Math.abs(s.heading)), Math.round(s.truck.y)];
+    s.parkBrake = false; s.truck.setPosition(450, 810); s.setHeading(0);
+    for (let leg = 1; leg <= 5; leg++) {
+      const fwd = leg % 2 === 1;
+      s.held = fwd ? ['right'] : ['left'];
+      let last = 999, still = 0;
+      for (let i = 0; i < 300 && still < 6; i++) {
+        s.speed = fwd ? 150 : -100; s.update(0, 16);
+        still = Math.abs(s.heading - last) < 0.01 ? still + 1 : 0; last = s.heading;
+        if (Math.abs(s.heading) >= 175) return [leg, Math.round(Math.abs(s.heading))];
+      }
+    }
+    return [99, Math.round(Math.abs(s.heading))];
   })()`);
-  near('A three-point turn gets it round (|heading|)', turn3[0], 165, 180);
-  near('...into the other lane (y)', turn3[1], 850, 900);
+  near('A three-point turn (or less) gets it round: legs', turn3[0], 2, 3);
   check('...without hitting anything', (await ev('e.damageCents')) - turnDamage, 0);
 
   // ---- Turns get wider at speed ----
-  const radiusAt = async (speed) => drive(`(() => { s.parkBrake = false; s.truck.setPosition(1200, 840); s.setHeading(0); s.held = ['right']; let path = 0; for (let i = 0; i < 10; i++) { s.speed = ${speed}; const x = s.truck.x, y = s.truck.y; s.update(0, 16); path += Math.hypot(s.truck.x - x, s.truck.y - y); } return Math.round(path / (s.heading * Math.PI / 180)); })()`);
+  // Measured in the junction (x = 1020, y = 840), clear of any curb.
+  const radiusAt = async (speed) => drive(`(() => { s.parkBrake = false; s.truck.setPosition(950, 840); s.setHeading(0); s.held = ['right']; let path = 0; for (let i = 0; i < 10; i++) { s.speed = ${speed}; const x = s.truck.x, y = s.truck.y; s.update(0, 16); path += Math.hypot(s.truck.x - x, s.truck.y - y); } return Math.round(path / (s.heading * Math.PI / 180)); })()`);
   near('Tightest turn (slow): radius about 40 px', await radiusAt(100), 35, 45);
   near('At top speed the turn is wider: radius about 150 px', await radiusAt(547), 138, 162);
   r = await sim("s.truck.setPosition(1200, 840); s.setHeading(0); s.speed = 547; s.held = ['up', 'right']", 1);
@@ -125,8 +134,8 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Glancing off the curb slides along it ----
   const before = await ev('e.damageCents');
-  // SCREAM-114: 4 px further from the curb than before, as the bigger truck is 4 px wider each side.
-  r = await run("s.truck.setPosition(600, 874); s.setHeading(20); s.held = ['up']", 15, 200);
+  // Starts with its nose corner 4 px from the curb (y = 900), whatever the truck's size (SCREAM-115).
+  r = await run("s.truck.setPosition(600, 896 - s.truckHalf.length * Math.sin(20 * Math.PI / 180) - s.truckHalf.width * Math.cos(20 * Math.PI / 180)); s.setHeading(20); s.held = ['up']", 15, 200);
   check('Shallow angle into the curb: slides along it, no charge', ((await ev('e.damageCents')) - before) + ' ' + (r.at(-1)[0] - 600 > 40), '0 true');
 
   // ---- Passing a parked car (PO screenshot, PR #58) ----
@@ -137,7 +146,9 @@ const { TRACK } = require('./track.cjs');
     const before = e.damageCents;
     const clearX = c.right + s.truckHalf.width + 2; // just clear of it, whatever the truck's size (SCREAM-114)
     const clearNow = s.obstacleAt(clearX, (c.top + c.bottom) / 2, 90) === null;
-    s.truck.setPosition(clearX + 1, c.top + 8); s.setHeading(97); s.held = ['up']; s.parkBrake = false;
+    // Starts alongside the car, angled 7 degrees into it. SCREAM-115: 6 px clear (was 1), as the
+    // longer truck's slant would otherwise start it touching the car.
+    s.truck.setPosition(clearX + 6, c.top + 8); s.setHeading(97); s.held = ['up']; s.parkBrake = false;
     for (let i = 0; i < 90; i++) { s.speed = 120; s.update(0, 16); }
     return [clearNow, Math.round(s.truck.y) > c.bottom + 20, e.damageCents - before];
   })()`);

@@ -26,7 +26,15 @@ const { chromium } = require('playwright');
   const near = (name, got, lo, hi) => { const ok = got >= lo && got <= hi; ok ? pass++ : fail++; console.log((ok ? 'PASS ' : 'FAIL ') + name.padEnd(64) + ' got=' + got + (ok ? '' : ` want ${lo}..${hi}`)); };
   // Parks the truck in the pump bay, stopped, facing up Park Avenue.
   const intoBay = () => drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x, b.y); s.setHeading(b.angle); s.speed = 0; s.parkBrake = true; return true; })()`);
-  const awayFromBay = () => drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); s.speed = 0; s.parkBrake = true; return true; })()`);
+  // SCREAM-115: 160 px along the road from the bay, facing the way with the most clear road
+  // ahead (the 104 px truck runs into the street's end sooner).
+  const awayFromBay = () => drive(`(() => {
+    const b = s.pumpBays[0];
+    const clearAhead = (x, y, deg) => { const r = deg * Math.PI / 180; let d = 0; while (d < 600 && s.obstacleAt(x + Math.cos(r) * d, y + Math.sin(r) * d, deg) === null) d += 10; return d; };
+    const best = [1, -1].map(dir => { const x = b.x + Math.cos(b.rotation) * 160 * dir, y = b.y + Math.sin(b.rotation) * 160 * dir;
+      return [0, 180].map(turn => { const deg = b.angle + turn; return { x, y, deg, clear: clearAhead(x, y, deg) }; }); }).flat().sort((a, c) => c.clear - a.clear)[0];
+    s.truck.setPosition(best.x, best.y); s.setHeading(best.deg); s.speed = 0; s.parkBrake = true; return true;
+  })()`);
   const fuel = async () => Math.round((await ev('e.fuel')) * 10000) / 10000;
 
   // ---- Quick play: a full tank ----

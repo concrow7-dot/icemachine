@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { showLoadingWhileLoading } from './LoadingScene';
 import { FUEL_FULL_TANK_CENTS, FUEL_STEP_CENTS } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../config/gasStation';
@@ -34,6 +35,7 @@ export class PumpScene extends Phaser.Scene {
   preload(): void {
     // SCREAM-111: the pump comes from the map's picture sheet, already loaded on the road.
     if (!this.textures.exists(MAP_ATLAS)) this.load.atlas(MAP_ATLAS, MAP_ATLAS_PNG, MAP_ATLAS_JSON);
+    showLoadingWhileLoading(this); // SCREAM-75
   }
 
   create(): void {

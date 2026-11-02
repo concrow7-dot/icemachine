@@ -42,6 +42,15 @@ const { TRACK } = require('./track.cjs');
   await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(300);
   check("Driver's seat opens the driving view", await scenes(), 'Drive,Hud');
+  // SCREAM-75: the map's first load ran the loading screen, which closed once it was done
+  const loadingNow = () => page.evaluate(() => window.__game.scene.isActive('Loading'));
+  check('The driving view\'s first load showed the loading screen, then closed it', (await page.evaluate(() => window.__game.registry.get('loadingShown') >= 1)) + ' ' + (await loadingNow()), 'true false');
+  await page.keyboard.down('Shift'); await page.keyboard.press('Digit5'); await page.keyboard.up('Shift'); await wait(1500);
+  const loadingLook = await page.evaluate(() => { const l = window.__game.scene.getScene('Loading'); const layer = l.children.getByName('loading-layer'); return [l.scene.isActive(), layer.alpha, layer.list.filter(o => o.name === 'loading-note').length > 5, !!layer.getByName('loading-truck')]; });
+  check('Shift+5: the loading screen shows the truck leaving a trail of notes that stays', loadingLook.join(' '), 'true 1 true true');
+  await page.screenshot({ path: outDir + '/loading.png' });
+  await wait(4000);
+  check('...and closes after 5 seconds', await loadingNow(), false);
   // SCREAM-10: Home is on Longfellow Road (proposal); the truck starts in its lane, pointing along the road.
   const home = await truck();
   check('Truck starts outside Home, on Longfellow Road', await drive('s.roads.streetAt(s.truck.x, s.truck.y)'), 'Longfellow Road');
@@ -90,17 +99,19 @@ const { TRACK } = require('./track.cjs');
   // Walls, with the truck aimed straight
   const aim = (x, y, deg) => page.evaluate(([x, y, deg]) => { const s = window.__game.scene.getScene('Drive'); s.truck.setPosition(x, y); s.setHeading(deg); s.speed = 0; }, [x, y, deg]);
   await aim(600, 840, 90); await driveUntilStop('ArrowUp');
-  near('Blocked by houses below the road (y<=884)', (await truck()).y, 860, 884);
+  // SCREAM-115: the truck's nose is truckHalf.length ahead of its middle (52 px since the LimeZu truck).
+  const nose = Math.round((await ds('truckHalf')).length);
+  near('Blocked by houses below the road (its nose at the edge, y = 900)', (await truck()).y + nose, 894, 902);
   await aim(600, 840, -90); await driveUntilStop('ArrowUp');
-  near('Blocked by houses above the road (y>=796)', (await truck()).y, 796, 820);
+  near('Blocked by houses above the road (its nose at the edge, y = 780)', (await truck()).y - nose, 778, 786);
 
   // Map edge: along the middle road to the far-left road, then up its open lane to the top road
   await aim(450, 840, 180); await driveUntilStop('ArrowUp');
-  // SCREAM-114: the truck is 1.3x bigger, so its nose (28.6 px ahead of its middle) stops it 6.6 px later.
-  near('Left edge stops the truck at its nose (x about 149)', (await truck()).x, 146, 152);
+  // The truck's nose stops it at the map edge (x about 120), whatever the truck's size.
+  near('Left edge stops the truck at its nose (x about 120)', (await truck()).x - nose, 117, 123);
   check('No pointer arrow (SCREAM-68)', await page.evaluate(() => window.__game.scene.getScene('Drive').pointer), undefined);
   await aim(210, 840, -90); await driveUntilStop('ArrowUp');
-  near('Top edge stops the truck at its nose (y about 149)', (await truck()).y, 146, 152);
+  near('Top edge stops the truck at its nose (y about 120)', (await truck()).y - nose, 117, 123);
   // SCREAM-114: zoomed in, the top of what's shown (worldView) is the map's top edge.
   const camTop = await page.evaluate(() => window.__game.scene.getScene('Drive').cameras.main.worldView.y);
   check('Camera follows to the top of the map', Math.round(camTop), 0);

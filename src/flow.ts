@@ -17,6 +17,7 @@ export const SceneKeys = {
   DayEnd: 'DayEnd',
   StoryIntro: 'StoryIntro',
   Pump: 'Pump',
+  Loading: 'Loading',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */

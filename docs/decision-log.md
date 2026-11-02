@@ -2,6 +2,44 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 022 — Loading screens: the truck laps the screen and fills it with music notes; the $4 warning goes (2026-11-02)
+
+**Decision (Jira SCREAM-75, SCREAM-72):**
+- Any loading screen shows the title's ice cream truck driving back and forth like the winning screen, a row lower each lap, leaving music notes that stay, so the page slowly fills. Engineering's proposals: it only appears if loading takes more than 0.15 s (no flash on quick loads), and Shift+5 shows it for 5 seconds (debug).
+- The cooler no longer says "over $4.00: customers refuse!". Customers still refuse prices over $4; the "profit $x each" hint stays.
+
+**Options considered:** for loading, a spinning ice cream cone (the ticket's description) or the truck covering the page (its newer title); the PO picked the truck (November 2).
+
+**Why (product owner's rationale):** the $4 warning: players should organically figure out the price ceiling (doc 08, Q11). The loading screen: the game had no spinners yet, and he likes the truck as a transition design better.
+
+## 021 — Largest sale: tonight's and an all-time record, tip included, in both modes (2026-11-02)
+
+**Decision (Jira SCREAM-93):** the most paid for one order at the window, price plus tip. Quick play's results screen and Story's end-of-day screen show tonight's largest sale and the record ("NEW RECORD!" when it's beaten); Story's final results show the run's largest. Quick play and Story keep separate records, like their high scores, saved in the browser.
+
+**Options considered:** tonight only, a record only, or both; tip in or out; one mode or both.
+
+**Why (product owner's rationale):** _waiting on the PO._ (He picked engineering's recommended option.)
+
+## 020 — The title screen's LimeZu truck drives the map, full size, in any direction (2026-11-02)
+
+**Decision (Jira SCREAM-115):**
+- The driving truck is LimeZu's ice cream truck from the title screen, at the pack's own size (the same scale as the houses and trees), replacing the drawn rectangles.
+- LimeZu only draws it from the side. Front and back views are the pack's ambulance (the same van body) repainted in the truck's colours, with the cone on the roof (`tools/truck/build_truck.py`).
+- Any direction: the side view shows within 25° of straight left or right; otherwise the front or back view, tilted to the truck's exact heading. (Engineering's proposal, after the PO asked for any direction: a side view tilted further looked like it was tipping over.)
+- The bump box grows to match the picture: 104 x 42 px (was 60 x 36). Pickup squares and pump bays grow with it (86 x 58 px) so "half the truck in the square" still works.
+
+**Options considered:** full size tilted, full size snapping to four directions, 3/4 size, or today's size; growing the bump box or keeping it (picture overlapping parked cars).
+
+**Why (product owner's rationale):** the PO likes the title screen's truck and wants the driving truck to look as good, in any direction (November 2). Full size: he likes the larger truck, and will play with it to check the size is right. The bigger bump box: so what hits matches what you see.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- Turning round on a two-lane street still works, now in two or three moves. Every street stays reachable (checked by the extras suite).
+- A truck sliding along a curb or past a parked car may now ease sideways either way across the road (it used to ease only toward the middle), so the longer truck doesn't stick.
+- The game draws with one texture per batch (`main.ts`): with several, the tilted truck drew with a chunk missing in the test browser.
+- Known rough edge: the picture switches between the side and top views in one frame at about 25°. Removing it needs diagonal views, which LimeZu doesn't sell: a commissioned artist, the PO's own drawings (SCREAM-58), or live with it.
+
+**Revisit if:** the switch at 25° bothers players, the truck feels too big for the streets, or diagonal art becomes available.
+
 ## 019 — Tuning: customers keep waiting while you serve; fewer willing customers; bigger, faster truck; smaller and more cars; closer view; thirstier truck (2026-11-02)
 
 **Decision (Jira SCREAM-114, SCREAM-97):**

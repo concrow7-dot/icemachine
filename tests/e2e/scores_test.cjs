@@ -37,6 +37,9 @@ const { chromium } = require('playwright');
   check('Breakdown: sales $2.00, tips $0.40, stock $2.00, damage $5.00',
     JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500 }));
   check("Tonight's profit = sales + tips - stock - damage (-$4.60)", await ev('e.profitCents'), -460);
+  // SCREAM-93: the largest sale, price plus tip, against Quick play's record (none yet)
+  check('Largest sale: $2.40 (price + tip), a new record', await res('s.children.getByName("largest-sale").text'), 'Largest sale: $2.40  NEW RECORD!');
+  check('...saved as Quick play\'s record', await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.records.v1')).quick.largestSaleCents), 240);
   check('Empty table: even a negative evening makes the top 5', await res('s.entering'), true);
   await page.screenshot({ path: outDir + '/scores_entry.png' });
   await page.keyboard.type('con', { delay: 60 }); await wait(150);
@@ -56,6 +59,7 @@ const { chromium } = require('playwright');
   }
   check('Arrow keys: ↑ changes the letter (B, C, D, E then AA)', (await table()).split(' ').map(s => s.split(':')[0]).sort().join(','), 'BAA,CAA,CON,DAA,EAA');
   check('Table is highest first, top 5', await table(), 'EAA:3000 CAA:2000 BAA:1000 DAA:500 CON:-460');
+  check('An evening with no sale: "none yet", the record stays', (await res('s.children.getByName("largest-sale").text')) + ' ' + (await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.records.v1')).quick.largestSaleCents)), 'Largest sale: none yet 240');
 
   // ---- Not good enough ----
   await press('Enter'); await wait(300);

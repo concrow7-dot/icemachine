@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
 import { WORCESTER } from '../config/worcester';
@@ -22,7 +23,12 @@ import {
   TRUCK_SPEED,
   TRUCK_COAST_KEEP,
   TRUCK_COAST_KEEP_SECONDS,
-  TRUCK_SCALE,
+  TRUCK_LENGTH,
+  TRUCK_WIDTH,
+  PICKUP_ZONE_LENGTH,
+  PICKUP_ZONE_WIDTH,
+  TRUCK_LOOK_SCALE,
+  TRUCK_LOOK_TILT,
   PARKED_CAR_SCALE,
   DRIVE_CAMERA_ZOOM,
   FUEL_EMPTY_SPEED_FRACTION,
@@ -34,6 +40,7 @@ import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
+import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { GAS_STATIONS, MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../config/gasStation';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
@@ -65,8 +72,8 @@ const HUD_HEIGHT = 44;
  * truck. It used to be a 32 px square that didn't turn, which caught on parked
  * cars the truck visibly cleared (PO, testing PR #58).
  */
-const TRUCK_HALF_LENGTH = 22 * TRUCK_SCALE;
-const TRUCK_HALF_WIDTH = 13 * TRUCK_SCALE;
+const TRUCK_HALF_LENGTH = TRUCK_LENGTH / 2;
+const TRUCK_HALF_WIDTH = TRUCK_WIDTH / 2;
 /** Points round the truck's outline, checked against the road edge (along, across). */
 const TRUCK_OUTLINE: [number, number][] = [];
 for (let l = -TRUCK_HALF_LENGTH; l <= TRUCK_HALF_LENGTH; l += TRUCK_HALF_LENGTH / 4) {
@@ -75,8 +82,6 @@ for (let l = -TRUCK_HALF_LENGTH; l <= TRUCK_HALF_LENGTH; l += TRUCK_HALF_LENGTH 
 for (const w of [-TRUCK_HALF_WIDTH / 2, 0, TRUCK_HALF_WIDTH / 2]) TRUCK_OUTLINE.push([-TRUCK_HALF_LENGTH, w], [TRUCK_HALF_LENGTH, w]);
 /** After a crash, no new charge for this long (one bump = one charge). */
 const HIT_COOLDOWN_MS = 400;
-/** The pink pickup square beside a curb customer, in px (it pulses bigger on screen; this is its real size). */
-const PICKUP_ZONE_SIZE = 50;
 /** SCREAM-16 (PO): at least half of the truck's hitbox must be in the pickup square. */
 const PICKUP_MIN_OVERLAP = 0.5;
 
@@ -122,6 +127,10 @@ const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
 export class DriveScene extends Phaser.Scene {
   private evening!: EveningState;
   private truck!: Phaser.GameObjects.Container;
+  /** SCREAM-115: the truck's picture inside its container. */
+  private truckLook!: Phaser.GameObjects.Image;
+  /** SCREAM-115: tilt the view to the exact heading (tests and playtests can flip it). */
+  lookTilt = TRUCK_LOOK_TILT;
   /** Which way the truck points, in degrees: 0 = right, 90 = down (car-style steering, #32). */
   private heading = 0;
   private speed = 0;
@@ -158,7 +167,7 @@ export class DriveScene extends Phaser.Scene {
   private sortedObjects = [...WORCESTER.objects, ...GAS_STATIONS.flatMap((g) => g.pumps.map((p) => ({ key: 'pump', ...p })))].sort(
     (a, b) => a.y - b.y,
   );
-  /** The truck's hit box, half its length and width in px (SCREAM-114: tests read it, since TRUCK_SCALE changes it). */
+  /** The truck's hit box, half its length and width in px (tests read it, since TRUCK_LENGTH and TRUCK_WIDTH change it). */
   readonly truckHalf = { length: TRUCK_HALF_LENGTH, width: TRUCK_HALF_WIDTH };
   /** SCREAM-22, SCREAM-109: the bay beside each gas station's pumps. Stop in one to buy gas. */
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
@@ -186,10 +195,12 @@ export class DriveScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image('map-grass', 'assets/limezu/map/grass.png');
+    loadTruckViews(this);
     // Houses, trees, yard ornaments and the gas pump, all in one picture sheet (SCREAM-108).
     if (!this.textures.exists(MAP_ATLAS)) this.load.atlas(MAP_ATLAS, MAP_ATLAS_PNG, MAP_ATLAS_JSON);
     for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
     loadResidentSheet(this);
+    showLoadingWhileLoading(this); // SCREAM-75
   }
 
   create(): void {
@@ -243,7 +254,7 @@ export class DriveScene extends Phaser.Scene {
     // SCREAM-22, SCREAM-109: each station's pump bay, painted on the road beside the pumps like a parking space.
     this.pumpBays = GAS_STATIONS.map((g) =>
       this.add
-        .rectangle(g.bay.x, g.bay.y, PICKUP_ZONE_SIZE + 10, PICKUP_ZONE_SIZE, 0xffd23f, 0.12)
+        .rectangle(g.bay.x, g.bay.y, PICKUP_ZONE_LENGTH + 10, PICKUP_ZONE_WIDTH, 0xffd23f, 0.12)
         .setStrokeStyle(3, 0xffd23f, 0.9)
         .setAngle(g.bay.angle)
         .setDepth(4),
@@ -370,6 +381,7 @@ export class DriveScene extends Phaser.Scene {
     });
     this.drawResidents(time);
     this.drawCustomers();
+    this.updateTruckLook();
     if (this.spinning) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
@@ -611,15 +623,29 @@ export class DriveScene extends Phaser.Scene {
    * truck is drawn here to match). Same 46 x 28 size as the collision shape.
    */
   private makeTruck(): Phaser.GameObjects.Container {
-    const body = this.add.rectangle(0, 0, 46, 28, 0xd6779d).setStrokeStyle(2, 0x3a3a50);
-    const roof = this.add.rectangle(-5, 0, 30, 22, 0x5ea592).setStrokeStyle(1, 0x367f82);
-    const windscreen = this.add.rectangle(15, 0, 6, 22, 0xa4bbd5);
-    const bonnet = this.add.rectangle(20, 0, 4, 24, 0xeea5b8);
-    const cone = this.add.triangle(-6, 0, 0, -4, 0, 4, -12, 0, 0xd9a35a);
-    const scoop = this.add.circle(-3, 0, 5, 0xeea5b8).setStrokeStyle(1, 0xb95d72);
-    // SCREAM-114 / SCREAM-97: drawn at 46 x 28, then scaled up with its hit box (TRUCK_SCALE).
-    return this.add.container(0, 0, [body, roof, windscreen, bonnet, cone, scoop]).setDepth(10).setScale(TRUCK_SCALE);
+    // SCREAM-115: the title screen's LimeZu ice cream truck, in four views (see truckViews.ts).
+    this.textures.get(TRUCK_VIEWS_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    // The picture is its own object (not in the container), drawn where the truck is.
+    this.truckLook = this.add.image(0, 0, TRUCK_VIEWS_KEY, 0).setScale(TRUCK_LOOK_SCALE).setDepth(10);
+    // The truck itself: what moves and turns (its bump box is TRUCK_LENGTH x TRUCK_WIDTH).
+    return this.add.container(0, 0, []).setDepth(10);
   }
+
+  /**
+   * SCREAM-115: shows the view for the way the truck faces (truckView), where the truck is,
+   * tilted by what's left over when
+   * TRUCK_LOOK_TILT is on. Reads the drawn angle, so a pothole spin still shows.
+   */
+  private updateTruckLook(): void {
+    const facing = Phaser.Math.Angle.WrapDegrees(this.truck.angle);
+    const view = truckView(facing);
+    const leftover = this.lookTilt ? Phaser.Math.Angle.WrapDegrees(facing - view * 90) : 0;
+    const look = this.truckLook;
+    if (Number(look.frame.name) !== view) look.setFrame(view);
+    look.setOrigin(0.5, TRUCK_VIEW_ORIGIN_Y[view]);
+    look.setPosition(this.truck.x, this.truck.y).setAngle(leftover).setVisible(this.truck.visible);
+  }
+
 
   /** Top speed: hits are priced against it. */
   private get topSpeed(): number {
@@ -675,6 +701,7 @@ export class DriveScene extends Phaser.Scene {
   private setHeading(degrees: number): void {
     this.heading = Phaser.Math.Angle.WrapDegrees(degrees);
     this.truck.setAngle(this.heading);
+    this.updateTruckLook();
   }
 
   /**
@@ -725,17 +752,21 @@ export class DriveScene extends Phaser.Scene {
       const ty = (seg.by - seg.ay) / len;
       const along = dx * tx + dy * ty;
       // The drawn curb comes in 2 px steps (rounded corners), so a truck sliding
-      // along it may also ease up to 3 px back toward the middle of the road.
+      // along it may also ease up to 3 px sideways: back toward the middle of the
+      // road first, or else away from it (SCREAM-115: the longer truck, angled
+      // slightly into a parked car, may need to cross the middle line to get by).
       const vx = seg.bx - seg.ax;
       const vy = seg.by - seg.ay;
       const t = Math.max(0, Math.min(1, ((x - seg.ax) * vx + (y - seg.ay) * vy) / (vx * vx + vy * vy || 1)));
-      const toMiddleX = seg.ax + t * vx - x;
-      const toMiddleY = seg.ay + t * vy - y;
-      const toMiddle = Math.hypot(toMiddleX, toMiddleY) || 1;
+      // Across the road (normal to its direction), pointing toward its middle (either way on the middle line).
+      const toMiddle = -ty * (seg.ax + t * vx - x) + tx * (seg.ay + t * vy - y);
+      const across = toMiddle >= 0 ? 1 : -1;
+      const acrossX = -ty * across;
+      const acrossY = tx * across;
       if (Math.abs(along) > 0.01) {
-        for (const ease of [0, 1, 2, 3]) {
-          const sx = tx * along + (toMiddleX / toMiddle) * ease;
-          const sy = ty * along + (toMiddleY / toMiddle) * ease;
+        for (const ease of [0, 1, 2, 3, -1, -2, -3]) {
+          const sx = tx * along + acrossX * ease;
+          const sy = ty * along + acrossY * ease;
           if (!this.obstacleAt(x + sx, y + sy)) {
             slide = [sx, sy];
             break;
@@ -941,7 +972,8 @@ export class DriveScene extends Phaser.Scene {
       if (waiting && !zone) {
         const [, , zx, zy, angle] = p.resident.curb;
         zone = this.add
-          .rectangle(zx, zy, PICKUP_ZONE_SIZE, PICKUP_ZONE_SIZE, 0xff4f9a, 0.18)
+          // The pink pickup square (it pulses bigger on screen; PICKUP_ZONE_LENGTH x WIDTH is its real size).
+          .rectangle(zx, zy, PICKUP_ZONE_LENGTH, PICKUP_ZONE_WIDTH, 0xff4f9a, 0.18)
           .setStrokeStyle(3, 0xff4f9a)
           .setAngle(angle)
           .setDepth(4);
@@ -1014,7 +1046,9 @@ export class DriveScene extends Phaser.Scene {
     const rad = Phaser.Math.DegToRad(this.heading);
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
-    const half = PICKUP_ZONE_SIZE / 2;
+    // Its real size along and across the road (not the pulse).
+    const halfAlong = zone.width / 2;
+    const halfAcross = zone.height / 2;
     const zoneRad = zone.rotation;
     const zoneCos = Math.cos(zoneRad);
     const zoneSin = Math.sin(zoneRad);
@@ -1031,7 +1065,7 @@ export class DriveScene extends Phaser.Scene {
         // In the pickup square's own frame (it's turned to the road).
         const ox = x - zone.x;
         const oy = y - zone.y;
-        if (Math.abs(ox * zoneCos + oy * zoneSin) <= half && Math.abs(-ox * zoneSin + oy * zoneCos) <= half) inside++;
+        if (Math.abs(ox * zoneCos + oy * zoneSin) <= halfAlong && Math.abs(-ox * zoneSin + oy * zoneCos) <= halfAcross) inside++;
       }
     }
     return inside / total;

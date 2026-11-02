@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { getFlavour } from '../config/flavours';
-import { PRICE_STEP_CENTS, REFUSE_ABOVE_CENTS, SLOT_CAPACITY } from '../config/tuning';
+import { PRICE_STEP_CENTS, SLOT_CAPACITY } from '../config/tuning';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -274,9 +274,8 @@ export class CoolerScene extends Phaser.Scene {
       column.price.setText(formatMoney(slot.priceCents));
 
       const profitEach = slot.priceCents - flavour.costCents;
-      if (slot.priceCents > REFUSE_ABOVE_CENTS) {
-        column.margin.setText(`over ${formatMoney(REFUSE_ABOVE_CENTS)}: customers refuse!`).setColor('#b3261e');
-      } else if (profitEach <= 0) {
+      // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
+      if (profitEach <= 0) {
         column.margin.setText('no profit at this price').setColor('#b3261e');
       } else {
         column.margin.setText(`profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');

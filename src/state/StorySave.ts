@@ -60,6 +60,7 @@ export function loadStory(): StorySave | null {
         stockCents: cents(t.stockCents),
         gasCents: cents(t.gasCents),
         damageCents: cents(t.damageCents),
+        largestSaleCents: cents(t.largestSaleCents),
       },
     };
   } catch {

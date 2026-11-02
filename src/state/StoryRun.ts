@@ -24,7 +24,15 @@ export function isBroke(cashCents: number, stockLeft: number): boolean {
 }
 
 /** Sales, tips, stock and damage added up over every evening of a run. */
-export type RunTotals = { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number };
+export type RunTotals = {
+  salesCents: number;
+  tipsCents: number;
+  stockCents: number;
+  gasCents: number;
+  damageCents: number;
+  /** SCREAM-93: the run's largest single sale (price plus tip). */
+  largestSaleCents: number;
+};
 
 export class StoryRun {
   /** Which evening this is, from 1. */
@@ -38,7 +46,7 @@ export class StoryRun {
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
-  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0 };
+  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, largestSaleCents: 0 };
 
   /** A new run at day 1, or (SCREAM-17) one picked up from a save. */
   constructor(save?: StorySave) {
@@ -73,6 +81,7 @@ export class StoryRun {
       stockCents: this.totals.stockCents + b.stockCents,
       gasCents: this.totals.gasCents + b.gasCents,
       damageCents: this.totals.damageCents + b.damageCents,
+      largestSaleCents: Math.max(this.totals.largestSaleCents, evening.largestSaleCents),
     };
     if (result === 'next') {
       this.day += 1;
