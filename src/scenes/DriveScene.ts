@@ -20,6 +20,11 @@ import {
   TRUCK_REVERSE_DELAY_SECONDS,
   TRUCK_REVERSE_SPEED,
   TRUCK_SPEED,
+  TRUCK_COAST_KEEP,
+  TRUCK_COAST_KEEP_SECONDS,
+  TRUCK_SCALE,
+  PARKED_CAR_SCALE,
+  DRIVE_CAMERA_ZOOM,
   FUEL_EMPTY_SPEED_FRACTION,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
@@ -46,8 +51,8 @@ import { GAS_STATIONS, MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../confi
 // by tools/worcester/build_map.py from OpenStreetMap; LimeZu art.
 
 /** A parked car, in px: 54 x 32, as before. */
-const CAR_HALF_LENGTH = 27;
-const CAR_HALF_WIDTH = 16;
+const CAR_HALF_LENGTH = 27 * PARKED_CAR_SCALE;
+const CAR_HALF_WIDTH = 16 * PARKED_CAR_SCALE;
 const CAR_COLOURS = [0xc0392b, 0x2e86c1, 0x7d3c98, 0x27ae60, 0xd68910, 0x566573];
 /** Driving into a pothole from this close (centre to centre) counts as hitting it. */
 const POTHOLE_REACH = 22;
@@ -60,8 +65,8 @@ const HUD_HEIGHT = 44;
  * truck. It used to be a 32 px square that didn't turn, which caught on parked
  * cars the truck visibly cleared (PO, testing PR #58).
  */
-const TRUCK_HALF_LENGTH = 22;
-const TRUCK_HALF_WIDTH = 13;
+const TRUCK_HALF_LENGTH = 22 * TRUCK_SCALE;
+const TRUCK_HALF_WIDTH = 13 * TRUCK_SCALE;
 /** Points round the truck's outline, checked against the road edge (along, across). */
 const TRUCK_OUTLINE: [number, number][] = [];
 for (let l = -TRUCK_HALF_LENGTH; l <= TRUCK_HALF_LENGTH; l += TRUCK_HALF_LENGTH / 4) {
@@ -153,6 +158,8 @@ export class DriveScene extends Phaser.Scene {
   private sortedObjects = [...WORCESTER.objects, ...GAS_STATIONS.flatMap((g) => g.pumps.map((p) => ({ key: 'pump', ...p })))].sort(
     (a, b) => a.y - b.y,
   );
+  /** The truck's hit box, half its length and width in px (SCREAM-114: tests read it, since TRUCK_SCALE changes it). */
+  readonly truckHalf = { length: TRUCK_HALF_LENGTH, width: TRUCK_HALF_WIDTH };
   /** SCREAM-22, SCREAM-109: the bay beside each gas station's pumps. Stop in one to buy gas. */
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
@@ -261,6 +268,8 @@ export class DriveScene extends Phaser.Scene {
     camera.setViewport(0, HUD_HEIGHT, this.scale.width, this.scale.height - HUD_HEIGHT);
     camera.setBounds(0, 0, worldWidth, worldHeight);
     camera.startFollow(this.truck, true, 0.15, 0.15);
+    // SCREAM-114 (PO, November 2): a little closer to the street.
+    camera.setZoom(DRIVE_CAMERA_ZOOM);
 
     this.add
       .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ gas  ↓ brake  ← → steer  Q park  M mute  N next song   People in your ring may want ice cream (!)', {
@@ -271,7 +280,7 @@ export class DriveScene extends Phaser.Scene {
         padding: { x: 8, y: 3 },
       })
       .setOrigin(0.5)
-      .setScrollFactor(0)
+      .setScrollFactor(0).setData('pin', true)
       .setDepth(20);
 
     // OpenStreetMap's licence asks for a credit wherever the map is shown.
@@ -284,7 +293,7 @@ export class DriveScene extends Phaser.Scene {
         padding: { x: 3, y: 1 },
       })
       .setOrigin(1, 0)
-      .setScrollFactor(0)
+      .setScrollFactor(0).setData('pin', true)
       .setDepth(20);
 
     this.parkLabel = this.add
@@ -295,7 +304,7 @@ export class DriveScene extends Phaser.Scene {
         backgroundColor: '#c62828',
         padding: { x: 8, y: 4 },
       })
-      .setScrollFactor(0)
+      .setScrollFactor(0).setData('pin', true)
       .setDepth(20)
       .setVisible(this.parkBrake);
 
@@ -309,7 +318,7 @@ export class DriveScene extends Phaser.Scene {
         padding: { x: 5, y: 2 },
       })
       .setOrigin(1, 0)
-      .setScrollFactor(0)
+      .setScrollFactor(0).setData('pin', true)
       .setDepth(20)
       .setAlpha(0);
     this.music = musicFor(this);
@@ -343,6 +352,8 @@ export class DriveScene extends Phaser.Scene {
       this.game.events.off(Phaser.Core.Events.BLUR, this.releaseKeys, this);
       this.evening.parkTruck({ x: this.truck.x, y: this.truck.y, angle: this.heading });
     });
+    // SCREAM-114: keep the on-screen labels where they belong despite the camera's zoom.
+    for (const o of this.children.list) if (o instanceof Phaser.GameObjects.Text && o.getData('pin')) this.pin(o);
 
   }
 
@@ -413,8 +424,10 @@ export class DriveScene extends Phaser.Scene {
       this.brakeHeldStill = 0;
       const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
       const creep = this.rolling * TRUCK_CREEP_SPEED;
-      // Faster than a creep: slow down to it. Slower (just set off, or after a stop): ease up to it.
-      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED) this.speed -= Math.sign(this.speed) * Math.min(roll, Math.abs(this.speed) - TRUCK_CREEP_SPEED);
+      // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
+      // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
+      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED)
+        this.speed = Math.sign(this.speed) * Math.max(TRUCK_CREEP_SPEED, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
       else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
     if (this.speed !== 0) this.rolling = Math.sign(this.speed);
@@ -604,7 +617,8 @@ export class DriveScene extends Phaser.Scene {
     const bonnet = this.add.rectangle(20, 0, 4, 24, 0xeea5b8);
     const cone = this.add.triangle(-6, 0, 0, -4, 0, 4, -12, 0, 0xd9a35a);
     const scoop = this.add.circle(-3, 0, 5, 0xeea5b8).setStrokeStyle(1, 0xb95d72);
-    return this.add.container(0, 0, [body, roof, windscreen, bonnet, cone, scoop]).setDepth(10);
+    // SCREAM-114 / SCREAM-97: drawn at 46 x 28, then scaled up with its hit box (TRUCK_SCALE).
+    return this.add.container(0, 0, [body, roof, windscreen, bonnet, cone, scoop]).setDepth(10).setScale(TRUCK_SCALE);
   }
 
   /** Top speed: hits are priced against it. */
@@ -640,8 +654,21 @@ export class DriveScene extends Phaser.Scene {
       })
       .setScrollFactor(0)
       .setDepth(21);
+    this.pin(notice);
     this.notice = notice;
     this.tweens.add({ targets: notice, alpha: 0, delay: 1200, duration: 400, onComplete: () => notice.destroy() });
+  }
+
+  /**
+   * SCREAM-114: the camera's zoom also enlarges on-screen labels (hints, park brake, song,
+   * credit) and moves them away from the middle. This puts each back where it was meant to
+   * be on screen, at its normal size. Call once, after the label is placed.
+   */
+  private pin<T extends Phaser.GameObjects.Text>(obj: T): T {
+    const z = DRIVE_CAMERA_ZOOM;
+    const cx = this.scale.width / 2;
+    const cy = (this.scale.height - HUD_HEIGHT) / 2;
+    return obj.setPosition(cx + (obj.x - cx) / z, cy + (obj.y - cy) / z).setScale(obj.scaleX / z);
   }
 
   /** Points the truck `degrees` round from facing right (90 = down), any angle. */

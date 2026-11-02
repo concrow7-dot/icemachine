@@ -2,6 +2,30 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 019 — Tuning: customers keep waiting while you serve; fewer willing customers; bigger, faster truck; smaller and more cars; closer view; thirstier truck (2026-11-02)
+
+**Decision (Jira SCREAM-114, SCREAM-97):**
+- The neighbourhood keeps going while you're off the road (the window, the cooler, the pump, the truck): customers waiting at the curb keep counting down their 30 seconds and can give up while you serve someone. The music is off there, so nobody new comes out. Pausing still freezes everything.
+- Every resident's likelihood in the residents sheet (doc 15) was cut by 40%, rounded to 5% (average 52% became 31%).
+- The truck is 1.3x bigger (60 x 36 px); parked cars are 0.8x (43 x 26 px), and there are twice as many (80). Lanes stay 60 px, so the truck can't U-turn in one sweep any more: turning round takes a three-point turn.
+- The driving view is zoomed in 1.2x.
+- Gas burns 1.5x as fast: a full tank drives 78,000 px (about a full evening of driving). Then 15% faster again (PO, November 2): 67,800 px; then 25% faster again: 54,200 px.
+- Top speed is 10% higher, then 15% higher again: 547 px/s (was 433). It also burns gas faster per second at top speed.
+- Momentum (PO, November 2): first 25% more (rolling down to a creep over 0.5 s, was 0.4); then much more: let go of the gas and the truck keeps 90% of its speed every half second, so it rolls on almost at the same speed until you brake, taking about 10 s to roll down to a creep. (The PO wrote "lose 90% per .5 seconds"; engineering read it as keeping 90%, which matches "basically keep that speed", and the PO agreed.) Braking is unchanged; to use the park brake, brake to a creep first.
+- Each resident buys at most once a night (PO, November 2): already the rule since decision 015, and tested.
+- Kept as they were (PO, November 2): how fast people come out while you're parked, speed not mattering much, and the 300 px music ring.
+
+**Options considered:** for serving, keep the neighbourhood frozen or let it run; for parked, a steady trickle, a rush then a trickle, or as is; for driving, slower being better, about the same, or as is; for the ring, 300, 400 or 500 px; for the truck, 1.15x (U-turns still work), 1.3x with three-point turns, or 1.3x with wider lanes.
+
+**Why (product owner's rationale):** to feel more realistic (decision 015's reason): sometimes a bunch of customers are waiting and some leave because you take too long, which only happens if waiting continues while you serve. The PO asked for fewer willing customers, a bigger truck, smaller and more parked cars, a view closer to the street, and quicker gas use (comment on SCREAM-114), then a 10% faster truck and gas 15% quicker again, then another 15% speed, 25% more momentum and gas 25% quicker (in chat). **Why, for each of those:** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- The amounts (1.3x, 0.8x, 80 cars, 1.2x zoom, 40% fewer, 1.5x gas) are starting points, all in `tuning.ts` or the residents sheet, to change after playing.
+- Measured before and after (20 replays, 5 minutes): driving round brings out about 42 customers instead of 64. Parked, people come out more slowly, but nearly everyone in earshot still comes out eventually, because likelihood only slows the per-second chance down. If some people should never buy on a given evening, that's a change to how likelihood works.
+- The extra cars are added last by the map generator, with their own random numbers, so houses, yards and residents stay where they were.
+
+**Revisit if:** the truck feels too big for the streets (or the lanes should widen), customers feel too scarce or too plentiful, or gas runs out too often.
+
 ## 018 — A second gas station, on June Street; stations placed by the map generator (2026-11-02)
 
 **Decision:** There are two gas stations (Jira SCREAM-109): the Speedway on Park Avenue (decision 016) and a second one on June Street, the main road along the map's west edge. Both work the same way and look the same: two pumps on a forecourt, a GAS sign and a yellow bay.
@@ -77,7 +101,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - *A chance each second, not speed:* speed still matters, because a truck driving fast spends less time near each person and the rules already lower its chances; he didn't want velocity to be the measure (November 2).
 - *Indoors half as likely:* people at home are less likely to hear the truck, for example because they have the AC on (November 2).
 - *Highest chance at first, then less and less:* someone is most likely to want ice cream the instant they hear the truck. Their mind may still change after that, but at a decreasing rate; that's been the PO's experience (November 2). Overall, the longer someone hears the truck, the more likely they've come out.
-- *No limit on waiting customers, and no new customers if you stay in one spot long enough:* the PO's rules (November 2). **Why:** _waiting on the PO._
+- *No limit on waiting customers, and no new customers if you stay in one spot long enough:* the PO's rules (November 2). He wants it to feel more realistic: sometimes a bunch of customers are waiting for you, and some leave because you take too long; and the longer you sit in one place, the longer the people around you have to hear the music. Tuning the numbers to match is SCREAM-114.
 - *Music pulled into this work:* the PO's call (November 2); the truck's music is how customers know it's near (his idea on SCREAM-24, October 29). More than one song; no songs with a bad origin.
 
 **Engineering's calls (proposals, not the PO's reasons):**

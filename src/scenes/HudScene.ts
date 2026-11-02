@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { FUEL_LOW, PATIENCE_WARNING_SECONDS } from '../config/tuning';
+import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS } from '../config/tuning';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
@@ -147,6 +147,7 @@ export class HudScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.evening.tick(delta);
+    this.keepNeighbourhoodGoing(delta);
     this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel);
     this.placeDebugText();
     const sale = this.evening.sale;
@@ -154,6 +155,18 @@ export class HudScene extends Phaser.Scene {
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
     this.patienceWarning.setVisible(warn).setX(this.moneyText.x - this.moneyText.width - 30);
     this.drawFuel();
+  }
+
+  /**
+   * SCREAM-114 (PO, November 2): the neighbourhood keeps going while you're off the road
+   * (the window, the cooler, the pump, the truck), so customers waiting at the curb can give
+   * up while you serve someone. The music is off there, so nobody new comes out. On the road,
+   * the driving view does this itself, with the music on; paused, the HUD is paused too.
+   */
+  private keepNeighbourhoodGoing(deltaMs: number): void {
+    if (this.scene.isActive(SceneKeys.Drive) || !this.evening.isClockRunning || this.evening.isOver) return;
+    const truck = this.evening.truck;
+    this.evening.residents.update(Math.min(deltaMs, 100) / 1000, { x: truck.x, y: truck.y, radius: MUSIC_RING_RADIUS, open: false });
   }
 
   /** SCREAM-22: the gauge, while driving or at the pump. Red when low; flashing when empty. */

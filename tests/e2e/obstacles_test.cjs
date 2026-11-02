@@ -30,8 +30,8 @@ const { TRACK } = require('./track.cjs');
   // Keep the customer out of the way of these tests
   // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
   await ev('(e.residents.hearingOff = true, true)');
-  // SCREAM-10: the Worcester map (twice the size) has 14 potholes and 40 parked cars.
-  check('14 potholes and 40 parked cars on the Worcester map', (await drive('s.potholes.length')) + ' ' + (await drive('s.cars.length')), '14 40');
+  // SCREAM-10: the Worcester map (twice the size) has 14 potholes; SCREAM-114 doubled the parked cars to 80.
+  check('14 potholes and 80 parked cars on the Worcester map', (await drive('s.potholes.length')) + ' ' + (await drive('s.cars.length')), '14 80');
   check('...every pothole and parked car on the road', await drive("s.potholes.every(h => s.roads.onRoad(h.x, h.y)) && s.cars.every(c => s.roads.onRoad(c.x, c.y))"), true);
   check('...and no parked car blocks its road (the truck fits past in the other lane)', await drive(`s.cars.every(c => { const r = c.angle * Math.PI / 180; const nx = -Math.sin(r), ny = Math.cos(r); return [1, -1].some(side => { const x = c.x + nx * side * 70, y = c.y + ny * side * 70; return s.roads.onRoad(x, y) && s.obstacleAt(x, y, c.angle) === null; }); })`), true);
   // The hit checks below run on the test track, with a pothole and a parked car at their old spots.
@@ -39,7 +39,7 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Pothole at (20, 2): centre (1230, 150) ----
   let c = await cash();
-  await place(1080, 150, 'right', 433);
+  await place(1080, 150, 'right', 547);
   await page.keyboard.down('ArrowUp');
   for (let i = 0; i < 40 && c === (await cash()); i++) await wait(50);
   await page.keyboard.up('ArrowUp');
@@ -56,29 +56,30 @@ const { TRACK } = require('./track.cjs');
   // A short nudge on: the truck now rolls on (momentum), and a parked car sits 90 px past the pothole
   await hold('ArrowUp', 150);
   check('Driving on off the same pothole: no second charge', c - (await cash()), 0);
-  await place(1080, 150, 'right', 433); await hold('ArrowUp', 700);
+  await place(1080, 150, 'right', 547); await hold('ArrowUp', 700);
   near('Coming back over it later: charged again ($2.50 to $5.00 by speed)', c - (await cash()), 250, 500);
   await wait(800);
 
   // ---- Parked car at (14, 3, down): centre (870, 220), 54 x 32 ----
   c = await cash();
-  await place(700, 220, 'right', 433);
+  await place(700, 220, 'right', 547);
   await hold('ArrowUp', 1200);
   check('Parked car: costs $10.00', c - (await cash()), 1000);
-  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x)'), 820, 828);
+  // SCREAM-114: a longer truck and a shorter car: it stops about 6 px sooner.
+  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x)'), 811, 822);
   await page.screenshot({ path: outDir + '/obstacle_car.png' });
   c = await cash();
   await hold('ArrowUp', 800);
   check('Pushing against it from a standstill: no extra charge', c - (await cash()), 0);
-  await hold('ArrowDown', 900); await place(760, 220, 'right', 433); await hold('ArrowUp', 800);
+  await hold('ArrowDown', 900); await place(760, 220, 'right', 547); await hold('ArrowUp', 800);
   near('Reversing and ramming it again at speed: about another $10', c - (await cash()), 900, 1000);
 
   // ---- Road edge: middle road, drive down into the houses ----
   c = await cash();
-  await place(600, 840, 'down', 433);
+  await place(600, 840, 'down', 547);
   await hold('ArrowUp', 1200);
   near('Road edge: up to $2.00 for the hit (short run-up)', c - (await cash()), 100, 200);
-  near('...and the truck stops at the curb', await drive('Math.round(s.truck.y)'), 878, 884);
+  near('...and the truck stops at the curb (its nose is 6.6 px longer since SCREAM-114)', await drive('Math.round(s.truck.y)'), 870, 878);
   c = await cash();
   await hold('ArrowUp', 800);
   check('Holding the key against the curb: no extra charge', c - (await cash()), 0);
@@ -87,12 +88,12 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Damage is tracked for the results screen ----
   near('Damage total recorded (two potholes + two cars + curb hits)', await ev('e.damageCents'), 2300, 3700);
-  await place(600, 840, 'down', 433); await hold('ArrowUp', 300);
+  await place(600, 840, 'down', 547); await hold('ArrowUp', 300);
   check('Damage shows in the HUD as a red popup', await page.evaluate(() => window.__game.scene.getScene('Hud').children.list.some(o => o.text && /Curb|Parked car|Pothole/.test(o.text))), true);
 
   // ---- Cash can go below zero ----
   await ev('(e.cashCents = 100, e.emit("money-changed", 0, 100, "", false), true)');
-  await place(700, 220, 'right', 433); await hold('ArrowUp', 1200);
+  await place(700, 220, 'right', 547); await hold('ArrowUp', 1200);
   check('Damage can take cash below zero', await cash(), -900);
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);

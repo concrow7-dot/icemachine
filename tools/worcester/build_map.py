@@ -528,11 +528,11 @@ def build(art):
             if not o['key'].startswith(('house', 'villa')) or not overlaps(rect(o), site): continue
             sp = size[o['key']]
             moved = None
-            for along in sorted(range(-900, 901, 20), key=abs):
+            for slide in sorted(range(-900, 901, 20), key=abs):
                 if moved: break
                 for depth in (8, 20, 34, 60):
-                    cx = px + ux * along + nx * (edge + depth + sp['w'] / 2 * abs(nx))
-                    cy = py + uy * along + ny * (edge + depth + sp['h'] / 2 * abs(ny)) + sp['h'] / 2
+                    cx = px + ux * slide + nx * (edge + depth + sp['w'] / 2 * abs(nx))
+                    cy = py + uy * slide + ny * (edge + depth + sp['h'] / 2 * abs(ny)) + sp['h'] / 2
                     rr = (cx - sp['w'] / 2, cy - sp['h'], cx + sp['w'] / 2, cy)
                     if (lawn_ok(rr[0] - 6, rr[1] - 6, rr[2] + 6, rr[3] + 6) and not overlaps(rr, site, 8)
                             and not any(overlaps(rr, rect(q), 8) for k, q in enumerate(objects) if k != j and q['key'].startswith(('house', 'villa')))
@@ -609,6 +609,24 @@ def build(art):
         # Only sprites this script makes; anything else in the folder (the gas pump) stays.
         if f.endswith('.png') and k.startswith(('house', 'villa', 'tree', 'orn_')) and k not in {sp['key'] for sp in sprites_out}:
             os.remove(os.path.join(OUT_ART, f))
+
+    # 10. SCREAM-114 (PO, November 2): more parked cars. Added last, with their own random
+    # numbers, so everything above comes out as before. Along the curbs, away from junctions,
+    # home's start, potholes, the gas stations' bays and the other cars.
+    cr = random.Random(114)
+    EXTRA_CARS = 40
+    keep = [(h['x'], h['y'], 200) for h in holes] + [(home_start['x'], home_start['y'], 260)]
+    keep += [(g['bay']['x'], g['bay']['y'], 220) for g in gas_stations]
+    cands = along(80, 150)
+    cr.shuffle(cands)
+    added_cars = 0
+    for name, p, t in cands:
+        if added_cars >= EXTRA_CARS: break
+        side = cr.choice((1, -1))
+        c = (p[0] - t[1] * side * 40, p[1] + t[0] * side * 40)
+        if any(math.dist(c, (x, y)) < r for x, y, r in keep): continue
+        if any(math.dist(c, (q['x'], q['y'])) < 140 for q in cars): continue
+        cars.append({'x': r1(c[0]), 'y': r1(c[1]), 'angle': angle(t)}); added_cars += 1
 
     # One picture sheet (a texture atlas) for every house, tree and ornament, plus the gas pump:
     # 150-odd separate files made the first drive slow to load (SCREAM-108).
