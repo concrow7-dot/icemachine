@@ -35,9 +35,14 @@ const { TRACK } = require('./track.cjs');
   const blocked = await page.evaluate(() => {
     // Flood fill on a 30 px grid from the start: a point counts if the truck fits there at some angle.
     const s = window.__game.scene.getScene('Drive'); const G = 30;
-    const fits = (x, y) => [0, 45, 90, 135].some(a => s.obstacleAt(x, y, a) === null);
+    // SCREAM-115: every 15 degrees (the 104 px truck doesn't fit a slanted street at only 4 angles),
+    // starting from the grid point nearest the truck that it fits on.
+    const ANGLES = Array.from({ length: 12 }, (_, i) => i * 15);
+    const fits = (x, y) => ANGLES.some(a => s.obstacleAt(x, y, a) === null);
     const key = (c, r) => c * 100000 + r;
-    const seen = new Set(); const q = [[Math.round(s.truck.x / G), Math.round(s.truck.y / G)]];
+    const c0 = Math.round(s.truck.x / G), r0 = Math.round(s.truck.y / G);
+    const start = [[c0, r0], [c0 + 1, r0], [c0 - 1, r0], [c0, r0 + 1], [c0, r0 - 1]].find(([c, r]) => fits(c * G, r * G));
+    const seen = new Set(); const q = [start];
     while (q.length) { const [c, r] = q.pop(); const k = key(c, r); if (seen.has(k) || !fits(c * G, r * G)) continue; seen.add(k); q.push([c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]); }
     let roads = 0, bad = 0; const names = new Set();
     for (let c = 0; c * G < 6400; c++) for (let r = 0; r * G < 5400; r++) {

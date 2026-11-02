@@ -100,7 +100,7 @@ export class HudScene extends Phaser.Scene {
   /**
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
-   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00) and Shift+4 (serve
+   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75) and Shift+4 (serve
    * now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
@@ -125,7 +125,15 @@ export class HudScene extends Phaser.Scene {
       if (event.code === 'Digit2') this.evening.changeMoney(-200, 'Damage');
       if (event.code === 'Digit3') this.evening.endNow();
       if (event.code === 'Digit4') this.serveNow();
+      if (event.code === 'Digit5') this.previewLoading();
     });
+  }
+
+  /** Debug (SCREAM-75): shows the loading screen for 5 seconds, since real loads are usually too quick to see. */
+  private previewLoading(): void {
+    if (this.scene.isActive(SceneKeys.Loading)) return;
+    this.scene.launch(SceneKeys.Loading);
+    this.time.delayedCall(5000, () => this.scene.stop(SceneKeys.Loading));
   }
 
   /** Debug: skip the drive and start a sale right away, with a waiting customer if there is one. */

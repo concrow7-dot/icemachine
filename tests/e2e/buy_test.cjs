@@ -53,6 +53,10 @@ const { chromium } = require('playwright');
   check('The usual note comes back after a moment', await coolerText('note'), 'The clock starts when you leave the cooler. Everything locks when you drive off.');
   check('The clock is still waiting', await ev('e.isClockRunning'), false);
 
+  // --- SCREAM-72: no "$4" warning; a price over $4 just shows its profit ---
+  const hint = await page.evaluate(() => { const s = window.__game.scene.getScene('Cooler'); const keep = s.order.slots[0].priceCents; s.order.slots[0].priceCents = 450; s.refresh(); const t = s.columns[0].margin.text; s.order.slots[0].priceCents = keep; s.refresh(); return t; });
+  check('A price over $4.00: no "customers refuse" warning, just the profit', /refuse/.test(hint) + ' ' + /^profit /.test(hint), 'false true');
+
   // --- Draft can't overspend ---
   await press('+', 15); await press('ArrowRight'); await press('+', 15); await press('ArrowRight'); await press('+', 15);
   check("Draft stops when cash runs out (8 explorers)", await draft(2), 'explorer:8:250');

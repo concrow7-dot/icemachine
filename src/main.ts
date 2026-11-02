@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { HudScene } from './scenes/HudScene';
+import { LoadingScene } from './scenes/LoadingScene';
 import { PauseScene } from './scenes/PauseScene';
 import { CoolerScene } from './scenes/CoolerScene';
 import { PumpScene } from './scenes/PumpScene';
@@ -23,6 +24,9 @@ const config: Phaser.Types.Core.GameConfig = {
   // Phaser 4 changed this default to false. Revisit when the art style is
   // chosen: pixel art usually needs true to keep sprites crisp.
   roundPixels: false,
+  // SCREAM-115: one texture per draw batch. With several, the tilted truck picture
+  // drew with a chunk missing (the map showed through) in the test browser.
+  render: { maxTextures: 1 },
   physics: {
     default: 'arcade',
     arcade: { debug: false },
@@ -46,6 +50,8 @@ const config: Phaser.Types.Core.GameConfig = {
     StoryIntroScene,
     HudScene,
     PauseScene,
+    // SCREAM-75: listed last, so it draws over everything while a scene loads.
+    LoadingScene,
   ],
 };
 

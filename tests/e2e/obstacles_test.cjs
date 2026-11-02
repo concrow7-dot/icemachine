@@ -65,21 +65,22 @@ const { TRACK } = require('./track.cjs');
   await place(700, 220, 'right', 547);
   await hold('ArrowUp', 1200);
   check('Parked car: costs $10.00', c - (await cash()), 1000);
-  // SCREAM-114: a longer truck and a shorter car: it stops about 6 px sooner.
-  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x)'), 811, 822);
+  // Its nose stops at the car's back (x about 848), whatever the truck's length (SCREAM-115).
+  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x + s.truckHalf.length)'), 838, 850);
   await page.screenshot({ path: outDir + '/obstacle_car.png' });
   c = await cash();
   await hold('ArrowUp', 800);
   check('Pushing against it from a standstill: no extra charge', c - (await cash()), 0);
-  await hold('ArrowDown', 900); await place(760, 220, 'right', 547); await hold('ArrowUp', 800);
+  await hold('ArrowDown', 900); await place(700, 220, 'right', 547); await hold('ArrowUp', 800);
   near('Reversing and ramming it again at speed: about another $10', c - (await cash()), 900, 1000);
 
   // ---- Road edge: middle road, drive down into the houses ----
   c = await cash();
-  await place(600, 840, 'down', 547);
+  // SCREAM-115: starts with its nose about 30 px from the curb (y = 900), whatever the truck's length.
+  await place(600, Math.round(870 - (await drive('s.truckHalf.length'))), 'down', 547);
   await hold('ArrowUp', 1200);
   near('Road edge: up to $2.00 for the hit (short run-up)', c - (await cash()), 100, 200);
-  near('...and the truck stops at the curb (its nose is 6.6 px longer since SCREAM-114)', await drive('Math.round(s.truck.y)'), 870, 878);
+  near('...and the truck stops with its nose at the curb (y about 900)', await drive('Math.round(s.truck.y + s.truckHalf.length)'), 894, 902);
   c = await cash();
   await hold('ArrowUp', 800);
   check('Holding the key against the curb: no extra charge', c - (await cash()), 0);
@@ -88,7 +89,7 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Damage is tracked for the results screen ----
   near('Damage total recorded (two potholes + two cars + curb hits)', await ev('e.damageCents'), 2300, 3700);
-  await place(600, 840, 'down', 547); await hold('ArrowUp', 300);
+  await place(600, Math.round(870 - (await drive('s.truckHalf.length'))), 'down', 547); await hold('ArrowUp', 300);
   check('Damage shows in the HUD as a red popup', await page.evaluate(() => window.__game.scene.getScene('Hud').children.list.some(o => o.text && /Curb|Parked car|Pothole/.test(o.text))), true);
 
   // ---- Cash can go below zero ----

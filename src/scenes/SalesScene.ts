@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { showLoadingWhileLoading } from './LoadingScene';
 import { getFlavour } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -51,6 +52,7 @@ export class SalesScene extends Phaser.Scene {
 
   preload(): void {
     loadResidentSheet(this);
+    showLoadingWhileLoading(this); // SCREAM-75
   }
 
   create(): void {

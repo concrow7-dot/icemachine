@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
+import { largestSaleLine, offerLargestSale } from '../state/Records';
 import { BIKE_PRICE_CENTS } from '../config/tuning';
 
 // SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
@@ -62,6 +63,13 @@ export class DayEndScene extends Phaser.Scene {
     this.add
       .text(420, 354, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
+
+    // SCREAM-93: tonight's largest sale (price plus tip), against Story's record.
+    const largest = evening.largestSaleCents;
+    const record = offerLargestSale('story', largest);
+    this.add
+      .text(110, 410, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
+      .setName('largest-sale');
 
     // ---- The wallet and the cooler ----
     this.add.text(540, 130, 'WALLET', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });

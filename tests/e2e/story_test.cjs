@@ -77,6 +77,7 @@ const { chromium } = require('playwright');
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
   check('...and Enter starts day 2', /Enter: start day 2/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
+  check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
   check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0');
   await page.screenshot({ path: outDir + '/story_day_end.png' });

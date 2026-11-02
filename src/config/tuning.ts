@@ -231,8 +231,28 @@ export const FUEL_LOW = 0.15;
 
 // ---- Sizes and view (SCREAM-114 / SCREAM-97, PO November 2) ----
 
-/** PO: a bigger truck. Engineering's starting point: 1.3x (46 x 28 px became 60 x 36). Lanes stay 60 px. */
-export const TRUCK_SCALE = 1.3;
+/**
+ * The truck's bump box (what hits parked cars and the road edge), in px.
+ * SCREAM-114: was 46 x 28 scaled 1.3x (60 x 36). SCREAM-115 (PO, November 2): the
+ * LimeZu truck at the pack's own size, with the box grown to match the picture.
+ * Lanes stay 60 px.
+ */
+export const TRUCK_LENGTH = 104;
+export const TRUCK_WIDTH = 42;
+
+/** SCREAM-115: how big the truck's LimeZu picture is drawn. 1 is the pack's own size (109 px long), like the map's houses and trees. */
+export const TRUCK_LOOK_SCALE = 1;
+
+/**
+ * SCREAM-115: the pink pickup squares at the curb and the pump bays grow with the
+ * truck, so "half the truck in the square" (SCREAM-16) still works: along the road
+ * by the same ratio as the truck's length, across it by its width. Engineering's numbers.
+ */
+export const PICKUP_ZONE_LENGTH = 86;
+export const PICKUP_ZONE_WIDTH = 58;
+
+/** SCREAM-115: tilt the truck's picture to match the truck's exact heading (false: no tilt). */
+export const TRUCK_LOOK_TILT = true;
 
 /** PO: smaller parked cars. Engineering's starting point: 0.8x (54 x 32 px became 43 x 26). */
 export const PARKED_CAR_SCALE = 0.8;

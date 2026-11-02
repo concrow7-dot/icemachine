@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
+import { largestSaleLine, largestSaleRecord, offerLargestSale } from '../state/Records';
 import type { RunTotals } from '../state/StoryRun';
 import { driveLaps } from '../ui/truckLaps';
 
@@ -87,6 +88,12 @@ export class ResultsScene extends Phaser.Scene {
       .text(420, 334, formatMoney(this.profit), { fontFamily: MONO, fontSize: '36px', color: this.profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
     this.add.text(110, 392, `Cash on hand: ${formatMoney(evening.moneyCents)}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    // SCREAM-93: tonight's largest sale (price plus tip), against Quick play's record.
+    const largest = evening.largestSaleCents;
+    const record = offerLargestSale('quick', largest);
+    this.add
+      .text(110, 420, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
+      .setName('largest-sale');
   }
 
   /** SCREAM-18: the end of a Story run. The whole run's takings; the score is the cash at the end. */
@@ -117,6 +124,17 @@ export class ResultsScene extends Phaser.Scene {
     this.add
       .text(420, 334, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
+    // SCREAM-93: the run's largest sale. Each day's was offered to Story's record at the end of
+    // that day, so the run holds the record if it matches it.
+    const record = largestSaleRecord('story');
+    const holds = t.largestSaleCents > 0 && t.largestSaleCents >= record;
+    this.add
+      .text(110, 436, largestSaleLine(t.largestSaleCents, { before: record, isNew: holds }, formatMoney), {
+        fontFamily: MONO,
+        fontSize: '18px',
+        color: holds ? '#ffe066' : '#8a9bb3',
+      })
+      .setName('largest-sale');
     // SCREAM-94 (PO, November 2): "New Bike!!!!" with a victory lap, or "Maybe Next Summer" and an F stamp.
     if (bike) {
       this.add.text(110, 388, 'New Bike!!!!', { fontFamily: MONO, fontSize: '26px', color: '#ffe066' }).setName('bike-line');
