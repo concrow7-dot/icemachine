@@ -22,6 +22,9 @@ export class PumpScene extends Phaser.Scene {
   private addsText!: Phaser.GameObjects.Text;
   private noteText!: Phaser.GameObjects.Text;
   private payButton!: Phaser.GameObjects.Text;
+  /** SCREAM-112: click to change the amount by $5. */
+  private lessButton!: Phaser.GameObjects.Text;
+  private moreButton!: Phaser.GameObjects.Text;
   private gauge!: Phaser.GameObjects.Graphics;
 
   constructor() {
@@ -61,7 +64,14 @@ export class PumpScene extends Phaser.Scene {
     this.amountText = this.add.text(330, 296, '', { fontFamily: 'monospace', fontSize: '44px', color: INK, fontStyle: 'bold' });
     this.addsText = this.add.text(560, 312, '', { fontFamily: 'monospace', fontSize: '22px', color: '#2e7d32' });
     this.noteText = this.add.text(330, 362, '', { fontFamily: 'monospace', fontSize: '18px', color: '#8a6a4a' });
-    this.add.text(330, 398, '↑ ↓  $5 more or less', { fontFamily: 'monospace', fontSize: '16px', color: INK });
+    // SCREAM-112 (PO, November 2): the mouse works too. Click to change the amount by $5
+    // (the up and down arrow keys still do the same), or scroll the mouse wheel.
+    this.lessButton = this.stepButton(330, '▼  $5 less', -FUEL_STEP_CENTS);
+    this.moreButton = this.stepButton(490, '▲  $5 more', FUEL_STEP_CENTS);
+    this.add.text(650, 401, 'or ↑ ↓ / mouse wheel', { fontFamily: 'monospace', fontSize: '14px', color: '#8a6a4a' });
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+      if (dy !== 0) this.change(dy < 0 ? FUEL_STEP_CENTS : -FUEL_STEP_CENTS);
+    });
 
     this.payButton = this.button(470, 478, '', '#2e7d32', () => this.pay());
     this.button(760, 478, 'DRIVE OFF', '#1d5c8c', () => this.leave());
@@ -89,6 +99,14 @@ export class PumpScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', onClick);
+  }
+
+  /** A small button that changes the amount by `cents` when clicked. */
+  private stepButton(x: number, label: string, cents: number): Phaser.GameObjects.Text {
+    return this.add
+      .text(x, 398, label, { fontFamily: 'monospace', fontSize: '16px', color: '#ffffff', backgroundColor: '#5a4636', padding: { x: 10, y: 6 } })
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.change(cents));
   }
 
   private change(cents: number): void {
@@ -127,6 +145,9 @@ export class PumpScene extends Phaser.Scene {
               : 'As much as fits (the next $5 would overflow).',
     );
     this.payButton.setText(`PAY ${formatMoney(this.amount)}`).setVisible(this.amount > 0);
+    // Faded when there's no further to go that way.
+    this.lessButton.setAlpha(this.amount > 0 ? 1 : 0.35);
+    this.moreButton.setAlpha(this.amount < max ? 1 : 0.35);
 
     // The gauge: what's in the tank now, and (lighter) what this would add.
     const g = this.gauge.clear();
