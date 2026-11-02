@@ -96,12 +96,14 @@ const { TRACK } = require('./track.cjs');
 
   // Map edge: along the middle road to the far-left road, then up its open lane to the top road
   await aim(450, 840, 180); await driveUntilStop('ArrowUp');
-  near('Left edge stops the truck at its nose (x about 142)', (await truck()).x, 140, 146);
+  // SCREAM-114: the truck is 1.3x bigger, so its nose (28.6 px ahead of its middle) stops it 6.6 px later.
+  near('Left edge stops the truck at its nose (x about 149)', (await truck()).x, 146, 152);
   check('No pointer arrow (SCREAM-68)', await page.evaluate(() => window.__game.scene.getScene('Drive').pointer), undefined);
   await aim(210, 840, -90); await driveUntilStop('ArrowUp');
-  near('Top edge stops the truck at its nose (y about 142)', (await truck()).y, 140, 146);
-  const camScroll = await page.evaluate(() => window.__game.scene.getScene('Drive').cameras.main.scrollY);
-  check('Camera follows to the top of the map', Math.round(camScroll), 0);
+  near('Top edge stops the truck at its nose (y about 149)', (await truck()).y, 146, 152);
+  // SCREAM-114: zoomed in, the top of what's shown (worldView) is the map's top edge.
+  const camTop = await page.evaluate(() => window.__game.scene.getScene('Drive').cameras.main.worldView.y);
+  check('Camera follows to the top of the map', Math.round(camTop), 0);
 
   // Pull into the customer's pickup zone
   const clockBefore = await ev('e.clockMinutes');

@@ -35,7 +35,6 @@ const { TRACK } = require('./track.cjs');
   // A frame loop that can hold the speed steady (keep = px/s) to measure turns cleanly.
   const run = (setup, frames, keep) => drive(`(() => { ${keep !== undefined ? 's.parkBrake = false;' : ''} ${setup}; const out = []; for (let i = 0; i < ${frames}; i++) { ${keep !== undefined ? `s.speed = ${keep};` : ''} s.update(0, 16); out.push([Math.round(s.truck.x), Math.round(s.truck.y), Math.round(s.heading), Math.round(s.speed)]); } return out; })()`);
   const sim = (setup, frames) => run(setup, frames);
-  const startDamage = await ev('e.damageCents');
 
   // ---- Momentum: let go of the gas and the truck rolls ----
   let r = await sim("s.truck.setPosition(400, 180); s.setHeading(0); s.speed = 433; s.parkBrake = false; s.held = []", 40);
@@ -91,11 +90,23 @@ const { TRACK } = require('./track.cjs');
   r = await run("s.truck.setPosition(400, 180); s.setHeading(0); s.held = ['left']", 5, 300);
   near('Left turns the other way (anticlockwise)', r.at(-1)[2], -18, -13);
 
-  // ---- A U-turn like a car, across the two-lane middle road ----
+  const [T1, T2, T3] = [22, 20, 50]; // frames of 16 ms for each leg of the three-point turn
+  // ---- Turning round on a two-lane street ----
+  // SCREAM-114 (PO, November 2): the truck is 1.3x bigger, so like a real truck it can't
+  // U-turn in one sweep any more: full lock stops short, facing the curb. A three-point
+  // turn (forward with right, back with left, forward with right) gets it round.
   r = await run("s.truck.setPosition(450, 800); s.setHeading(0); s.held = ['right']", 60, 150);
-  near('Slow U-turn: facing back the way it came (|heading|)', Math.abs(r.at(-1)[2]), 170, 180);
-  near('...in a half circle into the other lane (moved down px)', r.at(-1)[1] - 800, 70, 90);
-  check('...without hitting anything', (await ev('e.damageCents')) - startDamage, 0);
+  near('Full lock on a two-lane street: stops short of turning round (|heading|)', Math.abs(r.at(-1)[2]), 120, 165);
+  const turnDamage = await ev('e.damageCents');
+  const turn3 = await drive(`(() => {
+    s.parkBrake = false; s.truck.setPosition(450, 800); s.setHeading(0);
+    const leg = (held, speed, frames) => { s.held = held; for (let i = 0; i < frames; i++) { s.speed = speed; s.update(0, 16); } };
+    leg(['right'], 150, ${T1}); leg(['left'], -100, ${T2}); leg(['right'], 150, ${T3});
+    return [Math.round(Math.abs(s.heading)), Math.round(s.truck.y)];
+  })()`);
+  near('A three-point turn gets it round (|heading|)', turn3[0], 165, 180);
+  near('...into the other lane (y)', turn3[1], 850, 900);
+  check('...without hitting anything', (await ev('e.damageCents')) - turnDamage, 0);
 
   // ---- Turns get wider at speed ----
   const radiusAt = async (speed) => drive(`(() => { s.parkBrake = false; s.truck.setPosition(1200, 840); s.setHeading(0); s.held = ['right']; let path = 0; for (let i = 0; i < 10; i++) { s.speed = ${speed}; const x = s.truck.x, y = s.truck.y; s.update(0, 16); path += Math.hypot(s.truck.x - x, s.truck.y - y); } return Math.round(path / (s.heading * Math.PI / 180)); })()`);
@@ -110,7 +121,8 @@ const { TRACK } = require('./track.cjs');
 
   // ---- Glancing off the curb slides along it ----
   const before = await ev('e.damageCents');
-  r = await run("s.truck.setPosition(600, 878); s.setHeading(20); s.held = ['up']", 15, 200);
+  // SCREAM-114: 4 px further from the curb than before, as the bigger truck is 4 px wider each side.
+  r = await run("s.truck.setPosition(600, 874); s.setHeading(20); s.held = ['up']", 15, 200);
   check('Shallow angle into the curb: slides along it, no charge', ((await ev('e.damageCents')) - before) + ' ' + (r.at(-1)[0] - 600 > 40), '0 true');
 
   // ---- Passing a parked car (PO screenshot, PR #58) ----
@@ -119,7 +131,7 @@ const { TRACK } = require('./track.cjs');
     const k = s.cars[0];
     const c = { left: k.x - k.halfWidth, right: k.x + k.halfWidth, top: k.y - k.halfLength, bottom: k.y + k.halfLength };
     const before = e.damageCents;
-    const clearX = c.right + 15;
+    const clearX = c.right + s.truckHalf.width + 2; // just clear of it, whatever the truck's size (SCREAM-114)
     const clearNow = s.obstacleAt(clearX, (c.top + c.bottom) / 2, 90) === null;
     s.truck.setPosition(clearX + 1, c.top + 8); s.setHeading(97); s.held = ['up']; s.parkBrake = false;
     for (let i = 0; i < 90; i++) { s.speed = 120; s.update(0, 16); }

@@ -30,8 +30,8 @@ const { TRACK } = require('./track.cjs');
   // Keep the customer out of the way of these tests
   // Nobody wants ice cream during these checks, so driving never starts a sale (SCREAM-67)
   await ev('(e.residents.hearingOff = true, true)');
-  // SCREAM-10: the Worcester map (twice the size) has 14 potholes and 40 parked cars.
-  check('14 potholes and 40 parked cars on the Worcester map', (await drive('s.potholes.length')) + ' ' + (await drive('s.cars.length')), '14 40');
+  // SCREAM-10: the Worcester map (twice the size) has 14 potholes; SCREAM-114 doubled the parked cars to 80.
+  check('14 potholes and 80 parked cars on the Worcester map', (await drive('s.potholes.length')) + ' ' + (await drive('s.cars.length')), '14 80');
   check('...every pothole and parked car on the road', await drive("s.potholes.every(h => s.roads.onRoad(h.x, h.y)) && s.cars.every(c => s.roads.onRoad(c.x, c.y))"), true);
   check('...and no parked car blocks its road (the truck fits past in the other lane)', await drive(`s.cars.every(c => { const r = c.angle * Math.PI / 180; const nx = -Math.sin(r), ny = Math.cos(r); return [1, -1].some(side => { const x = c.x + nx * side * 70, y = c.y + ny * side * 70; return s.roads.onRoad(x, y) && s.obstacleAt(x, y, c.angle) === null; }); })`), true);
   // The hit checks below run on the test track, with a pothole and a parked car at their old spots.
@@ -65,7 +65,8 @@ const { TRACK } = require('./track.cjs');
   await place(700, 220, 'right', 433);
   await hold('ArrowUp', 1200);
   check('Parked car: costs $10.00', c - (await cash()), 1000);
-  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x)'), 820, 828);
+  // SCREAM-114: a longer truck and a shorter car: it stops about 6 px sooner.
+  near('...and the truck stops in front of it (can\'t pass)', await drive('Math.round(s.truck.x)'), 811, 822);
   await page.screenshot({ path: outDir + '/obstacle_car.png' });
   c = await cash();
   await hold('ArrowUp', 800);
@@ -78,7 +79,7 @@ const { TRACK } = require('./track.cjs');
   await place(600, 840, 'down', 433);
   await hold('ArrowUp', 1200);
   near('Road edge: up to $2.00 for the hit (short run-up)', c - (await cash()), 100, 200);
-  near('...and the truck stops at the curb', await drive('Math.round(s.truck.y)'), 878, 884);
+  near('...and the truck stops at the curb (its nose is 6.6 px longer since SCREAM-114)', await drive('Math.round(s.truck.y)'), 870, 878);
   c = await cash();
   await hold('ArrowUp', 800);
   check('Holding the key against the curb: no extra charge', c - (await cash()), 0);

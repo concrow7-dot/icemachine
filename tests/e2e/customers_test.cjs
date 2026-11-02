@@ -139,6 +139,16 @@ const { chromium } = require('playwright');
   check('...and is still the same person (pixel centres match the map frame)', same, 0);
   await page.screenshot({ path: outDir + '/customer_name.png' });
   check('...and they are off the map while at the window', await ev(`e.residents.all[${idx}].outside`), false);
+  // SCREAM-114: while you serve, other customers waiting at the curb keep counting down and can give up.
+  const other = await ev(`(() => { const p = e.residents.all.find((q, i) => i !== ${idx} && q.customer === 'none'); e.residents.callNow(p); return e.residents.all.indexOf(p); })()`);
+  const w0 = await ev(`e.residents.all[${other}].waitLeft`); await wait(1500);
+  const w1 = await ev(`e.residents.all[${other}].waitLeft`);
+  check('At the window, another waiting customer keeps counting down (SCREAM-114)', w1 < w0 - 0.8, true);
+  check('...and nobody new comes out while the music is off', await ev(`e.residents.all.filter(p => p.customer === 'running').length`), 0);
+  await press('Escape'); await wait(200);
+  const w2 = await ev(`e.residents.all[${other}].waitLeft`); await wait(1000);
+  check('...but paused, their wait stops too', await ev(`e.residents.all[${other}].waitLeft`), w2);
+  await press('Escape'); await wait(200);
 
   // Drive off without serving: they walk home; no second sale from them tonight
   await wait(400); await press('b'); await wait(400);

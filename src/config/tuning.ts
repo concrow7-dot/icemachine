@@ -198,10 +198,11 @@ export const FUEL_STEP_CENTS = 500;
 /**
  * How far a full tank goes, in px of driving. PO: a full evening of driving uses
  * about 2/3 of a tank. Engineering's guess at "a full evening": moving 60% of the
- * 300 s evening at top speed (433 px/s) is about 78,000 px, which is 2/3 of this.
- * Tune after playing.
+ * 300 s evening at top speed (433 px/s) is about 78,000 px. It was 117,000 (2/3 of a
+ * tank); SCREAM-114 (PO, November 2): gas should burn quicker, so now a full evening
+ * of driving uses about a full tank (1.5x as fast). Tune after playing.
  */
-export const FUEL_TANK_PX = 117000;
+export const FUEL_TANK_PX = 78000;
 
 /** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
 export const FUEL_STORY_START = 0.25;
@@ -214,3 +215,14 @@ export const FUEL_EMPTY_SPEED_FRACTION = 0.25;
 
 /** The HUD's gauge turns red at or below this much of a tank. */
 export const FUEL_LOW = 0.15;
+
+// ---- Sizes and view (SCREAM-114 / SCREAM-97, PO November 2) ----
+
+/** PO: a bigger truck. Engineering's starting point: 1.3x (46 x 28 px became 60 x 36). Lanes stay 60 px. */
+export const TRUCK_SCALE = 1.3;
+
+/** PO: smaller parked cars. Engineering's starting point: 0.8x (54 x 32 px became 43 x 26). */
+export const PARKED_CAR_SCALE = 0.8;
+
+/** PO: zoom in slightly while driving, so you see closer to the street. 1 is the old view. */
+export const DRIVE_CAMERA_ZOOM = 1.2;

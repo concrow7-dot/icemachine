@@ -48,7 +48,7 @@ const { chromium } = require('playwright');
   const used = before - (await ev('e.fuel'));
   const straight = Math.hypot(end[0] - start[0], end[1] - start[1]);
   check('Driving uses gas', used > 0, true);
-  near('...about 1 tank per 117,000 px (used x 117,000 / straight-line px)', Math.round((used * 117000 / straight) * 100) / 100, 0.99, 1.6);
+  near('...about 1 tank per 78,000 px (used x 78,000 / straight-line px)', Math.round((used * 78000 / straight) * 100) / 100, 0.99, 1.6);
   check('Parked, no gas is used', await (async () => { await drive('(s.speed = 0, s.parkBrake = true, true)'); const a = await ev('e.fuel'); await wait(500); return a === (await ev('e.fuel')); })(), true);
 
   // ---- An empty tank: a quarter speed ----
@@ -143,9 +143,9 @@ const { chromium } = require('playwright');
   check("Full tank at the pump: says the tank's full", /tank's full/.test(await texts('Pump')), true);
   await press('Enter'); await wait(300);
   check('Enter with nothing to buy just drives off', await scenes(), 'Drive,Hud');
-  await ev('(e.burnFuel(117000 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
+  await ev('(e.burnFuel(78000 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
   check('$12 and a quarter tank: only whole $5 steps the wallet covers ($10)', await ev('e.maxGasCents'), 1000);
-  await ev('(e.burnFuel(117000 * 0.1), true)');
+  await ev('(e.burnFuel(78000 * 0.1), true)');
   check('A tank a step short of full in steps: 0.15 tank, room for $25', await ev('(e.changeMoney(5000, "test", false), e.maxGasCents)'), 2500);
   await ev('(e.changeMoney(-e.moneyCents + 300, "test", false), true)');
   await awayFromBay(); await wait(200); await intoBay();
