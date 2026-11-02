@@ -87,6 +87,25 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/residents.png' });
 
   // The same people carry on after a trip back into the truck
+  // SCREAM-104: front to back, not through trees and houses
+  check('No door or yard spot is on a tree trunk or inside a house', await drive(`s.evening.residents.all.every(p => {
+    const r = p.resident; const pts = [r.door, ...Array.from({ length: r.yard.length / 2 }, (_, i) => [r.yard[i * 2], r.yard[i * 2 + 1]])];
+    return pts.every(([x, y]) => s.map.objects.every(o => { const z = s.map.sprites.find(q => q.key === o.key);
+      if (o.key.startsWith('tree')) return !(Math.abs(x - o.x) < 11 && y > o.y - 14 && y < o.y + 4);
+      return !(x > o.x - z.w / 2 && x < o.x + z.w / 2 && y > o.y - z.h && y < o.y); }));
+  })`), true);
+  // Stand someone just behind a tree, then just in front of it
+  const tree = await drive(`(() => { const t = s.map.objects.find(o => o.key.startsWith('tree') && Math.hypot(o.x - s.truck.x, o.y - s.truck.y) < 250); return t ? [t.x, t.y, s.map.objects.indexOf(t)] : null; })()`);
+  if (tree) {
+    const place = (y) => ev(`(p => { p.outside = true; p.walking = false; p.x = ${tree[0]}; p.y = ${y}; p.plan = { kind: 'idle', until: 1e9 }; })(e.residents.all[${idx}])`);
+    await place(tree[1] - 8); await wait(300);
+    check('Behind a tree: the tree is drawn over the person', await drive(`(o => !!o && o.visible && o.depth > s.residentSprites[${idx}].depth)(s.occluders.get(${tree[2]}))`), true);
+    await page.screenshot({ path: outDir + '/resident_behind_tree.png' });
+    await place(tree[1] + 8); await wait(300);
+    check('In front of the tree: the person is drawn over it', await drive(`(o => !o || !o.visible)(s.occluders.get(${tree[2]}))`), true);
+  } else check('A tree near the truck to test with', false, true);
+  check('Residents lower on screen are drawn in front', await drive('(() => { const v = s.residentSprites.filter(x => x.visible); return v.every(a => v.every(b => a.y <= b.y || a.depth > b.depth)); })()'), true);
+
   await ev('(window.__residentsBefore = e.residents, true)');
   await drive("s.scene.start('Truck', { station: 'driver' })"); await wait(300);
   check('Residents belong to the evening (same people after leaving the road)', await ev('e.residents === window.__residentsBefore'), true);

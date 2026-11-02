@@ -226,16 +226,21 @@ def yard(m, segs, house, others, rnd):
     near_segs = [sg for sg in segs if min(sg[1], sg[3]) - 400 < x < max(sg[1], sg[3]) + 400
                  and min(sg[2], sg[4]) - 400 < y < max(sg[2], sg[4]) + 400]
     near_houses = [o for o in others if abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
+    near_trees = [o for o in m['objects'] if o['key'].startswith('tree') and abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
 
     def feet_ok(px, py):
-        """A spot a person can stand on: off every road and sidewalk, and not on a house.
-        Standing just in front of a house's wall is fine (people are drawn over the map)."""
+        """A spot a person can stand on: off every road and sidewalk, not on a house, not on a
+        tree trunk. Standing in front of or behind a house or tree is fine: the game draws
+        front to back (SCREAM-104)."""
         if not (8 < px < m['width'] - 8 and 32 < py < m['height'] - 4):
             return False
         if any(seg_dist(px, py, *sg[1:])[0] < EDGE + 4 for sg in near_segs):
             return False
-        return not any(o['x'] - o['w'] / 2 - 6 < px < o['x'] + o['w'] / 2 + 6 and o['y'] - o['h'] - 2 < py < o['y'] + 3
-                       for o in near_houses)
+        if any(o['x'] - o['w'] / 2 - 6 < px < o['x'] + o['w'] / 2 + 6 and o['y'] - o['h'] - 2 < py < o['y'] + 3
+               for o in near_houses):
+            return False
+        # Off tree trunks: people walk behind or in front of a tree, not through its trunk.
+        return not any(abs(px - t['x']) < 11 and t['y'] - 14 < py < t['y'] + 4 for t in near_trees)
 
     def clear(a, b):
         """A straight walk from a to b that never crosses a house or a road."""
@@ -270,6 +275,10 @@ def build(folder):
     houses = houses_of(m)
     people = read_csv()
     rnd = random.Random(73)
+    # Everything people must not walk through: the residents' houses and the player's home.
+    sizes = {sp['key']: sp for sp in m['sprites']}
+    blocks = houses + ([{'x': m['home']['x'], 'y': m['home']['y'], 'w': sizes[m['home']['key']]['w'],
+                         'h': sizes[m['home']['key']]['h']}] if m['home'] else [])
     # One image of every look in use.
     looks = sorted({(p['look'], p['kid']) for p in people})
     index = {k: i for i, k in enumerate(looks)}
@@ -286,7 +295,7 @@ def build(folder):
         if not 1 <= p['house'] <= len(houses):
             sys.exit(f'{p["id"]}: House must be from 1 to {len(houses)}')
         h = houses[p['house'] - 1]
-        door, pts = yard(m, segs, h, houses, rnd)
+        door, pts = yard(m, segs, h, blocks, rnd)
         out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(segs, h),
                     'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
                     'door': door, 'yard': pts})
