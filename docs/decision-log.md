@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 024 — Music at the counter; customers come out while you serve, and wait twice as long (2026-11-02)
+
+**Decision (Jira SCREAM-118, from Tom Cobb's round 2 playtest):**
+- The truck's music keeps playing off the road once the truck has been out (the window, filling the order, the hub, the pump); M and N work there too. It stops while paused.
+- While you serve someone (from the window opening until the sale ends), people in the music ring can still hear it and come out wanting ice cream. This changes decision 019, where nobody new came out off the road. At the hub and the pump, still nobody new comes out.
+- While you serve someone, customers waiting at the curb are willing to wait twice as long: their 30 seconds run at half speed (`SERVING_PATIENCE` in tuning.ts).
+
+**Options considered:** music only for mood (nobody new comes out while serving, engineering's first proposal) or the ring stays live while serving.
+
+**Why (product owner's rationale):** to keep the game true to the PO's own ice cream truck experience: customers were actually more likely to come when the truck was stopped.
+
+**Engineering's calls (proposals, not the PO's reasons):** "serving" covers the window and filling the order at the cooler; the countdown runs at half speed rather than giving new arrivals 60 seconds; the music also plays at the pump.
+
+**Revisit if:** serving feels too hectic (too many arrivals) or too easy (nobody gives up), or if "more customers when stopped" should also apply when parked on the road.
+
 ## 023 — On-screen text style (2026-11-02)
 
 **Decision (Jira SCREAM-96, PO's picks in sheet 16):**

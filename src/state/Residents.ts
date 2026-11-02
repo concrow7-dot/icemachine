@@ -79,6 +79,11 @@ export interface Ring {
   radius: number;
   /** False when nobody new should come out: sold out, after 8 PM, or the evening is over. */
   open: boolean;
+  /**
+   * SCREAM-118: how many times longer waiting customers are willing to wait right now
+   * (2 while you serve someone at the window). Leave out for normal waiting.
+   */
+  patience?: number;
 }
 
 type Then = 'idle' | 'inside' | 'curb';
@@ -170,6 +175,11 @@ export class Residents {
     while (this.sinceRoll >= 1) {
       this.sinceRoll -= 1;
       this.rollChances(ring);
+    }
+    // SCREAM-118: while you serve someone, the others at the curb wait longer (their time runs slower).
+    const patience = ring?.patience ?? 1;
+    if (patience > 1) {
+      for (const p of this.people) if (p.customer === 'waiting') p.waitUntil += dt * (1 - 1 / patience);
     }
     for (const p of this.people) this.step(p, dt);
   }
