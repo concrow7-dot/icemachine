@@ -34,6 +34,7 @@ const { chromium } = require('playwright');
   await ev("(e.takeDamage(500, 'Pothole'), true)");
   await shift(3);
   check('Evening over: results screen', await scenes(), 'Results');
+  check('Results sit over the truck interior picture (SCREAM-123)', await page.evaluate(() => window.__game.scene.getScene('Results').children.list.some(o => o.texture && o.texture.key === 'truck-interior')), true);
   check('Breakdown: sales $2.00, tips $0.40, stock $2.00, damage $5.00',
     JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500 }));
   check("Tonight's profit = sales + tips - stock - damage (-$4.60)", await ev('e.profitCents'), -460);

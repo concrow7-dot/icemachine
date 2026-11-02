@@ -4,6 +4,8 @@ import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
 import { largestSaleLine, offerLargestSale } from '../state/Records';
 import { BIKE_PRICE_CENTS } from '../config/tuning';
+import { addTruckBackdrop, DUSK_SHADE, loadTruckInterior } from '../ui/truckInterior';
+import { showLoadingWhileLoading } from './LoadingScene';
 
 // SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
 // takings and what you carry into tomorrow: the wallet and the ice cream left
@@ -22,7 +24,14 @@ export class DayEndScene extends Phaser.Scene {
     super(SceneKeys.DayEnd);
   }
 
+  preload(): void {
+    loadTruckInterior(this);
+    showLoadingWhileLoading(this); // SCREAM-75
+  }
+
   create(): void {
+    // SCREAM-123: the sun has set: the inside of the truck under a dusk-blue layer.
+    addTruckBackdrop(this, DUSK_SHADE);
     const { width, height } = this.scale;
     const evening = getEvening(this);
     const story = getStory(this);

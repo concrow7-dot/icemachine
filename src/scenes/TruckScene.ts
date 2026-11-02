@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { getEvening, pauseEvening, SceneKeys, type Station } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
+import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 
 // Issue #7: the truck interior hub, like the Backyard Baseball treehouse.
 // SCREAM-57: the PO's coloured drawing of the inside of the truck (from his pen
@@ -10,8 +11,6 @@ import { showLoadingWhileLoading } from './LoadingScene';
 // driving, the menu board opens the menu, and the serving window opens a sale
 // (only while one is going on). Arrow keys move between them in screen order.
 
-const INTERIOR_KEY = 'truck-interior';
-const INTERIOR_URL = 'assets/interior/truck-interior.png';
 
 const HIGHLIGHT = 0xffe066;
 const OUTLINE = 0x3b2a1a;
@@ -68,7 +67,7 @@ export class TruckScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (!this.textures.exists(INTERIOR_KEY)) this.load.image(INTERIOR_KEY, INTERIOR_URL);
+    loadTruckInterior(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
 

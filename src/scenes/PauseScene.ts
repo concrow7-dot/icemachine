@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser';
 import { clearStory, EVENING_SCENES, getStory, restartEvening, SceneKeys } from '../flow';
+import { addTruckBackdrop, loadTruckInterior, PAUSE_SHADE } from '../ui/truckInterior';
+import { showLoadingWhileLoading } from './LoadingScene';
 
 // Issue #19 (PO decisions in doc 10, Q7-Q9): Esc pauses the evening on any
 // screen except results. The clock, the truck and every timer stop while the
@@ -36,6 +38,11 @@ export class PauseScene extends Phaser.Scene {
     super(SceneKeys.Pause);
   }
 
+  preload(): void {
+    loadTruckInterior(this);
+    showLoadingWhileLoading(this); // SCREAM-75
+  }
+
   create(data: { paused?: string[] }): void {
     this.paused = data.paused ?? [];
     this.selected = 0;
@@ -43,7 +50,8 @@ export class PauseScene extends Phaser.Scene {
     this.answer = 1;
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x0b1220, 0.72).setOrigin(0, 0).setInteractive();
+    // SCREAM-123: the inside of the truck behind the menu, under a night-blue layer.
+    addTruckBackdrop(this, PAUSE_SHADE).setInteractive();
     this.add.rectangle(width / 2, height / 2, 420, 300, 0x1f2a44).setStrokeStyle(3, 0x8a9bb3);
     this.add.text(width / 2, height / 2 - 110, 'PAUSED', { fontFamily: 'monospace', fontSize: '34px', color: '#ffe8a3' }).setOrigin(0.5);
 
