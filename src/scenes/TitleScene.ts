@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
 import { loadStory } from '../state/StorySave';
 import { formatMoney } from '../util/format';
+import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 
 // Issue #4: title screen. Placeholder text until art direction (#17) is decided.
 // SCREAM-53 (PO, October 30, after playtest feedback): no difficulty choice;
@@ -16,11 +17,18 @@ import { formatMoney } from '../util/format';
 // and New story; New story asks before it overwrites the save.
 // SCREAM-90 (PO, November 1): the mouse works too: point at an option to pick
 // it, click to start; the New story question has Yes and No to click.
+// SCREAM-107 (PO, November 2): the opening screen has the ice cream truck
+// driving around it, like the winning screen: across the top, then back along
+// the bottom, again and again, with music notes trailing behind (engineering's
+// call: the truck plays music). The rest of the screen moved to make two lanes.
 
 type Mode = 'quick' | 'story' | 'continue';
+
+/** SCREAM-107: the truck's two lanes, above the title and below the menu. */
+const LANE_TOP = 40;
+const LANE_BOTTOM = 446;
 type Option = { id: Mode; label: string };
 
-const TRUCK_KEY = 'limezu-ice-cream-truck';
 
 export class TitleScene extends Phaser.Scene {
   private starting = false;
@@ -36,14 +44,21 @@ export class TitleScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(TRUCK_KEY, 'assets/limezu/ice_cream_truck.png');
+    this.load.image(TRUCK_KEY, TRUCK_URL);
   }
 
   create(): void {
     const { width, height } = this.scale;
-    // Pixel art stays crisp when scaled (only this texture: the text stays smooth).
-    this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    this.add.image(150, 92, TRUCK_KEY).setScale(0.5);
+    driveLaps(this, {
+      rows: [LANE_TOP, LANE_BOTTOM],
+      scale: 0.28,
+      crossMs: 4200,
+      trail: '♪',
+      trailColour: '#ffb6d5',
+      depth: 5,
+      truckName: 'title-truck',
+      trailName: 'title-note',
+    });
 
     this.starting = false;
     this.selected = 0;
@@ -62,25 +77,25 @@ export class TitleScene extends Phaser.Scene {
         ];
 
     this.add
-      .text(width / 2, 90, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '56px', color: '#bfe6ff' })
+      .text(width / 2, 112, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
       .setOrigin(0.5);
     // How to drive: the one set of controls.
-    this.add.rectangle(width / 2, 260, 520, 170, 0x1f2a44).setStrokeStyle(2, 0x4d5a70);
-    this.add.text(width / 2, 202, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '24px', color: '#ffe066' }).setOrigin(0.5);
+    this.add.rectangle(width / 2, 238, 520, 150, 0x1f2a44).setStrokeStyle(2, 0x4d5a70);
+    this.add.text(width / 2, 186, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '24px', color: '#ffe066' }).setOrigin(0.5);
     this.add
-      .text(width / 2, 276, '↑ gas      ↓ brake / reverse\n← → steer      Q park brake\n\nPull up beside a customer and stop', {
+      .text(width / 2, 252, '↑ gas      ↓ brake / reverse\n← → steer      Q park brake\n\nPull up beside a customer and stop', {
         fontFamily: 'monospace',
         fontSize: '17px',
         color: '#d6deeb',
         align: 'center',
-        lineSpacing: 6,
+        lineSpacing: 4,
       })
       .setOrigin(0.5);
 
-    const spacing = this.options.length > 2 ? 32 : 36;
+    const spacing = this.options.length > 2 ? 30 : 34;
     this.modeTexts = this.options.map((m, i) =>
       this.add
-        .text(width / 2, 372 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
+        .text(width / 2, 345 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -96,7 +111,7 @@ export class TitleScene extends Phaser.Scene {
     );
     this.refreshModes();
     this.add
-      .text(width / 2, height - 58, '↑ ↓ or mouse: choose    Press Enter or click to start', { fontFamily: 'monospace', fontSize: '20px', color: '#8a9bb3' })
+      .text(width / 2, height - 32, '↑ ↓ or mouse: choose    Press Enter or click to start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
       .setOrigin(0.5);
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)    Map data © OpenStreetMap contributors', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })

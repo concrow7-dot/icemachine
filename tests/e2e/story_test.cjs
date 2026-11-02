@@ -35,6 +35,12 @@ const { chromium } = require('playwright');
   await press('ArrowDown');
   check('Down arrow picks Story', /> Story </.test(await texts('Title')), true);
   await page.screenshot({ path: outDir + '/story_title.png' });
+  // SCREAM-107: the truck drives around the opening screen, trailing music notes.
+  const tx0 = await sc('Title', "Math.round(s.children.getByName('title-truck').x)"); await page.waitForTimeout(400);
+  const tx1 = await sc('Title', "Math.round(s.children.getByName('title-truck').x)");
+  check('Title: the ice cream truck drives across the screen (SCREAM-107)', tx0 !== tx1, true);
+  check('...trailing music notes', await sc('Title', "s.children.list.some(o => o.name === 'title-note')"), true);
+  check('...in its lanes, clear of the menu', await sc('Title', "(() => { const t = s.children.getByName('title-truck'); const top = t.y - t.displayHeight / 2, bottom = t.y + t.displayHeight / 2; return s.modeTexts.every(m => m.y + m.height / 2 < top || m.y - m.height / 2 > bottom); })()"), true);
   // SCREAM-90: the mouse. Pointing at an option picks it.
   const optionAt = (label) => sc('Title', `(() => { const t = s.modeTexts.find(o => o.text.includes('${label}')); return [Math.round(t.x), Math.round(t.y)]; })()`);
   const [qx, qy] = await optionAt('Quick play');

@@ -3,6 +3,7 @@ import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../fl
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
 import type { RunTotals } from '../state/StoryRun';
+import { driveLaps } from '../ui/truckLaps';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
 // pinball-style top 5 on the right. A score that makes the top 5 (negative
@@ -17,7 +18,6 @@ const MONO = 'monospace';
 /** Space between the breakdown's rows: 27 px since Gas made it five (SCREAM-22). */
 const ROW_GAP = 27;
 /** Loaded by the title screen; the texture is shared by every scene. */
-const TRUCK_KEY = 'limezu-ice-cream-truck';
 
 export class ResultsScene extends Phaser.Scene {
   private profit = 0;
@@ -155,37 +155,16 @@ export class ResultsScene extends Phaser.Scene {
    * the screen, top to bottom, with Ws trailing behind it, again and again.
    */
   private victoryLap(): void {
-    const { width, height } = this.scale;
-    const truck = this.add.image(-120, 70, TRUCK_KEY).setScale(0.45).setDepth(10).setName('victory-truck');
-    this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    const rows = [70, height / 2, height - 90];
-    const legs = rows.map((y, i) => ({ y, rightward: i % 2 === 0 }));
-    let leg = 0;
-    const drive = (): void => {
-      const { y, rightward } = legs[leg % legs.length] ?? { y: 70, rightward: true };
-      leg += 1;
-      truck.setFlipX(!rightward).setPosition(rightward ? -120 : width + 120, y);
-      this.tweens.add({ targets: truck, x: rightward ? width + 120 : -120, duration: 2600, ease: 'Linear', onComplete: drive });
-    };
-    drive();
-    // A W pops out behind the truck every so often and floats away.
-    this.time.addEvent({
-      delay: 140,
-      loop: true,
-      callback: () => {
-        const behind = truck.flipX ? 1 : -1;
-        const w = this.add
-          .text(truck.x + behind * truck.displayWidth * 0.5, truck.y + Phaser.Math.Between(-14, 14), 'W', {
-            fontFamily: MONO,
-            fontSize: '26px',
-            color: '#ffe066',
-            fontStyle: 'bold',
-          })
-          .setOrigin(0.5)
-          .setDepth(9)
-          .setName('victory-w');
-        this.tweens.add({ targets: w, y: w.y - 30, alpha: 0, scale: 1.4, duration: 900, onComplete: () => w.destroy() });
-      },
+    const { height } = this.scale;
+    driveLaps(this, {
+      rows: [70, height / 2, height - 90],
+      scale: 0.45,
+      crossMs: 2600,
+      trail: 'W',
+      trailColour: '#ffe066',
+      depth: 10,
+      truckName: 'victory-truck',
+      trailName: 'victory-w',
     });
   }
 
