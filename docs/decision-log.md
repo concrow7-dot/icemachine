@@ -6,7 +6,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-120, PO, November 2):** the first time the player charges more than the order costs, the customer says "That's more than it's supposed to be. Try again?" and the player can type the price again, but loses the tip. Overcharging a second time ends the sale as before: the customer leaves with the ice cream for free.
 
-**Why (product owner's rationale):** _waiting on the PO._
+**Why (product owner's rationale):** The other mistakes (handing over the wrong items) already get a second chance. Getting the price wrong once and losing the sale is harsh, so a second chance seems fair (PO, November 2).
 
 **Engineering's calls (proposals, not the PO's reasons):** this chance is separate from the one for handing over the wrong items (both can happen in one sale); the customer's wording.
 
@@ -17,7 +17,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - In Story, the next day starts with 1/6 of a tank (raised from 1/8 on November 2: the PO ran out on the way to the station while testing), enough to reach a gas station.
 - Gas runs out 30% faster: a full tank drives about 41,700 px (was 54,200).
 
-**Why (product owner's rationale):** _waiting on the PO._
+**Why (product owner's rationale):** From the PO's own time driving an ice cream truck: if you run out of gas, it takes so long to get more that the evening is already over (PO, November 2). Future idea from the PO: a power-up, a spare can of gas in the truck that gives just enough to reach a gas station if you run out.
 
 **Engineering's calls (proposals, not the PO's reasons):** a Story day never starts with less than 1/6 of a tank, however the last one ended (`FUEL_STORY_MIN_START`); the evening ends at the moment the tank runs dry, not when an already-empty tank is driven.
 
@@ -50,7 +50,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Engineering's calls (proposals, not the PO's reasons):** "each word" was applied literally, small words included (Quit To Title, Back To The Title); they can go lowercase if the PO prefers. The flavour names (SpongePop, Lil Explorer Pop) and the Story placeholder text (SCREAM-76) are unchanged.
 
-**Why (product owner's rationale):** _waiting on the PO._
+**Why (product owner's rationale):** He liked how they looked after some trial and error (PO, November 2).
 
 ## 022 — Loading screens: the truck laps the screen and fills it with music notes; the $4 warning goes (2026-11-02)
 
