@@ -121,6 +121,11 @@ const { chromium } = require('playwright');
   check('Stopped in the square: the sales window opens', await scenes(), 'Sales,Hud');
   check("...the window knows who's there", await ev('e.customer && e.customer.resident.name'), name);
   check('...and shows their name (SCREAM-99)', await page.evaluate((n) => window.__game.scene.getScene('Sales').children.list.some(o => o.type === 'Text' && o.text === n && o.visible), name), true);
+  // SCREAM-106: the person at the window is drawn in the same look they have on the map.
+  const shown = await page.evaluate(() => { const p = window.__game.scene.getScene('Sales').children.list.find(o => o.type === 'Sprite' && o.texture.key === 'residents'); return p ? Number(p.frame.name) : -1; });
+  const lookOf = (f) => { const across = 5 * 24, row = Math.floor(f / across), col = f % across; return Math.floor(row / 2) * 5 + Math.floor(col / 24); };
+  check('...drawn in their own look from the map (SCREAM-106)', lookOf(shown), await ev('e.customer.resident.look'));
+  check('...standing still, facing you (idle row, facing down)', Math.floor(shown / 120) % 2 === 0 && Math.floor((shown % 24) / 6) === 3, true);
   await page.screenshot({ path: outDir + '/customer_name.png' });
   check('...and they are off the map while at the window', await ev(`e.residents.all[${idx}].outside`), false);
 
