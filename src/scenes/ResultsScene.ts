@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { BIKE_PRICE_CENTS } from '../config/tuning';
 import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
@@ -14,6 +13,8 @@ import { formatMoney } from '../util/format';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const MONO = 'monospace';
+/** Loaded by the title screen; the texture is shared by every scene. */
+const TRUCK_KEY = 'limezu-ice-cream-truck';
 
 export class ResultsScene extends Phaser.Scene {
   private profit = 0;
@@ -94,7 +95,7 @@ export class ResultsScene extends Phaser.Scene {
     const { width } = this.scale;
     this.profit = cashCents;
     this.add.text(width / 2, 50, 'STORY COMPLETE', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
-    this.add.text(110, 110, `${days} DAYS`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
+    this.add.text(110, 110, `${days} DAY${days === 1 ? '' : 'S'}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     const rows: [string, number, string][] = [
       ['Sales', t.salesCents, '#c8f7c5'],
       ['Tips', t.tipsCents, '#c8f7c5'],
@@ -111,10 +112,75 @@ export class ResultsScene extends Phaser.Scene {
     this.add
       .text(420, 334, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
-    this.add.text(110, 392, bike ? `New bike (${formatMoney(BIKE_PRICE_CENTS)}): you can buy it!` : `New bike (${formatMoney(BIKE_PRICE_CENTS)}): not this time`, {
-      fontFamily: MONO,
-      fontSize: '18px',
-      color: bike ? '#ffe066' : '#8a9bb3',
+    // SCREAM-94 (PO, November 2): "New Bike!!!!" with a victory lap, or "Maybe Next Summer" and an F stamp.
+    if (bike) {
+      this.add.text(110, 388, 'New Bike!!!!', { fontFamily: MONO, fontSize: '26px', color: '#ffe066' }).setName('bike-line');
+      this.victoryLap();
+    } else {
+      this.add.text(110, 388, 'Maybe Next Summer', { fontFamily: MONO, fontSize: '26px', color: '#8a9bb3' }).setName('bike-line');
+      this.stampF(505, 410);
+    }
+  }
+
+  /** SCREAM-94: short of the bike. A red "F" in a circle stamps down between the stats and the initials. */
+  private stampF(x: number, y: number): void {
+    const stamp = this.add.container(x, y).setName('f-stamp').setDepth(5);
+    const ring = this.add.graphics();
+    ring.lineStyle(8, 0xe23b3b, 1);
+    ring.strokeCircle(0, 0, 70);
+    ring.lineStyle(3, 0xe23b3b, 1);
+    ring.strokeCircle(0, 0, 58);
+    const letter = this.add.text(0, 4, 'F', { fontFamily: MONO, fontSize: '96px', color: '#e23b3b', fontStyle: 'bold' }).setOrigin(0.5);
+    stamp.add([ring, letter]);
+    stamp.setScale(3).setAlpha(0).setAngle(-30);
+    this.tweens.add({
+      targets: stamp,
+      scale: 1,
+      alpha: 0.9,
+      angle: -12,
+      delay: 500,
+      duration: 260,
+      ease: 'Quad.easeIn',
+      onComplete: () => this.cameras.main.shake(180, 0.008),
+    });
+  }
+
+  /**
+   * SCREAM-94: got the bike. The ice cream truck drives back and forth across
+   * the screen, top to bottom, with Ws trailing behind it, again and again.
+   */
+  private victoryLap(): void {
+    const { width, height } = this.scale;
+    const truck = this.add.image(-120, 70, TRUCK_KEY).setScale(0.45).setDepth(10).setName('victory-truck');
+    this.textures.get(TRUCK_KEY).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    const rows = [70, height / 2, height - 90];
+    const legs = rows.map((y, i) => ({ y, rightward: i % 2 === 0 }));
+    let leg = 0;
+    const drive = (): void => {
+      const { y, rightward } = legs[leg % legs.length] ?? { y: 70, rightward: true };
+      leg += 1;
+      truck.setFlipX(!rightward).setPosition(rightward ? -120 : width + 120, y);
+      this.tweens.add({ targets: truck, x: rightward ? width + 120 : -120, duration: 2600, ease: 'Linear', onComplete: drive });
+    };
+    drive();
+    // A W pops out behind the truck every so often and floats away.
+    this.time.addEvent({
+      delay: 140,
+      loop: true,
+      callback: () => {
+        const behind = truck.flipX ? 1 : -1;
+        const w = this.add
+          .text(truck.x + behind * truck.displayWidth * 0.5, truck.y + Phaser.Math.Between(-14, 14), 'W', {
+            fontFamily: MONO,
+            fontSize: '26px',
+            color: '#ffe066',
+            fontStyle: 'bold',
+          })
+          .setOrigin(0.5)
+          .setDepth(9)
+          .setName('victory-w');
+        this.tweens.add({ targets: w, y: w.y - 30, alpha: 0, scale: 1.4, duration: 900, onComplete: () => w.destroy() });
+      },
     });
   }
 

@@ -106,7 +106,12 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');
-  check('...run stats: 3 days, $3 stock, final cash $97, no bike', /3 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$97\.00/.test(runRes) && /not this time/.test(runRes), true);
+  check('...run stats: 3 days, $3 stock, final cash $97, no bike', /3 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$97\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
+  // SCREAM-94: short of the bike, the F stamp lands (after a short pause).
+  await wait(1000);
+  check('...the F stamp is on screen, landed', await sc('Results', "(() => { const f = s.children.getByName('f-stamp'); return !!f && f.scale === 1 && f.alpha > 0.8; })()"), true);
+  check('...and no victory truck', await sc('Results', "!s.children.getByName('victory-truck')"), true);
+  await page.screenshot({ path: outDir + '/story_results_f.png' });
   check('...first Story score: asks for initials', await sc('Results', 's.entering'), true);
   await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
   check('...saved to the Story table, not the Quick play one',
@@ -182,6 +187,27 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300); // past the intro
   check('...Y: a new run at day 1 with $100, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 10000 none');
   await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(300);
+
+  // ---- SCREAM-94: reaching $200 gets a victory lap ----
+  await press('ArrowDown'); await press('Enter'); await wait(300);
+  await press('Enter'); await wait(300); // past the intro
+  await story('(r.days = 1, true)'); // a one-day run, to reach the end quickly
+  await ev('(e.cashCents = 25000, true)');
+  await shift(3); await wait(300);
+  check('Day 1 of a 1-day run with $250: you can buy the bike', /You can buy the bike/.test(await texts('DayEnd')), true);
+  await press('Enter'); await wait(500);
+  const winRes = await texts('Results');
+  check('Story results say New Bike!!!!', /New Bike!!!!/.test(winRes) && !/Maybe Next Summer/.test(winRes), true);
+  check('...no F stamp', await sc('Results', "!s.children.getByName('f-stamp')"), true);
+  const t0 = await sc('Results', "Math.round(s.children.getByName('victory-truck').x)");
+  await wait(600);
+  const t1 = await sc('Results', "Math.round(s.children.getByName('victory-truck').x)");
+  check('...the truck drives across the screen', t1 !== t0, true);
+  check('...with Ws trailing behind it', await sc('Results', "s.children.list.filter(o => o.name === 'victory-w').length > 0"), true);
+  await page.screenshot({ path: outDir + '/story_results_win.png' });
+  await page.keyboard.type('WIN', { delay: 80 }); await press('Enter'); await wait(200);
+  await press('Enter'); await wait(300);
+  check('...then back to the title', await scenes(), 'Title');
 
   // ---- Quick play unchanged ----
   check('Title remembers nothing: Quick play picked again', /> Quick play </.test(await texts('Title')), true);
