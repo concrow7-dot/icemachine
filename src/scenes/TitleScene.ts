@@ -53,7 +53,7 @@ export class TitleScene extends Phaser.Scene {
     this.options = save
       ? [
           { id: 'quick', label: 'Quick play' },
-          { id: 'continue', label: `Continue story: day ${save.day}, ${formatMoney(save.cashCents)}` },
+          { id: 'continue', label: `Continue story: Day ${save.day}, ${formatMoney(save.cashCents)}` },
           { id: 'story', label: 'New story' },
         ]
       : [
