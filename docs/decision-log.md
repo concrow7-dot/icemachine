@@ -68,7 +68,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** tonight only, a record only, or both; tip in or out; one mode or both.
 
-**Why (product owner's rationale):** _waiting on the PO._ (He picked engineering's recommended option.)
+**Why (product owner's rationale):** It gives the player a reason to seek out bigger customers (PO, November 2). (He picked engineering's recommended option.)
 
 ## 020 — The title screen's LimeZu truck drives the map, full size, in any direction (2026-11-02)
 
