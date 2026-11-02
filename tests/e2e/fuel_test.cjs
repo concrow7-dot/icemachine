@@ -188,14 +188,14 @@ const { chromium } = require('playwright');
   await ev('(e.burnFuel(30000), true)');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
-  // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/8 of a tank.
+  // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
   const dayEnd = await texts('DayEnd');
-  check('Story: out of gas ends the day, and says tomorrow starts with 1/8 of a tank', /ran out of gas/.test(dayEnd) && /1\/8 of a tank/.test(dayEnd), true);
+  check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
   await press('Enter'); await wait(300);
-  check('...and the next day starts with 1/8 of a tank', await ev('e.fuel'), 0.125);
+  check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
   // A save from before fuel: a quarter tank.
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); d.day = 2; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); delete d.fuel; delete d.totals.gasCents; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });

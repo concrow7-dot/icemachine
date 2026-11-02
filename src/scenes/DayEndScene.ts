@@ -96,7 +96,7 @@ export class DayEndScene extends Phaser.Scene {
     const gasNote = !evening.endedOutOfGas
       ? ''
       : this.outcome === 'next'
-        ? 'You ran out of gas!\nTomorrow you start with 1/8 of a tank.\n\n'
+        ? 'You ran out of gas!\nTomorrow you start with 1/6 of a tank.\n\n'
         : 'You ran out of gas!\n\n';
     this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
