@@ -2,6 +2,35 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 016 — Fuel: a tank to budget for, and the Speedway on Park Avenue (2026-11-02)
+
+**Decision:** The truck has a gas tank (Jira SCREAM-22). Driving uses gas by distance; with an empty tank the truck crawls at a quarter of its top speed. Gas is bought at a gas station on the map: the real Speedway on Park Avenue at Chandler Street, drawn as two of LimeZu's charging stations side by side as pumps, on a concrete forecourt with a GAS sign. Stop in the yellow bay beside the pumps and the pump screen opens; gas is bought in $5 steps, $30 for a full tank, and the clock keeps running while you're there. Both modes have fuel: Quick play starts each evening with a full tank; Story starts day 1 with $100 and a quarter tank, and whatever is left carries over to the next evening (and into the save). Gas spent gets its own line on the results and end-of-day screens.
+
+**Options considered:**
+- *Which modes:* Story only; Story and Quick play the same; or both, with Quick play starting full.
+- *Where:* the Speedway at Park Ave and Chandler (just off the map's edge in real life), or the unnamed station near Pleasant Street.
+- *Buying:* a pump screen with the clock running; with the clock stopped (like the cooler); or typing the amount on the calculator.
+- *Between Story evenings:* the tank carries over, or goes back to a quarter.
+- *How it looks:* a building pieced together from the pack, or the pack's charging stations as pumps.
+
+**Why (product owner's rationale):**
+- *Budgeting for gas alongside stock:* from the ticket's user story (October 29).
+- *A station on the map, so stopping costs daylight; part tanks in $5 steps, $30 full; crawling to the pumps when dry, no tow fee for now; day 1 with $100 and a quarter tank:* the PO's decisions on October 29 (doc 18).
+- *Both modes, Quick play full:* the PO's call (November 2). **Why:** _waiting on the PO._
+- *The Speedway at Park Ave and Chandler:* the PO's call (November 2). **Why:** _waiting on the PO._ (Decision 009 already says real places matter to him.)
+- *Pump screen with the clock running:* the PO's call (November 2), which keeps October 29's "stopping costs daylight".
+- *The tank carries over in Story:* the PO's call (November 2). **Why:** _waiting on the PO._
+- *Looks like a gas station, using a couple of the pack's charging stations:* the PO's calls (November 2). **Why:** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- Numbers (all in `tuning.ts`): a full tank drives 117,000 px. "A full evening uses about 2/3 of a tank" was read as moving 60% of the 300-second evening at top speed (about 78,000 px). Driving flat out the whole evening would use slightly more than a full tank.
+- The station sits on Park Avenue's east side just north of the Chandler corner, because the real one is just past the corner, off the map. One scenery house on that spot is left off the map. Placement is hand-set in `src/config/gasStation.ts`.
+- The pump opens with the same rule as a customer: stopped, with half the truck in the bay. It starts at the most you can buy (filling up, or what the cash allows); ↑ and ↓ change it by $5; Enter pays and drives off; B drives off without gas. After paying, the bay doesn't reopen until the truck has left it.
+- The gauge (E to F, in the top bar) shows while driving and at the pump, turns red at 15% and flashes when empty.
+- Restarting a Story evening puts the tank back to how the evening started. Story saves from before fuel continue with a quarter tank.
+
+**Revisit if:** gas feels too cheap or too tight (tune the tank size), the map grows past Park Avenue (SCREAM-66), or the home driveway restock (SCREAM-54) or power-ups (SCREAM-78) change how the truck refuels.
+
 ## 015 — Customers come from the music ring; the arrow goes; the truck plays music (2026-11-02)
 
 **Decision:** Customers are the residents (decision 014), and the truck's music is how they find out it's near (Jira SCREAM-67, 68, 24, 99; doc 37). A faint ring round the truck shows how far the music reaches. Every second a resident is inside it, the game rolls a chance that they want ice cream: it's highest the moment they first hear it (25%) and then falls toward 5%, each second by less than the last, times their likelihood from the residents sheet, and halved while they're indoors. If they want some, a "!" thought bubble pops up and they run to the curb and wait; after 30 seconds they give up and walk home. There's no limit on how many wait at once, but nobody is a customer twice in one evening, so a parked truck runs out of customers. A sale starts as before: stop fully with half the truck in the pink square beside them. Their name shows at the window. The pink pointer arrow is gone. The truck plays chiptune versions of public-domain tunes while you drive, shuffled; M mutes (remembered), N skips.

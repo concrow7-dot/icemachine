@@ -1,6 +1,7 @@
 import { FLAVOURS, type FlavourId } from '../config/flavours';
 import type { CoolerSlot } from './EveningState';
 import type { RunTotals } from './StoryRun';
+import { FUEL_STORY_START } from '../config/tuning';
 
 // SCREAM-17 (PO, October 31): Story mode is saved in the browser, the same way
 // high scores are (decision 004): no accounts, and clearing the browser's data
@@ -14,6 +15,8 @@ export type StorySave = {
   day: number;
   cashCents: number;
   slots: CoolerSlot[];
+  /** SCREAM-22: gas left in the tank, 0 to 1. Saves from before fuel get a quarter tank. */
+  fuel: number;
   /** SCREAM-18: the run's takings so far. */
   totals: RunTotals;
 };
@@ -50,7 +53,14 @@ export function loadStory(): StorySave | null {
       day: data.day as number,
       cashCents: data.cashCents as number,
       slots: data.slots.map((s) => ({ ...s })),
-      totals: { salesCents: cents(t.salesCents), tipsCents: cents(t.tipsCents), stockCents: cents(t.stockCents), damageCents: cents(t.damageCents) },
+      fuel: typeof data.fuel === 'number' && data.fuel >= 0 && data.fuel <= 1 ? data.fuel : FUEL_STORY_START,
+      totals: {
+        salesCents: cents(t.salesCents),
+        tipsCents: cents(t.tipsCents),
+        stockCents: cents(t.stockCents),
+        gasCents: cents(t.gasCents),
+        damageCents: cents(t.damageCents),
+      },
     };
   } catch {
     return null;

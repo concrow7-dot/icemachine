@@ -11,6 +11,8 @@ import { BIKE_PRICE_CENTS } from '../config/tuning';
 // SCREAM-17: the run is saved here, or the save cleared when the run ends.
 
 const MONO = 'monospace';
+/** Space between the breakdown's rows: 27 px since Gas made it five (SCREAM-22). */
+const ROW_GAP = 27;
 
 export class DayEndScene extends Phaser.Scene {
   private outcome: DayOutcome = 'next';
@@ -45,11 +47,12 @@ export class DayEndScene extends Phaser.Scene {
       ['Sales', b.salesCents, '#c8f7c5'],
       ['Tips', b.tipsCents, '#c8f7c5'],
       ['Stock', -b.stockCents, '#ff9c9c'],
+      ['Gas', -b.gasCents, '#ff9c9c'],
       ['Damage', -b.damageCents, '#ff9c9c'],
     ];
     this.add.text(110, 130, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     rows.forEach(([label, cents, colour], i) => {
-      const y = 165 + i * 34;
+      const y = 165 + i * ROW_GAP;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });

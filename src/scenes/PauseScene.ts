@@ -154,7 +154,7 @@ export class PauseScene extends Phaser.Scene {
     });
     this.prompt.setVisible(asking);
     if (this.confirming === 'restart') {
-      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash and stock go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
+      this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash, stock and gas go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
     }
     if (this.confirming === 'quit') {
       this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at\nthe start of this evening.' : "Quit to the title screen?\nThis evening won't count.");

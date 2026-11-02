@@ -20,6 +20,7 @@ import {
   TRUCK_REVERSE_DELAY_SECONDS,
   TRUCK_REVERSE_SPEED,
   TRUCK_SPEED,
+  FUEL_EMPTY_SPEED_FRACTION,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
 } from '../config/tuning';
@@ -28,6 +29,7 @@ import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
+import { GAS_STATION } from '../config/gasStation';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to pick up a waiting customer.
@@ -146,7 +148,14 @@ export class DriveScene extends Phaser.Scene {
   private fieldGraphics!: Phaser.GameObjects.Graphics;
   /** The ground, roads, houses and trees round the camera, painted into one image (one draw per frame). */
   private mapTexture!: Phaser.GameObjects.RenderTexture;
-  private sortedObjects = [...WORCESTER.objects].sort((a, b) => a.y - b.y);
+  /** Houses and trees painted into the map, front to back, with the gas station's pumps (SCREAM-22) in place of the house on its spot. */
+  private sortedObjects = [...WORCESTER.objects.filter((o) => !isReplacedByStation(o)), ...GAS_STATION.pumps.map((p) => ({ key: 'pump', ...p }))].sort(
+    (a, b) => a.y - b.y,
+  );
+  /** SCREAM-22: the bay beside the pumps. Stop in it to buy gas. */
+  private pumpBay!: Phaser.GameObjects.Rectangle;
+  /** False after coming back from the pump, until the truck has left the bay (so the pump doesn't open again straight away). */
+  private pumpArmed = true;
   private dashes: { x: number; y: number; ux: number; uy: number }[] = [];
   private viewKey = '';
   private potholes: { x: number; y: number; armed: boolean }[] = [];
@@ -172,6 +181,7 @@ export class DriveScene extends Phaser.Scene {
     for (const { key } of WORCESTER.sprites) this.load.image(`map-${key}`, `assets/limezu/map/${key}.png`);
     for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
     loadResidentSheet(this);
+    this.load.image('map-pump', 'assets/limezu/map/pump.png');
   }
 
   create(): void {
@@ -203,7 +213,7 @@ export class DriveScene extends Phaser.Scene {
     this.objectGrid.clear();
     WORCESTER.objects.forEach((o, i) => {
       const size = OBJECT_SIZES.get(o.key);
-      if (!size) return;
+      if (!size || isReplacedByStation(o)) return;
       const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
       const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
       const top = Math.floor((o.y - size.h) / OCCLUDER_CELL);
@@ -221,6 +231,25 @@ export class DriveScene extends Phaser.Scene {
     const { x, y, angle } = this.evening.truck;
     this.truck.setPosition(x, y);
     this.setHeading(angle);
+
+    // SCREAM-22: the pump bay, painted on the road beside the pumps like a parking space.
+    const bay = GAS_STATION.bay;
+    this.pumpBay = this.add
+      .rectangle(bay.x, bay.y, PICKUP_ZONE_SIZE + 10, PICKUP_ZONE_SIZE, 0xffd23f, 0.12)
+      .setStrokeStyle(3, 0xffd23f, 0.9)
+      .setAngle(bay.angle)
+      .setDepth(4);
+    this.pumpArmed = this.pickupOverlap(this.pumpBay) === 0;
+    const sign = GAS_STATION.sign;
+    this.mapTexts.push({
+      obj: this.add
+        .text(sign.x, sign.y - 72, 'GAS', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#c62828', padding: { x: 6, y: 2 } })
+        .setOrigin(0.5, 1)
+        .setDepth(7)
+        .setVisible(false),
+      x: sign.x,
+      y: sign.y,
+    });
     this.viewKey = '';
     this.refreshVisibleMap();
 
@@ -336,9 +365,11 @@ export class DriveScene extends Phaser.Scene {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
       if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
+      else this.evening.burnFuel(Math.abs(this.speed) * dt); // SCREAM-22: driving uses gas
     }
 
     this.checkPotholes();
+    this.checkPump();
     this.checkCustomer();
   }
 
@@ -352,13 +383,16 @@ export class DriveScene extends Phaser.Scene {
     // everything and the truck rolls at a creep, the way it was last going;
     // the brake stops it, and holding the brake at a stop reverses after a
     // moment. To stay still once stopped, put the park brake on (Q).
+    // SCREAM-22 (PO): with an empty tank the truck crawls at a quarter speed, enough to reach the pumps.
+    const top = this.evening.isOutOfFuel ? TRUCK_SPEED * FUEL_EMPTY_SPEED_FRACTION : TRUCK_SPEED;
+    if (this.speed > top) this.speed = Math.max(top, this.speed - (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS);
     if (gas && !brake) {
       this.parkBrake = false;
       this.brakeHeldStill = 0;
       this.speed =
         this.speed < 0
           ? Math.min(0, this.speed + (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS)
-          : Math.min(TRUCK_SPEED, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
+          : Math.min(top, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
     } else if (brake && !gas) {
       if (this.speed > 0) {
         this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS);
@@ -520,6 +554,12 @@ export class DriveScene extends Phaser.Scene {
       const uy = Math.sin(r);
       return [v(x + ux * hl - uy * hw, y + uy * hl + ux * hw), v(x + ux * hl + uy * hw, y + uy * hl - ux * hw), v(x - ux * hl + uy * hw, y - uy * hl - ux * hw), v(x - ux * hl - uy * hw, y - uy * hl + ux * hw)];
     };
+    // SCREAM-22: the gas station's concrete forecourt, under the pumps.
+    const pad = GAS_STATION.pad;
+    if (pad.x > x0 - 150 && pad.x < x1 + 150 && pad.y > y0 - 150 && pad.y < y1 + 150) {
+      g.fillStyle(0x8d9196, 1).fillPoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
+      g.lineStyle(2, 0x6b6f74, 1).strokePoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
+    }
     WORCESTER.parkedCars.forEach(({ x, y, angle }, i) => {
       if (x < x0 - 60 || x > x1 + 60 || y < y0 - 60 || y > y1 + 60) return;
       g.fillStyle(0x1b1b1b, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH + 1, CAR_HALF_WIDTH + 1), true);
@@ -907,6 +947,18 @@ export class DriveScene extends Phaser.Scene {
    * come to a complete stop with at least half its hitbox in a customer's pickup
    * square, and then straight away (no "press Enter to serve").
    */
+  /** SCREAM-22: stopped in the pump bay (the same rule as a customer's square), the pump opens. */
+  private checkPump(): void {
+    const overlap = this.pickupOverlap(this.pumpBay);
+    if (!this.pumpArmed) {
+      if (overlap === 0) this.pumpArmed = true;
+      return;
+    }
+    if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
+    this.leaving = true;
+    this.scene.start(SceneKeys.Pump);
+  }
+
   private checkCustomer(): void {
     if (this.speed !== 0) return;
     const people = this.evening.residents.all;
@@ -953,4 +1005,10 @@ export class DriveScene extends Phaser.Scene {
     }
     return inside / total;
   }
+}
+
+/** SCREAM-22: the scenery house standing where the gas station goes, left off the map. */
+function isReplacedByStation(o: { key: string; x: number; y: number }): boolean {
+  const r = GAS_STATION.replaces;
+  return o.key === r.key && Math.abs(o.x - r.x) < 1 && Math.abs(o.y - r.y) < 1;
 }

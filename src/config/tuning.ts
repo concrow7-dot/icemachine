@@ -186,3 +186,31 @@ export const CUSTOMER_RUN_SPEED = 75;
 
 /** PO: a customer waits at the curb this long, then walks home. */
 export const CUSTOMER_WAIT_SECONDS = 30;
+
+// ---- Fuel (SCREAM-22, PO October 29 and November 2) ----
+
+/** PO: a full tank costs $30. */
+export const FUEL_FULL_TANK_CENTS = 3000;
+
+/** PO: gas is bought in $5 steps (so $5 is a sixth of a tank). */
+export const FUEL_STEP_CENTS = 500;
+
+/**
+ * How far a full tank goes, in px of driving. PO: a full evening of driving uses
+ * about 2/3 of a tank. Engineering's guess at "a full evening": moving 60% of the
+ * 300 s evening at top speed (433 px/s) is about 78,000 px, which is 2/3 of this.
+ * Tune after playing.
+ */
+export const FUEL_TANK_PX = 117000;
+
+/** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
+export const FUEL_STORY_START = 0.25;
+
+/** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
+export const FUEL_QUICK_PLAY_START = 1;
+
+/** PO: with an empty tank the truck crawls at a quarter of its top speed (no tow, for now). */
+export const FUEL_EMPTY_SPEED_FRACTION = 0.25;
+
+/** The HUD's gauge turns red at or below this much of a tank. */
+export const FUEL_LOW = 0.15;
