@@ -67,7 +67,7 @@ const { TRACK } = require('./track.cjs');
   await page.keyboard.up('ArrowUp');
   // Speed, not distance: on a slow test machine the two readings are well over 1 s apart.
   // (feel_test measures the exact acceleration frame by frame.)
-  check('Gas for 1s from a stop: slow to get going, like a train (well short of top speed)', (speed1 > 0 && speed1 < 433 * 0.75) + ' ' + (t1.x - t0.x > 20), 'true true');
+  check('Gas for 1s from a stop: slow to get going, like a train (well short of top speed)', (speed1 > 0 && speed1 < 476 * 0.75) + ' ' + (t1.x - t0.x > 20), 'true true');
   check('...in a straight line', t1.y, t0.y);
   await wait(800);
   const tc = await truck(); await wait(300);
