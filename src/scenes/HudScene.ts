@@ -113,7 +113,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0, 0.5);
     this.placeDebugText();
 
-    // Shift + number, so the plain number keys are free for typing prices (PO, doc 12 Q30).
+    // Shift + number, so the plain number keys are free for typing prices (PO, doc 08 Q30).
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       // Esc pauses the evening from any screen (#19). The HUD runs during every evening screen, so it listens here.
       if (event.key === 'Escape') {

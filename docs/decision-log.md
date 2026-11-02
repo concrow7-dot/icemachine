@@ -15,7 +15,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Why (product owner's rationale):**
 - *Budgeting for gas alongside stock:* from the ticket's user story (October 29).
-- *A station on the map, so stopping costs daylight; part tanks in $5 steps, $30 full; crawling to the pumps when dry, no tow fee for now; day 1 with $100 and a quarter tank:* the PO's decisions on October 29 (doc 18).
+- *A station on the map, so stopping costs daylight; part tanks in $5 steps, $30 full; crawling to the pumps when dry, no tow fee for now; day 1 with $100 and a quarter tank:* the PO's decisions on October 29 (doc 10).
 - *Both modes, Quick play full:* the PO's call (November 2). **Why:** _waiting on the PO._
 - *The Speedway at Park Ave and Chandler:* the PO's call (November 2). **Why:** _waiting on the PO._ (Decision 009 already says real places matter to him.)
 - *Pump screen with the clock running:* the PO's call (November 2), which keeps October 29's "stopping costs daylight".
@@ -33,7 +33,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 015 — Customers come from the music ring; the arrow goes; the truck plays music (2026-11-02)
 
-**Decision:** Customers are the residents (decision 014), and the truck's music is how they find out it's near (Jira SCREAM-67, 68, 24, 99; doc 37). A faint ring round the truck shows how far the music reaches. Every second a resident is inside it, the game rolls a chance that they want ice cream: it's highest the moment they first hear it (25%) and then falls toward 5%, each second by less than the last, times their likelihood from the residents sheet, and halved while they're indoors. If they want some, a "!" thought bubble pops up and they run to the curb and wait; after 30 seconds they give up and walk home. There's no limit on how many wait at once, but nobody is a customer twice in one evening, so a parked truck runs out of customers. A sale starts as before: stop fully with half the truck in the pink square beside them. Their name shows at the window. The pink pointer arrow is gone. The truck plays chiptune versions of public-domain tunes while you drive, shuffled; M mutes (remembered), N skips.
+**Decision:** Customers are the residents (decision 014), and the truck's music is how they find out it's near (Jira SCREAM-67, 68, 24, 99; doc 14). A faint ring round the truck shows how far the music reaches. Every second a resident is inside it, the game rolls a chance that they want ice cream: it's highest the moment they first hear it (25%) and then falls toward 5%, each second by less than the last, times their likelihood from the residents sheet, and halved while they're indoors. If they want some, a "!" thought bubble pops up and they run to the curb and wait; after 30 seconds they give up and walk home. There's no limit on how many wait at once, but nobody is a customer twice in one evening, so a parked truck runs out of customers. A sale starts as before: stop fully with half the truck in the pink square beside them. Their name shows at the window. The pink pointer arrow is gone. The truck plays chiptune versions of public-domain tunes while you drive, shuffled; M mutes (remembered), N skips.
 
 **Options considered:**
 - *Finding customers:* follow an arrow to a marker, or watch the neighbourhood.
@@ -62,10 +62,10 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 014 — Residents: named people with homes, edited in a sheet, drawn with LimeZu Modern Interiors (2026-11-02)
 
-**Decision:** The neighbourhood has residents (Jira SCREAM-59, SCREAM-73; doc 37). There is about one per house: 160, since the map has 161 houses and one is home. Each has a name, a house (and so a street), an age (adult or kid) and their own likelihood of buying ice cream. They stay near their home all evening: they go in and out of their house and wander their yard. They are drawn with LimeZu's Modern Interiors character generator, each with their own combination of body, clothes and hair. The list lives in a Google Sheet the PO can edit (doc 38, "38 - Residents"); "sync residents" copies it into `tools/residents/residents.csv` and rebuilds the game's data with `tools/residents/build_residents.py`. Buying (the sonar ring, the chance check) comes next, in SCREAM-67.
+**Decision:** The neighbourhood has residents (Jira SCREAM-59, SCREAM-73; doc 14). There is about one per house: 160, since the map has 161 houses and one is home. Each has a name, a house (and so a street), an age (adult or kid) and their own likelihood of buying ice cream. They stay near their home all evening: they go in and out of their house and wander their yard. They are drawn with LimeZu's Modern Interiors character generator, each with their own combination of body, clothes and hair. The list lives in a Google Sheet the PO can edit (doc 15, "15 - Residents"); "sync residents" copies it into `tools/residents/residents.csv` and rebuilds the game's data with `tools/residents/build_residents.py`. Buying (the sonar ring, the chance check) comes next, in SCREAM-67.
 
 **Options considered:**
-- *Art:* LimeZu Modern Interiors ($1.50 minimum), free packs (Modern Chibis, Kenney's RPG Urban Kit), or another paid pack (comparison in doc 37).
+- *Art:* LimeZu Modern Interiors ($1.50 minimum), free packs (Modern Chibis, Kenney's RPG Urban Kit), or another paid pack (comparison in doc 14).
 - *Customers:* random people appearing anywhere, or named residents tied to houses.
 - *Getting sheet edits into the game:* engineering syncs it on request; a script the PO runs; or the live game reads the sheet each time it loads.
 
@@ -181,11 +181,11 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 007 — Prices are entered on a calculator, typed left to right (2026-10-30)
 
-**Decision:** The price at the sales window is entered on an on-screen calculator in the middle of the window: a large display with the $ on the left and digits right-aligned, the number keys 7–9, 4–6, 1–3, 0, 00 and ".", plus C, back and CHARGE keys. Typing works like a calculator, left to right: 7 . 2 5 is $7.25, and with no decimal point the number is whole dollars (7 is $7.00). Keyboard and mouse both work and can be mixed. (Jira SCREAM-12; doc 28.)
+**Decision:** The price at the sales window is entered on an on-screen calculator in the middle of the window: a large display with the $ on the left and digits right-aligned, the number keys 7–9, 4–6, 1–3, 0, 00 and ".", plus C, back and CHARGE keys. Typing works like a calculator, left to right: 7 . 2 5 is $7.25, and with no decimal point the number is whole dollars (7 is $7.00). Keyboard and mouse both work and can be mixed. (Jira SCREAM-12; doc 13.)
 
 **Changes:** cash-register typing from PR #38 (digits filled from the right, so 725 read $7.25) and the whole-dollars click from PR #40 (removed).
 
-**Options considered (doc 28):** an on-screen number pad, counting out bills and coins (Supermarket Simulator style), tapping each item to build the total, or a different method per difficulty.
+**Options considered (doc 13):** an on-screen number pad, counting out bills and coins (Supermarket Simulator style), tapping each item to build the total, or a different method per difficulty.
 
 **Why (product owner's rationale):** the key needs are quick, easy money entry that works with typing and/or the mouse. The PO likes the Supermarket Simulator style, but it's too complex for this early in the game, so it's in the backlog at the lowest priority (SCREAM-50).
 
@@ -195,7 +195,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision:** The short 3-day calendar is no longer a P1 item of its own. It moves into the *New game mode: extended game* epic (Jira ICE-9, low priority) as that mode's beta: a 3-day experiment before the full 21-day summer. Tickets that assumed the calendar (carry cash, fuel, save, intro story, two game modes, game over) build on that beta. (Jira ICE-34, formerly GitHub #53.)
 
-**Changes:** decision Q3 in *18 - Next Phase Discussion*, which put the short calendar in P1.
+**Changes:** decision Q3 in *10 - Next Phase Discussion*, which put the short calendar in P1.
 
 **Why (product owner's rationale):** "I cut the 3 day calendar, but I probably should've merged it. Maybe the beta version of the 21 days is a 3 day experiment." It was cut outright in the mid-P1 prioritization session, then folded into the extended game the same night.
 

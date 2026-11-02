@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { clearStory, EVENING_SCENES, getStory, restartEvening, SceneKeys } from '../flow';
 
-// Issue #19 (PO decisions in doc 18, Q7-Q9): Esc pauses the evening on any
+// Issue #19 (PO decisions in doc 10, Q7-Q9): Esc pauses the evening on any
 // screen except results. The clock, the truck and every timer stop while the
 // menu is open. Restart and Quit ask "Are you sure?" first, and an evening
 // that's quit or restarted doesn't go on the high score table (it never

@@ -161,7 +161,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.finishEvening();
   }
 
-  /** 8 PM: the evening ends, unless a sale is under way, which finishes first (PO, doc 12 Q31). */
+  /** 8 PM: the evening ends, unless a sale is under way, which finishes first (PO, doc 08 Q31). */
   private finishEvening(): void {
     if (this.saleNow) {
       this.endPending = true;
@@ -310,7 +310,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /**
    * The truck reached a customer: they step up to the window and order from
-   * what's in the cooler (PO, doc 12 Q22: straight to the sales screen).
+   * what's in the cooler (PO, doc 08 Q22: straight to the sales screen).
    */
   startSale(customer?: ResidentNow): Sale {
     // SCREAM-67: the resident steps up to the window (the Shift+4 debug key starts a sale with nobody).

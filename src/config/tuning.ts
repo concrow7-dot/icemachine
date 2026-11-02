@@ -49,7 +49,7 @@ export const TRUCK_SPEED = 433;
  */
 export const TRUCK_ACCELERATION_SECONDS = 2.5;
 
-// ---- Driving feel (#32): PO decisions in doc 18, then car-style steering after testing PR #58 ----
+// ---- Driving feel (#32): PO decisions in doc 10, then car-style steering after testing PR #58 ----
 
 /**
  * Letting go of the gas: the truck rolls down from top speed over this many
@@ -101,7 +101,7 @@ export const HIT_COST_MIN_FRACTION = 0.5;
 /** PO decision on #9: until selling (#13-#15) exists, leaving the window serves the customer for this much. */
 export const PLACEHOLDER_SALE_CENTS = 400;
 
-// ---- Selling (#13-#15), decided in doc 12 ----
+// ---- Selling (#13-#15), decided in doc 08 ----
 
 /** How long the customer's order stays in the speech bubble, in seconds. */
 export const ORDER_SHOW_SECONDS = 5;
@@ -159,7 +159,7 @@ export const RESIDENT_IDLE_SECONDS: readonly [number, number] = [2, 7];
 /** At the start of an evening, this share of residents are already outside. */
 export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 
-// ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 37) ----
+// ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 14) ----
 
 /** How far the truck's music reaches, in px from the truck: residents inside this ring can hear it. Engineering's value. */
 export const MUSIC_RING_RADIUS = 300;
@@ -172,7 +172,7 @@ export const MUSIC_RING_RADIUS = 300;
  * each second by less than the last (about two thirds of the way down after
  * CUSTOMER_CHANCE_SETTLE_SECONDS). Overall, the longer someone hears the truck, the
  * more likely they've come out. Engineering's numbers. Then multiplied by the
- * resident's likelihood from the residents sheet (doc 38).
+ * resident's likelihood from the residents sheet (doc 15).
  */
 export const CUSTOMER_CHANCE_FIRST = 0.25;
 export const CUSTOMER_CHANCE_FLOOR = 0.05;
