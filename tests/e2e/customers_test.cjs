@@ -122,10 +122,21 @@ const { chromium } = require('playwright');
   check("...the window knows who's there", await ev('e.customer && e.customer.resident.name'), name);
   check('...and shows their name (SCREAM-99)', await page.evaluate((n) => window.__game.scene.getScene('Sales').children.list.some(o => o.type === 'Text' && o.text === n && o.visible), name), true);
   // SCREAM-106: the person at the window is drawn in the same look they have on the map.
-  const shown = await page.evaluate(() => { const p = window.__game.scene.getScene('Sales').children.list.find(o => o.type === 'Sprite' && o.texture.key === 'residents'); return p ? Number(p.frame.name) : -1; });
-  const lookOf = (f) => { const across = 5 * 24, row = Math.floor(f / across), col = f % across; return Math.floor(row / 2) * 5 + Math.floor(col / 24); };
-  check('...drawn in their own look from the map (SCREAM-106)', lookOf(shown), await ev('e.customer.resident.look'));
-  check('...standing still, facing you (idle row, facing down)', Math.floor(shown / 120) % 2 === 0 && Math.floor((shown % 24) / 6) === 3, true);
+  // SCREAM-110: drawn from a smoothed, 8x copy of their own look's idle, facing-down frames.
+  const shown = await page.evaluate(() => { const p = window.__game.scene.getScene('Sales').children.getByName('customer'); return p ? [p.texture.key, p.frame.width, p.frame.height] : null; });
+  check('...drawn in their own look from the map (SCREAM-106)', shown && shown[0], 'customer-smooth-' + (await ev('e.customer.resident.look')));
+  check('...smoothed at 8x the map sprite (SCREAM-110)', shown && shown.slice(1).join('x'), '128x256');
+  const same = await page.evaluate(() => {
+    // The smoothed frame shrunk back down matches the map frame: same person, same colours.
+    const g = window.__game, p = g.scene.getScene('Sales').children.getByName('customer');
+    const look = Number(p.texture.key.split('-').pop()), sheet = g.textures.get('residents'), f = sheet.get((Math.floor(look / 5) * 2) * 120 + (look % 5) * 24 + 18);
+    const c = document.createElement('canvas'); c.width = 16; c.height = 32; const x = c.getContext('2d');
+    x.drawImage(sheet.getSourceImage(), f.cutX, f.cutY, 16, 32, 0, 0, 16, 32); const a = x.getImageData(0, 0, 16, 32).data;
+    const big = p.texture.getSourceImage().getContext('2d').getImageData(0, 0, 128, 256).data; let diff = 0;
+    for (let yy = 0; yy < 32; yy++) for (let xx = 0; xx < 16; xx++) { const i = (yy * 16 + xx) * 4, j = ((yy * 8 + 3) * 128 + xx * 8 + 3) * 4; if (a[i] !== big[j] || a[i + 3] !== big[j + 3]) diff++; }
+    return diff;
+  });
+  check('...and is still the same person (pixel centres match the map frame)', same, 0);
   await page.screenshot({ path: outDir + '/customer_name.png' });
   check('...and they are off the map while at the window', await ev(`e.residents.all[${idx}].outside`), false);
 
