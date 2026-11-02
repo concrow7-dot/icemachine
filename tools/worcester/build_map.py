@@ -419,9 +419,6 @@ def build(art):
     house_sprites = [sp for sps in families.values() for sp in sps]
     size = {sp['key']: sp for sp in house_sprites + trees}
 
-    # The Speedway (SCREAM-22) stands on the lot of the house at this spot; leave that lot as it is.
-    STATION_LOTS = [(5685.5, 4735.6)]
-    STATION_CLEAR = [(5652.0, 4695.0, 200)]  # (x, y, radius): no ornaments near a gas station
     def rect(o, sp=None):
         sp = sp or size[o['key']]
         return (o['x'] - sp['w'] / 2, o['y'] - sp['h'], o['x'] + sp['w'] / 2, o['y'])
@@ -454,8 +451,7 @@ def build(art):
         _, dx, dy = best
         return ('down' if dy > 0 else 'up') if abs(dy) >= abs(dx) else ('right' if dx > 0 else 'left')
 
-    lots = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa')) and o is not home_obj
-            and not any(abs(o['x'] - x) < 1 and abs(o['y'] - y) < 1 for x, y in STATION_LOTS)]
+    lots = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa')) and o is not home_obj]
     house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
     for i in lots:
         o = objects[i]
@@ -487,6 +483,66 @@ def build(art):
         return (o['x'] - w / 2, o['y'] - h, o['x'] + w / 2, o['y'])
     objects = [o for o in objects if not o['key'].startswith('tree') or not any(overlaps(tree_rect(o), q, 2) for q in house_rects)]
     house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+
+    # 9. Gas stations (SCREAM-22, SCREAM-109): a forecourt with two pumps beside a main road, a
+    # bay in the curb lane, and a GAS sign. A house standing on a forecourt moves to the nearest
+    # free spot along the same street (it keeps its number, so its resident just moves with it);
+    # trees there come out. Each is given by a point on the road and is on the side away from
+    # the middle of the map, at the edge.
+    STATIONS = [
+        # PO (November 2): the real Speedway, just past the Chandler corner; here just north of it.
+        {'name': 'Speedway', 'road': 'Park Avenue', 'near': (5540.8, 4656.3)},
+        # PO (November 2, SCREAM-109): a second one on the west side, also on a main road and away from home.
+        {'name': 'June Street', 'road': 'June Street', 'near': (1805.0, 2322.0)},
+    ]
+    PAD_LEN, PAD_DEPTH = 150, 76
+    gas_stations = []
+    for st in STATIONS:
+        best = None
+        for name, pts in pieces:
+            if name != st['road']: continue
+            for a2, b2 in zip(pts, pts[1:]):
+                vx, vy = b2[0] - a2[0], b2[1] - a2[1]; L2 = vx * vx + vy * vy or 1
+                tt = max(0, min(1, ((st['near'][0] - a2[0]) * vx + (st['near'][1] - a2[1]) * vy) / L2))
+                px, py = a2[0] + tt * vx, a2[1] + tt * vy
+                d = math.dist((px, py), st['near'])
+                if best is None or d < best[0]: best = (d, (px, py), (vx / math.sqrt(L2), vy / math.sqrt(L2)))
+        if best is None: sys.exit(f"gas station road not found: {st['road']}")
+        _, (px, py), (ux, uy) = best
+        nx, ny = -uy, ux
+        if (px + nx - W / 2) ** 2 + (py + ny - H / 2) ** 2 < (px - W / 2) ** 2 + (py - H / 2) ** 2: nx, ny = -nx, -ny
+        at = lambda side, along=0: (r1(px + ux * along + nx * side), r1(py + uy * along + ny * side))
+        ang = r1(math.degrees(math.atan2(uy, ux)))
+        pad_c = at(118)
+        corners = [(pad_c[0] + ux * a3 + nx * b3, pad_c[1] + uy * a3 + ny * b3) for a3 in (-PAD_LEN / 2, PAD_LEN / 2) for b3 in (-PAD_DEPTH / 2, PAD_DEPTH / 2)]
+        box = (min(c[0] for c in corners) - 10, min(c[1] for c in corners) - 10, max(c[0] for c in corners) + 10, max(c[1] for c in corners) + 10)
+        st_out = {'name': st['name'], 'bay': {'x': at(30)[0], 'y': at(30)[1], 'angle': ang},
+                  'pad': {'x': pad_c[0], 'y': pad_c[1], 'length': PAD_LEN, 'depth': PAD_DEPTH, 'angle': ang},
+                  'pumps': [dict(zip('xy', at(112, -28))), dict(zip('xy', at(112, 28)))],
+                  'sign': dict(zip('xy', at(118, 4)))}
+        gas_stations.append(st_out)
+        # Clear the forecourt (plus room for the pumps and sign to stand up from it).
+        site = (box[0], box[1] - 40, box[2], box[3])
+        objects = [o for o in objects if not (o['key'].startswith('tree') and overlaps(tree_rect(o), site))]
+        for j, o in enumerate(objects):
+            if not o['key'].startswith(('house', 'villa')) or not overlaps(rect(o), site): continue
+            sp = size[o['key']]
+            moved = None
+            for along in sorted(range(-900, 901, 20), key=abs):
+                if moved: break
+                for depth in (8, 20, 34, 60):
+                    cx = px + ux * along + nx * (edge + depth + sp['w'] / 2 * abs(nx))
+                    cy = py + uy * along + ny * (edge + depth + sp['h'] / 2 * abs(ny)) + sp['h'] / 2
+                    rr = (cx - sp['w'] / 2, cy - sp['h'], cx + sp['w'] / 2, cy)
+                    if (lawn_ok(rr[0] - 6, rr[1] - 6, rr[2] + 6, rr[3] + 6) and not overlaps(rr, site, 8)
+                            and not any(overlaps(rr, rect(q), 8) for k, q in enumerate(objects) if k != j and q['key'].startswith(('house', 'villa')))
+                            and all(not overlaps(rr, (g['pad']['x'] - 100, g['pad']['y'] - 100, g['pad']['x'] + 100, g['pad']['y'] + 100)) for g in gas_stations)):
+                        moved = (r1(cx), r1(cy)); break
+            if not moved: sys.exit(f"no room to move the house off the {st['name']} gas station")
+            objects[j] = {'key': o['key'], 'x': moved[0], 'y': moved[1]}
+            objects = [q for q in objects if not (q['key'].startswith('tree') and overlaps(tree_rect(q), rect(objects[j]), 2))]
+    house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+    STATION_CLEAR = [(g['pad']['x'], g['pad']['y'], 200) for g in gas_stations]  # (x, y, radius): no ornaments here
 
     # Yard ornaments: one to three per house, beside the front and sides, off the path to the door.
     ornament_names = (
@@ -583,7 +639,7 @@ def build(art):
         'width': W, 'height': H,
         'roads': [{'name': n, 'points': [c for p in pts for c in p]} for n, pts in pieces],
         'labels': labels, 'areas': areas, 'homeStart': home_start,
-        'home': home_obj, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
+        'home': home_obj, 'gasStations': gas_stations, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
         'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in sprites_out],
         'roadTiles': road_tiles, 'roadTileScale': RASTER,
         'roadMask': {'scale': RASTER, 'rows': road_rows},

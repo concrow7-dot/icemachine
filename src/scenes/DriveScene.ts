@@ -29,7 +29,7 @@ import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
-import { GAS_STATION } from '../config/gasStation';
+import { GAS_STATIONS } from '../config/gasStation';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to pick up a waiting customer.
@@ -151,12 +151,12 @@ export class DriveScene extends Phaser.Scene {
   /** The ground, roads, houses and trees round the camera, painted into one image (one draw per frame). */
   private mapTexture!: Phaser.GameObjects.RenderTexture;
   /** Houses and trees painted into the map, front to back, with the gas station's pumps (SCREAM-22) in place of the house on its spot. */
-  private sortedObjects = [...WORCESTER.objects.filter((o) => !isReplacedByStation(o)), ...GAS_STATION.pumps.map((p) => ({ key: 'pump', ...p }))].sort(
+  private sortedObjects = [...WORCESTER.objects, ...GAS_STATIONS.flatMap((g) => g.pumps.map((p) => ({ key: 'pump', ...p })))].sort(
     (a, b) => a.y - b.y,
   );
-  /** SCREAM-22: the bay beside the pumps. Stop in it to buy gas. */
-  private pumpBay!: Phaser.GameObjects.Rectangle;
-  /** False after coming back from the pump, until the truck has left the bay (so the pump doesn't open again straight away). */
+  /** SCREAM-22, SCREAM-109: the bay beside each gas station's pumps. Stop in one to buy gas. */
+  private pumpBays: Phaser.GameObjects.Rectangle[] = [];
+  /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
   private dashes: { x: number; y: number; ux: number; uy: number }[] = [];
   private viewKey = '';
@@ -215,7 +215,7 @@ export class DriveScene extends Phaser.Scene {
     this.objectGrid.clear();
     WORCESTER.objects.forEach((o, i) => {
       const size = OBJECT_SIZES.get(o.key);
-      if (!size || isReplacedByStation(o)) return;
+      if (!size) return;
       const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
       const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
       const top = Math.floor((o.y - size.h) / OCCLUDER_CELL);
@@ -234,24 +234,26 @@ export class DriveScene extends Phaser.Scene {
     this.truck.setPosition(x, y);
     this.setHeading(angle);
 
-    // SCREAM-22: the pump bay, painted on the road beside the pumps like a parking space.
-    const bay = GAS_STATION.bay;
-    this.pumpBay = this.add
-      .rectangle(bay.x, bay.y, PICKUP_ZONE_SIZE + 10, PICKUP_ZONE_SIZE, 0xffd23f, 0.12)
-      .setStrokeStyle(3, 0xffd23f, 0.9)
-      .setAngle(bay.angle)
-      .setDepth(4);
-    this.pumpArmed = this.pickupOverlap(this.pumpBay) === 0;
-    const sign = GAS_STATION.sign;
-    this.mapTexts.push({
-      obj: this.add
-        .text(sign.x, sign.y - 72, 'GAS', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#c62828', padding: { x: 6, y: 2 } })
-        .setOrigin(0.5, 1)
-        .setDepth(7)
-        .setVisible(false),
-      x: sign.x,
-      y: sign.y,
-    });
+    // SCREAM-22, SCREAM-109: each station's pump bay, painted on the road beside the pumps like a parking space.
+    this.pumpBays = GAS_STATIONS.map((g) =>
+      this.add
+        .rectangle(g.bay.x, g.bay.y, PICKUP_ZONE_SIZE + 10, PICKUP_ZONE_SIZE, 0xffd23f, 0.12)
+        .setStrokeStyle(3, 0xffd23f, 0.9)
+        .setAngle(g.bay.angle)
+        .setDepth(4),
+    );
+    this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
+    for (const { sign } of GAS_STATIONS) {
+      this.mapTexts.push({
+        obj: this.add
+          .text(sign.x, sign.y - 72, 'GAS', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#c62828', padding: { x: 6, y: 2 } })
+          .setOrigin(0.5, 1)
+          .setDepth(7)
+          .setVisible(false),
+        x: sign.x,
+        y: sign.y,
+      });
+    }
     this.viewKey = '';
     this.refreshVisibleMap();
 
@@ -558,8 +560,8 @@ export class DriveScene extends Phaser.Scene {
       return [v(x + ux * hl - uy * hw, y + uy * hl + ux * hw), v(x + ux * hl + uy * hw, y + uy * hl - ux * hw), v(x - ux * hl + uy * hw, y - uy * hl - ux * hw), v(x - ux * hl - uy * hw, y - uy * hl + ux * hw)];
     };
     // SCREAM-22: the gas station's concrete forecourt, under the pumps.
-    const pad = GAS_STATION.pad;
-    if (pad.x > x0 - 150 && pad.x < x1 + 150 && pad.y > y0 - 150 && pad.y < y1 + 150) {
+    for (const { pad } of GAS_STATIONS) {
+      if (pad.x < x0 - 150 || pad.x > x1 + 150 || pad.y < y0 - 150 || pad.y > y1 + 150) continue;
       g.fillStyle(0x8d9196, 1).fillPoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
       g.lineStyle(2, 0x6b6f74, 1).strokePoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
     }
@@ -952,7 +954,7 @@ export class DriveScene extends Phaser.Scene {
    */
   /** SCREAM-22: stopped in the pump bay (the same rule as a customer's square), the pump opens. */
   private checkPump(): void {
-    const overlap = this.pickupOverlap(this.pumpBay);
+    const overlap = Math.max(0, ...this.pumpBays.map((b) => this.pickupOverlap(b)));
     if (!this.pumpArmed) {
       if (overlap === 0) this.pumpArmed = true;
       return;
@@ -1010,8 +1012,3 @@ export class DriveScene extends Phaser.Scene {
   }
 }
 
-/** SCREAM-22: the scenery house standing where the gas station goes, left off the map. */
-function isReplacedByStation(o: { key: string; x: number; y: number }): boolean {
-  const r = GAS_STATION.replaces;
-  return o.key === r.key && Math.abs(o.x - r.x) < 1 && Math.abs(o.y - r.y) < 1;
-}

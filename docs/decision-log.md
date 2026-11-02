@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 018 — A second gas station, on June Street; stations placed by the map generator (2026-11-02)
+
+**Decision:** There are two gas stations (Jira SCREAM-109): the Speedway on Park Avenue (decision 016) and a second one on June Street, the main road along the map's west edge. Both work the same way and look the same: two pumps on a forecourt, a GAS sign and a yellow bay.
+
+**Options considered:** the other real station in the map data (on Park Ave near Pleasant St, on the same east edge as the Speedway); an invented spot on the west side; or a spot the PO names.
+
+**Why (product owner's rationale):** the PO chose the west side (November 2), so there's gas near both ends of the map. His reason for the Speedway (decision 016) also guided where on the west side: on a main road at the edge of the map, away from home, so the player explores.
+
+**Engineering's calls (proposals, not the PO's reasons):**
+- The map generator now places the stations (`gasStations` in `worcester.ts`) on the side of the road away from the middle of the map. The June Street one is about 2,000 px from home.
+- A house standing on a forecourt moves to the nearest free spot along the same street and keeps its number in the residents sheet, so its resident moves with it. This also fixes a resident who lived "inside" the Speedway after decision 016 (house 146; house 148 moved too).
+- Customers' pink squares are kept off the pump bays.
+
+**Revisit if:** gas feels too far away or too close (move a station, or add one), or the map grows (SCREAM-66).
+
 ## 017 — Varied houses and yards; houses keep their lots (2026-11-02)
 
 **Decision:** The neighbourhood's houses are no longer all small mobile homes (Jira SCREAM-108). Every lot gets a house picked from every style in the LimeZu pack that fits there: small, medium and big mobile homes, Victorian houses and villas (the terraced houses are too big for any lot). Each style comes in its own colours plus three of six wall-and-roof colour schemes. Yards get one to three garden ornaments: mailboxes, flower pots, sunflowers, bird houses, sheds, bushes, benches and fountains.

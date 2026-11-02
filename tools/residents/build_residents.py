@@ -358,6 +358,9 @@ def curb(m, segs, door, blocks):
                     continue
                 if any(math.dist(square, (c['x'], c['y'])) < CAR_CLEAR for c in m['parkedCars']):
                     continue
+                # Off the gas stations' pump bays (SCREAM-109), so a customer never waits in one.
+                if any(math.dist(square, (g['bay']['x'], g['bay']['y'])) < CAR_CLEAR for g in m.get('gasStations', [])):
+                    continue
                 if strict and through_house(door, stand):
                     continue
                 return [round(stand[0], 1), round(stand[1], 1), round(square[0], 1), round(square[1], 1),
