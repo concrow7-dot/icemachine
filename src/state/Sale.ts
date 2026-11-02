@@ -100,6 +100,8 @@ export class Sale {
   askedAgain = false;
   /** True once a wrong order has been corrected (one retry only, Q27). */
   retryUsed = false;
+  /** SCREAM-120: the player overcharged once and is trying the price again (no tip after that). */
+  repriceUsed = false;
   /** The customer's current line in the speech bubble. */
   line = '';
 
@@ -157,7 +159,7 @@ export class Sale {
   /** The tip on offer right now, in percent. Zero after asking again or a mistake. */
   tipPercent(nowMs: number): number {
     const seconds = this.countdownSeconds(nowMs);
-    if (seconds === null || this.askedAgain || this.retryUsed) return 0;
+    if (seconds === null || this.askedAgain || this.retryUsed || this.repriceUsed) return 0;
     return tipPercentAt(seconds);
   }
 
@@ -195,9 +197,11 @@ export class Sale {
    * The player types a price and presses Enter. Returns what happened:
    * - `retry`: wrong items, first time: the customer says the right order again,
    *   the items go back in the cooler, and the player tries again (Q27)
+   * - `reprice`: too high, first time (SCREAM-120): the customer says so and the
+   *   player types the price again, with no tip
    * - otherwise the sale is over (see `outcome`)
    */
-  charge(priceCents: number, realTotalCents: number, nowMs: number): 'retry' | 'over' {
+  charge(priceCents: number, realTotalCents: number, nowMs: number): 'retry' | 'reprice' | 'over' {
     if (this.phase !== 'pricing') return 'over';
 
     if (!this.bagMatchesOrder) {
@@ -211,6 +215,12 @@ export class Sale {
     }
 
     if (priceCents > realTotalCents) {
+      // SCREAM-120 (PO, November 2): a second chance to fix the price, but no tip.
+      if (!this.repriceUsed) {
+        this.repriceUsed = true;
+        this.line = "That's more than it's supposed to be. Try again?";
+        return 'reprice';
+      }
       this.finish({ kind: 'overcharged' }, "That's more than it's supposed to be.");
       return 'over';
     }

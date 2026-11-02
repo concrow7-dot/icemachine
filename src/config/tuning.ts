@@ -219,18 +219,24 @@ export const FUEL_STEP_CENTS = 500;
  * 300 s evening at top speed (433 px/s) is about 78,000 px. It was 117,000 (2/3 of a
  * tank); SCREAM-114 (PO, November 2): gas should burn quicker, so now a full evening
  * of driving uses about a full tank (1.5x as fast). Then (PO, November 2) 15% faster
- * again: 78,000 / 1.15 = 67,800 px, then 25% faster: 54,200 px. Tune after playing.
+ * again: 78,000 / 1.15 = 67,800 px, then 25% faster: 54,200 px. SCREAM-119 (PO, November 2):
+ * 30% faster again: 54,200 / 1.3 = about 41,700 px. Tune after playing.
  */
-export const FUEL_TANK_PX = 54200;
+export const FUEL_TANK_PX = 41700;
 
 /** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
 export const FUEL_STORY_START = 0.25;
 
+/**
+ * SCREAM-119 (PO, November 2): running out of gas ends the evening, and the next Story day
+ * starts with 1/6 of a tank (PO raised it from 1/8 after running dry on the way), enough to reach a gas station. Engineering's call: a day
+ * never starts with less than this, however the last one ended.
+ */
+export const FUEL_STORY_MIN_START = 1 / 6;
+
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;
 
-/** PO: with an empty tank the truck crawls at a quarter of its top speed (no tow, for now). */
-export const FUEL_EMPTY_SPEED_FRACTION = 0.25;
 
 /** The HUD's gauge turns red at or below this much of a tank. */
 export const FUEL_LOW = 0.15;

@@ -92,7 +92,13 @@ export class DayEndScene extends Phaser.Scene {
             : `School starts tomorrow.\nYou're ${formatMoney(BIKE_PRICE_CENTS - story.cashCents)} short of the bike.`
           : (stock > 0 ? 'Your cash and ice cream\ncarry over to tomorrow.' : 'Your cash carries over to tomorrow.') +
             '\n\nGame saved.'; // SCREAM-17: saved at the end of each evening
-    this.add.text(540, 280, message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
+    // SCREAM-119: say why the day ended early, and what tomorrow's tank holds.
+    const gasNote = !evening.endedOutOfGas
+      ? ''
+      : this.outcome === 'next'
+        ? 'You ran out of gas!\nTomorrow you start with 1/6 of a tank.\n\n'
+        : 'You ran out of gas!\n\n';
+    this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
     const footer =
       this.outcome === 'next' ? `Enter: Start Day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';

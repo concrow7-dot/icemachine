@@ -1,4 +1,4 @@
-// SCREAM-22: fuel. The gauge, driving uses gas, an empty tank crawls at a quarter
+// SCREAM-22: fuel. The gauge, driving uses gas, an empty tank ends the evening (SCREAM-119; it used to crawl at a quarter
 // speed, the gas station's pump bay on Park Avenue, buying in $5 steps up to $30 a
 // tank, Quick play's full tank, Story's quarter tank on day 1 carried over and saved.
 const { chromium } = require('playwright');
@@ -56,20 +56,13 @@ const { chromium } = require('playwright');
   const used = before - (await ev('e.fuel'));
   const straight = Math.hypot(end[0] - start[0], end[1] - start[1]);
   check('Driving uses gas', used > 0, true);
-  near('...about 1 tank per 54,200 px (used x 54,200 / straight-line px)', Math.round((used * 54200 / straight) * 100) / 100, 0.99, 1.6);
+  near('...about 1 tank per 41,700 px (used x 41,700 / straight-line px; SCREAM-119)', Math.round((used * 41700 / straight) * 100) / 100, 0.99, 1.6);
   check('Parked, no gas is used', await (async () => { await drive('(s.speed = 0, s.parkBrake = true, true)'); const a = await ev('e.fuel'); await wait(500); return a === (await ev('e.fuel')); })(), true);
 
-  // ---- An empty tank: a quarter speed ----
-  await ev('(e.burnFuel(1e9), true)');
-  check('Burning more than is left stops at empty', await ev('e.fuel + " " + e.isOutOfFuel'), '0 true');
-  await awayFromBay();
-  await drive('(s.parkBrake = false, true)');
-  await page.keyboard.down('ArrowUp'); await wait(2500);
-  near('Empty: the truck crawls at a quarter of 547 px/s', Math.round(await drive('s.speed')), 131, 138);
-  await page.keyboard.up('ArrowUp'); await wait(200);
-  await drive('(s.speed = 547, true)'); await wait(600);
-  near('Running dry at full speed: slows to the crawl', Math.round(await drive('s.speed')), 0, 109);
-  await drive('(s.speed = 0, s.parkBrake = true, true)');
+  // ---- An empty tank (SCREAM-119): checked at the end of this evening, as it ends the evening ----
+  // For the pump checks below, empty the tank without driving it dry.
+  await ev('(e.fuelLeft = 0, true)');
+  check('An empty tank, set directly, leaves the evening running', await ev('e.isOutOfFuel + " " + e.isOver'), 'true false');
 
   // ---- The gas station ----
   // SCREAM-109: two stations, the Speedway on Park Ave and one on June Street, each with two pumps on a clear forecourt.
@@ -151,9 +144,9 @@ const { chromium } = require('playwright');
   check("Full tank at the pump: says the tank's full", /tank's full/.test(await texts('Pump')), true);
   await press('Enter'); await wait(300);
   check('Enter with nothing to buy just drives off', await scenes(), 'Drive,Hud');
-  await ev('(e.burnFuel(54200 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
+  await ev('(e.burnFuel(41700 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
   check('$12 and a quarter tank: only whole $5 steps the wallet covers ($10)', await ev('e.maxGasCents'), 1000);
-  await ev('(e.burnFuel(54200 * 0.1), true)');
+  await ev('(e.burnFuel(41700 * 0.1), true)');
   check('A tank a step short of full in steps: 0.15 tank, room for $25', await ev('(e.changeMoney(5000, "test", false), e.maxGasCents)'), 2500);
   await ev('(e.changeMoney(-e.moneyCents + 300, "test", false), true)');
   await awayFromBay(); await wait(200); await intoBay();
@@ -162,8 +155,12 @@ const { chromium } = require('playwright');
   await press('b'); await wait(300);
 
   // ---- Results ----
-  await shift(3); await wait(400);
+  // SCREAM-119 (PO): driving the tank dry ends the evening, on the OUT OF GAS results screen.
+  await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); return true; })()`);
+  await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  check('Driving the tank dry ends the evening (SCREAM-119)', (await ev('e.isOver + " " + e.endedOutOfGas')) + ' ' + (await scenes()), 'true true Results');
   const results = await texts('Results');
+  check('...the results say OUT OF GAS', /OUT OF GAS/.test(results), true);
   check("Results: a Gas line with tonight's gas", /Gas/.test(results) && /-\$30\.00/.test(results), true);
   await page.screenshot({ path: outDir + '/fuel_results.png' });
 
@@ -191,7 +188,16 @@ const { chromium } = require('playwright');
   await ev('(e.burnFuel(30000), true)');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
+  // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
+  await press('ArrowRight'); await press('Enter'); await wait(400);
+  await ev('(e.residents.hearingOff = true, true)');
+  await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  const dayEnd = await texts('DayEnd');
+  check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
+  await press('Enter'); await wait(300);
+  check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
   // A save from before fuel: a quarter tank.
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); d.day = 2; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); delete d.fuel; delete d.totals.gasCents; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);

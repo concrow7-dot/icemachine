@@ -2,6 +2,27 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 026 — Overcharging gets a second chance, without a tip (2026-11-02)
+
+**Decision (Jira SCREAM-120, PO, November 2):** the first time the player charges more than the order costs, the customer says "That's more than it's supposed to be. Try again?" and the player can type the price again, but loses the tip. Overcharging a second time ends the sale as before: the customer leaves with the ice cream for free.
+
+**Why (product owner's rationale):** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):** this chance is separate from the one for handing over the wrong items (both can happen in one sale); the customer's wording.
+
+## 025 — Out of gas ends the evening; gas runs out 30% faster (2026-11-02)
+
+**Decision (Jira SCREAM-119, PO, November 2):**
+- When the tank runs empty, the evening ends: Quick play goes to the results screen (headed OUT OF GAS), Story to the end-of-day screen ("You ran out of gas!"). This replaces decision 016's quarter-speed crawl to the pumps.
+- In Story, the next day starts with 1/6 of a tank (raised from 1/8 on November 2: the PO ran out on the way to the station while testing), enough to reach a gas station.
+- Gas runs out 30% faster: a full tank drives about 41,700 px (was 54,200).
+
+**Why (product owner's rationale):** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):** a Story day never starts with less than 1/6 of a tank, however the last one ended (`FUEL_STORY_MIN_START`); the evening ends at the moment the tank runs dry, not when an already-empty tank is driven.
+
+**Revisit if:** running out feels too harsh (a tow for a fee, or the old crawl) or 1/6 of a tank isn't enough to reach a station from where the truck starts.
+
 ## 024 — Music at the counter; customers come out while you serve, and wait twice as long (2026-11-02)
 
 **Decision (Jira SCREAM-118, from Tom Cobb's round 2 playtest):**

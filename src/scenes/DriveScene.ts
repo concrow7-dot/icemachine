@@ -31,7 +31,6 @@ import {
   TRUCK_LOOK_TILT,
   PARKED_CAR_SCALE,
   DRIVE_CAMERA_ZOOM,
-  FUEL_EMPTY_SPEED_FRACTION,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
 } from '../config/tuning';
@@ -409,8 +408,8 @@ export class DriveScene extends Phaser.Scene {
     // everything and the truck rolls at a creep, the way it was last going;
     // the brake stops it, and holding the brake at a stop reverses after a
     // moment. To stay still once stopped, put the park brake on (Q).
-    // SCREAM-22 (PO): with an empty tank the truck crawls at a quarter speed, enough to reach the pumps.
-    const top = this.evening.isOutOfFuel ? TRUCK_SPEED * FUEL_EMPTY_SPEED_FRACTION : TRUCK_SPEED;
+    // SCREAM-119: an empty tank ends the evening (the old quarter-speed crawl is gone).
+    const top = TRUCK_SPEED;
     if (this.speed > top) this.speed = Math.max(top, this.speed - (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS);
     if (gas && !brake) {
       this.parkBrake = false;

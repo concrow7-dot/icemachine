@@ -63,7 +63,8 @@ export class ResultsScene extends Phaser.Scene {
     const { width } = this.scale;
     const evening = getEvening(this);
     this.profit = evening.profitCents;
-    this.add.text(width / 2, 50, 'THE SUN HAS SET', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
+    // SCREAM-119: an empty tank ends the evening early.
+    this.add.text(width / 2, 50, evening.endedOutOfGas ? 'OUT OF GAS' : 'THE SUN HAS SET', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
 
     // ---- Tonight's breakdown ----
     const b = evening.breakdown;
