@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 029 — Drive home to restock: Home's driveway (2026-11-02)
+
+**Decision (Jira SCREAM-54, PO, November 2):**
+- Home has a driveway spot, marked on the road outside home where each evening starts. Pulling in works like a customer pickup: stop with half the truck in the spot.
+- It opens the same cooler screen as the start of the evening, to buy more stock and change prices on Today's Menu.
+- The clock keeps running while you restock, so a trip home costs daylight, like the pump. Decision 005 (the clock waits) now applies only to stocking before you first set off.
+- Home is for restocking only; gas stays at the gas stations.
+- When the cooler is sold out, an arrow points home (from Tom Cobb's round 2 playtest); it's gone once there's stock again. It's a different arrow from the customer arrow removed in SCREAM-68.
+
+**Why (product owner's rationale):** it's a game mechanic: managing inventory was always part of the PO's experience owning the truck, and it gives the game another layer.
+
+**Engineering's calls (proposals, not the PO's reasons):** the spot is a blue box on the road (the truck starts in it, so it only opens once the truck has left and come back, like the pump bay); the arrow sits at the edge of the view pointing home, or bobs above the spot when it's on screen; leaving the cooler from home (buying or B) goes straight back to the road, and B may leave without buying.
+
 ## 028 — Stocking one ice cream at a time: clipboard, crates and Today's Menu (2026-11-02)
 
 **Decision (Jira SCREAM-129, the PO's sketch, November 2):** the cooler prep screen is redesigned in three parts.

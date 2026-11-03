@@ -61,6 +61,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private cashCents: number;
   private customerAtWindow = false;
   private prepLocked = false;
+  /** SCREAM-54: true while the player is at the cooler after pulling into Home's driveway. */
+  private restockingNow = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
   /** SCREAM-67: the resident being served at the window, or null. */
   private servingNow: ResidentNow | null = null;
@@ -456,6 +458,30 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.prepLocked = true;
   }
 
+  /**
+   * SCREAM-54 (PO, November 2): back home in the driveway, the cooler can be restocked and
+   * the prices changed again, with the clock running. Only once the truck has been on the road.
+   */
+  startRestock(): boolean {
+    if (!this.prepLocked || this.ended) return false;
+    this.restockingNow = true;
+    return true;
+  }
+
+  endRestock(): void {
+    this.restockingNow = false;
+  }
+
+  /** True while restocking at home (SCREAM-54). */
+  get isRestocking(): boolean {
+    return this.restockingNow;
+  }
+
+  /** Whether the cooler can be changed now: before the first drive, or restocking at home. */
+  get canStock(): boolean {
+    return (!this.prepLocked || this.restockingNow) && !this.ended;
+  }
+
   /** Total spent on the stock currently in the cooler. */
   get stockCostCents(): number {
     return this.coolerSlots.reduce((sum, s) => sum + s.quantity * getFlavour(s.flavour).costCents, 0);
@@ -464,10 +490,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /**
    * Buy Stock (PR #29 feedback): pays for a draft order from the cooler and
    * makes it the cooler's contents. Returns false, changing nothing, if prep is
-   * locked, the evening is over, or the player can't afford it.
+   * locked (and the player isn't restocking at home), the evening is over, or the
+   * player can't afford it.
    */
   buyStock(order: CoolerOrder): boolean {
-    if (this.prepLocked || this.ended) return false;
+    if (!this.canStock) return false;
     const cost = order.costCents;
     if (cost > this.cashCents) return false;
 
