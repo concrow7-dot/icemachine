@@ -18,12 +18,13 @@ export const CALCULATOR_HEIGHT = PAD + DISPLAY_H + 10 + KEY_H * 4 + GAP * 3 + PA
 /** Characters of room for the digits on the display. */
 const DISPLAY_CHARS = 9;
 
-const BODY = 0xe9ecef;
-const BODY_EDGE = 0x9aa0a6;
-const LCD = 0xc5cfbd;
-const LCD_INK = '#1f2a1c';
-const NUMBER_KEY = 0x2b2b2b;
-const EDIT_KEY = 0x2f5fa8;
+// SCREAM-125: the truck drawing's colours, with its grey outlines.
+const BODY = 0xefe4b0;
+const BODY_EDGE = 0x7f7f7f;
+const LCD = 0xcfeef5;
+const LCD_INK = '#1f2a3c';
+const NUMBER_KEY = 0x4a4a4a;
+const EDIT_KEY = 0x2884d6;
 const CHARGE_KEY = 0xe8782a;
 
 // [label, key, column, row, rows tall, colour]
@@ -45,7 +46,7 @@ export class Calculator {
 
     const body = scene.add.graphics();
     body.fillStyle(BODY_EDGE).fillRoundedRect(0, 0, CALCULATOR_WIDTH, CALCULATOR_HEIGHT, 14);
-    body.fillStyle(BODY).fillRoundedRect(3, 3, CALCULATOR_WIDTH - 6, CALCULATOR_HEIGHT - 6, 12);
+    body.fillStyle(BODY).fillRoundedRect(4, 4, CALCULATOR_WIDTH - 8, CALCULATOR_HEIGHT - 8, 11);
     body.fillStyle(LCD).fillRoundedRect(PAD, PAD, CALCULATOR_WIDTH - 2 * PAD, DISPLAY_H, 6);
     this.container.add(body);
 
@@ -66,7 +67,7 @@ export class Calculator {
       const h = KEY_H * rows + GAP * (rows - 1);
       const kx = PAD + col * (KEY_W + GAP) + KEY_W / 2;
       const ky = top + row * (KEY_H + GAP) + h / 2;
-      const rect = scene.add.rectangle(kx, ky, KEY_W, h, colour).setInteractive({ useHandCursor: true });
+      const rect = scene.add.rectangle(kx, ky, KEY_W, h, colour).setStrokeStyle(2, BODY_EDGE).setInteractive({ useHandCursor: true });
       const text = scene.add
         .text(kx, ky, label, {
           fontFamily: 'monospace',
