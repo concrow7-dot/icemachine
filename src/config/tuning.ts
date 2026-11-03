@@ -208,15 +208,14 @@ export const CUSTOMER_INDOORS_FACTOR = 0.5;
 export const CUSTOMER_RUN_SPEED = 37;
 
 /**
- * SCREAM-140 (PO, November 2): from the moment the "!" shows, a customer walks to the
- * nearest road, then along the curb toward the truck, and stops a short way off, where
- * their pink square appears. Engineering's numbers (proposals): they stop when they're
- * CUSTOMER_STOP_GAP px from the truck along the street, follow at most CUSTOMER_FOLLOW_MAX
- * px from their own curb spot, and stop rather than come within CUSTOMER_QUEUE_GAP px of
- * someone already waiting (so the pink squares don't overlap).
+ * SCREAM-140 / SCREAM-142 (PO, November 2): from the moment the "!" shows, a customer walks
+ * straight toward the truck and keeps following it. Engineering's numbers (proposals): within
+ * CUSTOMER_STOP_GAP px of the truck they stop at the curb beside them and their pink square
+ * appears; if the truck gets more than CUSTOMER_FOLLOW_AGAIN px away, they set off after it
+ * again. Pink squares keep CUSTOMER_QUEUE_GAP px apart, so customers queue up.
  */
 export const CUSTOMER_STOP_GAP = 150;
-export const CUSTOMER_FOLLOW_MAX = 480;
+export const CUSTOMER_FOLLOW_AGAIN = 260;
 export const CUSTOMER_QUEUE_GAP = 100;
 
 /** PO: a customer waits at the curb this long, then walks home. */

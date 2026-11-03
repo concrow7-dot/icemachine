@@ -5,7 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { WORCESTER } from '../config/worcester';
 import { RESIDENTS } from '../config/residents';
 import { Residents, type ResidentNow } from './Residents';
-import { CurbPath } from './CurbPath';
+import { CurbFinder } from './CurbFinder';
 import { RoadNetwork } from './RoadGeometry';
 import { GAS_STATIONS } from '../config/gasStation';
 import {
@@ -114,7 +114,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   orderPictureChance = ORDER_PICTURE_CHANCE;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
-  readonly residents = new Residents(RESIDENTS, Math.random, new CurbPath(WORCESTER.roads), pinkSquareFits);
+  readonly residents = new Residents(RESIDENTS, Math.random, new CurbFinder(ROADS, pinkSquareFits));
 
   /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
   /**
