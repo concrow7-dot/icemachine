@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { getFlavour } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
@@ -102,9 +103,11 @@ export class SalesScene extends Phaser.Scene {
     }
 
     // The speech bubble, reaching across from the customer.
-    this.add.rectangle(330, 200, 480, 150, 0xfffdf9).setStrokeStyle(4, 0x2b1d10);
-    this.add.triangle(590, 205, 0, -18, 0, 18, 110, 8, 0xfffdf9).setStrokeStyle(4, 0x2b1d10);
-    this.add.rectangle(568, 205, 10, 30, 0xfffdf9); // hides the bubble's edge where the tail joins
+    // SCREAM-126: the game's shared pixel bubble (Pokémon Yellow-style), tail stepping toward the customer.
+    drawBubble(this.add.graphics(), {
+      x: 90, y: 125, w: 480, h: 150, unit: 4, innerLine: true,
+      tail: { side: 'right', at: 96, steps: 7, reach: 3 },
+    });
     this.bubbleText = this.add
       .text(330, 200, '', {
         fontFamily: 'monospace',

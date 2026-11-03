@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { BUBBLE_INK, drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
@@ -961,7 +962,7 @@ export class DriveScene extends Phaser.Scene {
       if (bubble) {
         bubble.setVisible(wants);
         if (wants) {
-          bubble.setPosition(Math.round(p.x) + 8, Math.round(p.y) - 38);
+          bubble.setPosition(Math.round(p.x) + 5, Math.round(p.y) - 30);
           const hurry = p.customer === 'waiting' && p.waitLeft < 5;
           bubble.setAlpha(hurry ? 0.4 + 0.6 * Math.abs(Math.sin(this.time.now / 150)) : 1);
         }
@@ -983,17 +984,16 @@ export class DriveScene extends Phaser.Scene {
     });
   }
 
-  /** A little thought bubble with a "!" in it (PO, November 2). */
+  /**
+   * A small "!" speech bubble (PO, November 2). SCREAM-126: the game's shared pixel bubble
+   * style, kept small and in plain ink so it's subtler than the old pink one. The
+   * container's (0, 0) is the tip of the tail.
+   */
   private makeBubble(): Phaser.GameObjects.Container {
-    const g = this.add.graphics();
-    g.fillStyle(0xffffff, 1).lineStyle(2, 0xc2185b, 1);
-    g.fillEllipse(0, 0, 22, 20).strokeEllipse(0, 0, 22, 20);
-    g.fillCircle(-7, 13, 3).strokeCircle(-7, 13, 3);
-    g.fillCircle(-10, 18, 1.8).strokeCircle(-10, 18, 1.8);
-    const bang = this.add
-      .text(0, 0, '!', { fontFamily: 'monospace', fontSize: '16px', color: '#c2185b', fontStyle: 'bold' })
-      .setOrigin(0.5);
-    return this.add.container(0, 0, [g, bang]).setDepth(7);
+    const g = drawBubble(this.add.graphics(), { x: -3, y: -15, w: 11, h: 12, unit: 1, tail: { side: 'down', at: 3, steps: 3 } });
+    // The "!" in pixels: a stem and a dot.
+    g.fillStyle(BUBBLE_INK, 1).fillRect(1, -13, 2, 5).fillRect(1, -6, 2, 2);
+    return this.add.container(0, 0, [g]).setDepth(7);
   }
 
   /** The song's name, top right, for a few seconds. */
