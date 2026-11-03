@@ -130,7 +130,8 @@ export class SalesScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.tipBar = new TipBar(this, 100, 66);
+    // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
+    this.tipBar = new TipBar(this, 892, 412, true);
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
     this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);
