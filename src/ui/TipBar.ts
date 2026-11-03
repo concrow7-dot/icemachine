@@ -62,6 +62,19 @@ export class TipBar {
   update(evening: EveningState): void {
     const sale = evening.sale;
     const seconds = sale?.countdownSeconds(evening.nowMs) ?? null;
+    // SCREAM-134 (PO, November 2): at the window the cup is always on the counter during a
+    // visit: full while the order shows, then emptying; when the sale ends it keeps its last look.
+    if (this.jar && sale && sale.phase !== 'over' && seconds === null) {
+      this.container.setVisible(true);
+      this.fill.setDisplaySize(JAR_W - 12, BILLS_H).setFillStyle(0x9ad48c);
+      this.label.setText('');
+      return;
+    }
+    if (this.jar && sale?.phase === 'over') {
+      this.container.setVisible(true);
+      this.label.setText('');
+      return;
+    }
     if (!sale || seconds === null || sale.phase === 'over') {
       this.container.setVisible(false);
       return;
