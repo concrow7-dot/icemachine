@@ -24,8 +24,9 @@ const CELL = 38;
 const CELL_PAD = 4;
 const CRATE_PX = CRATE_SIDE * CELL + 2 * CELL_PAD;
 const CRATE_CELLS = CRATE_SIDE * CRATE_SIDE;
-/** PO-agreed proposal: a lid takes about half a second to open. */
-const LID_OPEN_MS = 500;
+/** SCREAM-138 (PO, November 2): a lid opens quickly, and the one that was open takes about half a second to close. */
+const LID_OPEN_MS = 200;
+const LID_CLOSE_MS = 500;
 /** The bag's contents: a row on the counter, right of the paper bag. */
 const BAG_FIRST_X = 380;
 const BAG_Y = 410;
@@ -141,7 +142,7 @@ export class FillScene extends Phaser.Scene {
     this.tipBar.update(this.evening);
   }
 
-  /** A crate's lid: frosted, solid (no peeking), with its number on it. Clicking it opens the crate. */
+  /** A crate's lid: frosted, solid (no peeking), with its number on it. Clicking the crate opens it. */
   private makeLid(left: number, crate: number): Phaser.GameObjects.Container {
     const g = this.add.graphics();
     g.fillStyle(0xdff3f8, 1).fillRect(0, 0, CRATE_PX, CRATE_PX);
@@ -155,29 +156,42 @@ export class FillScene extends Phaser.Scene {
       .text(CRATE_PX / 2, CRATE_PX / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
       .setOrigin(0.5);
     const lid = this.add.container(left, CRATE_TOP, [g, number]).setDepth(10);
-    lid.setSize(CRATE_PX, CRATE_PX).setInteractive(new Phaser.Geom.Rectangle(0, 0, CRATE_PX, CRATE_PX), Phaser.Geom.Rectangle.Contains);
-    lid.on('pointerdown', () => this.open(crate));
+    // PO (November 2): click on the cooler to open it. A plain click zone over the whole crate,
+    // under the ice creams (once the crate is open, clicking an ice cream takes it instead).
+    this.add
+      .zone(left, CRATE_TOP, CRATE_PX, CRATE_PX)
+      .setOrigin(0, 0)
+      .setDepth(-1)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.open(crate));
     return lid;
   }
 
   /**
-   * Opens a crate: shuts the open one straight away, then this lid folds up over half a
-   * second. `instant` skips the wait (the tests use it).
+   * Opens a crate: this lid folds up quickly (0.2 s) while the one that was open slides shut
+   * (0.5 s, its ice creams hidden at once). `instant` skips the wait (the tests use it).
    */
   open(crate: number, instant = false): void {
     if (crate < 0 || crate >= this.lids.length || this.openCrate === crate || this.opening === crate) return;
+    const wasOpen = this.openCrate ?? this.opening;
     this.openCrate = null;
     this.opening = crate;
     this.focus = 0;
     this.lids.forEach((lid, i) => {
+      if (i === crate) return;
       this.tweens.killTweensOf(lid);
-      if (i !== crate) lid.setScale(1, 1).setVisible(true);
+      lid.setVisible(true);
+      // The crate that was open slides shut (its ice creams are hidden straight away); the rest stay shut.
+      if (i === wasOpen && !instant) this.tweens.add({ targets: lid, scaleY: 1, duration: LID_CLOSE_MS, ease: 'Cubic.easeOut' });
+      else lid.setScale(1, 1);
     });
+    this.tweens.killTweensOf(this.lids[crate] ?? []);
     const done = () => {
       if (this.opening !== crate) return;
       this.opening = null;
       this.openCrate = crate;
-      this.lids[crate]?.setVisible(false);
+      // Folded right up (and out of the way), so closing it later slides it back down.
+      this.lids[crate]?.setScale(1, 0).setVisible(false);
       this.refresh();
     };
     if (instant) done();

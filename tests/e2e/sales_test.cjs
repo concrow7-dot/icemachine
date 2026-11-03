@@ -84,10 +84,18 @@ const { chromium } = require('playwright');
   // ---- SCREAM-131: a shut cooler, one crate open at a time ----
   const fill = (fn) => sc('Fill', fn);
   check('One crate open (the one used); its ice creams show, the others are hidden', (await fill('s.openCrate')) + ' ' + (await fill('s.cellIcons.slice(16).some(i => i.visible)')), '0 false');
-  await press('2'); await wait(150);
-  check('Press 2: crate 1 shuts at once, crate 2 is still opening', (await fill('s.openCrate')) + ' ' + (await fill('s.cellIcons.slice(0, 16).some(i => i.visible)')), 'null false');
-  await wait(500);
-  check('...and is open after about half a second', await fill('s.openCrate'), 1);
+  await page.keyboard.press('2'); await wait(60);
+  check('Press 2: crate 1 hidden at once, crate 2 still opening', (await fill('s.openCrate')) + ' ' + (await fill('s.cellIcons.slice(0, 16).some(i => i.visible)')), 'null false');
+  check('...crate 1\'s lid is sliding shut (SCREAM-138)', await fill('s.lids[0].visible && s.lids[0].scaleY > 0 && s.lids[0].scaleY < 1'), true);
+  await wait(250);
+  check('...crate 2 is open after about 0.2 s (SCREAM-138)', await fill('s.openCrate'), 1);
+  await wait(400);
+  check('...and crate 1\'s lid is fully shut after about half a second', await fill('s.lids[0].scaleY'), 1);
+  // The PO: click on the cooler to open it. A real mouse click on lid 3.
+  await page.mouse.click(719 + 80, 96 + 80); await wait(400);
+  check('Clicking lid 3 with the mouse opens crate 3', await fill('s.openCrate'), 2);
+  await page.mouse.click(519 + 80, 96 + 80); await wait(400);
+  check('...and clicking lid 2 opens crate 2 again', await fill('s.openCrate'), 1);
   const back = await ev('e.bagContents[0].cell');
   const bagSpot = await fill('[s.bagIcons[0].x, s.bagIcons[0].y]');
   await page.mouse.click(bagSpot[0], bagSpot[1]); await wait(150);
