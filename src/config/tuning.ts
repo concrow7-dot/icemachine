@@ -23,9 +23,14 @@ export const STORY_DAYS = 3;
 /** SCREAM-18 (PO, October 31): the story's goal, a new bike, costs $200. */
 export const BIKE_PRICE_CENTS = 20000;
 
-/** Issue #8: the cooler has 3 flavour slots holding 15 bars each. */
-export const COOLER_SLOTS = 3;
-export const SLOT_CAPACITY = 15;
+/**
+ * SCREAM-129 (PO, November 2): the cooler is 3 crates of 4 x 4 squares, one ice cream per
+ * square, any mix of flavours: 48 in all (it was 3 slots of 15). The PO kept the total close
+ * to the old 45. SCREAM-25 (a bigger cooler) could add a crate.
+ */
+export const COOLER_CRATES = 3;
+export const CRATE_SIDE = 4;
+export const COOLER_CAPACITY = COOLER_CRATES * CRATE_SIDE * CRATE_SIDE;
 
 /** Issue #23: selling prices move in 25-cent steps between these limits. */
 export const PRICE_STEP_CENTS = 25;

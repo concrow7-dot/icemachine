@@ -217,11 +217,15 @@ const { chromium } = require('playwright');
   check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
   // A save from before fuel: a quarter tank.
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); d.day = 2; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
-  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); delete d.fuel; delete d.totals.gasCents; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
+  // ...and from before SCREAM-129: three slots, any flavours (cookies in the third).
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); delete d.fuel; delete d.totals.gasCents;
+    d.slots = [{ flavour: 'eclair', quantity: 3, priceCents: 225 }, { flavour: 'spongepop', quantity: 0, priceCents: 250 }, { flavour: 'cookie', quantity: 2, priceCents: 325 }];
+    localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(400);
   check('An old save (no fuel in it) continues with a quarter tank', await ev('e.fuel'), 0.25);
+  check('An old 3-slot save (SCREAM-129): stock and prices kept, by flavour', await ev("e.slots.map(s => s.flavour + ':' + s.quantity + ':' + s.priceCents).join(' ')"), 'eclair:3:225 spongepop:0:250 explorer:0:250 cookie:2:325');
 
   console.log(`fuel: ${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' / ') : 'none'}`);
   await browser.close();

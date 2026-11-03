@@ -1,60 +1,76 @@
 import * as Phaser from 'phaser';
-import { getFlavour } from '../config/flavours';
-import { PRICE_STEP_CENTS, SLOT_CAPACITY } from '../config/tuning';
+import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
+import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
+import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT, MENU_COLOURS } from '../ui/flavourArt';
 import { formatMoney } from '../util/format';
 import { showLoadingWhileLoading } from './LoadingScene';
 
-// Issue #8 (with #21 and #23): prepping the cooler. Three flavour slots; for
-// each, the player picks a flavour, how many bars (up to 15) and a selling
-// price. Changes are a draft order: Buy Stock pays for it and goes back to the
-// truck; B goes back and cancels it (PR #29 feedback). Stock already bought can
-// be added to but not returned. Everything locks once they head for the
-// driver's seat.
+// Issue #8 (with #21 and #23): prepping the cooler. Changes are a draft order: Buy Stock
+// pays for it and goes back to the truck; B goes back and cancels it (PR #29 feedback).
+// Stock already bought can be added to but not returned. Everything locks once the
+// player heads for the driver's seat.
+//
+// SCREAM-129 (PO, November 2; the PO's sketch): three parts.
+// - The "Available Ice Cream" clipboard, left: each flavour's picture and what it costs.
+//   Picking one drops a single ice cream into the next empty square of the cooler. The
+//   order's total and BUY STOCK sit at the bottom of the clipboard.
+// - The freezer, top right: 3 crates of 4 x 4 squares. Ice creams not paid for yet have a
+//   dashed yellow outline; clicking one takes it back out.
+// - Today's Menu, bottom right, on the truck's outside wall: a card for each flavour in the
+//   cooler, with its price written in marker, set with - and +.
+// The background (clipboard, freezer, crates, wall) is drawn by tools/interior/draw_cooler.py.
 
-type Row = 0 | 1 | 2; // 0 = flavour, 1 = how many, 2 = sell price
-
-type Column = {
-  name: Phaser.GameObjects.Text;
-  cost: Phaser.GameObjects.Text;
-  quantity: Phaser.GameObjects.Text;
-  owned: Phaser.GameObjects.Text;
-  price: Phaser.GameObjects.Text;
-  margin: Phaser.GameObjects.Text;
-  buttons: Phaser.GameObjects.Text[];
-};
-
-const COLUMN_X = [170, 480, 790];
-// SCREAM-124: one row lower than before, to sit inside the crates of the freezer picture.
-const ROW_Y = [164, 249, 334];
-const SLOT_LABEL_Y = 128;
-
-/**
- * SCREAM-124 (PO, November 2): the cooler looks like the inside of the PO's truck drawing.
- * The picture (drawn by tools/interior/draw_cooler.py) is the open freezer: steel rim, dark
- * inside with icicles, boxes at the back and a crate for each slot. The glass lids are
- * drawn here so they can slide open.
- */
 const COOLER_KEY = 'cooler-inside';
 const COOLER_URL = 'assets/interior/cooler-inside.png';
-/** The freezer's dark opening on screen (matches OPENING in draw_cooler.py). */
-const OPENING = { left: 24, top: 74, right: 936, bottom: 404 };
+
+/** Screen positions; the "shared" ones match draw_cooler.py. */
+const COOLER_LAYOUT = {
+  /** Shared: the freezer's dark opening. */
+  opening: { left: 262, top: 72, right: 936, bottom: 280 },
+  /** Shared: each crate's left edge, the crates' top, and the size of a square. */
+  crateLefts: [319, 519, 719],
+  crateTop: 96,
+  cell: 38,
+  cellPad: 4,
+  /** The clipboard's paper, and the centres of its flavour rows. */
+  paper: { left: 24, right: 224 },
+  rowY: [152, 214, 276, 338],
+  /** Today's Menu: the cards' size, where they start, and the gap between them. */
+  card: { w: 156, h: 160, top: 334, firstLeft: 262, gap: 18 },
+};
 const LID_OPEN_MS = 600;
 /** How long the lids stay shut before opening, so the player sees them. */
 const LID_WAIT_MS = 250;
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
+const UNPAID = 0xffcf33;
+
+type Focus = { area: 'clipboard'; row: number } | { area: 'menu'; index: number };
+
+type MenuCard = {
+  flavour: FlavourId;
+  container: Phaser.GameObjects.Container;
+  frame: Phaser.GameObjects.Rectangle;
+  price: Phaser.GameObjects.Text;
+  margin: Phaser.GameObjects.Text;
+};
 
 export class CoolerScene extends Phaser.Scene {
   private evening!: EveningState;
   private order!: CoolerOrder;
+  private locked = false;
   private buyButton?: Phaser.GameObjects.Text;
-  private columns: Column[] = [];
-  private focus!: Phaser.GameObjects.Rectangle;
-  private focusCol = 0;
-  private focusRow: Row = 1;
+  private focus: Focus = { area: 'clipboard', row: 0 };
+  private rowHighlight!: Phaser.GameObjects.Rectangle;
+  private rowCounts: Phaser.GameObjects.Text[] = [];
+  private cellIcons: Phaser.GameObjects.Image[] = [];
+  private unpaidMarks!: Phaser.GameObjects.Graphics;
+  private cards: MenuCard[] = [];
+  private emptyMenu!: Phaser.GameObjects.Text;
+  private title!: Phaser.GameObjects.Text;
   private totals!: Phaser.GameObjects.Text;
   private note!: Phaser.GameObjects.Text;
   private noteText = '';
@@ -67,87 +83,262 @@ export class CoolerScene extends Phaser.Scene {
 
   preload(): void {
     if (!this.textures.exists(COOLER_KEY)) this.load.image(COOLER_KEY, COOLER_URL);
+    loadFlavourArt(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
   create(): void {
     this.evening = getEvening(this);
     this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents);
+    this.locked = this.evening.isPrepLocked;
     this.buyButton = undefined;
-    this.columns = [];
-    this.focusCol = 0;
-    this.focusRow = 1;
+    this.focus = { area: 'clipboard', row: 0 };
+    this.rowCounts = [];
+    this.cellIcons = [];
+    this.cards = [];
     const { width, height } = this.scale;
-    const locked = this.evening.isPrepLocked;
 
     this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height);
-    this.focus = this.add.rectangle(0, 0, 270, 40, 0xffe066, 0.55);
-
-    // On the steel rim above the opening.
-    this.add
-      .text(width / 2, 60, locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP', {
-        fontFamily: 'monospace',
-        fontSize: '19px',
-        fontStyle: 'bold',
-        color: INK,
-      })
+    this.title = this.add
+      .text(599, 61, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
 
-    for (let i = 0; i < COLUMN_X.length; i++) this.columns.push(this.makeColumn(i, locked));
+    this.makeClipboard();
+    this.makeCells();
+    this.makeMenu();
+
+    this.note = this.add
+      .text(
+        width / 2,
+        516,
+        this.locked
+          ? 'Stock and prices were locked when you left for the road.'
+          : !this.evening.isClockRunning
+            ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
+            : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
+        { fontFamily: 'monospace', fontSize: '12px', color: !this.locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
+      )
+      .setOrigin(0.5);
+    this.add
+      .text(
+        width / 2,
+        height - 9,
+        this.locked
+          ? 'B Or Backspace: Back To The Truck'
+          : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
+        { fontFamily: 'monospace', fontSize: '13px', color: INK },
+      )
+      .setOrigin(0.5);
+    this.noteText = this.note.text;
+    this.noteColor = this.note.style.color as string;
+    this.noteTimer = undefined;
+
+    this.addKeys();
+
+    const onChange = () => this.refresh();
+    this.evening.on(EveningEvents.CoolerChanged, onChange);
+    this.evening.on(EveningEvents.MoneyChanged, onChange);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.evening.off(EveningEvents.CoolerChanged, onChange);
+      this.evening.off(EveningEvents.MoneyChanged, onChange);
+    });
+
+    this.refresh();
+    this.openLids();
+  }
+
+  // ---- The clipboard ----
+
+  private makeClipboard(): void {
+    const { paper, rowY } = COOLER_LAYOUT;
+    const middle = (paper.left + paper.right) / 2;
+    this.add
+      .text(middle, 104, 'Available Ice Cream', { fontFamily: MARKER_FONT, fontSize: '19px', color: INK })
+      .setOrigin(0.5);
+    this.rowHighlight = this.add.rectangle(middle, rowY[0] ?? 0, paper.right - paper.left - 6, 56, 0xffe066, 0.55);
+
+    FLAVOURS.forEach((flavour, row) => {
+      const y = rowY.at(row) ?? 0;
+      addFlavourIcon(this, paper.left + 26, y, flavour.id, 1.4);
+      this.add
+        .text(paper.left + 50, y - 14, flavour.name, {
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: INK,
+          wordWrap: { width: 118 },
+        })
+        .setOrigin(0, 0.5)
+        .setLineSpacing(-2);
+      this.add.text(paper.left + 50, y + 16, `${formatMoney(flavour.costCents)} each`, {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#5a4636',
+      }).setOrigin(0, 0.5);
+      // How many of this flavour are in the cooler.
+      this.rowCounts.push(
+        this.add
+          .text(paper.right - 30, y + 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#5a4636' })
+          .setOrigin(1, 0.5),
+      );
+      if (!this.locked) {
+        // The whole row picks one; so does its + button.
+        const hit = this.add
+          .rectangle(middle, y, paper.right - paper.left - 6, 56, 0xffffff, 0.001)
+          .setInteractive({ useHandCursor: true });
+        hit.on('pointerdown', () => {
+          this.focus = { area: 'clipboard', row };
+          this.pick(flavour.id);
+        });
+        this.makeButton(paper.right - 16, y - 8, '+', () => {
+          this.focus = { area: 'clipboard', row };
+          this.pick(flavour.id);
+        }, 18);
+      }
+    });
 
     this.totals = this.add
-      .text(width / 2, 418, '', { fontFamily: 'monospace', fontSize: '17px', color: INK })
+      .text(middle, 392, '', { fontFamily: 'monospace', fontSize: '13px', color: INK, align: 'center', lineSpacing: 4 })
       .setOrigin(0.5);
-
-    if (!locked) {
+    if (!this.locked) {
+      // A sample of the not-paid-yet outline, as a key.
+      const key = this.add.graphics();
+      dashedSquare(key, paper.left + 34, 428, 18, UNPAID);
+      this.add.text(paper.left + 50, 428, '= not paid for yet', { fontFamily: 'monospace', fontSize: '11px', color: '#5a4636' }).setOrigin(0, 0.5);
       this.buyButton = this.add
-        .text(width / 2, 458, '', {
+        .text(middle, 466, '', {
           fontFamily: 'monospace',
-          fontSize: '20px',
+          fontSize: '16px',
           color: '#ffffff',
           backgroundColor: '#2e7d32',
-          padding: { x: 14, y: 6 },
+          padding: { x: 10, y: 6 },
         })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
       this.buyButton.on('pointerdown', () => this.buy());
     }
+  }
 
-    this.note = this.add
-      .text(
-        width / 2,
-        locked ? 458 : 494,
-        locked
-          ? 'Stock and prices were locked when you left for the road.'
-          : !this.evening.isClockRunning
-            ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
-            : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
-        { fontFamily: 'monospace', fontSize: '13px', color: !locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
-      )
+  // ---- The crates ----
+
+  private makeCells(): void {
+    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    for (let i = 0; i < COOLER_CAPACITY; i++) {
+      const crate = Math.floor(i / (CRATE_SIDE * CRATE_SIDE));
+      const inCrate = i % (CRATE_SIDE * CRATE_SIDE);
+      const x = (crateLefts.at(crate) ?? 0) + cellPad + (inCrate % CRATE_SIDE) * cell + cell / 2;
+      const y = crateTop + cellPad + Math.floor(inCrate / CRATE_SIDE) * cell + cell / 2;
+      const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
+      this.cellIcons.push(icon);
+      if (!this.locked) {
+        icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+          if (this.order.removeAt(i)) this.refresh();
+        });
+      }
+    }
+    // The dashed outlines on squares not paid for yet, pulsing gently.
+    this.unpaidMarks = this.add.graphics();
+    this.tweens.add({ targets: this.unpaidMarks, alpha: 0.45, duration: 600, yoyo: true, repeat: -1 });
+  }
+
+  // ---- Today's Menu ----
+
+  private makeMenu(): void {
+    this.add.text(599, 314, "Today's Menu", { fontFamily: MARKER_FONT, fontSize: '22px', color: INK }).setOrigin(0.5);
+    this.emptyMenu = this.add
+      .text(599, 414, 'Pick ice creams from the clipboard.\nEach flavour you stock goes on the menu here.', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#5a4636',
+        align: 'center',
+      })
       .setOrigin(0.5);
+    const { w, h } = COOLER_LAYOUT.card;
+    FLAVOURS.forEach((flavour, n) => {
+      const colours = MENU_COLOURS[flavour.id];
+      const parts: Phaser.GameObjects.GameObject[] = [];
+      const frame = this.add.rectangle(0, 0, w, h, 0x3c3c3c).setOrigin(0, 0);
+      parts.push(frame);
+      parts.push(this.add.rectangle(2, 2, w - 4, h - 4, colours.card).setOrigin(0, 0));
+      // A sunburst behind the ice cream, like the real cards.
+      const rays = this.add.graphics().fillStyle(colours.burst, 1);
+      const cx = w / 2;
+      const cy = 56;
+      for (let a = 0; a < 360; a += 30) {
+        const r = Phaser.Math.DegToRad(a);
+        rays.fillTriangle(cx, cy, cx + Math.cos(r) * 34, cy + Math.sin(r) * 34, cx + Math.cos(r + 0.26) * 34, cy + Math.sin(r + 0.26) * 34);
+      }
+      parts.push(rays);
+      parts.push(this.add.image(cx, cy, FLAVOUR_ICONS_KEY, flavourFrame(flavour.id)).setScale(1.7));
+      // The name strip and the white space where the price is written.
+      parts.push(this.add.rectangle(2, 2, w - 4, 18, 0xffffff).setOrigin(0, 0));
+      parts.push(
+        this.add
+          .text(cx, 11, flavour.name.toUpperCase(), {
+            fontFamily: 'monospace',
+            fontSize: flavour.name.length > 18 ? '9px' : '11px',
+            fontStyle: 'bold',
+            color: '#3c3c3c',
+          })
+          .setOrigin(0.5),
+      );
+      parts.push(this.add.rectangle(2, 94, w - 4, h - 96, 0xffffff).setOrigin(0, 0));
+      parts.push(this.add.rectangle(2, 93, w - 4, 1, 0x3c3c3c).setOrigin(0, 0));
+      const price = this.add
+        .text(cx, 120, '', { fontFamily: MARKER_FONT, fontSize: '30px', color: '#141418' })
+        .setOrigin(0.5)
+        .setAngle([-5, 3, -3, 5][n] ?? 0);
+      parts.push(price);
+      const margin = this.add.text(cx, 148, '', { fontFamily: 'monospace', fontSize: '11px', color: '#2e7d32' }).setOrigin(0.5);
+      parts.push(margin);
+      const container = this.add.container(0, 0, parts);
+      if (!this.locked) {
+        const change = (direction: -1 | 1) => () => {
+          this.focus = { area: 'menu', index: this.visibleCards().findIndex((c) => c.flavour === flavour.id) };
+          this.order.changePrice(flavour.id, direction * PRICE_STEP_CENTS);
+          this.refresh();
+        };
+        container.add(this.makeButton(16, 120, '−', change(-1), 16, false));
+        container.add(this.makeButton(w - 16, 120, '+', change(1), 16, false));
+      }
+      this.cards.push({ flavour: flavour.id, container, frame, price, margin });
+    });
+  }
 
-    this.add
-      .text(
-        width / 2,
-        height - 18,
-        locked
-          ? 'B Or Backspace: Back To The Truck'
-          : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
-        { fontFamily: 'monospace', fontSize: '15px', color: INK },
-      )
-      .setOrigin(0.5);
+  /** The menu's cards in order: one for each flavour the cooler will hold. */
+  private visibleCards(): MenuCard[] {
+    return this.cards.filter((card) => this.order.quantity(card.flavour) > 0);
+  }
 
-    this.noteText = this.note.text;
-    this.noteColor = this.note.style.color as string;
-    this.noteTimer = undefined;
+  // ---- Shared bits ----
 
+  private makeButton(
+    x: number,
+    y: number,
+    label: string,
+    onClick: () => void,
+    size: number,
+    addToScene = true,
+  ): Phaser.GameObjects.Text {
+    const button = (addToScene ? this.add.text(x, y, label) : this.make.text({ x, y, text: label }, false))
+      .setStyle({ fontFamily: 'monospace', fontSize: `${size}px`, color: '#ffffff', backgroundColor: BUTTON, padding: { x: 6, y: 1 } })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    button.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+
+  private addKeys(): void {
     const keyboard = this.input.keyboard;
     // Going back without buying throws the draft order away. The truck can't
     // leave the cooler empty, though (#66 feedback): buy at least one first.
     let leaving = false;
     const back = () => {
       if (leaving) return;
-      if (!locked && this.evening.stockLeft === 0) {
+      if (!this.locked && this.evening.stockLeft === 0) {
         this.warnEmpty();
         return;
       }
@@ -156,54 +347,104 @@ export class CoolerScene extends Phaser.Scene {
     };
     keyboard?.on('keydown-B', back);
     keyboard?.on('keydown-BACKSPACE', back);
+    if (this.locked) return;
 
-    if (!locked) {
-      keyboard?.on('keydown-ENTER', () => this.buy());
-      keyboard?.on('keydown-SPACE', () => this.buy());
-      keyboard?.on('keydown-UP', () => this.moveFocus(0, -1));
-      keyboard?.on('keydown-DOWN', () => this.moveFocus(0, 1));
-      keyboard?.on('keydown-LEFT', () => this.moveFocus(-1, 0));
-      keyboard?.on('keydown-RIGHT', () => this.moveFocus(1, 0));
-      // Read the typed character so + and - work on every keyboard layout and browser.
-      keyboard?.on('keydown', (event: KeyboardEvent) => {
-        if (event.key === '+' || event.key === '=') this.adjust(this.focusCol, this.focusRow, 1);
-        if (event.key === '-' || event.key === '_') this.adjust(this.focusCol, this.focusRow, -1);
-      });
-    }
-
-    const onCooler = () => this.refresh();
-    const onMoney = () => this.refresh();
-    this.evening.on(EveningEvents.CoolerChanged, onCooler);
-    this.evening.on(EveningEvents.MoneyChanged, onMoney);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.evening.off(EveningEvents.CoolerChanged, onCooler);
-      this.evening.off(EveningEvents.MoneyChanged, onMoney);
+    keyboard?.on('keydown-ENTER', () => this.buy());
+    keyboard?.on('keydown-SPACE', () => this.buy());
+    keyboard?.on('keydown-UP', () => this.moveFocus(-1));
+    keyboard?.on('keydown-DOWN', () => this.moveFocus(1));
+    keyboard?.on('keydown-LEFT', () => this.switchArea(-1));
+    keyboard?.on('keydown-RIGHT', () => this.switchArea(1));
+    // Read the typed character so + and - work on every keyboard layout and browser.
+    keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (event.key === '+' || event.key === '=') this.adjust(1);
+      if (event.key === '-' || event.key === '_') this.adjust(-1);
     });
+  }
 
-    this.focus.setVisible(!locked);
+  /** Up and down: between the clipboard's flavours, or along the menu's cards. */
+  private moveFocus(direction: -1 | 1): void {
+    if (this.focus.area === 'clipboard') {
+      this.focus = { area: 'clipboard', row: (this.focus.row + direction + FLAVOURS.length) % FLAVOURS.length };
+    } else {
+      const count = this.visibleCards().length;
+      if (count > 0) this.focus = { area: 'menu', index: (this.focus.index + direction + count) % count };
+    }
     this.refresh();
-    this.openLids();
+  }
+
+  /** Left and right: between the clipboard and the menu (when it has cards). */
+  private switchArea(direction: -1 | 1): void {
+    if (this.focus.area === 'clipboard' && direction === 1 && this.visibleCards().length > 0) {
+      this.focus = { area: 'menu', index: 0 };
+    } else if (this.focus.area === 'menu' && direction === -1) {
+      this.focus = { area: 'clipboard', row: 0 };
+    } else if (this.focus.area === 'menu') {
+      this.moveFocus(direction);
+      return;
+    }
+    this.refresh();
+  }
+
+  /** + and -: on the clipboard, pick one or put the last one back; on the menu, change the price. */
+  private adjust(direction: -1 | 1): void {
+    if (this.focus.area === 'clipboard') {
+      const flavour = FLAVOURS.at(this.focus.row)?.id;
+      if (!flavour) return;
+      if (direction === 1) this.pick(flavour);
+      else if (this.order.removeOne(flavour)) this.refresh();
+    } else {
+      const card = this.visibleCards().at(this.focus.index);
+      if (card) this.order.changePrice(card.flavour, direction * PRICE_STEP_CENTS);
+      this.refresh();
+    }
+  }
+
+  private pick(flavour: FlavourId): void {
+    if (!this.order.addOne(flavour)) {
+      this.flashNote(this.order.isFull ? 'The cooler is full.' : 'Not enough cash for that one.');
+    }
+    this.refresh();
+  }
+
+  /** Pays for the draft order and heads back to the truck. */
+  private buy(): void {
+    // An order that leaves the cooler empty doesn't count (#66 feedback).
+    if (this.order.total === 0) {
+      this.warnEmpty();
+      return;
+    }
+    if (this.evening.buyStock(this.order)) returnToTruck(this, 'cooler');
+  }
+
+  /** Says why the player can't leave yet, in red, then puts the usual note back. */
+  private warnEmpty(): void {
+    this.flashNote('Add at least one ice cream before you leave the cooler.');
+  }
+
+  private flashNote(text: string): void {
+    this.note.setText(text).setColor('#b3261e');
+    this.noteTimer?.remove();
+    this.noteTimer = this.time.delayedCall(2500, () => this.note.setText(this.noteText).setColor(this.noteColor));
   }
 
   /**
-   * SCREAM-124 (PO): the freezer opens. Two glass lids cover the opening, then slide back
-   * and fold away into the rim at the top. Nothing on them is clickable, so the buttons
-   * underneath work straight away.
+   * SCREAM-124 (PO): the freezer opens. Two glass lids cover the opening, then fold away
+   * into the rim at the top. Nothing on them is clickable, so the buttons work straight away.
    */
   private openLids(): void {
-    const { left, top, right, bottom } = OPENING;
+    const { left, top, right, bottom } = COOLER_LAYOUT.opening;
     const mid = (left + right) / 2;
     for (const [x0, x1] of [[left, mid], [mid, right]]) {
-      const w = x1 - x0;
+      const w = (x1 ?? 0) - (x0 ?? 0);
       const h = bottom - top;
       const lid = this.add.graphics().setDepth(10);
       lid.fillStyle(0xcfeef5, 1).fillRect(0, 0, w, h);
-      // Shine across the glass, the frame and a handle (the drawing's freezer lids).
       lid.lineStyle(10, 0xffffff, 0.7).lineBetween(w * 0.15, h, w * 0.45, 0).lineBetween(w * 0.3, h, w * 0.6, 0);
       lid.lineStyle(6, 0x7f7f7f, 1).strokeRect(3, 3, w - 6, h - 6);
       lid.fillStyle(0xffffff, 1).fillRect(w / 2 - 22, h - 26, 44, 10);
       lid.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - 22, h - 26, 44, 10);
-      lid.setPosition(x0, top);
+      lid.setPosition(x0 ?? 0, top);
       this.tweens.add({
         targets: lid,
         scaleY: 0,
@@ -216,140 +457,76 @@ export class CoolerScene extends Phaser.Scene {
     }
   }
 
-  private makeColumn(index: number, locked: boolean): Column {
-    const x = COLUMN_X.at(index) ?? 0;
-    const text = (y: number, size: number, color = INK) =>
-      this.add
-        .text(x, y, '', { fontFamily: 'monospace', fontSize: `${size}px`, color })
-        .setOrigin(0.5);
-
-    // SCREAM-124: the slot is a crate in the freezer picture, so no panel is drawn here.
-    text(SLOT_LABEL_Y, 18).setText(`SLOT ${index + 1}`).setFontStyle('bold');
-
-    const name = text(ROW_Y[0], 17);
-    const cost = text(ROW_Y[0] + 24, 13, '#5a4636');
-    text(ROW_Y[1] - 26, 13, '#5a4636').setText('HOW MANY');
-    const quantity = text(ROW_Y[1], 20);
-    const owned = text(ROW_Y[1] + 24, 12, '#5a4636');
-    text(ROW_Y[2] - 26, 13, '#5a4636').setText('SELL PRICE');
-    const price = text(ROW_Y[2], 20);
-    const margin = text(ROW_Y[2] + 28, 13);
-
-    const buttons: Phaser.GameObjects.Text[] = [];
-    if (!locked) {
-      const labels: [Row, string, string][] = [
-        [0, '◀', '▶'],
-        [1, '−', '+'],
-        [2, '−', '+'],
-      ];
-      for (const [row, minus, plus] of labels) {
-        const y = ROW_Y.at(row) ?? 0;
-        const offset = row === 0 ? 125 : 85;
-        buttons.push(this.makeButton(x - offset, y, minus, () => this.adjust(index, row, -1), index, row));
-        buttons.push(this.makeButton(x + offset, y, plus, () => this.adjust(index, row, 1), index, row));
-      }
-    }
-
-    return { name, cost, quantity, owned, price, margin, buttons };
-  }
-
-  private makeButton(
-    x: number,
-    y: number,
-    label: string,
-    onClick: () => void,
-    col: number,
-    row: Row,
-  ): Phaser.GameObjects.Text {
-    const button = this.add
-      .text(x, y, label, {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#ffffff',
-        backgroundColor: BUTTON,
-        padding: { x: 8, y: 2 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    button.on('pointerdown', () => {
-      this.focusCol = col;
-      this.focusRow = row;
-      onClick();
-      this.refresh();
-    });
-    return button;
-  }
-
-  private moveFocus(dCol: number, dRow: number): void {
-    this.focusCol = (this.focusCol + dCol + COLUMN_X.length) % COLUMN_X.length;
-    this.focusRow = (((this.focusRow + dRow) % 3) + 3) % 3 as Row;
-    this.refresh();
-  }
-
-  /** Applies a + or - to one field of the draft. Invalid changes (too many, no cash) are simply ignored. */
-  private adjust(col: number, row: Row, direction: -1 | 1): void {
-    if (row === 0) this.order.cycleFlavour(col, direction);
-    if (row === 1) this.order.changeQuantity(col, direction);
-    if (row === 2) this.order.changePrice(col, direction * PRICE_STEP_CENTS);
-    this.refresh();
-  }
-
-  /** Pays for the draft order and heads back to the truck. */
-  private buy(): void {
-    // An order that leaves the cooler empty doesn't count (#66 feedback).
-    const total = this.order.slots.reduce((sum, slot) => sum + slot.quantity, 0);
-    if (total === 0) {
-      this.warnEmpty();
-      return;
-    }
-    if (this.evening.buyStock(this.order)) returnToTruck(this, 'cooler');
-  }
-
-  /** Says why the player can't leave yet, in red, then puts the usual note back. */
-  private warnEmpty(): void {
-    this.note.setText('Add at least one ice cream before you leave the cooler.').setColor('#b3261e');
-    this.noteTimer?.remove();
-    this.noteTimer = this.time.delayedCall(2500, () => this.note.setText(this.noteText).setColor(this.noteColor));
-  }
-
   private refresh(): void {
-    const slots = this.order.slots;
-    this.columns.forEach((column, i) => {
-      const slot = slots.at(i);
-      if (!slot) return;
-      const flavour = getFlavour(slot.flavour);
-      // Long names (e.g. Cookie Ice Cream Sandwich) shrink to fit between the arrows.
-      column.name.setText(flavour.name).setFontSize(flavour.name.length > 18 ? 13 : 17);
-      column.cost.setText(`Costs you ${formatMoney(flavour.costCents)} each`);
-      column.quantity.setText(`${slot.quantity} / ${SLOT_CAPACITY}`);
-      const owned = this.order.ownedQuantity(i);
-      column.owned.setText(owned > 0 && !this.evening.isPrepLocked ? `${owned} already bought` : '');
-      // A slot holding bought stock keeps its flavour, so dim its flavour arrows.
-      const flavourLocked = this.order.isFlavourLocked(i);
-      column.buttons.slice(0, 2).forEach((b) => b.setAlpha(flavourLocked ? 0.3 : 1));
-      column.price.setText(formatMoney(slot.priceCents));
+    const { rowY, cell, card: cardSize } = COOLER_LAYOUT;
+    const total = this.order.total;
+    this.title.setText(
+      (this.locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP') + `     ${total} / ${COOLER_CAPACITY}`,
+    );
 
-      const profitEach = slot.priceCents - flavour.costCents;
-      // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
-      if (profitEach <= 0) {
-        column.margin.setText('No profit at this price').setColor('#b3261e');
-      } else {
-        column.margin.setText(`Profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');
-      }
+    // Clipboard: how many of each, and the focus.
+    FLAVOURS.forEach((flavour, row) => {
+      const count = this.order.quantity(flavour.id);
+      this.rowCounts.at(row)?.setText(count > 0 ? `x${count}` : '');
+    });
+    this.rowHighlight.setVisible(this.focus.area === 'clipboard' && !this.locked);
+    if (this.focus.area === 'clipboard') this.rowHighlight.setY(rowY.at(this.focus.row) ?? 0);
+
+    // The crates.
+    const cells = this.order.cells;
+    this.unpaidMarks.clear();
+    cells.forEach((c, i) => {
+      const icon = this.cellIcons.at(i);
+      if (!icon) return;
+      icon.setVisible(!!c);
+      if (!c) return;
+      icon.setFrame(flavourFrame(c.flavour));
+      if (!c.paid) dashedSquare(this.unpaidMarks, icon.x, icon.y, cell - 4, UNPAID);
     });
 
-    const x = COLUMN_X.at(this.focusCol) ?? 0;
-    const y = ROW_Y.at(this.focusRow) ?? 0;
-    this.focus.setPosition(x, y);
+    // Today's Menu: a card per flavour in the cooler, left to right.
+    const visible = this.visibleCards();
+    if (this.focus.area === 'menu' && this.focus.index >= visible.length) {
+      this.focus = visible.length > 0 ? { area: 'menu', index: visible.length - 1 } : { area: 'clipboard', row: 0 };
+    }
+    this.emptyMenu.setVisible(visible.length === 0);
+    this.cards.forEach((card) => card.container.setVisible(false));
+    visible.forEach((card, n) => {
+      const slot = this.order.slots.find((s) => s.flavour === card.flavour);
+      if (!slot) return;
+      card.container.setVisible(true).setPosition(cardSize.firstLeft + n * (cardSize.w + cardSize.gap), cardSize.top);
+      card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
+      const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
+      // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
+      if (profitEach <= 0) card.margin.setText('No profit at this price').setColor('#b3261e');
+      else card.margin.setText(`Profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');
+      const focused = this.focus.area === 'menu' && this.focus.index === n && !this.locked;
+      card.frame.setFillStyle(focused ? 0xffc533 : 0x3c3c3c);
+    });
 
-    if (this.evening.isPrepLocked) {
-      this.totals.setText(`Spent on stock: ${formatMoney(this.evening.stockCostCents)}`);
+    // The order, at the bottom of the clipboard.
+    if (this.locked) {
+      this.totals.setText(`Spent on stock:\n${formatMoney(this.evening.stockCostCents)}`);
     } else {
       this.totals.setText(
-        `This order: ${formatMoney(this.order.costCents)}     ` +
+        `This order: ${formatMoney(this.order.costCents)}\n` +
           `Cash: ${formatMoney(this.evening.moneyCents)} → ${formatMoney(this.order.cashAfterCents)}`,
       );
       this.buyButton?.setText(`BUY STOCK  ${formatMoney(this.order.costCents)}`);
     }
+  }
+}
+
+/** A square outline of dashes, centred on (x, y). */
+function dashedSquare(g: Phaser.GameObjects.Graphics, x: number, y: number, size: number, colour: number): void {
+  const half = size / 2;
+  const dash = 4;
+  g.fillStyle(colour, 1);
+  for (let t = 0; t < size; t += dash * 2) {
+    const len = Math.min(dash, size - t);
+    g.fillRect(x - half + t, y - half, len, 2);
+    g.fillRect(x - half + t, y + half - 2, len, 2);
+    g.fillRect(x - half, y - half + t, 2, len);
+    g.fillRect(x + half - 2, y - half + t, 2, len);
   }
 }

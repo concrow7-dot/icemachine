@@ -8,7 +8,8 @@ import { TipBar } from '../ui/TipBar';
 // remember the customer ordering, then serves them. The tip countdown stays
 // on screen (PO, doc 12 Q12). Buying stock and changing prices stay locked.
 
-const COLUMN_X = [170, 480, 790];
+// SCREAM-129: one column per flavour (4); the cooler holds any mix.
+const COLUMN_X = [124, 364, 604, 844];
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
 
@@ -93,7 +94,7 @@ export class FillScene extends Phaser.Scene {
 
   private makeColumn(index: number): Column {
     const x = COLUMN_X.at(index) ?? 0;
-    const frame = this.add.rectangle(x, 270, 290, 250, 0xffffff, 0.55).setStrokeStyle(3, 0x7aa7b8);
+    const frame = this.add.rectangle(x, 270, 228, 250, 0xffffff, 0.55).setStrokeStyle(3, 0x7aa7b8);
     const name = this.add.text(x, 175, '', { fontFamily: 'monospace', fontSize: '17px', color: INK }).setOrigin(0.5);
     const left = this.add.text(x, 205, '', { fontFamily: 'monospace', fontSize: '14px', color: '#5a4636' }).setOrigin(0.5);
     this.add.text(x, 250, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' }).setOrigin(0.5);
@@ -115,8 +116,8 @@ export class FillScene extends Phaser.Scene {
           this.evening.pickForSale(index, delta);
           this.refresh();
         });
-    button(-90, '−', -1);
-    button(90, '+', 1);
+    button(-78, '−', -1);
+    button(78, '+', 1);
     return { name, left, bag, frame };
   }
 

@@ -27,15 +27,24 @@ const { chromium } = require('playwright');
   check('The evening opens at the cooler (#66)', await scenes(), 'Cooler,Hud');
   check('Button reads BUY STOCK $0.00', await coolerText('buyButton'), 'BUY STOCK  $0.00');
 
-  // --- Draft changes cost nothing until Buy Stock ---
+  // SCREAM-129: the clipboard (rows: eclair, SpongePop, Explorer, cookie), 3 crates of 4 x 4, Today's Menu.
+  const cooler = (fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('Cooler'); return ${fn}; })()`);
+  const cells = (n) => cooler(`s.order.cells.slice(0, ${n}).map(c => c ? c.flavour + (c.paid ? '' : '*') : '-').join(',')`);
+  const menu = () => cooler(`s.visibleCards().map(c => c.flavour + ' ' + c.price.text).join(', ')`);
+  const clickAt = async (fn) => { const [x, y] = await cooler(fn); await page.mouse.click(x, y); await wait(150); };
+
+  // --- Picking costs nothing until Buy Stock ---
   await press('+', 4);
-  check('+4 changes the draft to 4 eclairs', await draft(0), 'eclair:4:200');
+  check('+4 on the clipboard: 4 eclairs in the draft', await draft(0), 'eclair:4:200');
+  check('...dropped into the first 4 squares, not paid for (*)', await cells(5), 'eclair*,eclair*,eclair*,eclair*,-');
   check('...but the cooler is untouched', await owned(0), 'eclair:0:200');
   check('...and no money is taken yet', await cash(), 5000);
-  check('Totals preview the order', await coolerText('totals'), 'This order: $4.00     Cash: $50.00 → $46.00');
+  check('Totals preview the order', await coolerText('totals'), 'This order: $4.00\nCash: $50.00 → $46.00');
   check('Button shows the order cost', await coolerText('buyButton'), 'BUY STOCK  $4.00');
-  await press('ArrowDown'); await press('+', 2);
-  check('Price change is part of the draft', await draft(0), 'eclair:4:250');
+  check('Title counts the squares', await coolerText('title'), 'THE COOLER  –  PREP     4 / 48');
+  check("Today's Menu: a card for eclairs only, price in marker", await menu(), 'eclair $2');
+  await press('ArrowRight'); await press('+', 2);
+  check('Right, then +2: the menu price goes up (part of the draft)', (await draft(0)) + ' / ' + (await menu()), 'eclair:4:250 / eclair $2.50');
   await page.screenshot({ path: outDir + '/buy_draft.png' });
 
   // --- The cooler can't be left empty (#66 feedback) ---
@@ -46,7 +55,8 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/buy_empty_blocked.png' });
   await press('Backspace'); await wait(150);
   check('Backspace is blocked too', await scenes(), 'Cooler,Hud');
-  await press('ArrowUp'); await press('-', 4);
+  await press('ArrowLeft'); await press('-', 4);
+  check('Left, then -4: back on the clipboard, all 4 put back', (await draft(0)) + ' ' + (await cells(1)) + ' ' + (await menu()), 'eclair:0:250 - ');
   await press('Enter'); await wait(150);
   check('Buying an empty order: blocked, still at the cooler', await scenes(), 'Cooler,Hud');
   await wait(2700);
@@ -54,81 +64,86 @@ const { chromium } = require('playwright');
   check('The clock is still waiting', await ev('e.isClockRunning'), false);
 
   // --- SCREAM-72: no "$4" warning; a price over $4 just shows its profit ---
-  const hint = await page.evaluate(() => { const s = window.__game.scene.getScene('Cooler'); const keep = s.order.slots[0].priceCents; s.order.slots[0].priceCents = 450; s.refresh(); const t = s.columns[0].margin.text; s.order.slots[0].priceCents = keep; s.refresh(); return t; });
+  const hint = await cooler(`(() => { s.order.addOne('eclair'); const keep = s.order.slots[0].priceCents; s.order.slots[0].priceCents = 450; s.refresh(); const t = s.cards[0].margin.text; s.order.slots[0].priceCents = keep; s.order.removeOne('eclair'); s.refresh(); return t; })()`);
   check('A price over $4.00: no "customers refuse" warning, just the profit', /refuse/.test(hint) + ' ' + /^Profit /.test(hint), 'false true');
 
-  // --- Draft can't overspend ---
-  await press('+', 15); await press('ArrowRight'); await press('+', 15); await press('ArrowRight'); await press('+', 15);
-  check("Draft stops when cash runs out (8 explorers)", await draft(2), 'explorer:8:250');
-  check('Order costs $49.50', await page.evaluate(() => window.__game.scene.getScene('Cooler').order.costCents), 4950);
-  // Throw the draft away by reopening the cooler (B can't leave an empty cooler)
-  await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.restart()); await wait(200);
-  check('Draft thrown away: still $50, fresh draft', (await cash()) + ' ' + (await draft(0)), '5000 eclair:0:200');
+  // --- Can't overspend, can't overfill ---
+  await press('ArrowDown', 3); await press('+', 30);
+  check('Cookies ($2.00) stop when the cash runs out: 25', await draft(3), 'cookie:25:300');
+  check('...the note says why', await coolerText('note'), 'Not enough cash for that one.');
+  await cooler('s.scene.restart()'); await wait(400);
+  check('Draft thrown away: still $50, fresh draft', (await cash()) + ' ' + (await draft(3)), '5000 cookie:0:300');
+  await press('+', 50);
+  check('Eclairs ($1.00) stop when the cooler is full: 48', (await draft(0)) + ' ' + (await coolerText('title')), 'eclair:48:200 THE COOLER  –  PREP     48 / 48');
+  check('...the note says why', await coolerText('note'), 'The cooler is full.');
+  await cooler('s.scene.restart()'); await wait(400);
+
+  // --- Clicking an unpaid square takes it out ---
+  await press('+', 3); await press('ArrowDown'); await press('+', 2);
+  check('3 eclairs then 2 SpongePops, in picking order', await cells(6), 'eclair*,eclair*,eclair*,spongepop*,spongepop*,-');
+  await clickAt('[s.cellIcons[1].x, s.cellIcons[1].y]');
+  check('Clicking the 2nd square takes that eclair out; the rest move up', (await cells(5)) + ' ' + (await draft(0)), 'eclair*,eclair*,spongepop*,spongepop*,- eclair:2:200');
+  check("Today's Menu: eclairs and SpongePops", await menu(), 'eclair $2, spongepop $2.50');
 
   // --- Buy Stock with Enter ---
-  await press('+', 5); await press('ArrowRight'); await press('+', 2);
   await press('Enter'); await wait(200);
   check('Enter buys and returns to the truck', await scenes(), 'Truck,Hud');
   check('Truck selection stays on the cooler', await page.evaluate(() => window.__game.scene.getScene('Truck').selected), 'cooler');
-  check('Bought: 5 eclairs, 2 SpongePops', (await owned(0)) + ' ' + (await owned(1)), 'eclair:5:200 spongepop:2:250');
-  check('Charged $8.00 (cash $42.00)', await cash(), 4200);
+  check('Bought: 2 eclairs, 2 SpongePops', (await owned(0)) + ' ' + (await owned(1)), 'eclair:2:200 spongepop:2:250');
+  check('Charged $5.00 (cash $45.00)', await cash(), 4500);
 
-  // --- Re-entry: add more only ---
-  await openCooler();
-  check('Reopen shows bought stock', await draft(0), 'eclair:5:200');
-  check('Owned label shown', await page.evaluate(() => window.__game.scene.getScene('Cooler').columns[0].owned.text), '5 already bought');
-  await press('-', 3);
-  check("Can't go below bought stock", await draft(0), 'eclair:5:200');
+  // --- Re-entry: paid stock stays, more can be added ---
+  await openCooler(); await wait(200);
+  check('Reopen: bought stock is paid for (no *)', await cells(5), 'eclair,eclair,spongepop,spongepop,-');
+  await press('-', 2);
+  check("Minus can't take out paid stock", await draft(0), 'eclair:2:200');
+  await clickAt('[s.cellIcons[0].x, s.cellIcons[0].y]');
+  check('...and neither can clicking it', await draft(0), 'eclair:2:200');
   await press('+', 2);
-  check('Can add more', await draft(0), 'eclair:7:200');
+  check('Can add more', (await draft(0)) + ' ' + (await cells(7)), 'eclair:4:200 eclair,eclair,spongepop,spongepop,eclair*,eclair*,-');
   check('Order only charges the extra 2 ($2.00)', await coolerText('buyButton'), 'BUY STOCK  $2.00');
   await press('-');
-  check('Can remove extras again', await draft(0), 'eclair:6:200');
+  check('Can take extras out again', await draft(0), 'eclair:3:200');
 
   // --- B cancels, now there is stock in the cooler ---
   await press('b'); await wait(150);
   check('B returns to the truck once stock is bought', await scenes(), 'Truck,Hud');
-  check('Cancel: extras thrown away, cash still $42.00', (await owned(0)) + ' ' + (await cash()), 'eclair:5:200 4200');
-  await openCooler();
-  check('Reopening shows a fresh draft', await draft(0), 'eclair:5:200');
-  await press('+');
-  await press('ArrowUp'); await press('+');
-  check('Flavour locked on a slot with bought stock', await draft(0), 'eclair:6:200');
-  const alpha = await page.evaluate(() => window.__game.scene.getScene('Cooler').columns[0].buttons[0].alpha);
-  check('...and its flavour arrows are dimmed', alpha, 0.3);
-  await press('ArrowRight', 2); await press('+');
-  check('Empty slot 3 can still change flavour', await draft(2), 'cookie:0:300');
-  await press('ArrowDown'); await press('+', 3);
-  check('Add 3 cookies', await draft(2), 'cookie:3:300');
+  check('Cancel: extras thrown away, cash still $45.00', (await owned(0)) + ' ' + (await cash()), 'eclair:2:200 4500');
+  await openCooler(); await wait(200);
+  await press('ArrowDown', 3); await press('+', 3);
+  check('Add 3 cookies', (await draft(3)) + ' ' + (await cells(8)), 'cookie:3:300 eclair,eclair,spongepop,spongepop,cookie*,cookie*,cookie*,-');
   await page.screenshot({ path: outDir + '/buy_reentry.png' });
 
-  // Mouse: click the Buy Stock button (centre x=480, y=458)
-  await page.mouse.click(480, 458); await wait(200);
+  // Mouse: click the BUY STOCK button
+  await clickAt('[s.buyButton.x, s.buyButton.y]'); await wait(100);
   check('Clicking BUY STOCK buys and returns', await scenes(), 'Truck,Hud');
-  check('Cooler now: 6 eclairs, 2 SpongePops, 3 cookies',
-    [await owned(0), await owned(1), await owned(2)].join(' '), 'eclair:6:200 spongepop:2:250 cookie:3:300');
-  check('Charged $1.00 + $6.00 (cash $35.00)', await cash(), 3500);
-  check('Stock cost total $15.00', await ev('e.stockCostCents'), 1500);
+  check('Cooler now: 2 eclairs, 2 SpongePops, 3 cookies',
+    [await owned(0), await owned(1), await owned(3)].join(' '), 'eclair:2:200 spongepop:2:250 cookie:3:300');
+  check('Charged $6.00 (cash $39.00)', await cash(), 3900);
+  check('Stock cost total $11.00', await ev('e.stockCostCents'), 1100);
 
-  // --- Price-only order ---
-  await openCooler();
-  await press('ArrowDown'); await press('+', 2); await press('Enter'); await wait(200);
-  check('Price-only Buy saves the price, costs $0', (await owned(0)) + ' ' + (await cash()), 'eclair:6:250 3500');
+  // --- Price-only order: the menu's + button ---
+  await openCooler(); await wait(200);
+  await clickAt('[s.cards[0].container.x + 140, s.cards[0].container.y + 120]');
+  await clickAt('[s.cards[0].container.x + 140, s.cards[0].container.y + 120]');
+  await press('Enter'); await wait(200);
+  check('Price-only Buy (menu + clicked twice) saves the price, costs $0', (await owned(0)) + ' ' + (await cash()), 'eclair:2:250 3900');
 
   // --- Driver's seat locks ---
   await press('ArrowRight'); await press('Enter'); await wait(150);
   check("Driver's seat locks prep", await ev('e.isPrepLocked'), true);
   // The hub can't be reached after driving any more (sales go straight to the window), so open the locked cooler directly
-  await page.evaluate(() => { const g = window.__game; g.scene.stop('Drive'); g.scene.start('Cooler'); }); await wait(300);
+  await page.evaluate(() => { const g = window.__game; g.scene.stop('Drive'); g.scene.start('Cooler'); }); await wait(400);
   check('Cooler opens in locked mode', await scenes(), 'Cooler,Hud');
   check('Locked: no Buy button', await page.evaluate(() => window.__game.scene.getScene('Cooler').buyButton === undefined), true);
   await press('+', 2); await press('Enter'); await wait(200);
-  check('Locked: + and Enter do nothing', (await scenes()) + ' ' + (await owned(0)) + ' ' + (await cash()), 'Cooler,Hud eclair:6:250 3500');
-  check('Locked totals', await coolerText('totals'), 'Spent on stock: $15.00');
+  check('Locked: + and Enter do nothing', (await scenes()) + ' ' + (await owned(0)) + ' ' + (await cash()), 'Cooler,Hud eclair:2:250 3900');
+  check('Locked totals', await coolerText('totals'), 'Spent on stock:\n$11.00');
+  check('Locked title', await coolerText('title'), 'THE COOLER  (stock is set for tonight)     7 / 48');
   await page.screenshot({ path: outDir + '/buy_locked.png' });
   await press('Backspace'); await wait(150);
   check('B/Backspace returns to truck', await scenes(), 'Truck,Hud');
-  check('Profit = -$15.00 so far', await ev('e.profitCents'), -1500);
+  check('Profit = -$11.00 so far', await ev('e.profitCents'), -1100);
 
   await page.keyboard.down('Shift'); await page.keyboard.press('Digit3'); await page.keyboard.up('Shift'); await wait(300); await press('Enter'); await wait(250); await press('Enter'); await wait(200);
   check('New evening resets cash and cooler', (await cash()) + ' ' + (await owned(0)) + ' ' + (await ev('e.isPrepLocked')), '5000 eclair:0:200 false');
