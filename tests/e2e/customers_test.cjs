@@ -121,6 +121,7 @@ const { chromium } = require('playwright');
   check('Stopped in the square: the sales window opens', await scenes(), 'Sales,Hud');
   check("...the window knows who's there", await ev('e.customer && e.customer.resident.name'), name);
   check('...and shows their name (SCREAM-99)', await page.evaluate((n) => window.__game.scene.getScene('Sales').children.list.some(o => o.type === 'Text' && o.text === n && o.visible), name), true);
+  check('...inside the speech bubble, not under the customer (SCREAM-127)', await page.evaluate((n) => window.__game.scene.getScene('Sales').children.list.filter(o => o.type === 'Text' && o.text === n).map(o => o.x < 570 && o.y < 200).join(), name), 'true');
   // SCREAM-106: the person at the window is drawn in the same look they have on the map.
   // SCREAM-110: drawn from a smoothed, 8x copy of their own look's idle, facing-down frames.
   const shown = await page.evaluate(() => { const p = window.__game.scene.getScene('Sales').children.getByName('customer'); return p ? [p.texture.key, p.frame.width, p.frame.height] : null; });

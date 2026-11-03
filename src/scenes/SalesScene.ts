@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { getFlavour } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
@@ -85,16 +86,6 @@ export class SalesScene extends Phaser.Scene {
       // Standing at the window, breathing (the same idle frames as on the map).
       let step = 0;
       this.time.addEvent({ delay: 160, loop: true, callback: () => show(++step) });
-      // SCREAM-99 (PO, November 2): the customer's name on screen while they order, as a name tag.
-      this.add
-        .text(CUSTOMER_X, 392, customer.resident.name, {
-          fontFamily: 'monospace',
-          fontSize: '17px',
-          color: INK,
-          backgroundColor: '#fffdf9',
-          padding: { x: 8, y: 4 },
-        })
-        .setOrigin(0.5);
     } else {
       // A sale with nobody from the map (the debug serve key): a plain stand-in.
       this.add.circle(CUSTOMER_X, 210, 46, 0xffd1b0).setStrokeStyle(4, 0x2b1d10);
@@ -102,11 +93,23 @@ export class SalesScene extends Phaser.Scene {
     }
 
     // The speech bubble, reaching across from the customer.
-    this.add.rectangle(330, 200, 480, 150, 0xfffdf9).setStrokeStyle(4, 0x2b1d10);
-    this.add.triangle(590, 205, 0, -18, 0, 18, 110, 8, 0xfffdf9).setStrokeStyle(4, 0x2b1d10);
-    this.add.rectangle(568, 205, 10, 30, 0xfffdf9); // hides the bubble's edge where the tail joins
+    // SCREAM-126: the game's shared pixel bubble (Pokémon Yellow-style), tail stepping toward the customer.
+    drawBubble(this.add.graphics(), {
+      x: 90, y: 125, w: 480, h: 150, unit: 4, innerLine: true,
+      tail: { side: 'right', at: 96, steps: 7, reach: 3 },
+    });
+    // SCREAM-127 (PO, November 2): the customer's name sits in the speech bubble, top left, like
+    // the speaker's name in a Pokémon text box (it used to be a name tag under the customer).
+    if (customer) {
+      this.add.text(118, 141, customer.resident.name, {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        fontStyle: 'bold',
+        color: '#c2185b',
+      });
+    }
     this.bubbleText = this.add
-      .text(330, 200, '', {
+      .text(330, 212, '', {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: INK,
