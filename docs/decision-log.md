@@ -6,9 +6,15 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-57, PO, November 2):** the hub (the inside of the truck) is the PO's coloured drawing, made from his pen sketch and engineering's line art, instead of placeholder boxes. Clicking the freezer opens the cooler; clicking the front of the truck starts driving; clicking the menu board on the wall behind the freezer opens the menu. No art pack was bought: doc 18 found no front-on truck interior to match.
 
-**Why (product owner's rationale):** _waiting on the PO._
+**Why (product owner's rationale):** it was the cheapest option, and the drawing got to a point where it looks good enough for now.
 
-**Engineering's calls (proposals, not the PO's reasons):** "the menu" is read as the pause menu (Resume, Restart Evening, Quit To Title), the one in-evening menu; the serving window stays clickable during a sale, as before; the arrow keys move left to right across the picture (menu board, freezer, front, window); the highlighted part gets a yellow outline and a name tag (MENU, COOLER, DRIVE, WINDOW).
+**Confirmed by the PO (November 2):** "the menu" is the pause menu (Resume, Restart Evening, Quit To Title).
+
+**Also (SCREAM-123, PO, November 2):** the same picture sits behind the pause menu and the end-of-evening screens, under a coloured layer so the text reads clearly.
+
+**Engineering's calls (proposals, not the PO's reasons):** the serving window stays clickable during a sale, as before; the arrow keys move left to right across the picture (menu board, freezer, front, window); the highlighted part gets a yellow outline and a name tag (MENU, COOLER, DRIVE, WINDOW).
+
+**Revisit if:** the game needs more polish (doc 18: a commission from the same line art, about $50-$300).
 
 ## 026 — Overcharging gets a second chance, without a tip (2026-11-02)
 
