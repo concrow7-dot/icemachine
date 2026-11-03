@@ -47,6 +47,25 @@ const { chromium } = require('playwright');
   check('On the road: the gauge shows in the top bar', await sc('Hud', 's.fuelGauge.visible'), true);
   await page.screenshot({ path: outDir + '/fuel_hud.png' });
 
+  // ---- SCREAM-121: the old-school dial; steady above a quarter tank, jumping around below ----
+  const needleSpread = async (fuelLevel) => {
+    await ev(`(e.fuelLeft = ${fuelLevel}, true)`);
+    let lo = 9, hi = -9;
+    for (let i = 0; i < 25; i++) { const n = await sc('Hud', 's.fuelNeedle'); lo = Math.min(lo, n); hi = Math.max(hi, n); await wait(60); }
+    return [lo, hi];
+  };
+  await drive('(s.speed = 0, s.parkBrake = true, true)');
+  const [fullLo, fullHi] = await needleSpread(1);
+  check('Full tank: the needle sits on F', `${fullLo},${fullHi}`, '1,1');
+  const [halfLo, halfHi] = await needleSpread(0.5);
+  check('Half a tank: the needle holds steady at 1/2', `${halfLo},${halfHi}`, '0.5,0.5');
+  const [lowLo, lowHi] = await needleSpread(0.08);
+  check('Low (0.08): the needle jumps around', lowHi - lowLo > 0.02, true);
+  check('...but stays within 0.1 of a tank of the truth', lowLo >= 0.08 - 0.1 - 1e-9 && lowHi <= 0.08 + 0.1 + 1e-9, true);
+  await ev('(e.fuelLeft = 0.08, true)'); await wait(200);
+  await page.screenshot({ path: outDir + '/fuel_dial_low.png' });
+  await ev('(e.fuelLeft = 1, true)'); await wait(200);
+
   // ---- Driving uses gas, by distance ----
   const start = await drive('[s.truck.x, s.truck.y]');
   const before = await ev('e.fuel');

@@ -4,9 +4,19 @@ import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
+import { NeedleWobble } from '../ui/fuelGauge';
 
-/** SCREAM-22: where the fuel gauge's bar starts, and its size. */
-const FUEL_GAUGE = { x: 530, w: 110, h: 14 };
+/**
+ * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
+ * middle; the face is a fan from E (left) to F (right), angles in degrees clockwise from
+ * pointing right (so 270 is straight up).
+ */
+const FUEL_DIAL = { x: 585, pivotY: 46, radius: 46, from: 200, to: 340 };
+const DIAL_FACE = 0x4b4440;
+const DIAL_EDGE = 0x241f1c;
+const DIAL_INK = 0xf4ead2;
+const DIAL_INK_CSS = '#f4ead2';
+const DIAL_LOW_CSS = '#ff6b5e';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
@@ -21,7 +31,12 @@ export class HudScene extends Phaser.Scene {
   private patienceWarning!: Phaser.GameObjects.Container;
   /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
   private fuelGauge!: Phaser.GameObjects.Container;
-  private fuelBar!: Phaser.GameObjects.Graphics;
+  private dialFace!: Phaser.GameObjects.Graphics;
+  private needle!: Phaser.GameObjects.Graphics;
+  private emptyLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-121: where the needle points (0 = E, 1 = F); tests read it. */
+  fuelNeedle = 1;
+  private readonly wobble = new NeedleWobble();
 
   constructor() {
     super(SceneKeys.Hud);
@@ -70,11 +85,7 @@ export class HudScene extends Phaser.Scene {
     this.patienceWarning = this.add.container(0, 22, [warnCircle, warnMark]).setVisible(false);
     this.tweens.add({ targets: this.patienceWarning, scale: 1.3, duration: 300, yoyo: true, repeat: -1 });
 
-    // SCREAM-22: E [====    ] F, in the middle of the top bar.
-    this.fuelBar = this.add.graphics();
-    const gaugeText = (x: number, text: string) =>
-      this.add.text(x, 0, text, { fontFamily: 'monospace', fontSize: '16px', color: '#ffe8a3' }).setOrigin(0.5);
-    this.fuelGauge = this.add.container(FUEL_GAUGE.x, 22, [gaugeText(-10, 'E'), this.fuelBar, gaugeText(FUEL_GAUGE.w + 10, 'F')]);
+    this.buildFuelDial();
 
     this.refresh();
     this.addDebugKeys();
@@ -176,7 +187,7 @@ export class HudScene extends Phaser.Scene {
     const warn =
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
     this.patienceWarning.setVisible(warn).setX(this.moneyText.x - this.moneyText.width - 30);
-    this.drawFuel();
+    this.drawFuel(delta);
   }
 
   /**
@@ -219,20 +230,64 @@ export class HudScene extends Phaser.Scene {
     }
   }
 
-  /** SCREAM-22: the gauge, while driving or at the pump. Red when low; flashing when empty. */
-  private drawFuel(): void {
+  /**
+   * SCREAM-121 (PO, November 2): an old car's gas gauge, a dark fan with E, 1/2 and F and a
+   * pale needle (the PO's reference photo), in the middle of the top bar.
+   */
+  private buildFuelDial(): void {
+    const { radius, from, to } = FUEL_DIAL;
+    const rad = Phaser.Math.DegToRad;
+    const at = (deg: number, r: number) => ({ x: Math.cos(rad(deg)) * r, y: Math.sin(rad(deg)) * r });
+    this.dialFace = this.add.graphics();
+    const face = this.dialFace;
+    face.fillStyle(DIAL_FACE, 1).slice(0, 0, radius, rad(from), rad(to), false).fillPath();
+    // A lighter rim inside the dark edge, like the pressed metal plate.
+    face.lineStyle(2, 0x6e645d, 1).beginPath().arc(0, 0, radius - 3, rad(from + 2), rad(to - 2), false).strokePath();
+    // "E . 1/2 . F" round the top, like the reference photo: dots at a quarter and three quarters.
+    const labelR = radius - 13;
+    face.fillStyle(DIAL_INK, 1);
+    for (const f of [0.25, 0.75]) {
+      const p = at(from + (to - from) * f, labelR);
+      face.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 4, 4);
+    }
+    const label = (deg: number, text: string, size: number, font = 'monospace') => {
+      const p = at(deg, labelR);
+      return this.add
+        .text(p.x, p.y, text, { fontFamily: font, fontSize: `${size}px`, fontStyle: 'bold', color: DIAL_INK_CSS })
+        .setOrigin(0.5);
+    };
+    this.emptyLabel = label(from + 10, 'E', 16);
+    const half = label(270, '½', 15, 'Arial, sans-serif');
+    const full = label(to - 10, 'F', 16);
+    this.needle = this.add.graphics();
+    this.fuelGauge = this.add.container(FUEL_DIAL.x, FUEL_DIAL.pivotY, [face, this.emptyLabel, half, full, this.needle]);
+  }
+
+  /**
+   * SCREAM-22 / SCREAM-121: the gauge, while driving or at the pump. The needle is steady
+   * above a quarter tank and jumps around below it (NeedleWobble); E turns red when low and
+   * the plate's edge flashes red when empty.
+   */
+  private drawFuel(delta = 16): void {
     const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump);
     this.fuelGauge.setVisible(show);
     if (!show) return;
     const fuel = this.evening.fuel;
-    const { w, h } = FUEL_GAUGE;
-    const g = this.fuelBar.clear();
-    g.fillStyle(0x000000, 0.5).fillRect(0, -h / 2, w, h);
-    g.fillStyle(fuel <= FUEL_LOW ? 0xff5252 : 0xf5a623, 1).fillRect(0, -h / 2, w * fuel, h);
-    g.lineStyle(1, 0xffe8a3, 0.8);
-    for (let i = 1; i < 4; i++) g.lineBetween((w * i) / 4, -h / 2, (w * i) / 4, -h / 2 + 4);
+    this.fuelNeedle = this.wobble.update(fuel, this.time.now, delta);
+    const { radius, from, to } = FUEL_DIAL;
+    const rad = Phaser.Math.DegToRad;
     const flash = fuel <= 0 && Math.floor(this.time.now / 300) % 2 === 0;
-    g.lineStyle(2, flash ? 0xff5252 : 0xffe8a3, 1).strokeRect(0, -h / 2, w, h);
+    this.emptyLabel.setColor(fuel <= FUEL_LOW ? DIAL_LOW_CSS : DIAL_INK_CSS);
+    const angle = rad(from + (to - from) * this.fuelNeedle);
+    const tipX = Math.cos(angle) * (radius - 6);
+    const tipY = Math.sin(angle) * (radius - 6);
+    const g = this.needle.clear();
+    g.lineStyle(2, flash ? 0xff5252 : DIAL_EDGE, 1).beginPath().arc(0, 0, radius, rad(from), rad(to), false);
+    g.lineTo(0, 0).closePath().strokePath();
+    g.lineStyle(5, DIAL_EDGE, 1).lineBetween(0, 0, tipX, tipY);
+    g.lineStyle(3, DIAL_INK, 1).lineBetween(0, 0, tipX, tipY);
+    g.fillStyle(DIAL_EDGE, 1).fillCircle(0, 0, 6);
+    g.fillStyle(DIAL_INK, 1).fillCircle(0, 0, 4);
   }
 
   private refresh(): void {
