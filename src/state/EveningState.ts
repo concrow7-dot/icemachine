@@ -7,6 +7,7 @@ import { RESIDENTS } from '../config/residents';
 import { Residents, type ResidentNow } from './Residents';
 import {
   COOLER_CAPACITY,
+  ORDER_PICTURE_CHANCE,
   CRATE_SIDE,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
@@ -89,6 +90,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     y: WORCESTER.homeStart.y,
     angle: WORCESTER.homeStart.angle,
   };
+
+  /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
+  orderPictureChance = ORDER_PICTURE_CHANCE;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
   readonly residents = new Residents(RESIDENTS);
@@ -403,7 +407,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.servingNow = customer;
     }
     this.setCustomerWaiting(true);
-    this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue);
+    this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

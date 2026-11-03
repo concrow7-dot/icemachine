@@ -62,6 +62,8 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter'); await wait(400);
 
   // ---- Sale 1: perfect and fast ----
+  // SCREAM-137: orders in words for these checks (the picture orders have their own below).
+  await ev('(e.orderPictureChance = 0, true)');
   await ev("e.residents.callNow(e.residents.all.find(p => p.customer === 'none'))"); await wait(200);
   await sc('Drive', '(s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true)'); await wait(400);
   check('Pulling up to a customer opens the sales screen (no hub)', await scenes(), 'Sales,Hud');
@@ -223,6 +225,20 @@ const { chromium } = require('playwright');
   check('Every flavour over $4.00: "Too expensive!"', (await ev('e.sale.outcome.kind')) + ' ' + (await sc('Sales', 's.bubbleText.text')), 'too-expensive Too expensive!');
   await press('Enter'); await wait(300);
   await ev('(e.coolerSlots.forEach((s, i) => s.priceCents = [200, 250, 250, 300][i]), true)');
+
+  // ---- SCREAM-137: an order shown in pictures ----
+  await ev('(e.orderPictureChance = 1, true)');
+  await serveNow();
+  const picOrder = await ev('e.sale.order.map(l => l.flavour).join(",")');
+  check('Picture order: no words, one picture per ice cream in the order', JSON.stringify(await sc('Sales', 's.bubbleText.text')) + ' ' + (await sc('Sales', 's.orderPictures.list.filter(o => o.name.startsWith("order-pic-")).map(o => o.name.slice(10)).join(",")')), '"" ' + picOrder);
+  check('...with each count beside its picture', await sc('Sales', 's.orderPictures.list.filter(o => o.type === "Text").map(o => o.text).join(",")'), await ev('e.sale.order.map(l => l.count + " ×").join(",")'));
+  await page.screenshot({ path: outDir + '/sale_pictures.png' });
+  await tick(5100);
+  check('...the pictures go when the order hides', (await sc('Sales', 's.orderPictures.list.length')) + ' ' + (await sc('Sales', 's.bubbleText.text')), '0 …');
+  await press('r'); await wait(150);
+  check('R: the repeat is in pictures too', (await sc('Sales', 's.orderPictures.list.length')) > 0, true);
+  await press('b'); await wait(300);
+  await ev('(e.orderPictureChance = 0, true)');
 
   // ---- Debug keys moved to Shift ----
   const c7 = await cash();

@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 031 — Orders in words or in pictures (2026-11-02)
+
+**Decision (Jira SCREAM-137, PO, November 2):** some customers say the ice creams' names, others show their pictures ("2 ×" and the ice cream). Which one is random for each customer (`ORDER_PICTURE_CHANCE`, 50% for now). Asking again (R) and "That's not what I asked for. I wanted..." after a mistake use the same way as that customer's order.
+
+**Why (product owner's rationale):** _to be asked._
+
+**Engineering's calls (proposals):** the chance is a tuning value, so it can change later (for example by day, or by customer); "That's not what I asked for. I wanted:" stays in words above the pictures.
+
 ## 030 — A shut cooler, one crate open at a time; stock placed square by square (2026-11-02)
 
 **Decision (Jira SCREAM-131 and SCREAM-132, PO, November 2):**

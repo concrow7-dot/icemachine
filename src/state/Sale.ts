@@ -104,6 +104,14 @@ export class Sale {
   repriceUsed = false;
   /** The customer's current line in the speech bubble. */
   line = '';
+  /**
+   * SCREAM-137 (PO, November 2): true if this customer shows the ice creams' pictures instead
+   * of saying their names (decided at random when the sale starts). Repeats (R) and "I wanted..."
+   * after a mistake follow the same choice.
+   */
+  readonly pictures: boolean;
+  /** While the current line shows the order: any words before it ('' for the order alone); otherwise null. */
+  private orderPrefix: string | null = null;
 
   private readonly startedMs: number;
   private orderHiddenMs: number | null = null;
@@ -111,8 +119,9 @@ export class Sale {
 
   readonly order: OrderLine[];
 
-  constructor(order: OrderLine[], slotCount: number, nowMs: number) {
+  constructor(order: OrderLine[], slotCount: number, nowMs: number, pictures = false) {
     this.order = order;
+    this.pictures = pictures;
     this.bag = Array.from({ length: slotCount }, () => 0);
     this.startedMs = nowMs;
     this.showUntilMs = nowMs + ORDER_SHOW_SECONDS * 1000;
@@ -120,6 +129,7 @@ export class Sale {
       this.finish({ kind: 'too-expensive' }, 'Too expensive!');
     } else {
       this.line = describeOrder(order);
+      this.orderPrefix = '';
     }
   }
 
@@ -141,7 +151,7 @@ export class Sale {
 
   private hideOrder(nowMs: number): void {
     this.phase = 'deciding';
-    this.line = '…';
+    this.say('…');
     // The tip countdown starts the first time the order is hidden (Q23).
     if (this.orderHiddenMs === null) this.orderHiddenMs = nowMs;
   }
@@ -172,7 +182,7 @@ export class Sale {
   askAgain(nowMs: number): boolean {
     if (this.phase !== 'deciding' || this.askedAgain || this.retryUsed) return false;
     this.askedAgain = true;
-    this.showOrder(nowMs, describeOrder(this.order));
+    this.showOrder(nowMs, describeOrder(this.order), '');
     return true;
   }
 
@@ -180,7 +190,7 @@ export class Sale {
   handOver(): boolean {
     if (this.phase !== 'deciding' || this.bagCount === 0) return false;
     this.phase = 'pricing';
-    this.line = 'How much?';
+    this.say('How much?');
     return true;
   }
 
@@ -207,7 +217,7 @@ export class Sale {
     if (!this.bagMatchesOrder) {
       if (!this.askedAgain && !this.retryUsed) {
         this.retryUsed = true;
-        this.showOrder(nowMs, `That's not what I asked for. I wanted ${describeOrder(this.order)}.`);
+        this.showOrder(nowMs, `That's not what I asked for. I wanted ${describeOrder(this.order)}.`, "That's not what I asked for. I wanted:");
         return 'retry';
       }
       this.finish({ kind: 'wrong-order' }, "That's not what I asked for.");
@@ -218,7 +228,7 @@ export class Sale {
       // SCREAM-120 (PO, November 2): a second chance to fix the price, but no tip.
       if (!this.repriceUsed) {
         this.repriceUsed = true;
-        this.line = "That's more than it's supposed to be. Try again?";
+        this.say("That's more than it's supposed to be. Try again?");
         return 'reprice';
       }
       this.finish({ kind: 'overcharged' }, "That's more than it's supposed to be.");
@@ -243,15 +253,30 @@ export class Sale {
     return this.outcome?.kind === 'overcharged' || this.outcome?.kind === 'wrong-order';
   }
 
-  private showOrder(nowMs: number, line: string): void {
+  /**
+   * SCREAM-137: when this customer shows pictures and the current line is the order, the
+   * words to show before the pictures, and the order to draw; otherwise null.
+   */
+  get pictureLine(): { prefix: string; order: readonly OrderLine[] } | null {
+    return this.pictures && this.orderPrefix !== null ? { prefix: this.orderPrefix, order: this.order } : null;
+  }
+
+  /** A line that isn't the order. */
+  private say(line: string): void {
+    this.line = line;
+    this.orderPrefix = null;
+  }
+
+  private showOrder(nowMs: number, line: string, prefix: string): void {
     this.phase = 'ordering';
     this.line = line;
+    this.orderPrefix = prefix;
     this.showUntilMs = nowMs + ORDER_SHOW_SECONDS * 1000;
   }
 
   private finish(outcome: SaleOutcome, line: string): void {
     this.phase = 'over';
     this.outcome = outcome;
-    this.line = line;
+    this.say(line);
   }
 }
