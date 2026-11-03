@@ -33,6 +33,13 @@ const { chromium } = require('playwright');
   const menu = () => cooler(`s.visibleCards().map(c => c.flavour + ' ' + c.price.text).join(', ')`);
   const clickAt = async (fn) => { const [x, y] = await cooler(fn); await page.mouse.click(x, y); await wait(150); };
 
+  // --- SCREAM-133: each row's add button is the ice cream's picture with a "+" on it ---
+  check('Add buttons: a picture with a pulsing "+" for each flavour', await cooler('["eclair","spongepop","explorer","cookie"].map(f => { const b = s.addButtons.get(f); return b && b.list.length === 2 && s.tweens.getTweensOf(b.list[1]).length === 1; }).join(",")'), 'true,true,true,true');
+  await clickAt('(() => { const b = s.addButtons.get("spongepop"); return [b.x, b.y]; })()');
+  check('Clicking the SpongePop picture adds one SpongePop', await cells(1), 'spongepop*');
+  await press('-'); await press('ArrowUp');
+  check('...(taken back out with -)', await cells(1), '-');
+
   // --- Picking costs nothing until Buy Stock ---
   await press('+', 4);
   check('+4 on the clipboard: 4 eclairs in the draft', await draft(0), 'eclair:4:200');

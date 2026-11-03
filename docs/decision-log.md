@@ -14,7 +14,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-137, PO, November 2):** some customers say the ice creams' names, others show their pictures ("2 ×" and the ice cream). Which one is random for each customer (`ORDER_PICTURE_CHANCE`, 50% for now). Asking again (R) and "That's not what I asked for. I wanted..." after a mistake use the same way as that customer's order.
 
-**Why (product owner's rationale):** _to be asked._
+**Why (product owner's rationale):** to add some variety to the sales window.
 
 **Engineering's calls (proposals):** the chance is a tuning value, so it can change later (for example by day, or by customer); "That's not what I asked for. I wanted:" stays in words above the pictures.
 

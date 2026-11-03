@@ -68,6 +68,8 @@ export class CoolerScene extends Phaser.Scene {
   private focus: Focus = { area: 'clipboard', row: 0 };
   private rowHighlight!: Phaser.GameObjects.Rectangle;
   private rowCounts: Phaser.GameObjects.Text[] = [];
+  /** SCREAM-133: each row's add button, the ice cream's picture with a "+" on it, by flavour. */
+  private addButtons = new Map<FlavourId, Phaser.GameObjects.Container>();
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private unpaidMarks!: Phaser.GameObjects.Graphics;
   /** SCREAM-131: the yellow outline round the crate new picks go into. */
@@ -175,7 +177,7 @@ export class CoolerScene extends Phaser.Scene {
           fontSize: '13px',
           fontStyle: 'bold',
           color: INK,
-          wordWrap: { width: 118 },
+          wordWrap: { width: 104 },
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
@@ -199,10 +201,10 @@ export class CoolerScene extends Phaser.Scene {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
         });
-        this.makeButton(paper.right - 16, y - 8, '+', () => {
+        this.makeAddButton(paper.right - 22, y - 8, flavour.id, () => {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
-        }, 18);
+        });
       }
     });
 
@@ -366,6 +368,29 @@ export class CoolerScene extends Phaser.Scene {
 
   // ---- Shared bits ----
 
+  /**
+   * SCREAM-133 (PO, November 2): the clipboard's add button is the ice cream's picture with a
+   * "+" badge on it that gently pulses. It grows a little under the mouse and bounces when it adds one.
+   */
+  private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void): void {
+    const picture = addFlavourIcon(this, 0, 0, flavour, 1.05);
+    const badge = this.add.container(11, -14, [
+      this.add.circle(0, 0, 8, 0x2e7d32).setStrokeStyle(2, 0xffffff),
+      this.add.text(0, -1, '+', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
+    ]);
+    this.tweens.add({ targets: badge, scale: 1.25, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const button = this.add.container(x, y, [picture, badge]).setName(`add-${flavour}`);
+    // A zone for the click area (a container's own hit area sits off-centre).
+    const hit = this.add.zone(x - 18, y - 24, 36, 46).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => picture.setScale(1.2));
+    hit.on('pointerout', () => picture.setScale(1.05));
+    hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+      onClick();
+    });
+    this.addButtons.set(flavour, button);
+  }
+
   private makeButton(
     x: number,
     y: number,
@@ -463,7 +488,15 @@ export class CoolerScene extends Phaser.Scene {
   }
 
   private pick(flavour: FlavourId): void {
-    if (!this.order.addOne(flavour)) {
+    if (this.order.addOne(flavour)) {
+      // SCREAM-133: the picture bounces as one goes into the cooler.
+      const button = this.addButtons.get(flavour);
+      if (button) {
+        this.tweens.killTweensOf(button);
+        button.setScale(1);
+        this.tweens.add({ targets: button, scale: 1.2, duration: 90, yoyo: true, ease: 'Quad.easeOut' });
+      }
+    } else {
       const r = this.order.refusal;
       this.flashNote(
         r === 'full' ? 'The cooler is full.' : 'Not enough cash for that one.',
