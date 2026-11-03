@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 027 — The truck interior is the PO's drawing, with clickable parts (2026-11-02)
+
+**Decision (Jira SCREAM-57, PO, November 2):** the hub (the inside of the truck) is the PO's coloured drawing, made from his pen sketch and engineering's line art, instead of placeholder boxes. Clicking the freezer opens the cooler; clicking the front of the truck starts driving; clicking the menu board on the wall behind the freezer opens the menu. No art pack was bought: doc 18 found no front-on truck interior to match.
+
+**Why (product owner's rationale):** _waiting on the PO._
+
+**Engineering's calls (proposals, not the PO's reasons):** "the menu" is read as the pause menu (Resume, Restart Evening, Quit To Title), the one in-evening menu; the serving window stays clickable during a sale, as before; the arrow keys move left to right across the picture (menu board, freezer, front, window); the highlighted part gets a yellow outline and a name tag (MENU, COOLER, DRIVE, WINDOW).
+
 ## 026 — Overcharging gets a second chance, without a tip (2026-11-02)
 
 **Decision (Jira SCREAM-120, PO, November 2):** the first time the player charges more than the order costs, the customer says "That's more than it's supposed to be. Try again?" and the player can type the price again, but loses the tip. Overcharging a second time ends the sale as before: the customer leaves with the ice cream for free.
