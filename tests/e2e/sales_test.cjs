@@ -67,7 +67,7 @@ const { chromium } = require('playwright');
   check('Pulling up to a customer opens the sales screen (no hub)', await scenes(), 'Sales,Hud');
   check('The customer gives an order', await ev('e.sale.phase') + ' ' + (await ev('e.sale.order.length > 0')), 'ordering true');
   check('Bubble shows the order', await sc('Sales', 's.bubbleText.text') === await ev('e.sale.line'), true);
-  check('Tip bar hidden while the order is showing', await sc('Sales', 's.tipBar.container.visible'), false);
+  check('Tip cup on the counter, full, no % while the order is showing (SCREAM-134)', (await sc('Sales', 's.tipBar.container.visible')) + ' ' + (await sc('Sales', 'JSON.stringify(s.tipBar.label.text)')), 'true ""');
   await page.screenshot({ path: outDir + '/sale_order.png' });
   await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }, { slot: 1, flavour: 'spongepop', count: 1 }]);
   await tick(5100);

@@ -10,6 +10,7 @@ import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
 import { loadResidentSheet } from '../ui/residentLook';
 import { smoothCustomerTexture, SMOOTH_FACTOR } from '../ui/smoothPixels';
+import { addFlavourIcon, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
 
 // Issues #13 and #15: the sales screen, zoomed in on the window (PO sketch in
 // doc 08): a speech bubble on the left, the customer on the right of the
@@ -35,11 +36,23 @@ const CUSTOMER_ROWS = 29;
 /** The top of the counter, where the cropped sprite's bottom edge sits. */
 const COUNTER_TOP = 418;
 
+/**
+ * SCREAM-125 (PO, November 2): the window looks like the inside of the PO's truck drawing.
+ * The picture (tools/interior/draw_sales.py): the striped wall, a chunky grey frame, the
+ * glass pane slid over the left half, the awning's underside, sky and lawn outside, and the
+ * counter shelf with the drawing's box and green cup.
+ */
+const WINDOW_KEY = 'sales-window';
+const WINDOW_URL = 'assets/interior/sales-window.png';
+/** The mini Today's Menu taped to the glass while pricing (top-left corner, width). */
+const MENU_CARD = { x: 66, y: 282, w: 290 };
+
 export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private bubbleText!: Phaser.GameObjects.Text;
-  private priceCard!: Phaser.GameObjects.Text;
+  /** SCREAM-125: a mini Today's Menu taped to the glass while pricing (was a plain YOUR PRICES card). */
+  private priceCard!: Phaser.GameObjects.Container;
   private calculator!: Calculator;
   private hint!: Phaser.GameObjects.Text;
   private roadButton!: Phaser.GameObjects.Text;
@@ -53,6 +66,8 @@ export class SalesScene extends Phaser.Scene {
 
   preload(): void {
     loadResidentSheet(this);
+    if (!this.textures.exists(WINDOW_KEY)) this.load.image(WINDOW_KEY, WINDOW_URL);
+    loadFlavourArt(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
@@ -61,11 +76,8 @@ export class SalesScene extends Phaser.Scene {
     this.typed = '';
     const { width, height } = this.scale;
 
-    // The truck wall, and the serving window.
-    this.add.rectangle(0, 44, width, height - 44, 0xc89b6d).setOrigin(0, 0);
-    this.add.rectangle(480, 255, 840, 330, 0x9ecbff).setStrokeStyle(10, 0x5a4636);
-    this.add.rectangle(612, 255, 10, 330, 0x5a4636);
-    this.add.rectangle(480, 427, 860, 18, 0x8a6a4a); // the counter
+    // The truck wall and the serving window (SCREAM-125: the truck drawing's style).
+    this.add.image(0, 0, WINDOW_KEY).setOrigin(0, 0).setDisplaySize(width, height);
 
     // The customer, on the right side of the window. SCREAM-106 (PO, November 2): the
     // same person you saw on the map, in their own look, from the head down to the counter.
@@ -118,18 +130,10 @@ export class SalesScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.tipBar = new TipBar(this, 100, 66);
+    // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
+    this.tipBar = new TipBar(this, 892, 412, true);
 
-    this.priceCard = this.add
-      .text(90, 296, '', {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: INK,
-        lineSpacing: 4,
-        backgroundColor: '#fffdf9',
-        padding: { x: 12, y: 8 },
-      })
-      .setOrigin(0, 0);
+    this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
     this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);
 
     // Below the window, centred, where GO TO THE COOLER sits (ICE-14, ICE-15). Shows once the
@@ -273,22 +277,50 @@ export class SalesScene extends Phaser.Scene {
     this.scene.start(SceneKeys.Drive);
   }
 
+  /**
+   * SCREAM-125: the prices, as a mini Today's Menu taped to the glass: each flavour in the
+   * cooler (or in this order) with its picture and its price in marker, like the cooler's board.
+   */
+  private drawMenuCard(): void {
+    const sale = this.evening.sale;
+    if (!sale) return;
+    const rows = this.evening.slots.filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour));
+    const rowH = 26;
+    const h = 34 + rows.length * rowH + 6;
+    const { w } = MENU_CARD;
+    this.priceCard.removeAll(true);
+    const paper = this.add.graphics();
+    paper.fillStyle(0xfffdf0, 1).fillRect(0, 0, w, h);
+    paper.lineStyle(3, 0x7f7f7f, 1).strokeRect(0, 0, w, h);
+    // Two strips of tape holding it to the glass.
+    paper.fillStyle(0xf2e6b8, 0.85).fillRect(-8, -6, 40, 14).fillRect(w - 32, -6, 40, 14);
+    const parts: Phaser.GameObjects.GameObject[] = [paper];
+    parts.push(this.add.text(w / 2, 16, "Today's Menu", { fontFamily: MARKER_FONT, fontSize: '17px', color: INK }).setOrigin(0.5));
+    rows.forEach((slot, i) => {
+      const y = 34 + i * rowH + rowH / 2;
+      parts.push(addFlavourIcon(this, 18, y, slot.flavour, 0.66));
+      parts.push(
+        this.add
+          .text(36, y, getFlavour(slot.flavour).name, { fontFamily: 'monospace', fontSize: '12px', color: INK })
+          .setOrigin(0, 0.5),
+      );
+      parts.push(
+        this.add
+          .text(w - 10, y, formatMoney(slot.priceCents).replace(/\.00$/, ''), { fontFamily: MARKER_FONT, fontSize: '18px', color: '#141418' })
+          .setOrigin(1, 0.5),
+      );
+    });
+    this.priceCard.add(parts);
+  }
+
   private refresh(): void {
     const sale = this.evening.sale;
     if (!sale) return;
     this.bubbleText.setText(sale.line);
 
-    const slots = this.evening.slots;
     const pricing = sale.phase === 'pricing';
-    this.priceCard
-      .setText(
-        'YOUR PRICES\n' +
-          slots
-            .filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour))
-            .map((s) => `${getFlavour(s.flavour).name.padEnd(25)} ${formatMoney(s.priceCents)}`)
-            .join('\n'),
-      )
-      .setVisible(pricing);
+    if (pricing) this.drawMenuCard();
+    this.priceCard.setVisible(pricing);
     this.calculator.show(this.typed);
     this.calculator.setVisible(pricing);
 
