@@ -6,6 +6,8 @@ import { WORCESTER } from '../config/worcester';
 import { RESIDENTS } from '../config/residents';
 import { Residents, type ResidentNow } from './Residents';
 import {
+  COOLER_CAPACITY,
+  CRATE_SIDE,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
@@ -92,6 +94,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
   readonly residents = new Residents(RESIDENTS);
 
   /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
+  /**
+   * SCREAM-131 (PO, November 2): which ice cream sits in each of the cooler's squares,
+   * crate by crate and row by row, so the player has to remember where things are. Kept in
+   * step with the stock counts (`coolerSlots`) by syncCells().
+   */
+  private readonly coolerCells: (FlavourId | null)[] = Array.from({ length: COOLER_CAPACITY }, () => null);
+  /** During a sale: each ice cream in the bag and the square it came from, so it can go back there. */
+  private bagCells: { cell: number; slot: number }[] = [];
+
   private readonly coolerSlots: CoolerSlot[] = FLAVOURS.map((f) => ({
     flavour: f.id,
     quantity: 0,
@@ -102,7 +113,13 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * Quick play starts every evening fresh. Story mode (SCREAM-19) passes in the
    * cash and the cooler left over from the evening before.
    */
-  constructor(carry?: { cashCents: number; slots: readonly Readonly<CoolerSlot>[]; fuel: number }) {
+  constructor(carry?: {
+    cashCents: number;
+    slots: readonly Readonly<CoolerSlot>[];
+    fuel: number;
+    /** SCREAM-131: where each ice cream sat (saves from before it have none, and get a fresh layout). */
+    cells?: readonly (FlavourId | null)[];
+  }) {
     super();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
@@ -114,11 +131,52 @@ export class EveningState extends Phaser.Events.EventEmitter {
       target.quantity += slot.quantity;
       target.priceCents = slot.priceCents;
     });
+    carry?.cells?.forEach((f, i) => {
+      if (i < COOLER_CAPACITY) this.coolerCells[i] = f;
+    });
+    this.syncCells();
   }
 
   /** A copy of the cooler as it is now, to carry into the next evening (SCREAM-19). */
   get slotsSnapshot(): CoolerSlot[] {
     return this.coolerSlots.map((s) => ({ ...s }));
+  }
+
+  /** SCREAM-131: a copy of where each ice cream sits, to carry into the next evening. */
+  get cellsSnapshot(): (FlavourId | null)[] {
+    return [...this.cells];
+  }
+
+  /** SCREAM-131: the cooler's squares, crate by crate and row by row (null = empty). */
+  get cells(): readonly (FlavourId | null)[] {
+    this.syncCells();
+    return this.coolerCells;
+  }
+
+  /** Which crate a square is in (0, 1 or 2). */
+  static crateOf(cell: number): number {
+    return Math.floor(cell / (CRATE_SIDE * CRATE_SIDE));
+  }
+
+  /**
+   * Keeps the squares in step with the stock counts: if a flavour has fewer squares than ice
+   * creams, the extras go in the first empty squares; if it has more, the last ones go. Most
+   * changes move squares and counts together, so this rarely does anything.
+   */
+  private syncCells(): void {
+    for (const slot of this.coolerSlots) {
+      let count = this.coolerCells.filter((f) => f === slot.flavour).length;
+      while (count > slot.quantity) {
+        this.coolerCells[this.coolerCells.lastIndexOf(slot.flavour)] = null;
+        count--;
+      }
+      while (count < slot.quantity) {
+        const empty = this.coolerCells.indexOf(null);
+        if (empty < 0) break;
+        this.coolerCells[empty] = slot.flavour;
+        count++;
+      }
+    }
   }
 
   // ---- Clock (#5) ----
@@ -351,18 +409,60 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.saleNow;
   }
 
-  /** At the cooler during a sale: moves one ice cream between the slot and the bag (+1 or -1). */
+  /**
+   * At the cooler during a sale: moves one ice cream between the slot and the bag (+1 or -1).
+   * Taking one takes the last square of that flavour; putting one back returns the last of that
+   * flavour taken to its square. (The cooler screen takes from a chosen square: pickCell.)
+   */
   pickForSale(slot: number, delta: 1 | -1): boolean {
+    const flavour = this.coolerSlots[slot]?.flavour;
+    if (!flavour) return false;
+    if (delta > 0) return this.pickCell(this.cells.lastIndexOf(flavour));
+    const last = this.bagCells.map((b) => b.slot).lastIndexOf(slot);
+    return last >= 0 && this.putBack(last);
+  }
+
+  /** SCREAM-131: during a sale, takes the ice cream in this square and puts it in the bag. */
+  pickCell(cell: number): boolean {
     const sale = this.saleNow;
+    const flavour = this.cells[cell];
+    const slot = this.coolerSlots.findIndex((s) => s.flavour === flavour);
     const stock = this.coolerSlots[slot];
-    if (!sale || sale.phase !== 'deciding' || !stock) return false;
-    const inBag = sale.bag[slot] ?? 0;
-    if (delta > 0 && stock.quantity <= 0) return false;
-    if (delta < 0 && inBag <= 0) return false;
-    stock.quantity -= delta;
-    sale.bag[slot] = inBag + delta;
+    if (!sale || sale.phase !== 'deciding' || !flavour || !stock || stock.quantity <= 0) return false;
+    this.coolerCells[cell] = null;
+    stock.quantity -= 1;
+    sale.bag[slot] = (sale.bag[slot] ?? 0) + 1;
+    this.bagCells.push({ cell, slot });
     this.emit(EveningEvents.CoolerChanged);
     return true;
+  }
+
+  /** SCREAM-131: what's in the bag, in the order taken: each ice cream's flavour and its square. */
+  get bagContents(): { cell: number; flavour: FlavourId }[] {
+    return this.bagCells.flatMap((b) => {
+      const flavour = this.coolerSlots[b.slot]?.flavour;
+      return flavour ? [{ cell: b.cell, flavour }] : [];
+    });
+  }
+
+  /** SCREAM-131: puts the n-th ice cream in the bag back in its square (or the first empty one). */
+  putBack(n: number): boolean {
+    const sale = this.saleNow;
+    const item = this.bagCells[n];
+    const stock = item ? this.coolerSlots[item.slot] : undefined;
+    if (!sale || sale.phase !== 'deciding' || !item || !stock) return false;
+    this.bagCells.splice(n, 1);
+    this.placeInCell(item.cell, stock.flavour);
+    stock.quantity += 1;
+    sale.bag[item.slot] = Math.max(0, (sale.bag[item.slot] ?? 0) - 1);
+    this.emit(EveningEvents.CoolerChanged);
+    return true;
+  }
+
+  /** Puts an ice cream in a square, or the first empty one if that's taken. Doesn't tidy up. */
+  private placeInCell(cell: number, flavour: FlavourId): void {
+    const target = this.coolerCells[cell] === null ? cell : this.coolerCells.indexOf(null);
+    if (target >= 0) this.coolerCells[target] = flavour;
   }
 
   /** The player types a price and presses Enter (#15). */
@@ -396,6 +496,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const sale = this.saleNow;
     if (!sale || sale.phase !== 'over') return;
     if (!sale.itemsGivenAway && sale.outcome?.kind !== 'paid') this.returnBagToStock(sale);
+    this.bagCells = [];
     this.saleNow = null;
     this.lastSalePhase = null;
     if (this.servingNow) this.residents.finishServing(this.servingNow);
@@ -410,11 +511,23 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   private returnBagToStock(sale: Sale): void {
+    // SCREAM-131: each ice cream goes back to the square it came from (counts and squares
+    // move together, so nothing is tidied away half way).
+    for (const { cell, slot } of this.bagCells) {
+      const stock = this.coolerSlots[slot];
+      if (!stock || (sale.bag[slot] ?? 0) <= 0) continue;
+      this.placeInCell(cell, stock.flavour);
+      stock.quantity += 1;
+      sale.bag[slot] = (sale.bag[slot] ?? 0) - 1;
+    }
+    this.bagCells = [];
+    // Anything left in the bag without a square (shouldn't happen) still goes back in the count.
     sale.bag.forEach((count, slot) => {
       const stock = this.coolerSlots[slot];
       if (stock) stock.quantity += count;
       sale.bag[slot] = 0;
     });
+    this.syncCells();
     this.emit(EveningEvents.CoolerChanged);
   }
 
@@ -502,6 +615,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
       const target = this.coolerSlots.find((s) => s.flavour === slot.flavour);
       if (target) Object.assign(target, slot);
     });
+    // SCREAM-131/132: the squares as the player arranged them.
+    order.layout.forEach((f, i) => {
+      this.coolerCells[i] = f;
+    });
+    this.syncCells();
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);
     this.stockSpentCents += cost;
     this.emit(EveningEvents.CoolerChanged);

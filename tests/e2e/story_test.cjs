@@ -80,6 +80,7 @@ const { chromium } = require('playwright');
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
   check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0/0');
+  check('...and where each ice cream sits (SCREAM-131): 48 squares, 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '48 3');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----

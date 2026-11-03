@@ -1,3 +1,4 @@
+import type { FlavourId } from '../config/flavours';
 import { FLAVOURS } from '../config/flavours';
 import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import { EveningState, type CoolerSlot } from './EveningState';
@@ -41,6 +42,8 @@ export class StoryRun {
   /** What tonight started with: the cash and the cooler. Restarting the evening goes back to this. */
   cashCents = STORY_START_CASH_CENTS;
   slots: CoolerSlot[] | null = null;
+  /** SCREAM-131: where each ice cream sat in the cooler. */
+  cells: (FlavourId | null)[] | null = null;
   /** SCREAM-22: what tonight's tank started with. PO: a quarter on day 1; after that, what was left. */
   fuel = FUEL_STORY_START;
   /** Set once the run is over (the last day ended, or out of money). */
@@ -54,6 +57,7 @@ export class StoryRun {
       this.day = save.day;
       this.cashCents = save.cashCents;
       this.slots = save.slots.map((s) => ({ ...s }));
+      this.cells = save.cells ? [...save.cells] : null;
       this.fuel = save.fuel;
       this.totals = { ...save.totals };
     }
@@ -61,7 +65,7 @@ export class StoryRun {
 
   /** A new evening built from what tonight started with. */
   newEvening(): EveningState {
-    return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel });
+    return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined });
   }
 
   /** The evening is over: works out what happens next and, if the run goes on, carries the cash and stock forward. Call once per evening. */
@@ -73,6 +77,7 @@ export class StoryRun {
         : 'next';
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
+    this.cells = evening.cellsSnapshot;
     // SCREAM-119: out of gas (or nearly), the next day starts with 1/6 of a tank, enough to reach a station.
     this.fuel = Math.max(evening.fuel, FUEL_STORY_MIN_START);
     const b = evening.breakdown;
@@ -87,7 +92,7 @@ export class StoryRun {
     if (result === 'next') {
       this.day += 1;
       // SCREAM-17: save at the end of each evening, ready for the next one.
-      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, fuel: this.fuel, totals: this.totals });
+      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, cells: this.cells ?? undefined, fuel: this.fuel, totals: this.totals });
     } else {
       this.outcome = result;
       clearStorySave(); // The run is over: start a new game next time.

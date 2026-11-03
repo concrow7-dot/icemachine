@@ -84,7 +84,7 @@ const { TRACK } = require('./track.cjs');
   // ---- Sales: the calculator, mouse only (SCREAM-12) ----
   await page.keyboard.down('Shift'); await page.keyboard.press('Digit4'); await page.keyboard.up('Shift'); await wait(300);
   await ev(`(() => { const s = e.sale; s.order.splice(0, s.order.length, { slot: 0, flavour: 'eclair', count: 1 }); return true; })()`);
-  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await page.evaluate(() => window.__game.scene.getScene('Fill').takeFlavour('eclair')); await wait(100); await press('Enter'); await wait(300);
   check('Pricing: the calculator display starts at 0', await sales('s.calculator.display.text'), '0');
   check('The old whole-dollars click is gone (no price box)', await sales('s.priceBox === undefined'), true);
   const canvas = await page.$('canvas'); const cb = await canvas.boundingBox();

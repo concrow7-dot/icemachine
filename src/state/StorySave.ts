@@ -15,6 +15,8 @@ export type StorySave = {
   day: number;
   cashCents: number;
   slots: CoolerSlot[];
+  /** SCREAM-131: where each ice cream sits in the cooler. Saves from before it have none. */
+  cells?: (FlavourId | null)[];
   /** SCREAM-22: gas left in the tank, 0 to 1. Saves from before fuel get a quarter tank. */
   fuel: number;
   /** SCREAM-18: the run's takings so far. */
@@ -53,6 +55,9 @@ export function loadStory(): StorySave | null {
       day: data.day as number,
       cashCents: data.cashCents as number,
       slots: data.slots.map((s) => ({ ...s })),
+      cells: Array.isArray(data.cells)
+        ? data.cells.map((c) => (typeof c === 'string' && FLAVOUR_IDS.has(c) ? (c as FlavourId) : null))
+        : undefined,
       fuel: typeof data.fuel === 'number' && data.fuel >= 0 && data.fuel <= 1 ? data.fuel : FUEL_STORY_START,
       totals: {
         salesCents: cents(t.salesCents),
