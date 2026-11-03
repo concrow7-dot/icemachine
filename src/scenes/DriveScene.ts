@@ -173,6 +173,11 @@ export class DriveScene extends Phaser.Scene {
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
+  /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
+  private homeBay!: Phaser.GameObjects.Rectangle;
+  private homeArmed = false;
+  /** SCREAM-54 (Tom Cobb, round 2): an arrow toward home, shown only when sold out. */
+  private homeArrow!: Phaser.GameObjects.Container;
   private dashes: { x: number; y: number; ux: number; uy: number }[] = [];
   private viewKey = '';
   private potholes: { x: number; y: number; armed: boolean }[] = [];
@@ -260,6 +265,24 @@ export class DriveScene extends Phaser.Scene {
         .setDepth(4),
     );
     this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
+    // SCREAM-54 (PO, November 2): Home's driveway, a marked spot on the road outside home
+    // (where each evening starts). Stopping in it like a customer pickup opens the cooler to restock.
+    const hs = WORCESTER.homeStart;
+    this.homeBay = this.add
+      .rectangle(hs.x, hs.y, PICKUP_ZONE_LENGTH + 10, PICKUP_ZONE_WIDTH, 0x4fc3f7, 0.14)
+      .setStrokeStyle(3, 0x4fc3f7, 0.95)
+      .setAngle(hs.angle)
+      .setDepth(4);
+    this.homeArmed = this.pickupOverlap(this.homeBay) === 0;
+    this.homeArrow = this.add
+      .container(0, 0, [
+        this.add.triangle(0, 0, -14, -10, -14, 10, 14, 0, 0x4fc3f7).setStrokeStyle(3, 0x0d3b66),
+        this.add
+          .text(0, 20, 'HOME', { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color: '#ffffff', backgroundColor: '#0d3b66', padding: { x: 4, y: 1 } })
+          .setOrigin(0.5),
+      ])
+      .setDepth(12)
+      .setVisible(false);
     for (const { sign } of GAS_STATIONS) {
       this.mapTexts.push({
         obj: this.add
@@ -396,7 +419,9 @@ export class DriveScene extends Phaser.Scene {
 
     this.checkPotholes();
     this.checkPump();
+    this.checkHome();
     this.checkCustomer();
+    this.placeHomeArrow();
   }
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */
@@ -1019,6 +1044,49 @@ export class DriveScene extends Phaser.Scene {
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     this.leaving = true;
     this.scene.start(SceneKeys.Pump);
+  }
+
+  /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock. */
+  private checkHome(): void {
+    // Cheap test first: the exact overlap is only worth working out near the driveway.
+    if (Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.homeBay.x, this.homeBay.y) > 200) {
+      this.homeArmed = true;
+      return;
+    }
+    const overlap = this.pickupOverlap(this.homeBay);
+    if (!this.homeArmed) {
+      if (overlap === 0) this.homeArmed = true;
+      return;
+    }
+    if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
+    if (!this.evening.startRestock()) return;
+    this.leaving = true;
+    this.scene.start(SceneKeys.Cooler);
+  }
+
+  /**
+   * SCREAM-54 (Tom Cobb's round 2 playtest): when sold out, an arrow points home. With the
+   * driveway on screen it bobs above it; otherwise it sits at the edge of the view, pointing
+   * the way. It goes away once there's stock again.
+   */
+  private placeHomeArrow(): void {
+    const show = this.evening.isSoldOut && !this.evening.isOver;
+    this.homeArrow.setVisible(show);
+    if (!show) return;
+    const view = this.cameras.main.worldView;
+    const bay = this.homeBay;
+    const margin = 46 / this.cameras.main.zoom;
+    const inside = Phaser.Geom.Rectangle.Contains(view, bay.x, bay.y);
+    const bob = Math.sin(this.time.now / 200) * 6;
+    if (inside) {
+      this.homeArrow.setPosition(bay.x, bay.y - 70 + bob);
+      (this.homeArrow.list[0] as Phaser.GameObjects.Triangle).setAngle(90); // pointing down at it
+      return;
+    }
+    const x = Phaser.Math.Clamp(bay.x, view.x + margin, view.right - margin);
+    const y = Phaser.Math.Clamp(bay.y, view.y + margin, view.bottom - margin);
+    this.homeArrow.setPosition(x, y);
+    (this.homeArrow.list[0] as Phaser.GameObjects.Triangle).setRotation(Math.atan2(bay.y - y, bay.x - x));
   }
 
   private checkCustomer(): void {

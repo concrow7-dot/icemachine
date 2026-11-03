@@ -62,6 +62,8 @@ export class CoolerScene extends Phaser.Scene {
   private evening!: EveningState;
   private order!: CoolerOrder;
   private locked = false;
+  /** SCREAM-54: at the cooler after pulling into Home's driveway; leaving goes back to the road. */
+  private restocking = false;
   private buyButton?: Phaser.GameObjects.Text;
   private focus: Focus = { area: 'clipboard', row: 0 };
   private rowHighlight!: Phaser.GameObjects.Rectangle;
@@ -90,7 +92,8 @@ export class CoolerScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents);
-    this.locked = this.evening.isPrepLocked;
+    this.restocking = this.evening.isRestocking;
+    this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
     this.focus = { area: 'clipboard', row: 0 };
     this.rowCounts = [];
@@ -113,7 +116,9 @@ export class CoolerScene extends Phaser.Scene {
         516,
         this.locked
           ? 'Stock and prices were locked when you left for the road.'
-          : !this.evening.isClockRunning
+          : this.restocking
+            ? 'Restocking at home: the clock is running. Bought stock can be added to, not returned.'
+            : !this.evening.isClockRunning
             ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
             : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
         { fontFamily: 'monospace', fontSize: '12px', color: !this.locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
@@ -125,7 +130,9 @@ export class CoolerScene extends Phaser.Scene {
         height - 9,
         this.locked
           ? 'B Or Backspace: Back To The Truck'
-          : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
+          : this.restocking
+            ? '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Back On The Road'
+            : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
         { fontFamily: 'monospace', fontSize: '13px', color: INK },
       )
       .setOrigin(0.5);
@@ -338,12 +345,13 @@ export class CoolerScene extends Phaser.Scene {
     let leaving = false;
     const back = () => {
       if (leaving) return;
-      if (!this.locked && this.evening.stockLeft === 0) {
+      // At home (SCREAM-54) the player may drive off without buying (out of cash, say).
+      if (!this.locked && !this.restocking && this.evening.stockLeft === 0) {
         this.warnEmpty();
         return;
       }
       leaving = true;
-      returnToTruck(this, 'cooler');
+      this.leave();
     };
     keyboard?.on('keydown-B', back);
     keyboard?.on('keydown-BACKSPACE', back);
@@ -414,7 +422,17 @@ export class CoolerScene extends Phaser.Scene {
       this.warnEmpty();
       return;
     }
-    if (this.evening.buyStock(this.order)) returnToTruck(this, 'cooler');
+    if (this.evening.buyStock(this.order)) this.leave();
+  }
+
+  /** Back to the truck after prep; back on the road after restocking at home (SCREAM-54). */
+  private leave(): void {
+    if (this.restocking) {
+      this.evening.endRestock();
+      if (!this.evening.isOver) this.scene.start(SceneKeys.Drive);
+      return;
+    }
+    returnToTruck(this, 'cooler');
   }
 
   /** Says why the player can't leave yet, in red, then puts the usual note back. */
@@ -461,7 +479,8 @@ export class CoolerScene extends Phaser.Scene {
     const { rowY, cell, card: cardSize } = COOLER_LAYOUT;
     const total = this.order.total;
     this.title.setText(
-      (this.locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP') + `     ${total} / ${COOLER_CAPACITY}`,
+      (this.locked ? 'THE COOLER  (stock is set for tonight)' : this.restocking ? 'THE COOLER  –  RESTOCK AT HOME' : 'THE COOLER  –  PREP') +
+        `     ${total} / ${COOLER_CAPACITY}`,
     );
 
     // Clipboard: how many of each, and the focus.
