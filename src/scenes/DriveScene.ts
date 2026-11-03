@@ -995,7 +995,7 @@ export class DriveScene extends Phaser.Scene {
       const waiting = p.customer === 'waiting';
       let zone = this.pickupZones.get(i);
       if (waiting && !zone) {
-        const [, , zx, zy, angle] = p.resident.curb;
+        const [zx, zy, angle] = p.pickup;
         zone = this.add
           // The pink pickup square (it pulses bigger on screen; PICKUP_ZONE_LENGTH x WIDTH is its real size).
           .rectangle(zx, zy, PICKUP_ZONE_LENGTH, PICKUP_ZONE_WIDTH, 0xff4f9a, 0.18)
@@ -1005,6 +1005,8 @@ export class DriveScene extends Phaser.Scene {
         this.tweens.add({ targets: zone, scale: 1.2, alpha: 0.45, duration: 700, yoyo: true, repeat: -1 });
         this.pickupZones.set(i, zone);
       }
+      // SCREAM-140: the square sits where they stopped along the curb.
+      if (waiting && zone && (zone.x !== p.pickup[0] || zone.y !== p.pickup[1])) zone.setPosition(p.pickup[0], p.pickup[1]).setAngle(p.pickup[2]);
       zone?.setVisible(waiting);
     });
   }

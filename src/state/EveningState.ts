@@ -5,6 +5,9 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { WORCESTER } from '../config/worcester';
 import { RESIDENTS } from '../config/residents';
 import { Residents, type ResidentNow } from './Residents';
+import { CurbFinder } from './CurbFinder';
+import { RoadNetwork } from './RoadGeometry';
+import { GAS_STATIONS } from '../config/gasStation';
 import {
   COOLER_CAPACITY,
   ORDER_PICTURE_CHANCE,
@@ -53,6 +56,22 @@ export type CoolerSlot = {
  *
  * Money is stored in whole cents to avoid rounding errors.
  */
+/**
+ * SCREAM-140: can a customer's pink square go at (x, y), beside street `road`? On that
+ * street's asphalt (not in a junction), and clear of parked cars, the pump bays and home's driveway.
+ */
+const ROADS = new RoadNetwork(WORCESTER.roads, WORCESTER.roadMask);
+function pinkSquareFits(x: number, y: number, road: number): boolean {
+  if (!ROADS.onRoad(x, y) || ROADS.nearestSegment(x, y)?.road !== road) return false;
+  const near = (a: { x: number; y: number }, d: number) => Math.hypot(a.x - x, a.y - y) < d;
+  if (WORCESTER.parkedCars.some((c) => near(c, PINK_CLEAR_CAR))) return false;
+  if (GAS_STATIONS.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(WORCESTER.homeStart, PINK_CLEAR_BAY)) return false;
+  return true;
+}
+/** How far a pink square's centre keeps from a parked car's, and from a bay's (px). */
+const PINK_CLEAR_CAR = 80;
+const PINK_CLEAR_BAY = 100;
+
 export class EveningState extends Phaser.Events.EventEmitter {
   private elapsedMs = 0;
   /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
@@ -95,7 +114,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   orderPictureChance = ORDER_PICTURE_CHANCE;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
-  readonly residents = new Residents(RESIDENTS);
+  readonly residents = new Residents(RESIDENTS, Math.random, new CurbFinder(ROADS, pinkSquareFits));
 
   /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
   /**

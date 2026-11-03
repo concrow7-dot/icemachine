@@ -168,7 +168,7 @@ export const POTHOLE_SPIN_SECONDS = 0.6;
 // Engineering's starting values, to tune after the PO's first test.
 
 /** How fast residents walk around their yard, in px per second (the truck's top speed is far higher). */
-export const RESIDENT_WALK_SPEED = 22;
+export const RESIDENT_WALK_SPEED = 11; // SCREAM-140 (PO, November 2): everyone walks at half the old 22.
 
 /** Once outside, a resident stays out this many seconds (somewhere in the range) before going back in. */
 export const RESIDENT_OUTSIDE_SECONDS: readonly [number, number] = [25, 70];
@@ -204,8 +204,19 @@ export const CUSTOMER_CHANCE_SETTLE_SECONDS = 6;
 /** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
 export const CUSTOMER_INDOORS_FACTOR = 0.5;
 
-/** How fast a customer runs to the curb, in px per second. */
-export const CUSTOMER_RUN_SPEED = 75;
+/** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
+export const CUSTOMER_RUN_SPEED = 37;
+
+/**
+ * SCREAM-140 / SCREAM-142 (PO, November 2): from the moment the "!" shows, a customer walks
+ * straight toward the truck and keeps following it. Engineering's numbers (proposals): within
+ * CUSTOMER_STOP_GAP px of the truck they stop at the curb beside them and their pink square
+ * appears; if the truck gets more than CUSTOMER_FOLLOW_AGAIN px away, they set off after it
+ * again. Pink squares keep CUSTOMER_QUEUE_GAP px apart, so customers queue up.
+ */
+export const CUSTOMER_STOP_GAP = 150;
+export const CUSTOMER_FOLLOW_AGAIN = 260;
+export const CUSTOMER_QUEUE_GAP = 100;
 
 /** PO: a customer waits at the curb this long, then walks home. */
 export const CUSTOMER_WAIT_SECONDS = 30;

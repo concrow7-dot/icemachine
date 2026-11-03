@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 032 — Customers walk toward the truck (2026-11-02)
+
+**Decision (Jira SCREAM-140 and SCREAM-142, PO, November 2):** customers start walking toward the truck as soon as they want ice cream (when the "!" shows), not only while you serve. They head straight for the truck (not to the street first) and keep following it, with no limit on how far. They stop a short way off, where their pink square appears. Everyone walks at about half the old speed (customers 37 px/s, was 75; residents 11, was 22). Per-person speeds come later (SCREAM-141).
+
+**Why (product owner's rationale):** _to be asked._
+
+**Engineering's calls (proposals):** within 150 px of the truck (`CUSTOMER_STOP_GAP`) they step to the curb beside them and wait; the pink square only goes where there's room (on the asphalt, not in a junction, clear of parked cars, the pump bays, home's driveway, and 100 px from other squares, `CUSTOMER_QUEUE_GAP`), so customers queue up; if the truck gets more than 260 px away (`CUSTOMER_FOLLOW_AGAIN`) they set off after it again, and their 30 seconds of patience only count down while they stand still; they walk straight across yards and streets; after the sale, or if they give up, they walk straight home.
+
 ## 031 — Orders in words or in pictures (2026-11-02)
 
 **Decision (Jira SCREAM-137, PO, November 2):** some customers say the ice creams' names, others show their pictures ("2 ×" and the ice cream). Which one is random for each customer (`ORDER_PICTURE_CHANCE`, 50% for now). Asking again (R) and "That's not what I asked for. I wanted..." after a mistake use the same way as that customer's order.
