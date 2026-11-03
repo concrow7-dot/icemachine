@@ -30,6 +30,7 @@ const { chromium } = require('playwright');
   await press('Escape');
   check('Esc in the truck: pause menu opens', await status('Pause'), 'running');
   check('...the truck screen and the HUD are frozen', (await status('Truck')) + ' ' + (await status('Hud')), 'paused paused');
+  check('Pause menu sits over the truck interior picture (SCREAM-123)', await page.evaluate(() => window.__game.scene.getScene('Pause').children.list.some(o => o.texture && o.texture.key === 'truck-interior')), true);
   const c0 = await ev('e.clockMinutes'); await wait(1500);
   check('...the clock stops while paused', await ev('e.clockMinutes'), c0);
   await page.screenshot({ path: outDir + '/pause_menu.png' });

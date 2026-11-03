@@ -5,6 +5,8 @@ import { formatMoney } from '../util/format';
 import { largestSaleLine, largestSaleRecord, offerLargestSale } from '../state/Records';
 import type { RunTotals } from '../state/StoryRun';
 import { driveLaps } from '../ui/truckLaps';
+import { addTruckBackdrop, DUSK_SHADE, loadTruckInterior } from '../ui/truckInterior';
+import { showLoadingWhileLoading } from './LoadingScene';
 
 // Issue #16: the results screen. The evening's breakdown on the left, and a
 // pinball-style top 5 on the right. A score that makes the top 5 (negative
@@ -35,7 +37,14 @@ export class ResultsScene extends Phaser.Scene {
     super(SceneKeys.Results);
   }
 
+  preload(): void {
+    loadTruckInterior(this);
+    showLoadingWhileLoading(this); // SCREAM-75
+  }
+
   create(data?: { story?: boolean }): void {
+    // SCREAM-123: the sun has set: the inside of the truck under a dusk-blue layer.
+    addTruckBackdrop(this, DUSK_SHADE);
     const { width, height } = this.scale;
     const story = data?.story ? getStory(this) : null;
     this.table = story ? 'story' : 'quick';
