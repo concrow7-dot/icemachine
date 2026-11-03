@@ -9,6 +9,11 @@ The game draws everything that changes on top: the clipboard's rows and total, t
 creams in the squares, the menu cards, and the glass lids that slide open.
 
     python3 tools/interior/draw_cooler.py public/assets/interior/cooler-inside.png
+    python3 tools/interior/draw_cooler.py public/assets/interior/cooler-fill.png fill
+
+SCREAM-131: with "fill", the order-filling screen's background instead: the same freezer in
+the same place, no clipboard or menu, a shelf on the left wall for the tip cup, and a
+counter along the bottom with a paper bag on it (the ice creams taken go in the bag).
 
 Coordinates are on the 960 x 540 screen; the picture is drawn at twice that, like
 truck-interior.png. Fixed random seed, so it redraws the same. Keep the numbers marked
@@ -59,6 +64,7 @@ CELL_PAD = 4
 CRATE_SIZE = 4 * CELL + 2 * CELL_PAD   # 160
 BOARD = (248, 296, 950, 504)
 
+FILL = len(sys.argv) > 2 and sys.argv[2] == "fill"
 img = Image.new("RGB", (W, H), WALL_CREAM)
 d = ImageDraw.Draw(img)
 
@@ -98,17 +104,18 @@ for y in range(0, 510, 20):
 rect(0, 506, 960, 540, FLOOR)
 d.line([0, 506 * S, W, 506 * S], fill=OUTLINE, width=2 * S)
 
-# ---- The clipboard ----
-box(*CLIPBOARD, WOOD, outline=WOOD_DARK, width=3, cut=12)
-box(*PAPER_BOX, PAPER, outline=(190, 186, 170), width=2, cut=2, amp=0.8)
-for y in range(PAPER_BOX[1] + 40, PAPER_BOX[3] - 6, 18):
-    d.line([(PAPER_BOX[0] + 6) * S, y * S, (PAPER_BOX[2] - 6) * S, y * S], fill=PAPER_LINE, width=S)
-d.line([(PAPER_BOX[0] + 22) * S, (PAPER_BOX[1] + 2) * S, (PAPER_BOX[0] + 22) * S, (PAPER_BOX[3] - 2) * S], fill=(240, 180, 180), width=S)
-# The metal clip across the top.
-cx = (CLIPBOARD[0] + CLIPBOARD[2]) / 2
-box(cx - 52, 56, cx + 52, 88, CLIP, outline=(110, 114, 120), width=3, cut=8)
-box(cx - 20, 48, cx + 20, 62, CLIP, outline=(110, 114, 120), width=3, cut=6)
-d.ellipse([(cx - 6) * S, 51 * S, (cx + 6) * S, 59 * S], fill=(90, 94, 100))
+# ---- The clipboard (prep only) ----
+if not FILL:
+    box(*CLIPBOARD, WOOD, outline=WOOD_DARK, width=3, cut=12)
+    box(*PAPER_BOX, PAPER, outline=(190, 186, 170), width=2, cut=2, amp=0.8)
+    for y in range(PAPER_BOX[1] + 40, PAPER_BOX[3] - 6, 18):
+        d.line([(PAPER_BOX[0] + 6) * S, y * S, (PAPER_BOX[2] - 6) * S, y * S], fill=PAPER_LINE, width=S)
+    d.line([(PAPER_BOX[0] + 22) * S, (PAPER_BOX[1] + 2) * S, (PAPER_BOX[0] + 22) * S, (PAPER_BOX[3] - 2) * S], fill=(240, 180, 180), width=S)
+    # The metal clip across the top.
+    cx = (CLIPBOARD[0] + CLIPBOARD[2]) / 2
+    box(cx - 52, 56, cx + 52, 88, CLIP, outline=(110, 114, 120), width=3, cut=8)
+    box(cx - 20, 48, cx + 20, 62, CLIP, outline=(110, 114, 120), width=3, cut=6)
+    d.ellipse([(cx - 6) * S, 51 * S, (cx + 6) * S, 59 * S], fill=(90, 94, 100))
 
 # ---- The freezer ----
 box(*FREEZER, STEEL, width=4, cut=12)
@@ -147,14 +154,27 @@ while x < ox1 - 14:
     x += w + rnd.uniform(0, 6)
 rect(ox0 + 2, oy0 - 1, ox1 - 2, oy0 + 4, ICE)
 
-# ---- The truck's outside wall, where Today's Menu hangs ----
-box(*BOARD, PANEL_FRAME, outline=OUTLINE, width=3, cut=6)
-rect(BOARD[0] + 8, BOARD[1] + 8, BOARD[2] - 8, BOARD[3] - 8, PANEL)
-for rx in range(BOARD[0] + 20, BOARD[2] - 10, 40):
-    for ry in (BOARD[1] + 4, BOARD[3] - 5):
-        rect(rx, ry, rx + 3, ry + 2, (214, 218, 220))
-for x0 in (BOARD[0] + 60, BOARD[0] + 420):
-    for k in range(3):
-        d.line([((x0 + k * 10) * S, (BOARD[3] - 12) * S), ((x0 + 120 + k * 10) * S, (BOARD[1] + 12) * S)], fill=(242, 246, 247), width=3 * S)
+# ---- The truck's outside wall, where Today's Menu hangs (prep only) ----
+if not FILL:
+    box(*BOARD, PANEL_FRAME, outline=OUTLINE, width=3, cut=6)
+    rect(BOARD[0] + 8, BOARD[1] + 8, BOARD[2] - 8, BOARD[3] - 8, PANEL)
+    for rx in range(BOARD[0] + 20, BOARD[2] - 10, 40):
+        for ry in (BOARD[1] + 4, BOARD[3] - 5):
+            rect(rx, ry, rx + 3, ry + 2, (214, 218, 220))
+    for x0 in (BOARD[0] + 60, BOARD[0] + 420):
+        for k in range(3):
+            d.line([((x0 + k * 10) * S, (BOARD[3] - 12) * S), ((x0 + 120 + k * 10) * S, (BOARD[1] + 12) * S)], fill=(242, 246, 247), width=3 * S)
+
+
+# ---- Filling an order: a shelf for the tip cup, and the counter with the paper bag ----
+if FILL:
+    box(30, 386, 220, 400, (246, 246, 246), width=3, cut=3)
+    box(248, 296, 950, 504, (231, 236, 238), width=3, cut=6)
+    rect(256, 304, 942, 312, (214, 218, 220))
+    bag = [(270, 360), (282, 342), (330, 342), (342, 360), (342, 488), (270, 488)]
+    d.polygon([(x * S, y * S) for x, y in bag], fill=(206, 160, 104))
+    d.line([(x * S, y * S) for x, y in bag + [bag[0]]], fill=(140, 100, 60), width=3 * S, joint="curve")
+    for fy in (350, 356):
+        d.line([284 * S, fy * S, 328 * S, fy * S], fill=(170, 124, 74), width=2 * S)
 
 img.save(sys.argv[1] if len(sys.argv) > 1 else "cooler-inside.png")

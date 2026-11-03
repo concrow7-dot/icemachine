@@ -29,7 +29,7 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter'); await wait(500);
   await shift(4);
   await ev(`(() => { const s = e.sale; s.order.splice(0, s.order.length, { slot: 0, flavour: 'eclair', count: 1 }); return true; })()`);
-  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await page.evaluate(() => window.__game.scene.getScene('Fill').takeFlavour('eclair')); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter'); await press('Enter'); await wait(300);
   await ev("(e.takeDamage(500, 'Pothole'), true)");
   await shift(3);

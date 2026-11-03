@@ -82,7 +82,7 @@ const { chromium } = require('playwright');
   await press('+', 3); await press('ArrowDown'); await press('+', 2);
   check('3 eclairs then 2 SpongePops, in picking order', await cells(6), 'eclair*,eclair*,eclair*,spongepop*,spongepop*,-');
   await clickAt('[s.cellIcons[1].x, s.cellIcons[1].y]');
-  check('Clicking the 2nd square takes that eclair out; the rest move up', (await cells(5)) + ' ' + (await draft(0)), 'eclair*,eclair*,spongepop*,spongepop*,- eclair:2:200');
+  check('Clicking the 2nd square takes that eclair out, leaving a gap (SCREAM-132)', (await cells(5)) + ' ' + (await draft(0)), 'eclair*,-,eclair*,spongepop*,spongepop* eclair:2:200');
   check("Today's Menu: eclairs and SpongePops", await menu(), 'eclair $2, spongepop $2.50');
 
   // --- Buy Stock with Enter ---
@@ -94,13 +94,13 @@ const { chromium } = require('playwright');
 
   // --- Re-entry: paid stock stays, more can be added ---
   await openCooler(); await wait(200);
-  check('Reopen: bought stock is paid for (no *)', await cells(5), 'eclair,eclair,spongepop,spongepop,-');
+  check('Reopen: bought stock is paid for (no *), each in its own square', await cells(5), 'eclair,-,eclair,spongepop,spongepop');
   await press('-', 2);
   check("Minus can't take out paid stock", await draft(0), 'eclair:2:200');
   await clickAt('[s.cellIcons[0].x, s.cellIcons[0].y]');
   check('...and neither can clicking it', await draft(0), 'eclair:2:200');
   await press('+', 2);
-  check('Can add more', (await draft(0)) + ' ' + (await cells(7)), 'eclair:4:200 eclair,eclair,spongepop,spongepop,eclair*,eclair*,-');
+  check('Can add more: the gap fills first', (await draft(0)) + ' ' + (await cells(7)), 'eclair:4:200 eclair,eclair*,eclair,spongepop,spongepop,eclair*,-');
   check('Order only charges the extra 2 ($2.00)', await coolerText('buyButton'), 'BUY STOCK  $2.00');
   await press('-');
   check('Can take extras out again', await draft(0), 'eclair:3:200');
@@ -111,12 +111,26 @@ const { chromium } = require('playwright');
   check('Cancel: extras thrown away, cash still $45.00', (await owned(0)) + ' ' + (await cash()), 'eclair:2:200 4500');
   await openCooler(); await wait(200);
   await press('ArrowDown', 3); await press('+', 3);
-  check('Add 3 cookies', (await draft(3)) + ' ' + (await cells(8)), 'cookie:3:300 eclair,eclair,spongepop,spongepop,cookie*,cookie*,cookie*,-');
+  check('Add 3 cookies', (await draft(3)) + ' ' + (await cells(8)), 'cookie:3:300 eclair,cookie*,eclair,spongepop,spongepop,cookie*,cookie*,-');
+
+  // ---- SCREAM-131: choosing a crate; SCREAM-132: dragging between squares ----
+  await press('2'); await press('-'); await press('+');
+  check('Press 2: the next pick goes into crate 2 (square 16)', (await cells(17)).split(',')[16] + ' ' + (await cooler('s.order.crate')), 'cookie* 1');
+  await clickAt('[s.cellCentre(40).x, s.cellCentre(40).y]');
+  check('Click a crate: picks go there now', await cooler('s.order.crate'), 2);
+  const dragFrom = await cooler('[s.cellIcons[0].x, s.cellIcons[0].y]');
+  const dragTo = await cooler('[s.cellCentre(47).x, s.cellCentre(47).y]');
+  await page.mouse.move(dragFrom[0], dragFrom[1]); await page.mouse.down();
+  await page.mouse.move((dragFrom[0] + dragTo[0]) / 2, (dragFrom[1] + dragTo[1]) / 2, { steps: 5 });
+  await page.mouse.move(dragTo[0], dragTo[1], { steps: 5 }); await page.mouse.up(); await wait(200);
+  check('Drag a paid eclair from square 1 to the last square (crate 3)', (await cooler('s.order.cells[0] === null')) + ' ' + (await cooler('s.order.cells[47].flavour + s.order.cells[47].paid')), 'true eclairtrue');
+  check('...dragging costs nothing', await coolerText('buyButton'), 'BUY STOCK  $6.00');
   await page.screenshot({ path: outDir + '/buy_reentry.png' });
 
   // Mouse: click the BUY STOCK button
   await clickAt('[s.buyButton.x, s.buyButton.y]'); await wait(100);
   check('Clicking BUY STOCK buys and returns', await scenes(), 'Truck,Hud');
+  check('...and the cooler keeps the arrangement', await ev('e.cells[47] + " " + e.cells[0] + " " + e.cells[16]'), 'eclair null cookie');
   check('Cooler now: 2 eclairs, 2 SpongePops, 3 cookies',
     [await owned(0), await owned(1), await owned(3)].join(' '), 'eclair:2:200 spongepop:2:250 cookie:3:300');
   check('Charged $6.00 (cash $39.00)', await cash(), 3900);

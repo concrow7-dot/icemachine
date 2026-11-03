@@ -76,10 +76,31 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('Enter goes to the cooler (fill mode)', await scenes(), 'Fill,Hud');
   check('Tip bar still showing at the cooler', await sc('Fill', 's.tipBar.container.visible'), true);
-  await press('+', 2); await press('ArrowRight'); await press('ArrowUp');
+  // SCREAM-131: open a crate and click an ice cream (the test hook opens the right crate at once).
+  await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100);
   check('Picking takes ice creams out of the cooler', (await stock()) + ' bag ' + (await ev('e.sale.bag.join(",")')), '8,4,5,0 bag 2,1,0,0');
-  await press('-'); await press('+');
+  await press('-'); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100);
   check('Putting one back and taking it again', await ev('e.sale.bag.join(",")'), '2,1,0,0');
+  // ---- SCREAM-131: a shut cooler, one crate open at a time ----
+  const fill = (fn) => sc('Fill', fn);
+  check('One crate open (the one used); its ice creams show, the others are hidden', (await fill('s.openCrate')) + ' ' + (await fill('s.cellIcons.slice(16).some(i => i.visible)')), '0 false');
+  await page.keyboard.press('2'); await wait(60);
+  check('Press 2: crate 1 hidden at once, crate 2 still opening', (await fill('s.openCrate')) + ' ' + (await fill('s.cellIcons.slice(0, 16).some(i => i.visible)')), 'null false');
+  check('...crate 1\'s lid is sliding shut (SCREAM-138)', await fill('s.lids[0].visible && s.lids[0].scaleY > 0 && s.lids[0].scaleY < 1'), true);
+  await wait(250);
+  check('...crate 2 is open after about 0.2 s (SCREAM-138)', await fill('s.openCrate'), 1);
+  await wait(400);
+  check('...and crate 1\'s lid is fully shut after about half a second', await fill('s.lids[0].scaleY'), 1);
+  // The PO: click on the cooler to open it. A real mouse click on lid 3.
+  await page.mouse.click(719 + 80, 96 + 80); await wait(400);
+  check('Clicking lid 3 with the mouse opens crate 3', await fill('s.openCrate'), 2);
+  await page.mouse.click(519 + 80, 96 + 80); await wait(400);
+  check('...and clicking lid 2 opens crate 2 again', await fill('s.openCrate'), 1);
+  const back = await ev('e.bagContents[0].cell');
+  const bagSpot = await fill('[s.bagIcons[0].x, s.bagIcons[0].y]');
+  await page.mouse.click(bagSpot[0], bagSpot[1]); await wait(150);
+  check('Click an ice cream in the bag: it goes back to its own square', (await ev('e.cells[' + back + ']')) + ' ' + (await ev('e.sale.bag.join(",")')), 'eclair 1,1,0,0');
+  await fill('s.takeFlavour("eclair")'); await wait(100);
   await page.screenshot({ path: outDir + '/sale_fill.png' });
   await press('Enter'); await wait(300);
   check('Serve: back at the window, "How much?"', (await scenes()) + ' ' + (await ev('e.sale.line')), 'Sales,Hud How much?');
@@ -117,13 +138,13 @@ const { chromium } = require('playwright');
   await setOrder([{ slot: 2, flavour: 'explorer', count: 1 }]);
   await tick(5100); await tick(12000);
   check('12 s into the countdown: 15%', await sc('Sales', 's.tipBar.label.text'), '15%');
-  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter');
   check('Wrong items, first time: the customer says the right order', (await ev('e.sale.line')).includes('I wanted 1 Lil Explorer Pop'), true);
   check('...items go back in the cooler, order shown again', (await stock()) + ' ' + (await ev('e.sale.phase')), '8,4,5,0 ordering');
   check('...and the tip is gone', await sc('Sales', 's.tipBar.label.text'), 'No tip');
   await tick(5100);
-  await press('c'); await wait(300); await press('ArrowRight'); await press('ArrowRight'); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("explorer")'); await wait(100); await press('Enter'); await wait(300);
   const c2 = await cash();
   await page.keyboard.type('2'); await press('Enter');
   check('Right items, undercharged ($2.00 < $2.50): accepted, no tip', ((await cash()) - c2) + ' ' + (await ev('e.sale.outcome.kind')), '200 paid');
@@ -141,7 +162,7 @@ const { chromium } = require('playwright');
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
-  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   const c3 = await cash();
   await page.keyboard.type('999'); await press('Enter');
   // SCREAM-120 (PO): the first overcharge gets a second chance, but no tip.
@@ -159,7 +180,7 @@ const { chromium } = require('playwright');
 
   // ---- Sale 3b (SCREAM-120): overcharge, then fix the price: paid, no tip ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
-  await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   const c3b = await cash();
   await page.keyboard.type('999'); await press('Enter');
   await page.keyboard.type('1'); await press('Enter');
@@ -172,7 +193,7 @@ const { chromium } = require('playwright');
   check('R: the order is shown again', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')), 'ordering true');
   await tick(5100);
   check('R a second time does nothing', await ev('e.sale.askAgain(e.nowMs)'), false);
-  await press('c'); await wait(300); await press('ArrowRight'); await press('+'); await press('Enter'); await wait(300);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('5'); await press('Enter');
   check('After R, a wrong order fails: "That\'s not what I asked for."', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.line')), "wrong-order That's not what I asked for.");
   await press('Enter'); await wait(300);
@@ -180,9 +201,9 @@ const { chromium } = require('playwright');
 
   // ---- Sale 5: the minute runs out while at the cooler ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 3 }]); await tick(5100);
-  await press('c'); await wait(300); await press('+');
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100);
   await tick(50000);
-  check('Tip bar runs out: "Took too long", customer still waiting', (await ev('e.sale.phase')) + ' ' + (await sc('Fill', 's.tipBar.label.text')), 'deciding Took too long');
+  check('Tip bar runs out: "Took too long", customer still waiting', (await ev('e.sale.phase')) + ' ' + (await sc('Fill', 's.tipBar.label.text.replace("\\n", " ")')), 'deciding Took too long');
   check('5 s left: pulsing "!" in the top bar', await sc('Hud', 's.patienceWarning.visible'), true);
   await page.screenshot({ path: outDir + '/sale_warning.png' });
   await tick(5500);

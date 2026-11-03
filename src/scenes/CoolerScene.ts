@@ -70,6 +70,8 @@ export class CoolerScene extends Phaser.Scene {
   private rowCounts: Phaser.GameObjects.Text[] = [];
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private unpaidMarks!: Phaser.GameObjects.Graphics;
+  /** SCREAM-131: the yellow outline round the crate new picks go into. */
+  private crateMark!: Phaser.GameObjects.Graphics;
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -91,7 +93,7 @@ export class CoolerScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents);
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents, this.evening.cells);
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -230,22 +232,67 @@ export class CoolerScene extends Phaser.Scene {
 
   private makeCells(): void {
     const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const crateSize = CRATE_SIDE * cell + 2 * cellPad;
+    // SCREAM-131 (PO, November 2): picks go into the chosen crate. Click a crate (or press 1, 2, 3) to choose it.
+    this.crateMark = this.add.graphics();
+    if (!this.locked) {
+      crateLefts.forEach((left, crate) => {
+        this.add
+          .rectangle(left, crateTop, crateSize, crateSize, 0xffffff, 0.001)
+          .setOrigin(0, 0)
+          .setInteractive({ useHandCursor: true })
+          .on('pointerdown', () => {
+            this.order.chooseCrate(crate);
+            this.refresh();
+          });
+      });
+    }
     for (let i = 0; i < COOLER_CAPACITY; i++) {
-      const crate = Math.floor(i / (CRATE_SIDE * CRATE_SIDE));
-      const inCrate = i % (CRATE_SIDE * CRATE_SIDE);
-      const x = (crateLefts.at(crate) ?? 0) + cellPad + (inCrate % CRATE_SIDE) * cell + cell / 2;
-      const y = crateTop + cellPad + Math.floor(inCrate / CRATE_SIDE) * cell + cell / 2;
+      const { x, y } = this.cellCentre(i);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       this.cellIcons.push(icon);
       if (!this.locked) {
-        icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
-          if (this.order.removeAt(i)) this.refresh();
+        // SCREAM-132 (PO, November 2): drag an ice cream to another square; a click (no drag)
+        // takes out one not paid for yet.
+        icon.setInteractive({ useHandCursor: true, draggable: true });
+        icon.on('drag', (_p: Phaser.Input.Pointer, dx: number, dy: number) => icon.setPosition(dx, dy).setDepth(5));
+        icon.on('dragend', (pointer: Phaser.Input.Pointer) => {
+          const moved = Phaser.Math.Distance.Between(pointer.downX, pointer.downY, pointer.upX, pointer.upY);
+          const home = this.cellCentre(i);
+          icon.setPosition(home.x, home.y).setDepth(0);
+          if (moved < 6) this.order.removeAt(i);
+          else {
+            const target = this.cellAt(pointer.upX, pointer.upY);
+            if (target >= 0) this.order.move(i, target);
+          }
+          this.refresh();
         });
       }
     }
     // The dashed outlines on squares not paid for yet, pulsing gently.
     this.unpaidMarks = this.add.graphics();
     this.tweens.add({ targets: this.unpaidMarks, alpha: 0.45, duration: 600, yoyo: true, repeat: -1 });
+  }
+
+  /** The middle of a square on screen. */
+  private cellCentre(i: number): { x: number; y: number } {
+    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const crate = Math.floor(i / (CRATE_SIDE * CRATE_SIDE));
+    const inCrate = i % (CRATE_SIDE * CRATE_SIDE);
+    return {
+      x: (crateLefts.at(crate) ?? 0) + cellPad + (inCrate % CRATE_SIDE) * cell + cell / 2,
+      y: crateTop + cellPad + Math.floor(inCrate / CRATE_SIDE) * cell + cell / 2,
+    };
+  }
+
+  /** The square under a screen point, or -1. */
+  private cellAt(x: number, y: number): number {
+    const { cell } = COOLER_LAYOUT;
+    for (let i = 0; i < COOLER_CAPACITY; i++) {
+      const c = this.cellCentre(i);
+      if (Math.abs(x - c.x) <= cell / 2 && Math.abs(y - c.y) <= cell / 2) return i;
+    }
+    return -1;
   }
 
   // ---- Today's Menu ----
@@ -364,6 +411,13 @@ export class CoolerScene extends Phaser.Scene {
     keyboard?.on('keydown-LEFT', () => this.switchArea(-1));
     keyboard?.on('keydown-RIGHT', () => this.switchArea(1));
     // Read the typed character so + and - work on every keyboard layout and browser.
+    // SCREAM-131: 1, 2, 3 choose the crate new picks go into.
+    (['ONE', 'TWO', 'THREE'] as const).forEach((key, crate) =>
+      keyboard?.on(`keydown-${key}`, () => {
+        this.order.chooseCrate(crate);
+        this.refresh();
+      }),
+    );
     keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (event.key === '+' || event.key === '=') this.adjust(1);
       if (event.key === '-' || event.key === '_') this.adjust(-1);
@@ -410,7 +464,10 @@ export class CoolerScene extends Phaser.Scene {
 
   private pick(flavour: FlavourId): void {
     if (!this.order.addOne(flavour)) {
-      this.flashNote(this.order.isFull ? 'The cooler is full.' : 'Not enough cash for that one.');
+      const r = this.order.refusal;
+      this.flashNote(
+        r === 'full' ? 'The cooler is full.' : 'Not enough cash for that one.',
+      );
     }
     this.refresh();
   }
@@ -491,8 +548,14 @@ export class CoolerScene extends Phaser.Scene {
     this.rowHighlight.setVisible(this.focus.area === 'clipboard' && !this.locked);
     if (this.focus.area === 'clipboard') this.rowHighlight.setY(rowY.at(this.focus.row) ?? 0);
 
-    // The crates.
+    // The crates, and the outline round the one new picks go into.
     const cells = this.order.cells;
+    this.crateMark.clear();
+    if (!this.locked) {
+      const { crateLefts, crateTop, cellPad } = COOLER_LAYOUT;
+      const size = CRATE_SIDE * cell + 2 * cellPad;
+      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, size + 6);
+    }
     this.unpaidMarks.clear();
     cells.forEach((c, i) => {
       const icon = this.cellIcons.at(i);

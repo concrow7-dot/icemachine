@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 030 — A shut cooler, one crate open at a time; stock placed square by square (2026-11-02)
+
+**Decision (Jira SCREAM-131 and SCREAM-132, PO, November 2):**
+- Filling an order happens at the cooler itself (the prep screen's freezer, without the clipboard and menu). The cooler is shut; each of its 3 crates has its own lid, and opening one shuts the others. A shut lid hides everything. A lid takes about half a second to open while the tip keeps ticking; no other cost.
+- Ice creams taken go into a paper bag on the counter; clicking one in the bag puts it back in its square. Keys: 1, 2, 3 open a crate, arrows move, + takes, - puts back, Enter serves, B goes back to the window.
+- The cooler remembers where every ice cream sits all evening and between Story days. A sold one leaves a gap; restocking fills gaps in the crate you choose.
+- In prep, the player chooses the crate new picks go into (click it, or 1, 2, 3). Any ice cream can be dragged to another square; clicking one not paid for yet takes it out (leaving a gap). Paid stock can be moved but not taken out (no refunds).
+
+**Why (product owner's rationale):** to make the cooler a memory challenge, so players place their stock strategically.
+
+**Engineering's calls (proposals, not the PO's reasons):** when the chosen crate is full, picks spill into the next crate with room, which becomes the chosen one (so stocking up never stalls); the cooler stores a map of its 48 squares next to the stock counts and keeps them in step, so selling and old saves still work (old Story saves get a fresh layout); the tip cup stands on a shelf on the left while filling; the bag shows the ice creams in the order taken.
+
 ## 029 — Drive home to restock: Home's driveway (2026-11-02)
 
 **Decision (Jira SCREAM-54, PO, November 2):**
