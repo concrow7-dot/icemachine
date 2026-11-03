@@ -62,22 +62,33 @@ def spongepop():
 
 def explorer():
     """SCREAM-130 (PO, November 2): a character pop, shaped like a face, with gumball eyes.
-    Our own explorer kid in a safari hat (not any real character)."""
+    Our own explorer girl: ginger braids with bows, freckles, a safari hat (not any real
+    character). PO: a girl, and smaller eyes (the big ones looked creepy)."""
     img, d, R = frame(2)
     cx = 14
     stick(R, cx, 27, 8)
+    # Ginger braids down each side, tied with green bows, behind the face.
+    for side in (-1, 1):
+        bx = cx + side * 10
+        for k, y in enumerate(range(13, 25, 3)):
+            R(bx - 2 + (k % 2) * side, y, 4, 3, (214, 110, 46, 255))
+            R(bx - 2 + (k % 2) * side, y + 2, 4, 1, (160, 74, 28, 255))
+        R(bx - 2, 25, 4, 2, (60, 160, 80, 255))
     # The face: a round pop, strawberry below and vanilla above (two flavour layers).
-    d.ellipse([cx - 10, 9, cx + 10, 29], fill=(120, 60, 50, 255))
-    d.ellipse([cx - 9, 10, cx + 9, 28], fill=(250, 198, 176, 255))
-    d.chord([cx - 9, 10, cx + 9, 28], 20, 160, fill=(244, 150, 160, 255))
-    # Gumball eyes: big, round, shiny.
-    for ex in (cx - 4, cx + 4):
-        d.ellipse([ex - 3, 15, ex + 3, 21], fill=(40, 120, 210, 255), outline=(20, 50, 100, 255))
-        R(ex - 1, 16, 1, 1, (255, 255, 255, 255))
-    # Freckles and a big smile.
-    for fx in (cx - 7, cx - 6, cx + 6, cx + 7):
-        R(fx, 22, 1, 1, (200, 110, 90, 255))
-    d.arc([cx - 4, 20, cx + 4, 26], 20, 160, fill=(150, 40, 50, 255), width=1)
+    d.ellipse([cx - 9, 9, cx + 9, 28], fill=(120, 60, 50, 255))
+    d.ellipse([cx - 8, 10, cx + 8, 27], fill=(250, 210, 186, 255))
+    d.chord([cx - 8, 10, cx + 8, 27], 20, 160, fill=(244, 156, 166, 255))
+    # Ginger fringe under the hat.
+    d.chord([cx - 8, 10, cx + 8, 22], 200, 340, fill=(214, 110, 46, 255))
+    # Gumball eyes: small and round, with a shine.
+    for ex in (cx - 4, cx + 3):
+        R(ex, 17, 2, 3, (40, 120, 210, 255))
+        R(ex, 17, 1, 1, (255, 255, 255, 255))
+        R(ex - 1, 16, 1, 1, (90, 50, 40, 255))   # a lash
+    # Freckles, rosy cheeks and a smile.
+    for fx in (cx - 6, cx - 5, cx + 5, cx + 6):
+        R(fx, 21, 1, 1, (200, 110, 90, 255))
+    d.arc([cx - 3, 20, cx + 3, 25], 20, 160, fill=(150, 40, 50, 255), width=1)
     # The safari hat: a khaki dome with a wide brim and a dark band.
     d.ellipse([cx - 8, 1, cx + 8, 14], fill=(206, 184, 120, 255), outline=(120, 100, 56, 255))
     R(cx - 13, 11, 27, 3, (190, 166, 102, 255))
