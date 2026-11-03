@@ -5,6 +5,7 @@ import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatMoney } from '../util/format';
+import { showLoadingWhileLoading } from './LoadingScene';
 
 // Issue #8 (with #21 and #23): prepping the cooler. Three flavour slots; for
 // each, the player picks a flavour, how many bars (up to 15) and a selling
@@ -26,7 +27,23 @@ type Column = {
 };
 
 const COLUMN_X = [170, 480, 790];
-const ROW_Y = [150, 235, 320];
+// SCREAM-124: one row lower than before, to sit inside the crates of the freezer picture.
+const ROW_Y = [164, 249, 334];
+const SLOT_LABEL_Y = 128;
+
+/**
+ * SCREAM-124 (PO, November 2): the cooler looks like the inside of the PO's truck drawing.
+ * The picture (drawn by tools/interior/draw_cooler.py) is the open freezer: steel rim, dark
+ * inside with icicles, boxes at the back and a crate for each slot. The glass lids are
+ * drawn here so they can slide open.
+ */
+const COOLER_KEY = 'cooler-inside';
+const COOLER_URL = 'assets/interior/cooler-inside.png';
+/** The freezer's dark opening on screen (matches OPENING in draw_cooler.py). */
+const OPENING = { left: 24, top: 74, right: 936, bottom: 404 };
+const LID_OPEN_MS = 600;
+/** How long the lids stay shut before opening, so the player sees them. */
+const LID_WAIT_MS = 250;
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
 
@@ -48,6 +65,11 @@ export class CoolerScene extends Phaser.Scene {
     super(SceneKeys.Cooler);
   }
 
+  preload(): void {
+    if (!this.textures.exists(COOLER_KEY)) this.load.image(COOLER_KEY, COOLER_URL);
+    showLoadingWhileLoading(this); // SCREAM-75
+  }
+
   create(): void {
     this.evening = getEvening(this);
     this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents);
@@ -58,13 +80,15 @@ export class CoolerScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const locked = this.evening.isPrepLocked;
 
-    this.add.rectangle(0, 44, width, height - 44, 0xd8eef5).setOrigin(0, 0);
+    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height);
     this.focus = this.add.rectangle(0, 0, 270, 40, 0xffe066, 0.55);
 
+    // On the steel rim above the opening.
     this.add
-      .text(width / 2, 70, locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP', {
+      .text(width / 2, 60, locked ? 'THE COOLER  (stock is set for tonight)' : 'THE COOLER  –  PREP', {
         fontFamily: 'monospace',
-        fontSize: '24px',
+        fontSize: '19px',
+        fontStyle: 'bold',
         color: INK,
       })
       .setOrigin(0.5);
@@ -158,6 +182,38 @@ export class CoolerScene extends Phaser.Scene {
 
     this.focus.setVisible(!locked);
     this.refresh();
+    this.openLids();
+  }
+
+  /**
+   * SCREAM-124 (PO): the freezer opens. Two glass lids cover the opening, then slide back
+   * and fold away into the rim at the top. Nothing on them is clickable, so the buttons
+   * underneath work straight away.
+   */
+  private openLids(): void {
+    const { left, top, right, bottom } = OPENING;
+    const mid = (left + right) / 2;
+    for (const [x0, x1] of [[left, mid], [mid, right]]) {
+      const w = x1 - x0;
+      const h = bottom - top;
+      const lid = this.add.graphics().setDepth(10);
+      lid.fillStyle(0xcfeef5, 1).fillRect(0, 0, w, h);
+      // Shine across the glass, the frame and a handle (the drawing's freezer lids).
+      lid.lineStyle(10, 0xffffff, 0.7).lineBetween(w * 0.15, h, w * 0.45, 0).lineBetween(w * 0.3, h, w * 0.6, 0);
+      lid.lineStyle(6, 0x7f7f7f, 1).strokeRect(3, 3, w - 6, h - 6);
+      lid.fillStyle(0xffffff, 1).fillRect(w / 2 - 22, h - 26, 44, 10);
+      lid.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - 22, h - 26, 44, 10);
+      lid.setPosition(x0, top);
+      this.tweens.add({
+        targets: lid,
+        scaleY: 0,
+        alpha: 0.6,
+        delay: LID_WAIT_MS,
+        duration: LID_OPEN_MS,
+        ease: 'Cubic.easeIn',
+        onComplete: () => lid.destroy(),
+      });
+    }
   }
 
   private makeColumn(index: number, locked: boolean): Column {
@@ -167,8 +223,8 @@ export class CoolerScene extends Phaser.Scene {
         .text(x, y, '', { fontFamily: 'monospace', fontSize: `${size}px`, color })
         .setOrigin(0.5);
 
-    this.add.rectangle(x, 245, 290, 300, 0xffffff, 0.55).setStrokeStyle(2, 0x7aa7b8);
-    text(112, 18).setText(`SLOT ${index + 1}`).setFontStyle('bold');
+    // SCREAM-124: the slot is a crate in the freezer picture, so no panel is drawn here.
+    text(SLOT_LABEL_Y, 18).setText(`SLOT ${index + 1}`).setFontStyle('bold');
 
     const name = text(ROW_Y[0], 17);
     const cost = text(ROW_Y[0] + 24, 13, '#5a4636');
