@@ -241,6 +241,15 @@ export const FUEL_QUICK_PLAY_START = 1;
 /** The HUD's gauge turns red at or below this much of a tank. */
 export const FUEL_LOW = 0.15;
 
+/** SCREAM-121 (PO, November 2): the gauge's needle is steady above a quarter tank and starts jumping around below it. */
+export const FUEL_GAUGE_WOBBLE_START = 0.25;
+
+/**
+ * SCREAM-121: at empty, the needle can show up to this much of a tank either side of the
+ * true level (less the fuller the tank). Engineering's starting value; tune by playing.
+ */
+export const FUEL_GAUGE_WOBBLE_MAX = 0.1;
+
 // ---- Sizes and view (SCREAM-114 / SCREAM-97, PO November 2) ----
 
 /**
