@@ -170,18 +170,19 @@ export class CoolerScene extends Phaser.Scene {
 
     FLAVOURS.forEach((flavour, row) => {
       const y = rowY.at(row) ?? 0;
-      addFlavourIcon(this, paper.left + 26, y, flavour.id, 1.4);
+      // SCREAM-144 (PO, November 3): no picture on the left; name and price left-aligned, the add picture on the right.
+      const textLeft = paper.left + 12;
       this.add
-        .text(paper.left + 50, y - 14, flavour.name, {
+        .text(textLeft, y - 14, flavour.name, {
           fontFamily: 'monospace',
           fontSize: '13px',
           fontStyle: 'bold',
           color: INK,
-          wordWrap: { width: 104 },
+          wordWrap: { width: 132 },
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
-      this.add.text(paper.left + 50, y + 16, `${formatMoney(flavour.costCents)} each`, {
+      this.add.text(textLeft, y + 16, `${formatMoney(flavour.costCents)} each`, {
         fontFamily: 'monospace',
         fontSize: '12px',
         color: '#5a4636',
@@ -189,7 +190,7 @@ export class CoolerScene extends Phaser.Scene {
       // How many of this flavour are in the cooler.
       this.rowCounts.push(
         this.add
-          .text(paper.right - 30, y + 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#5a4636' })
+          .text(paper.right - 52, y + 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#5a4636' })
           .setOrigin(1, 0.5),
       );
       if (!this.locked) {
@@ -201,7 +202,7 @@ export class CoolerScene extends Phaser.Scene {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
         });
-        this.makeAddButton(paper.right - 22, y - 8, flavour.id, () => {
+        this.makeAddButton(paper.right - 26, y, flavour.id, () => {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
         });
@@ -373,17 +374,17 @@ export class CoolerScene extends Phaser.Scene {
    * "+" badge on it that gently pulses. It grows a little under the mouse and bounces when it adds one.
    */
   private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void): void {
-    const picture = addFlavourIcon(this, 0, 0, flavour, 1.05);
-    const badge = this.add.container(11, -14, [
+    const picture = addFlavourIcon(this, 0, 0, flavour, 1.4);
+    const badge = this.add.container(15, -20, [
       this.add.circle(0, 0, 8, 0x2e7d32).setStrokeStyle(2, 0xffffff),
       this.add.text(0, -1, '+', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
     ]);
     this.tweens.add({ targets: badge, scale: 1.25, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const button = this.add.container(x, y, [picture, badge]).setName(`add-${flavour}`);
     // A zone for the click area (a container's own hit area sits off-centre).
-    const hit = this.add.zone(x - 18, y - 24, 36, 46).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    hit.on('pointerover', () => picture.setScale(1.2));
-    hit.on('pointerout', () => picture.setScale(1.05));
+    const hit = this.add.zone(x - 22, y - 27, 44, 54).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => picture.setScale(1.55));
+    hit.on('pointerout', () => picture.setScale(1.4));
     hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       onClick();
