@@ -51,6 +51,9 @@ export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private bubbleText!: Phaser.GameObjects.Text;
+  /** SCREAM-137: the order drawn as pictures in the bubble, and what it shows (so it's only rebuilt on a change). */
+  private orderPictures!: Phaser.GameObjects.Container;
+  private orderPicturesKey = '';
   /** SCREAM-125: a mini Today's Menu taped to the glass while pricing (was a plain YOUR PRICES card). */
   private priceCard!: Phaser.GameObjects.Container;
   private calculator!: Calculator;
@@ -129,6 +132,7 @@ export class SalesScene extends Phaser.Scene {
         wordWrap: { width: 440 },
       })
       .setOrigin(0.5);
+    this.orderPictures = this.add.container(330, 212);
 
     // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
     this.tipBar = new TipBar(this, 892, 412, true);
@@ -313,10 +317,41 @@ export class SalesScene extends Phaser.Scene {
     this.priceCard.add(parts);
   }
 
+  /**
+   * SCREAM-137 (PO, November 2): some customers say the ice creams' names, others show their
+   * pictures ("2 ×" and the ice cream), at random. Any words before the order go above the pictures.
+   */
+  private showLine(sale: NonNullable<EveningState['sale']>): void {
+    const pictures = sale.pictureLine;
+    if (!pictures) {
+      this.bubbleText.setText(sale.line).setY(212);
+      this.setOrderPictures('', []);
+      return;
+    }
+    this.bubbleText.setText(pictures.prefix).setY(pictures.prefix ? 184 : 212);
+    const key = `${pictures.prefix ? 'low' : 'mid'}|${pictures.order.map((l) => `${l.count}${l.flavour}`).join(',')}`;
+    this.setOrderPictures(key, pictures.order, pictures.prefix ? 236 : 212);
+  }
+
+  private setOrderPictures(key: string, order: readonly { flavour: Parameters<typeof addFlavourIcon>[3]; count: number }[], y = 212): void {
+    if (key === this.orderPicturesKey) return;
+    this.orderPicturesKey = key;
+    this.orderPictures.removeAll(true).setY(y);
+    const itemW = 96;
+    let x = -((order.length - 1) * itemW) / 2;
+    for (const line of order) {
+      this.orderPictures.add(
+        this.add.text(x - 14, 0, `${line.count} ×`, { fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: INK }).setOrigin(1, 0.5),
+      );
+      this.orderPictures.add(addFlavourIcon(this, x + 14, 0, line.flavour, 1.4).setName(`order-pic-${line.flavour}`));
+      x += itemW;
+    }
+  }
+
   private refresh(): void {
     const sale = this.evening.sale;
     if (!sale) return;
-    this.bubbleText.setText(sale.line);
+    this.showLine(sale);
 
     const pricing = sale.phase === 'pricing';
     if (pricing) this.drawMenuCard();

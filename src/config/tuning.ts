@@ -124,6 +124,12 @@ export const PLACEHOLDER_SALE_CENTS = 400;
 export const ORDER_SHOW_SECONDS = 5;
 
 /**
+ * SCREAM-137 (PO, November 2): customers sometimes say the ice creams' names and sometimes
+ * show their pictures instead; which one is random. The chance an order is in pictures.
+ */
+export const ORDER_PICTURE_CHANCE = 0.5;
+
+/**
  * Chance of each order size, from 1 to 6 ice creams (PO: 2 and 3 about 30% each).
  * Must add up to 100.
  */
