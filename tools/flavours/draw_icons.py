@@ -74,10 +74,9 @@ def explorer():
             R(bx - 2 + (k % 2) * side, y, 4, 3, (214, 110, 46, 255))
             R(bx - 2 + (k % 2) * side, y + 2, 4, 1, (160, 74, 28, 255))
         R(bx - 2, 25, 4, 2, (60, 160, 80, 255))
-    # The face: a round pop, strawberry below and vanilla above (two flavour layers).
+    # The face: a round pop in one even colour (PO: the strawberry layer below read as a beard).
     d.ellipse([cx - 9, 9, cx + 9, 28], fill=(120, 60, 50, 255))
     d.ellipse([cx - 8, 10, cx + 8, 27], fill=(250, 210, 186, 255))
-    d.chord([cx - 8, 10, cx + 8, 27], 20, 160, fill=(244, 156, 166, 255))
     # Ginger fringe under the hat.
     d.chord([cx - 8, 10, cx + 8, 22], 200, 340, fill=(214, 110, 46, 255))
     # Gumball eyes: small and round, with a shine.
@@ -88,6 +87,8 @@ def explorer():
     # Freckles, rosy cheeks and a smile.
     for fx in (cx - 6, cx - 5, cx + 5, cx + 6):
         R(fx, 21, 1, 1, (200, 110, 90, 255))
+    for chx in (cx - 7, cx + 5):
+        R(chx, 22, 2, 1, (244, 156, 166, 255))
     d.arc([cx - 3, 20, cx + 3, 25], 20, 160, fill=(150, 40, 50, 255), width=1)
     # The safari hat: a khaki dome with a wide brim and a dark band.
     d.ellipse([cx - 8, 1, cx + 8, 14], fill=(206, 184, 120, 255), outline=(120, 100, 56, 255))
