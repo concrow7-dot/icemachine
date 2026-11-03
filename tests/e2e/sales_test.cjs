@@ -55,9 +55,10 @@ const { chromium } = require('playwright');
 
   // ---- Prep: 10 eclairs, 5 SpongePops, 5 Explorer Pops at default prices ($2.00, $2.50, $2.50) ----
   await page.click('canvas'); await press('Enter'); await wait(200);
-  await press('+', 10); await press('ArrowRight'); await press('+', 5); await press('ArrowRight'); await press('+', 5);
+  // SCREAM-129: the clipboard's rows are picked with Down; + adds one ice cream.
+  await press('+', 10); await press('ArrowDown'); await press('+', 5); await press('ArrowDown'); await press('+', 5);
   await press('Enter'); await wait(200);
-  check('Prep: stock 10,5,5 and cash $25.00', (await stock()) + ' ' + (await cash()), '10,5,5 2500');
+  check('Prep: stock 10,5,5 (and no cookies) and cash $25.00', (await stock()) + ' ' + (await cash()), '10,5,5,0 2500');
   await press('ArrowRight'); await press('Enter'); await wait(400);
 
   // ---- Sale 1: perfect and fast ----
@@ -76,9 +77,9 @@ const { chromium } = require('playwright');
   check('Enter goes to the cooler (fill mode)', await scenes(), 'Fill,Hud');
   check('Tip bar still showing at the cooler', await sc('Fill', 's.tipBar.container.visible'), true);
   await press('+', 2); await press('ArrowRight'); await press('ArrowUp');
-  check('Picking takes ice creams out of the cooler', (await stock()) + ' bag ' + (await ev('e.sale.bag.join(",")')), '8,4,5 bag 2,1,0');
+  check('Picking takes ice creams out of the cooler', (await stock()) + ' bag ' + (await ev('e.sale.bag.join(",")')), '8,4,5,0 bag 2,1,0,0');
   await press('-'); await press('+');
-  check('Putting one back and taking it again', await ev('e.sale.bag.join(",")'), '2,1,0');
+  check('Putting one back and taking it again', await ev('e.sale.bag.join(",")'), '2,1,0,0');
   await page.screenshot({ path: outDir + '/sale_fill.png' });
   await press('Enter'); await wait(300);
   check('Serve: back at the window, "How much?"', (await scenes()) + ' ' + (await ev('e.sale.line')), 'Sales,Hud How much?');
@@ -108,7 +109,7 @@ const { chromium } = require('playwright');
   await wait(400); await page.screenshot({ path: outDir + '/sale_paid.png' });
   await press('Enter'); await wait(400);
   check('Enter: straight back on the road, the customer has gone', (await scenes()) + ' ' + (await ev('e.customer === null')), 'Drive,Hud true');
-  check('Sold ice creams are gone from stock', await stock(), '8,4,5');
+  check('Sold ice creams are gone from stock', await stock(), '8,4,5,0');
 
   // ---- Sale 2: wrong items once -> corrected order, retry, undercharge accepted with no tip ----
   await serveNow();
@@ -119,7 +120,7 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300); await press('+'); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter');
   check('Wrong items, first time: the customer says the right order', (await ev('e.sale.line')).includes('I wanted 1 Lil Explorer Pop'), true);
-  check('...items go back in the cooler, order shown again', (await stock()) + ' ' + (await ev('e.sale.phase')), '8,4,5 ordering');
+  check('...items go back in the cooler, order shown again', (await stock()) + ' ' + (await ev('e.sale.phase')), '8,4,5,0 ordering');
   check('...and the tip is gone', await sc('Sales', 's.tipBar.label.text'), 'No tip');
   await tick(5100);
   await press('c'); await wait(300); await press('ArrowRight'); await press('ArrowRight'); await press('+'); await press('Enter'); await wait(300);
@@ -154,7 +155,7 @@ const { chromium } = require('playwright');
   const rb = await sc('Sales', '[s.roadButton.x, s.roadButton.y]'); const bb = await (await page.$('canvas')).boundingBox();
   await page.mouse.click(bb.x + rb[0], bb.y + rb[1]); await wait(300);
   check('Clicking BACK ON THE ROAD leaves the window', await scenes(), 'Drive,Hud');
-  check('...no money, and the ice cream is gone', ((await cash()) - c3) + ' ' + (await stock()), '0 7,4,4');
+  check('...no money, and the ice cream is gone', ((await cash()) - c3) + ' ' + (await stock()), '0 7,4,4,0');
 
   // ---- Sale 3b (SCREAM-120): overcharge, then fix the price: paid, no tip ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
@@ -175,7 +176,7 @@ const { chromium } = require('playwright');
   await page.keyboard.type('5'); await press('Enter');
   check('After R, a wrong order fails: "That\'s not what I asked for."', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.line')), "wrong-order That's not what I asked for.");
   await press('Enter'); await wait(300);
-  check('...the wrong item is given away', await stock(), '6,3,4');
+  check('...the wrong item is given away', await stock(), '6,3,4,0');
 
   // ---- Sale 5: the minute runs out while at the cooler ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 3 }]); await tick(5100);
@@ -188,7 +189,7 @@ const { chromium } = require('playwright');
   check('Time\'s up: back at the window, "Sorry, I have to go."', (await scenes()) + ' ' + (await ev('e.sale.line')), 'Sales,Hud Sorry, I have to go.');
   check('...warning gone', await sc('Hud', 's.patienceWarning.visible'), false);
   await press('Enter'); await wait(300);
-  check('...the picked ice cream goes back in the cooler', await stock(), '6,3,4');
+  check('...the picked ice cream goes back in the cooler', await stock(), '6,3,4,0');
 
   // ---- Sale 6: drive off ----
   await serveNow(); await tick(5100); const c6 = await cash();
@@ -200,7 +201,7 @@ const { chromium } = require('playwright');
   await serveNow();
   check('Every flavour over $4.00: "Too expensive!"', (await ev('e.sale.outcome.kind')) + ' ' + (await sc('Sales', 's.bubbleText.text')), 'too-expensive Too expensive!');
   await press('Enter'); await wait(300);
-  await ev('(e.coolerSlots.forEach((s, i) => s.priceCents = [200, 250, 250][i]), true)');
+  await ev('(e.coolerSlots.forEach((s, i) => s.priceCents = [200, 250, 250, 300][i]), true)');
 
   // ---- Debug keys moved to Shift ----
   const c7 = await cash();

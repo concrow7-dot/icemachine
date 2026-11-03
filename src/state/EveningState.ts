@@ -6,7 +6,6 @@ import { WORCESTER } from '../config/worcester';
 import { RESIDENTS } from '../config/residents';
 import { Residents, type ResidentNow } from './Residents';
 import {
-  COOLER_SLOTS,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
@@ -90,8 +89,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
   readonly residents = new Residents(RESIDENTS);
 
-  /** The cooler starts with the first three flavours selected and empty. */
-  private readonly coolerSlots: CoolerSlot[] = FLAVOURS.slice(0, COOLER_SLOTS).map((f) => ({
+  /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
+  private readonly coolerSlots: CoolerSlot[] = FLAVOURS.map((f) => ({
     flavour: f.id,
     quantity: 0,
     priceCents: defaultPriceCents(f.id),
@@ -106,9 +105,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);
-    carry?.slots.forEach((slot, i) => {
-      const target = this.coolerSlots.at(i);
-      if (target) Object.assign(target, slot);
+    // Matched by flavour, so a save from before SCREAM-129 (3 slots, any flavours) carries over too.
+    carry?.slots.forEach((slot) => {
+      const target = this.coolerSlots.find((s) => s.flavour === slot.flavour);
+      if (!target) return;
+      target.quantity += slot.quantity;
+      target.priceCents = slot.priceCents;
     });
   }
 
@@ -469,8 +471,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const cost = order.costCents;
     if (cost > this.cashCents) return false;
 
-    order.slots.forEach((slot, i) => {
-      const target = this.coolerSlots.at(i);
+    order.slots.forEach((slot) => {
+      const target = this.coolerSlots.find((s) => s.flavour === slot.flavour);
       if (target) Object.assign(target, slot);
     });
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);

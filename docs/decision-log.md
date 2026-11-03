@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 028 — Stocking one ice cream at a time: clipboard, crates and Today's Menu (2026-11-02)
+
+**Decision (Jira SCREAM-129, the PO's sketch, November 2):** the cooler prep screen is redesigned in three parts.
+- An "Available Ice Cream" clipboard lists every flavour with its picture and what it costs. Picking one drops a single ice cream into the next empty square of the cooler. The order's total and BUY STOCK sit at the bottom of the clipboard; nothing is charged until BUY STOCK.
+- The cooler is 3 crates of 4 x 4 squares: 48 ice creams, any mix of flavours (was 3 slots of up to 15, one flavour each). The PO kept the total close to the old 45.
+- Ice creams not paid for yet are marked (a dashed yellow outline); clicking one takes it back out. Paid stock can't be taken out.
+- Today's Menu, on the truck's outside wall, shows a card for every flavour in the cooler, like a real truck's menu board: bright colours, a picture of the ice cream, the price written big in marker. Prices are set there in prep, and can be changed again on a trip home (SCREAM-54).
+- "Chocolate Chip" on the sketch is the existing Cookie Ice Cream Sandwich; no new flavour.
+
+**Why (product owner's rationale):** the old cooler felt clunky, and the PO is moving the game toward a memory-based sales process, which this helps.
+
+**Engineering's calls (proposals, not the PO's reasons):** one stock line per flavour behind the scenes, so selling and saving work as before (old Story saves are merged flavour by flavour); squares fill paid stock first (by flavour), then this visit's picks in picking order; the keyboard: Up and Down move along the clipboard (or the menu), Left and Right switch between them, + and - pick and put back (or change a price); the ice cream pictures are placeholders until SCREAM-113 (and SCREAM-130 for the Lil Explorer Pop); the marker font is Permanent Marker (free, Apache 2.0 licence, bundled with the game); the order-filling screen at the window shows four columns, one per flavour, until SCREAM-125 redesigns it.
+
+**Revisit if:** 48 is too many or too few once customers' numbers are tuned (SCREAM-25 could add a crate).
+
 ## 027 — The truck interior is the PO's drawing, with clickable parts (2026-11-02)
 
 **Decision (Jira SCREAM-57, PO, November 2):** the hub (the inside of the truck) is the PO's coloured drawing, made from his pen sketch and engineering's line art, instead of placeholder boxes. Clicking the freezer opens the cooler; clicking the front of the truck starts driving; clicking the menu board on the wall behind the freezer opens the menu. No art pack was bought: doc 18 found no front-on truck interior to match.

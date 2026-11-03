@@ -79,7 +79,7 @@ const { chromium } = require('playwright');
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $200.00 badge', /Bike\n\$200\.00/.test(day1), true);
-  check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0');
+  check('Saved: day 2, $97, 3 bars in the first slot', await saved(), '2 9700 3/0/0/0');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----
@@ -182,14 +182,14 @@ const { chromium } = require('playwright');
   check('New story over a save: asks first', /Start a new story\?/.test(await texts('Title')) && (await scenes()) === 'Title', true);
   await page.screenshot({ path: outDir + '/story_new_confirm.png' });
   await press('Enter'); await wait(200);
-  check('...Enter alone does not wipe the save', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0');
+  check('...Enter alone does not wipe the save', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0');
   await press('n'); await wait(200);
-  check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0');
+  check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0');
   // SCREAM-90: the question's No can be clicked too.
   await press('Enter'); await wait(200);
   const noAt = await sc('Title', "(() => { const t = s.confirmGroup.find(o => o.text === 'No (N)'); return [Math.round(t.x), Math.round(t.y)]; })()");
   await page.mouse.click(noAt[0], noAt[1]); await wait(200);
-  check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0');
+  check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0');
   await press('Enter'); await wait(200); await press('y'); await wait(300);
   await press('Enter'); await wait(300); // past the intro
   check('...Y: a new run at day 1 with $100, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 10000 none');
