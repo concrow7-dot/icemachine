@@ -35,23 +35,33 @@ const { chromium } = require('playwright');
   await press('ArrowRight');
   check('Right -> driver seat', await sel(), 'driver');
   await press('ArrowRight');
-  check('Right again skips unavailable window -> cooler', await sel(), 'cooler');
-  await press('ArrowLeft');
-  check('Left from cooler skips window -> driver', await sel(), 'driver');
+  check('Right again skips unavailable window -> menu board (SCREAM-57)', await sel(), 'menu');
+  await press('ArrowRight');
+  check('Right from the menu board -> cooler', await sel(), 'cooler');
+  await press('ArrowLeft'); await press('ArrowLeft');
+  check('Left from the menu board skips window -> driver', await sel(), 'driver');
   // Mouse on unavailable window: no highlight, no action
-  await page.mouse.move(790, 250); await wait(150);
+  await page.mouse.move(890, 200); await wait(150);
   check('Hovering unavailable window keeps highlight', await sel(), 'driver');
-  await page.mouse.click(790, 250); await wait(250);
+  await page.mouse.click(890, 200); await wait(250);
   check('Clicking unavailable window does nothing', await scenes(), 'Truck,Hud');
-  // The window is only for a sale in progress (#13): customers now go straight to the sales screen
-  await press('ArrowRight');
-  check('Window stays greyed out in the hub (no sale)', await sel(), 'cooler');
-  await press('ArrowRight');
-  await press('ArrowLeft');
-  // mouse hover + click cooler
-  await page.mouse.move(180, 360); await wait(150);
+  // SCREAM-57: the hub is the PO's drawing, with the parts of it clickable
+  check('Hub shows the truck interior picture', await page.evaluate(() => window.__game.scene.getScene('Truck').children.list.some(o => o.texture && o.texture.key === 'truck-interior')), true);
+  await page.mouse.move(480, 200); await wait(150);
+  check('Hover the front of the truck highlights driving', await sel(), 'driver');
+  check('...with a DRIVE tag', await page.evaluate(() => window.__game.scene.getScene('Truck').tag.text), 'DRIVE');
+  await page.mouse.move(130, 180); await wait(150);
+  check('Hover the menu board highlights it', await sel(), 'menu');
+  await page.mouse.click(130, 180); await wait(250);
+  check('Click the menu board opens the menu', await page.evaluate(() => window.__game.scene.isActive('Pause')), true);
+  await press('Escape'); await wait(250);
+  check('...and Esc closes it back to the truck', await scenes(), 'Truck,Hud');
+  await page.mouse.move(480, 500); await wait(150);
+  check('Hovering the floor changes nothing', await sel(), 'menu');
+  // mouse hover + click cooler (the freezer)
+  await page.mouse.move(150, 440); await wait(150);
   check('Hover cooler highlights it', await sel(), 'cooler');
-  await page.mouse.click(180, 360); await wait(250);
+  await page.mouse.click(150, 440); await wait(250);
   check('Click cooler opens cooler screen', await scenes(), 'Cooler,Hud');
   await press('Backspace'); await wait(150);
   check('Backspace returns to truck', await scenes(), 'Truck,Hud');
