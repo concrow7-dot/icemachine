@@ -194,6 +194,49 @@ const { chromium } = require('playwright');
   check('Empty cooler on the road: no new customers', await ev('e.acceptingCustomers'), false);
   check('...and the HUD says SOLD OUT', await page.evaluate(() => window.__game.scene.getScene('Hud').soldOutText.visible), true);
 
+  // ---- SCREAM-140: customers walk along the curb toward the truck ----
+  const follow = await page.evaluate(async () => {
+    const { Residents } = await import('/src/state/Residents.js');
+    const { CurbPath } = await import('/src/state/CurbPath.js');
+    const { RESIDENTS } = await import('/src/config/residents.js');
+    const { WORCESTER } = await import('/src/config/worcester.js');
+    const { RoadNetwork } = await import('/src/state/RoadGeometry.js');
+    const t = await import('/src/config/tuning.js');
+    const curbs = new CurbPath(WORCESTER.roads);
+    const roads = new RoadNetwork(WORCESTER.roads, WORCESTER.roadMask);
+    // Someone whose street runs on at least 2,100 px past their curb spot.
+    const pick = () => RESIDENTS.find(r => {
+      const s = curbs.locate(r.curb[2], r.curb[3]); const h = s && curbs.project(s.road, r.curb[0], r.curb[1]);
+      return h && curbs.length(s.road) - h.along > 2100;
+    });
+    const run = (distance) => {
+      const res = new Residents([pick()], () => 0.5, curbs);
+      const p = res.all[0];
+      const spot = curbs.locate(p.resident.curb[2], p.resident.curb[3]);
+      const home = curbs.project(spot.road, p.resident.curb[0], p.resident.curb[1]).along;
+      const truck = curbs.at(spot.road, home + distance, 0);
+      const ring = { x: truck.x, y: truck.y, radius: 0, open: false };
+      res.update(0.01, ring);
+      res.wantIceCream(p);
+      let seconds = 0, pinkWhileWalking = false;
+      while (p.customer !== 'waiting' && seconds < 200) { res.update(0.1, ring); seconds += 0.1; if (p.customer === 'running' && p.pickup[0] !== p.resident.curb[2]) pinkWhileWalking = true; }
+      const square = curbs.project(spot.road, p.pickup[0], p.pickup[1]).along;
+      const out = { seconds, state: p.customer, gap: Math.round(home + distance - square), fromHome: Math.round(square - home), onRoad: roads.onRoad(p.pickup[0], p.pickup[1]), pinkWhileWalking };
+      res.startServing(p); res.finishServing(p);
+      for (let i = 0; i < 3000 && p.outside; i++) res.update(0.1, ring);
+      out.home = !p.outside;
+      return out;
+    };
+    return { near: run(400), far: run(2000), speeds: [t.CUSTOMER_RUN_SPEED, t.RESIDENT_WALK_SPEED], gap: t.CUSTOMER_STOP_GAP, max: t.CUSTOMER_FOLLOW_MAX };
+  });
+  check('Walking speeds halved: customers 37, residents 11 px/s', follow.speeds.join(','), '37,11');
+  check('Truck 400 px along the street: they walk toward it and wait', follow.near.state, 'waiting');
+  check('...stopping a short way off (150 px before the truck)', Math.abs(follow.near.gap - follow.gap) <= 2, true);
+  check('...their pink square is on the road beside them', follow.near.onRoad, true);
+  check('...and only appears once they stop', follow.near.pinkWhileWalking, false);
+  check('Truck far away: they follow at most 480 px, then wait', follow.far.state + ' ' + (Math.abs(follow.far.fromHome - follow.max) <= 2), 'waiting true');
+  check('After the sale they walk back along the curb and go home', follow.near.home && follow.far.home, true);
+
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();

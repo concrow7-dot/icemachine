@@ -15,7 +15,10 @@ import {
   CUSTOMER_CHANCE_FLOOR,
   CUSTOMER_CHANCE_SETTLE_SECONDS,
   CUSTOMER_INDOORS_FACTOR,
+  CUSTOMER_FOLLOW_MAX,
+  CUSTOMER_QUEUE_GAP,
   CUSTOMER_RUN_SPEED,
+  CUSTOMER_STOP_GAP,
   CUSTOMER_WAIT_SECONDS,
   RESIDENT_IDLE_SECONDS,
   RESIDENT_INSIDE_SECONDS,
@@ -23,6 +26,8 @@ import {
   RESIDENT_START_OUTSIDE_CHANCE,
   RESIDENT_WALK_SPEED,
 } from '../config/tuning';
+import type { CurbPath } from './CurbPath';
+import { LANE_OFFSET } from './RoadGeometry';
 
 /** One resident, as generated from the sheet (src/config/residents.ts). */
 export interface Resident {
@@ -70,6 +75,11 @@ export interface ResidentNow {
   customer: CustomerState;
   /** Seconds left before a waiting customer gives up and walks home. */
   waitLeft: number;
+  /**
+   * SCREAM-140: where their pink square is (x, y, the road's angle in degrees). Their own
+   * curb spot's square until they walk along the curb toward the truck.
+   */
+  pickup: [number, number, number];
 }
 
 /** The truck's music ring this frame: who can hear it, and whether anyone may start wanting ice cream. */
@@ -90,7 +100,16 @@ type Then = 'idle' | 'inside' | 'curb';
 type Plan =
   | { kind: 'inside'; until: number }
   | { kind: 'walk'; route: [number, number][]; speed: number; then: Then }
+  | { kind: 'follow' }
   | { kind: 'idle'; until: number };
+
+/** SCREAM-140: a customer beside a street: which, how far along, which side; `home` is their own curb spot. */
+interface Follow {
+  road: number;
+  along: number;
+  side: number;
+  home: number;
+}
 
 interface Running extends ResidentNow {
   plan: Plan;
@@ -99,6 +118,7 @@ interface Running extends ResidentNow {
   /** How many seconds in a row they've been hearing the truck. */
   heard: number;
   waitUntil: number;
+  follow?: Follow;
 }
 
 const between = (rnd: () => number, [low, high]: readonly [number, number]) => low + rnd() * (high - low);
@@ -124,10 +144,27 @@ export class Residents {
   static readonly chance = customerChance;
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
+  /** SCREAM-140: the streets, for walking along the curb (without them, customers wait at their own curb spot). */
+  private readonly curbs?: CurbPath;
+  /** Where the truck was last seen (the ring's centre). */
+  private truck: [number, number] | null = null;
+  private readonly squareFits?: (x: number, y: number, road: number) => boolean;
 
   /** `rnd` returns 0 to 1 (Math.random by default; tests pass their own). */
-  constructor(list: readonly Resident[], rnd: () => number = Math.random) {
+  /**
+   * `curbs` (SCREAM-140) lets customers walk along the curb toward the truck; `squareFits`
+   * says whether a pink square can go at (x, y) beside that street (on the road, clear of
+   * parked cars, bays and junctions).
+   */
+  constructor(
+    list: readonly Resident[],
+    rnd: () => number = Math.random,
+    curbs?: CurbPath,
+    squareFits?: (x: number, y: number, road: number) => boolean,
+  ) {
     this.rnd = rnd;
+    this.curbs = curbs;
+    this.squareFits = squareFits;
     this.people = list.map((resident) => {
       const outside = rnd() < RESIDENT_START_OUTSIDE_CHANCE;
       const spot = outside ? this.yardSpot(resident) : resident.door;
@@ -140,6 +177,7 @@ export class Residents {
         facing: 'down',
         customer: 'none',
         waitLeft: 0,
+        pickup: [resident.curb[2], resident.curb[3], resident.curb[4]],
         plan: { kind: 'inside', until: 0 },
         goInsideAt: 0,
         heard: 0,
@@ -171,6 +209,7 @@ export class Residents {
    */
   update(dt: number, ring?: Ring): void {
     this.now += dt;
+    if (ring) this.truck = [ring.x, ring.y];
     this.sinceRoll += dt;
     while (this.sinceRoll >= 1) {
       this.sinceRoll -= 1;
@@ -199,8 +238,11 @@ export class Residents {
     if (p.customer !== 'window') return;
     p.customer = 'done';
     p.outside = true;
-    p.x = p.resident.curb[0];
-    p.y = p.resident.curb[1];
+    // SCREAM-140: back on the sidewalk where they stood (they may have walked along the curb).
+    if (!p.follow) {
+      p.x = p.resident.curb[0];
+      p.y = p.resident.curb[1];
+    }
     this.walkHome(p);
   }
 
@@ -218,6 +260,8 @@ export class Residents {
     p.waitUntil = this.now + CUSTOMER_WAIT_SECONDS;
     p.waitLeft = CUSTOMER_WAIT_SECONDS;
     p.facing = this.facingToRoad(p.resident);
+    p.pickup = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
+    p.follow = undefined;
     p.plan = { kind: 'idle', until: Infinity };
   }
 
@@ -250,7 +294,75 @@ export class Residents {
   }
 
   private walkHome(p: Running): void {
+    const f = p.follow;
+    p.follow = undefined;
+    if (f && this.curbs && Math.abs(f.along - f.home) > 1) {
+      // SCREAM-140: back along the curb to their own spot, then up to the door.
+      const back = this.curbs.route(f.road, f.along, f.home, f.side);
+      this.walkTo(p, [...back, [p.resident.curb[0], p.resident.curb[1]], p.resident.door], RESIDENT_WALK_SPEED, 'inside');
+      return;
+    }
     this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside');
+  }
+
+  /**
+   * SCREAM-140 (PO, November 2): at the curb, a customer walks along it toward the truck,
+   * and stops a short way off (CUSTOMER_STOP_GAP), at most CUSTOMER_FOLLOW_MAX from their own
+   * spot, or just before someone already waiting. Then they wait, with their pink square beside them.
+   */
+  private stepFollow(p: Running, dt: number): void {
+    const f = p.follow;
+    const curbs = this.curbs;
+    if (!f || !curbs) return this.startWaiting(p);
+    const truck = this.truck ? curbs.project(f.road, this.truck[0], this.truck[1]) : null;
+    if (!truck) return this.startWaiting(p);
+    // Where to stop: a short way before the truck (or here, if it's already that close),
+    // no further than they're willing to go, on the street.
+    const toTruck = truck.along - f.along;
+    let goal = Math.abs(toTruck) <= CUSTOMER_STOP_GAP ? f.along : truck.along - Math.sign(toTruck) * CUSTOMER_STOP_GAP;
+    goal = Math.max(f.home - CUSTOMER_FOLLOW_MAX, Math.min(f.home + CUSTOMER_FOLLOW_MAX, goal));
+    goal = Math.max(0, Math.min(curbs.length(f.road), goal));
+    // ...and where their pink square has room: not on a parked car, a bay, a junction or
+    // someone else's square. Otherwise a little further back toward their own spot (always fine).
+    while (Math.abs(goal - f.home) > 1 && !this.roomFor(p, f, goal)) {
+      goal = Math.abs(goal - f.home) <= 10 ? f.home : goal - Math.sign(goal - f.home) * 10;
+    }
+    const step = Math.min(Math.abs(goal - f.along), CUSTOMER_RUN_SPEED * dt);
+    if (step <= 0.001) return this.startWaiting(p);
+    const before: [number, number] = [p.x, p.y];
+    f.along += Math.sign(goal - f.along) * step;
+    const spot = curbs.at(f.road, f.along, f.side);
+    p.x = spot.x;
+    p.y = spot.y;
+    p.walking = true;
+    p.facing = facingFor(p.x - before[0], p.y - before[1]);
+  }
+
+  /** Is there room for this customer's pink square `along` px down their street? */
+  private roomFor(p: Running, f: Follow, along: number): boolean {
+    const square = this.curbs!.at(f.road, along, Math.sign(f.side) * LANE_OFFSET);
+    if (this.squareFits && !this.squareFits(square.x, square.y, f.road)) return false;
+    return !this.people.some(
+      (o) => o !== p && o.customer === 'waiting' && Math.hypot(o.pickup[0] - square.x, o.pickup[1] - square.y) < CUSTOMER_QUEUE_GAP,
+    );
+  }
+
+  /** At the curb (or done walking along it): wait for the truck, the pink square beside them. */
+  private startWaiting(p: Running): void {
+    p.customer = 'waiting';
+    p.walking = false;
+    p.waitUntil = this.now + CUSTOMER_WAIT_SECONDS;
+    p.waitLeft = CUSTOMER_WAIT_SECONDS;
+    const f = p.follow;
+    if (f && this.curbs && Math.abs(f.along - f.home) > 1) {
+      const square = this.curbs.at(f.road, f.along, Math.sign(f.side) * LANE_OFFSET);
+      p.pickup = [square.x, square.y, square.angle];
+      p.facing = facingFor(square.x - p.x, square.y - p.y);
+    } else {
+      p.pickup = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
+      p.facing = this.facingToRoad(p.resident);
+    }
+    p.plan = { kind: 'idle', until: Infinity };
   }
 
   private step(p: Running, dt: number): void {
@@ -264,6 +376,7 @@ export class Residents {
       return;
     }
     const plan = p.plan;
+    if (plan.kind === 'follow') return this.stepFollow(p, dt);
     if (plan.kind === 'inside') {
       if (this.now < plan.until) return;
       // Out of the front door, then off into the yard.
@@ -309,11 +422,13 @@ export class Residents {
       p.outside = false;
       p.plan = { kind: 'inside', until: this.now + between(this.rnd, RESIDENT_INSIDE_SECONDS) };
     } else if (then === 'curb') {
-      p.customer = 'waiting';
-      p.waitUntil = this.now + CUSTOMER_WAIT_SECONDS;
-      p.waitLeft = CUSTOMER_WAIT_SECONDS;
-      p.facing = this.facingToRoad(p.resident);
-      p.plan = { kind: 'idle', until: Infinity };
+      // SCREAM-140: at the curb, along it toward the truck (or wait here without the streets).
+      const spot = this.curbs?.locate(p.resident.curb[2], p.resident.curb[3]);
+      const stand = spot && this.curbs?.project(spot.road, p.x, p.y);
+      if (!spot || !stand) return this.startWaiting(p);
+      p.follow = { road: spot.road, along: stand.along, side: stand.side, home: stand.along };
+      p.walking = true;
+      p.plan = { kind: 'follow' };
     } else {
       p.facing = 'down';
       p.plan = { kind: 'idle', until: this.now + between(this.rnd, RESIDENT_IDLE_SECONDS) };
