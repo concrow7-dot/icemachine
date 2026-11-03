@@ -121,7 +121,6 @@ box(*COUNTER, SHELF, width=3, cut=4)
 box(58, 360, 132, 414, BOX, width=3, amp=1.0)
 rect(61, 363, 129, 372, BOX_TOP)
 rect(91, 361, 99, 412, (222, 196, 150))
-box(146, 352, 178, 414, CUP, width=3, cut=4, amp=0.8)
-rect(150, 356, 174, 362, CUP_DARK)
+# (The drawing's green cup is the tip jar: the game draws it right of the customer, SCREAM-125.)
 
 img.save(sys.argv[1] if len(sys.argv) > 1 else "sales-window.png")
