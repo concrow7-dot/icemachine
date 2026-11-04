@@ -274,9 +274,11 @@ export const FUEL_STEP_CENTS = 500;
  * tank); SCREAM-114 (PO, November 2): gas should burn quicker, so now a full evening
  * of driving uses about a full tank (1.5x as fast). Then (PO, November 2) 15% faster
  * again: 78,000 / 1.15 = 67,800 px, then 25% faster: 54,200 px. SCREAM-119 (PO, November 2):
- * 30% faster again: 54,200 / 1.3 = about 41,700 px. Tune after playing.
+ * 30% faster again: 54,200 / 1.3 = about 41,700 px. SCREAM-151 (PO, November 3): 30% faster
+ * again: 41,700 / 1.3 = about 32,100 px. The farthest road is about 2,600 px from a gas
+ * station in a straight line, so Story's 1/6 tank minimum (about 5,350 px) still reaches one.
  */
-export const FUEL_TANK_PX = 41700;
+export const FUEL_TANK_PX = 32100;
 
 /** PO: Story's day 1 starts with a quarter tank. Later days carry over what's left. */
 export const FUEL_STORY_START = 0.25;
