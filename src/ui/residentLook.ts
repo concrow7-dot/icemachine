@@ -1,20 +1,24 @@
 import * as Phaser from 'phaser';
 import { RESIDENT_FRAME, RESIDENT_LOOKS_ACROSS } from '../config/residents';
+import { currentMap } from '../config/maps';
 import type { ResidentFacing } from '../state/Residents';
 
 // The residents' sprite sheet (SCREAM-59): LimeZu Modern Interiors characters.
 // Shared by the map (DriveScene) and the sales window (SCREAM-106), so a
 // customer looks the same in both.
 
-export const RESIDENTS_KEY = 'residents';
-export const RESIDENTS_URL = 'assets/limezu/residents.png';
+/** SCREAM-146: each map has its own residents and sheet; this is the current map's texture key. */
+export function residentsKey(): string {
+  return currentMap().residentsKey;
+}
 
 const FACING_COLUMN: Record<ResidentFacing, number> = { right: 0, up: 1, left: 2, down: 3 };
 
 /** Loads the residents' sheet if it isn't loaded yet. Call from a scene's preload(). */
 export function loadResidentSheet(scene: Phaser.Scene): void {
-  if (scene.textures.exists(RESIDENTS_KEY)) return;
-  scene.load.spritesheet(RESIDENTS_KEY, RESIDENTS_URL, {
+  const { residentsKey: key, residentsUrl } = currentMap();
+  if (scene.textures.exists(key)) return;
+  scene.load.spritesheet(key, residentsUrl, {
     frameWidth: RESIDENT_FRAME.width,
     frameHeight: RESIDENT_FRAME.height,
   });

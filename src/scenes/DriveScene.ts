@@ -3,7 +3,8 @@ import { BUBBLE_INK, drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
-import { WORCESTER } from '../config/worcester';
+import { currentMap, type GameMap } from '../config/maps';
+import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, RoadNetwork, ROAD_HALF_WIDTH, type TurnedBox } from '../state/RoadGeometry';
 import {
   HIT_MIN_SPEED_FRACTION,
@@ -37,11 +38,11 @@ import {
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
-import { loadResidentSheet, residentFrame, RESIDENTS_KEY } from '../ui/residentLook';
+import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
-import { GAS_STATIONS, MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../config/gasStation';
+import { gasStations } from '../config/gasStation';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to pick up a waiting customer.
@@ -118,7 +119,6 @@ const RESIDENT_DEPTH = 5;
 const DEPTH_PER_PX = 10000;
 /** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
 const OCCLUDER_CELL = 128;
-const OBJECT_SIZES = new Map(WORCESTER.sprites.map((s) => [s.key, s] as const));
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
@@ -138,7 +138,7 @@ export class DriveScene extends Phaser.Scene {
   private held: Facing[] = [];
   /** One sprite per resident, in the same order as evening.residents.all. */
   private residentSprites: Phaser.GameObjects.Sprite[] = [];
-  /** Houses and trees by 128 px square, as indexes into WORCESTER.objects, for finding what stands in front of a resident. */
+  /** Houses and trees by 128 px square, as indexes into this.map.objects, for finding what stands in front of a resident. */
   private objectGrid = new Map<string, number[]>();
   /** Copies of houses and trees drawn over a resident who is behind them (SCREAM-104), by object index. */
   private occluders = new Map<number, Phaser.GameObjects.Image>();
@@ -153,9 +153,12 @@ export class DriveScene extends Phaser.Scene {
   private songLabelTween?: Phaser.Tweens.Tween;
   private leaving = false;
   private cars: TurnedBox[] = [];
-  /** The map being driven (SCREAM-10: Worcester). */
-  readonly map = WORCESTER;
-  private readonly roads = new RoadNetwork(WORCESTER.roads, WORCESTER.roadMask);
+  /** The map being driven (SCREAM-10: Worcester; SCREAM-146: or the tutorial map). Set in preload. */
+  map: WorcesterMap = currentMap().data;
+  /** The map's files and texture keys. */
+  private assets: GameMap = currentMap();
+  private roads = new RoadNetwork(this.map.roads, this.map.roadMask);
+  private objectSizes = new Map(this.map.sprites.map((s) => [s.key, s] as const));
   /** Map pieces shown only near the camera (2,000 houses and trees drawn every frame were too slow). */
   /** Street, field and Home names, shown only near the camera. */
   private mapTexts: { obj: Phaser.GameObjects.Text; x: number; y: number }[] = [];
@@ -164,9 +167,7 @@ export class DriveScene extends Phaser.Scene {
   /** The ground, roads, houses and trees round the camera, painted into one image (one draw per frame). */
   private mapTexture!: Phaser.GameObjects.RenderTexture;
   /** Houses and trees painted into the map, front to back, with the gas station's pumps (SCREAM-22) in place of the house on its spot. */
-  private sortedObjects = [...WORCESTER.objects, ...GAS_STATIONS.flatMap((g) => g.pumps.map((p) => ({ key: 'pump', ...p })))].sort(
-    (a, b) => a.y - b.y,
-  );
+  private sortedObjects: { key: string; x: number; y: number }[] = [];
   /** The truck's hit box, half its length and width in px (tests read it, since TRUCK_LENGTH and TRUCK_WIDTH change it). */
   readonly truckHalf = { length: TRUCK_HALF_LENGTH, width: TRUCK_HALF_WIDTH };
   /** SCREAM-22, SCREAM-109: the bay beside each gas station's pumps. Stop in one to buy gas. */
@@ -199,13 +200,27 @@ export class DriveScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image('map-grass', 'assets/limezu/map/grass.png');
+    this.useMap(currentMap());
+    const a = this.assets;
+    this.load.image(a.grassKey, a.grassUrl);
     loadTruckViews(this);
     // Houses, trees, yard ornaments and the gas pump, all in one picture sheet (SCREAM-108).
-    if (!this.textures.exists(MAP_ATLAS)) this.load.atlas(MAP_ATLAS, MAP_ATLAS_PNG, MAP_ATLAS_JSON);
-    for (const { key } of WORCESTER.roadTiles) this.load.image(`map-${key}`, `assets/map/${key}.png`);
+    if (!this.textures.exists(a.atlasKey)) this.load.atlas(a.atlasKey, a.atlasPng, a.atlasJson);
+    for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, `${a.roadDir}/${key}.png`);
     loadResidentSheet(this);
     showLoadingWhileLoading(this); // SCREAM-75
+  }
+
+  /** SCREAM-146: switches to the map tonight's evening is on (the scene is reused between evenings). */
+  private useMap(assets: GameMap): void {
+    if (this.assets === assets && this.sortedObjects.length) return;
+    this.assets = assets;
+    this.map = assets.data;
+    this.roads = new RoadNetwork(this.map.roads, this.map.roadMask);
+    this.objectSizes = new Map(this.map.sprites.map((s) => [s.key, s] as const));
+    this.sortedObjects = [...this.map.objects, ...gasStations().flatMap((g) => g.pumps.map((p) => ({ key: 'pump', ...p })))].sort(
+      (a, b) => a.y - b.y,
+    );
   }
 
   create(): void {
@@ -221,8 +236,8 @@ export class DriveScene extends Phaser.Scene {
     this.leaving = false;
     this.spinning = false;
 
-    const worldWidth = WORCESTER.width;
-    const worldHeight = WORCESTER.height;
+    const worldWidth = this.map.width;
+    const worldHeight = this.map.height;
 
     this.drawNeighbourhood(worldWidth, worldHeight);
     this.placeObstacles();
@@ -231,12 +246,12 @@ export class DriveScene extends Phaser.Scene {
     this.ring = this.add.circle(0, 0, MUSIC_RING_RADIUS).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
     this.tweens.add({ targets: this.ring, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.residentSprites = this.evening.residents.all.map(() =>
-      this.add.sprite(0, 0, RESIDENTS_KEY, 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
+      this.add.sprite(0, 0, residentsKey(), 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
     );
     this.occluders.clear();
     this.objectGrid.clear();
-    WORCESTER.objects.forEach((o, i) => {
-      const size = OBJECT_SIZES.get(o.key);
+    this.map.objects.forEach((o, i) => {
+      const size = this.objectSizes.get(o.key);
       if (!size) return;
       const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
       const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
@@ -257,7 +272,7 @@ export class DriveScene extends Phaser.Scene {
     this.setHeading(angle);
 
     // SCREAM-22, SCREAM-109: each station's pump bay, painted on the road beside the pumps like a parking space.
-    this.pumpBays = GAS_STATIONS.map((g) =>
+    this.pumpBays = gasStations().map((g) =>
       this.add
         .rectangle(g.bay.x, g.bay.y, PICKUP_ZONE_LENGTH + 10, PICKUP_ZONE_WIDTH, 0xffd23f, 0.12)
         .setStrokeStyle(3, 0xffd23f, 0.9)
@@ -267,7 +282,7 @@ export class DriveScene extends Phaser.Scene {
     this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
     // SCREAM-54 (PO, November 2): Home's driveway, a marked spot on the road outside home
     // (where each evening starts). Stopping in it like a customer pickup opens the cooler to restock.
-    const hs = WORCESTER.homeStart;
+    const hs = this.map.homeStart;
     this.homeBay = this.add
       .rectangle(hs.x, hs.y, PICKUP_ZONE_LENGTH + 10, PICKUP_ZONE_WIDTH, 0x4fc3f7, 0.14)
       .setStrokeStyle(3, 0x4fc3f7, 0.95)
@@ -283,7 +298,7 @@ export class DriveScene extends Phaser.Scene {
       ])
       .setDepth(12)
       .setVisible(false);
-    for (const { sign } of GAS_STATIONS) {
+    for (const { sign } of gasStations()) {
       this.mapTexts.push({
         obj: this.add
           .text(sign.x, sign.y - 72, 'GAS', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff', fontStyle: 'bold', backgroundColor: '#c62828', padding: { x: 6, y: 2 } })
@@ -486,13 +501,13 @@ export class DriveScene extends Phaser.Scene {
   // ---- Map (SCREAM-10) ----
 
   private drawNeighbourhood(worldWidth: number, worldHeight: number): void {
-    this.textures.get('map-grass').setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get(this.assets.grassKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.mapTexture = this.add.renderTexture(0, 0, MAP_TEXTURE_WIDTH, MAP_TEXTURE_HEIGHT).setOrigin(0, 0).setDepth(0);
 
     // Parks, sports fields and the school grounds, from OpenStreetMap.
     const fields = this.make.graphics({}, false);
     this.fieldGraphics = fields;
-    for (const area of WORCESTER.areas) {
+    for (const area of this.map.areas) {
       const pts: Phaser.Math.Vector2[] = [];
       for (let i = 0; i + 1 < area.points.length; i += 2) pts.push(v(area.points[i]!, area.points[i + 1]!));
       const colour = area.kind === 'school' ? COLOURS.school : area.kind === 'park' ? COLOURS.park : COLOURS.pitch;
@@ -516,22 +531,22 @@ export class DriveScene extends Phaser.Scene {
     }
 
     // Houses and trees (LimeZu, at the pack's 16 px size), drawn front to back.
-    this.textures.get(MAP_ATLAS).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    for (const { key } of WORCESTER.roadTiles) this.textures.get(`map-${key}`).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.textures.get(this.assets.atlasKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const { key } of this.map.roadTiles) this.textures.get(this.assets.roadKeyPrefix + key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     // Names: text over the map image, shown only near the camera (refreshVisibleMap).
     this.mapTexts = [];
     const paint = (x: number, y: number, text: Phaser.GameObjects.Text) => {
       this.add.existing(text.setPosition(x, y).setDepth(7).setVisible(false));
       this.mapTexts.push({ obj: text, x, y });
     };
-    const home = WORCESTER.home;
+    const home = this.map.home;
     if (home) {
-      const sprite = WORCESTER.sprites.find((s) => s.key === home.key);
+      const sprite = this.map.sprites.find((s) => s.key === home.key);
       const y = home.y - (sprite?.h ?? 100) - 6;
       paint(home.x, y, this.make.text({ x: 0, y: 0, text: 'HOME', style: { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066', fontStyle: 'bold' } }, false).setOrigin(0.5, 1).setStroke('#3a2a10', 5));
     }
     // Street names, written along the road.
-    for (const label of WORCESTER.labels) {
+    for (const label of this.map.labels) {
       paint(
         label.x,
         label.y,
@@ -544,7 +559,7 @@ export class DriveScene extends Phaser.Scene {
       );
     }
     // Field and park names.
-    for (const area of WORCESTER.areas) {
+    for (const area of this.map.areas) {
       if (!area.name) continue;
       let x = 0;
       let y = 0;
@@ -596,7 +611,7 @@ export class DriveScene extends Phaser.Scene {
     }
 
     // Potholes and parked cars.
-    for (const { x, y } of WORCESTER.potholes) {
+    for (const { x, y } of this.map.potholes) {
       if (x < x0 - 40 || x > x1 + 40 || y < y0 - 40 || y > y1 + 40) continue;
       g.fillStyle(0x45484f, 1).fillEllipse(x, y, 42, 34);
       g.fillStyle(0x2b2d31, 1).fillEllipse(x, y, 36, 28);
@@ -609,12 +624,12 @@ export class DriveScene extends Phaser.Scene {
       return [v(x + ux * hl - uy * hw, y + uy * hl + ux * hw), v(x + ux * hl + uy * hw, y + uy * hl - ux * hw), v(x - ux * hl + uy * hw, y - uy * hl - ux * hw), v(x - ux * hl - uy * hw, y - uy * hl + ux * hw)];
     };
     // SCREAM-22: the gas station's concrete forecourt, under the pumps.
-    for (const { pad } of GAS_STATIONS) {
+    for (const { pad } of gasStations()) {
       if (pad.x < x0 - 150 || pad.x > x1 + 150 || pad.y < y0 - 150 || pad.y > y1 + 150) continue;
       g.fillStyle(0x8d9196, 1).fillPoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
       g.lineStyle(2, 0x6b6f74, 1).strokePoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
     }
-    WORCESTER.parkedCars.forEach(({ x, y, angle }, i) => {
+    this.map.parkedCars.forEach(({ x, y, angle }, i) => {
       if (x < x0 - 60 || x > x1 + 60 || y < y0 - 60 || y > y1 + 60) return;
       g.fillStyle(0x1b1b1b, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH + 1, CAR_HALF_WIDTH + 1), true);
       g.fillStyle(CAR_COLOURS[i % CAR_COLOURS.length] ?? 0x888888, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH - 1, CAR_HALF_WIDTH - 1), true);
@@ -624,17 +639,17 @@ export class DriveScene extends Phaser.Scene {
     // Paint it all into the map image: grass, fields, roads, then houses and trees front to back, then names.
     const rt = this.mapTexture.setPosition(x0, y0).clear();
     const GRASS = 64;
-    rt.repeat('map-grass', undefined, -(((x0 % GRASS) + GRASS) % GRASS), -(((y0 % GRASS) + GRASS) % GRASS), MAP_TEXTURE_WIDTH + GRASS, MAP_TEXTURE_HEIGHT + GRASS);
+    rt.repeat(this.assets.grassKey, undefined, -(((x0 % GRASS) + GRASS) % GRASS), -(((y0 % GRASS) + GRASS) % GRASS), MAP_TEXTURE_WIDTH + GRASS, MAP_TEXTURE_HEIGHT + GRASS);
     rt.draw(this.fieldGraphics, -x0, -y0);
-    const tileSize = 512 * WORCESTER.roadTileScale;
-    for (const t of WORCESTER.roadTiles) {
+    const tileSize = 512 * this.map.roadTileScale;
+    for (const t of this.map.roadTiles) {
       if (t.x + tileSize < x0 || t.x > x1 || t.y + tileSize < y0 || t.y > y1) continue;
-      rt.stamp(`map-${t.key}`, undefined, t.x - x0, t.y - y0, { originX: 0, originY: 0, scale: WORCESTER.roadTileScale });
+      rt.stamp(this.assets.roadKeyPrefix + t.key, undefined, t.x - x0, t.y - y0, { originX: 0, originY: 0, scale: this.map.roadTileScale });
     }
     rt.draw(g, -x0, -y0);
     for (const o of this.sortedObjects) {
       if (o.x < x0 - 150 || o.x > x1 + 150 || o.y < y0 || o.y > y1 + 220) continue;
-      rt.stamp(MAP_ATLAS, o.key, o.x - x0, o.y - y0, { originX: 0.5, originY: 1 });
+      rt.stamp(this.assets.atlasKey, o.key, o.x - x0, o.y - y0, { originX: 0.5, originY: 1 });
     }
     rt.render();
     for (const t of this.mapTexts) t.obj.setVisible(t.x > x0 - 200 && t.x < x1 + 200 && t.y > y0 - 200 && t.y < y1 + 200);
@@ -842,9 +857,9 @@ export class DriveScene extends Phaser.Scene {
     this.cars = [];
     this.potholes = [];
     // Drawn in the map image (refreshVisibleMap); these are what the truck runs into.
-    for (const { x, y } of WORCESTER.potholes) this.potholes.push({ x, y, armed: true });
+    for (const { x, y } of this.map.potholes) this.potholes.push({ x, y, armed: true });
     // Parked against the curb, along the road (SCREAM-10: at the road's angle).
-    for (const { x, y, angle } of WORCESTER.parkedCars) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+    for (const { x, y, angle } of this.map.parkedCars) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
   }
 
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
@@ -930,8 +945,8 @@ export class DriveScene extends Phaser.Scene {
     for (const i of inFront) {
       let image = this.occluders.get(i);
       if (!image) {
-        const o = WORCESTER.objects[i];
-        image = this.add.image(o.x, o.y, MAP_ATLAS, o.key).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH + o.y / DEPTH_PER_PX);
+        const o = this.map.objects[i];
+        image = this.add.image(o.x, o.y, this.assets.atlasKey, o.key).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH + o.y / DEPTH_PER_PX);
         this.occluders.set(i, image);
       }
       image.setVisible(true);
@@ -947,8 +962,8 @@ export class DriveScene extends Phaser.Scene {
     for (let cx = left; cx <= right; cx++)
       for (let cy = top; cy <= bottom; cy++)
         for (const i of this.objectGrid.get(`${cx},${cy}`) ?? []) {
-          const o = WORCESTER.objects[i];
-          const size = OBJECT_SIZES.get(o.key);
+          const o = this.map.objects[i];
+          const size = this.objectSizes.get(o.key);
           if (!size || o.y <= y) continue;
           if (x + 8 > o.x - size.w / 2 && x - 8 < o.x + size.w / 2 && y > o.y - size.h && y - 32 < o.y) out.add(i);
         }

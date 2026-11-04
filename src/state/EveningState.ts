@@ -2,12 +2,11 @@ import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
-import { WORCESTER } from '../config/worcester';
-import { RESIDENTS } from '../config/residents';
+import { currentMap, setCurrentMap, type MapId } from '../config/maps';
+import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { RoadNetwork } from './RoadGeometry';
-import { GAS_STATIONS } from '../config/gasStation';
 import {
   COOLER_CAPACITY,
   ORDER_PICTURE_CHANCE,
@@ -60,13 +59,21 @@ export type CoolerSlot = {
  * SCREAM-140: can a customer's pink square go at (x, y), beside street `road`? On that
  * street's asphalt (not in a junction), and clear of parked cars, the pump bays and home's driveway.
  */
-const ROADS = new RoadNetwork(WORCESTER.roads, WORCESTER.roadMask);
-function pinkSquareFits(x: number, y: number, road: number): boolean {
-  if (!ROADS.onRoad(x, y) || ROADS.nearestSegment(x, y)?.road !== road) return false;
-  const near = (a: { x: number; y: number }, d: number) => Math.hypot(a.x - x, a.y - y) < d;
-  if (WORCESTER.parkedCars.some((c) => near(c, PINK_CLEAR_CAR))) return false;
-  if (GAS_STATIONS.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(WORCESTER.homeStart, PINK_CLEAR_BAY)) return false;
-  return true;
+/** Each map's road network, made once (SCREAM-146: there are two maps). */
+const ROAD_NETWORKS = new Map<MapId, RoadNetwork>();
+function roadsOf(id: MapId, map: WorcesterMap): RoadNetwork {
+  let roads = ROAD_NETWORKS.get(id);
+  if (!roads) ROAD_NETWORKS.set(id, (roads = new RoadNetwork(map.roads, map.roadMask)));
+  return roads;
+}
+function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork) {
+  return (x: number, y: number, road: number): boolean => {
+    if (!roads.onRoad(x, y) || roads.nearestSegment(x, y)?.road !== road) return false;
+    const near = (a: { x: number; y: number }, d: number) => Math.hypot(a.x - x, a.y - y) < d;
+    if (map.parkedCars.some((c) => near(c, PINK_CLEAR_CAR))) return false;
+    if (map.gasStations.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(map.homeStart, PINK_CLEAR_BAY)) return false;
+    return true;
+  };
 }
 /** How far a pink square's centre keeps from a parked car's, and from a bay's (px). */
 const PINK_CLEAR_CAR = 80;
@@ -103,12 +110,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private gasSpentCents = 0;
   private lastSalePhase: string | null = null;
 
-  /** The truck starts each evening on the road outside home (#9). */
-  private truckPosition: TruckPosition = {
-    x: WORCESTER.homeStart.x,
-    y: WORCESTER.homeStart.y,
-    angle: WORCESTER.homeStart.angle,
-  };
+  /** The truck starts each evening on the road outside home (#9); set in the constructor. */
+  private truckPosition: TruckPosition;
+
+  /** SCREAM-146: which map tonight is on: Worcester, or the smaller tutorial map. */
+  readonly mapId: MapId;
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
@@ -144,9 +150,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
     cells?: readonly (FlavourId | null)[];
     /** SCREAM-148: Story's day and run seed, which pick the day each sometimes buyer buys. */
     story?: { day: number; seed: number };
-  }) {
+  }, mapId: MapId = 'worcester') {
     super();
-    this.residents = new Residents(RESIDENTS, Math.random, new CurbFinder(ROADS, pinkSquareFits), carry?.story);
+    // SCREAM-146: everything tonight (scenes included) uses this evening's map.
+    this.mapId = mapId;
+    setCurrentMap(mapId);
+    const map = currentMap();
+    const roads = roadsOf(mapId, map.data);
+    this.truckPosition = { x: map.data.homeStart.x, y: map.data.homeStart.y, angle: map.data.homeStart.angle };
+    this.residents = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), carry?.story);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);

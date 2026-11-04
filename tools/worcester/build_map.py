@@ -3,6 +3,7 @@
 Usage (run from the repo root):
     python3 tools/worcester/build_map.py extract <map.osm>      # OSM export -> tools/worcester/worcester-osm.json
     python3 tools/worcester/build_map.py build <art-folder>     # json + LimeZu singles -> src/config/worcester.ts + sprites
+    python3 tools/worcester/build_map.py build <art-folder> tutorial   # the tutorial map (SCREAM-146) -> src/config/tutorial.ts
 
 <art-folder> is a folder of LimeZu Modern Exteriors 48x48 singles (from the private
 art repo). Only the sprites the map uses are written to public/assets/limezu/map/,
@@ -38,6 +39,58 @@ BOUNDARY = {'June Street', 'Pleasant Street', 'Park Avenue', 'Chandler Street'}
 BOUNDARY_ENDS = {'June Street': (3, 0), 'Pleasant Street': (0, 1), 'Park Avenue': (1, 2), 'Chandler Street': (2, 3)}
 DRIVE = {'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link',
          'tertiary', 'tertiary_link', 'residential', 'unclassified', 'living_street'}
+
+# ---- The tutorial map (SCREAM-146, PO November 4) ----
+# A smaller map from real streets a little north of the main one: Institute Rd (north),
+# Highland St (south, out to Dover St), Haviland St and the woods (west); Park Ave runs
+# through the middle. Dover St itself is left out. The PO plans to join the two maps later.
+# Street data: OpenStreetMap API, bbox -71.8215,42.2690,-71.8095,42.2765 (November 4, 2026),
+# trimmed to these streets and simplified to 1 m (tools/tutorial/tutorial-osm.json).
+TUTORIAL = {
+    'osm_json': os.path.join(ROOT, 'tools', 'tutorial', 'tutorial-osm.json'),
+    'out_ts': os.path.join(ROOT, 'src', 'config', 'tutorial.ts'),
+    'out_art': os.path.join(ROOT, 'public', 'assets', 'limezu', 'map-tutorial'),
+    'out_roads': os.path.join(ROOT, 'public', 'assets', 'map-tutorial'),
+    'lat_max': 42.27365, 'lon_min': -71.81945,
+    'corners': [(42.273608, -71.818871),   # Haviland St / Institute Rd
+                (42.273300, -71.813532),   # Institute Rd / Park Ave
+                (42.270517, -71.813650),   # Highland St at Dover St
+                (42.270150, -71.819354)],  # Highland St / Haviland St
+    'boundary_ends': {'Institute Road': (0, 1), 'Highland Street': (3, 2), 'Haviland Street': (3, 0)},
+    'leave_out': {'Dover Street'},
+    # PO (November 4): home on Westland St, the gas station on Park Ave near Market 32.
+    'home_road': 'Westland Street',
+    'stations': [{'name': 'Park Avenue', 'road': 'Park Avenue', 'near_ll': (42.27085, -71.81590)}],
+    'curb': 10, 'holes': 4, 'cars': 10, 'extra_cars': 8, 'tree_tries': 3000,
+    'export': 'TUTORIAL',
+    'header': ['// SCREAM-146: the tutorial map: Institute Rd, Highland St, Haviland St and Park Ave in',
+               '// Worcester, MA. Street data (c) OpenStreetMap contributors (ODbL). Art: LimeZu.'],
+}
+LEAVE_OUT = set()
+HOME_ROAD = 'Longfellow Road'
+STATIONS = [
+    # PO (November 2): the real Speedway, just past the Chandler corner; here just north of it.
+    {'name': 'Speedway', 'road': 'Park Avenue', 'near': (5540.8, 4656.3)},
+    # PO (November 2, SCREAM-109): a second one on the west side, also on a main road and away from home.
+    {'name': 'June Street', 'road': 'June Street', 'near': (1805.0, 2322.0)},
+]
+COUNTS = {'curb': 34, 'holes': 14, 'cars': 40, 'extra_cars': 40, 'tree_tries': 9000}
+EXPORT = 'WORCESTER'
+HEADER = ['// SCREAM-10: the streets around June St, Pleasant St, Park Ave and Chandler St in',
+          '// Worcester, MA. Street data (c) OpenStreetMap contributors (ODbL). Art: LimeZu.']
+
+
+def use_area(a):
+    """Switch every setting above to another map's."""
+    global OSM_JSON, OUT_TS, OUT_ART, OUT_ROADS, LAT_MAX, LON_MIN, CORNERS, ROTARY, BOUNDARY, BOUNDARY_ENDS
+    global LEAVE_OUT, HOME_ROAD, STATIONS, COUNTS, EXPORT, HEADER
+    OSM_JSON, OUT_TS, OUT_ART, OUT_ROADS = a['osm_json'], a['out_ts'], a['out_art'], a['out_roads']
+    LAT_MAX, LON_MIN, CORNERS = a['lat_max'], a['lon_min'], a['corners']
+    ROTARY = (0.0, 0.0)  # no rotary: far off the map
+    BOUNDARY_ENDS = a['boundary_ends']; BOUNDARY = set(BOUNDARY_ENDS)
+    LEAVE_OUT, HOME_ROAD, STATIONS = a['leave_out'], a['home_road'], a['stations']
+    COUNTS = {k: a[k] for k in COUNTS}; EXPORT, HEADER = a['export'], a['header']
+
 
 # ---- Scale ----
 PX_PER_M = 4.6          # about twice the old map's size (PO)
@@ -141,7 +194,7 @@ def build(art):
 
     pieces, clipped = [], []  # clipped: (piece index, end) where a street was cut at the boundary
     for w in d['ways']:
-        if w['roundabout']: continue
+        if w['roundabout'] or w['name'] in LEAVE_OUT: continue
         name = w['name']
         run, cut_before = [], False
         for lat, lon in w['pts']:
@@ -215,13 +268,13 @@ def build(art):
     # Home (proposal, PO to confirm): on Longfellow Road, in the middle of the area.
     home = None
     for name, p, t in along(60, 150):
-        if name == 'Longfellow Road' and (home is None or abs(p[0] - (W / 2)) < abs(home[1][0] - (W / 2))):
+        if name == HOME_ROAD and (home is None or abs(p[0] - (W / 2)) < abs(home[1][0] - (W / 2))):
             home = (name, p, t)
     hn = (-home[2][1], home[2][0])  # right-hand side of the direction of travel
     home_start = {'x': r1(home[1][0] + hn[0] * LANE), 'y': r1(home[1][1] + hn[1] * LANE), 'angle': angle(home[2])}
 
     curb = []
-    for name, p, t in spread(along(90, 140), 34, keep_away=[(home_start['x'], home_start['y'])], gap=300):
+    for name, p, t in spread(along(90, 140), COUNTS['curb'], keep_away=[(home_start['x'], home_start['y'])], gap=300):
         side = random.choice((1, -1))
         n = (-t[1] * side, t[0] * side)
         # On the sidewalk, 35 px from the pickup square (as on the old map), and not out on another road.
@@ -232,12 +285,12 @@ def build(art):
                      'customerX': r1(cust[0]), 'customerY': r1(cust[1]), 'street': name})
     busy = [(c['x'], c['y']) for c in curb] + [(home_start['x'], home_start['y'])]
     holes = []
-    for name, p, t in spread(along(70, 120), 14, keep_away=busy, gap=260):
+    for name, p, t in spread(along(70, 120), COUNTS['holes'], keep_away=busy, gap=260):
         side = random.choice((1, -1))
         holes.append({'x': r1(p[0] - t[1] * side * LANE), 'y': r1(p[1] + t[0] * side * LANE)})
     busy += [(h['x'], h['y']) for h in holes]
     cars = []
-    for name, p, t in spread(along(80, 150), 40, keep_away=busy, gap=220):
+    for name, p, t in spread(along(80, 150), COUNTS['cars'], keep_away=busy, gap=220):
         side = random.choice((1, -1))
         cars.append({'x': r1(p[0] - t[1] * side * 40), 'y': r1(p[1] + t[0] * side * 40), 'angle': angle(t)})
 
@@ -366,7 +419,7 @@ def build(art):
                         cy = p[1] + n[1] * (edge + depth + sp['h'] / 2 * abs(n[1])) + sp['h'] / 2
                         if fits(cx, cy, sp['w'], sp['h']):
                             put(sp, cx, cy); break
-    for _ in range(9000):  # trees on what's left
+    for _ in range(COUNTS['tree_tries']):  # trees on what's left
         sp = random.choice(trees)
         cx, cy = random.uniform(0, W), random.uniform(0, H)
         if fits(cx, cy, sp['w'] * 0.7, sp['h'] * 0.8, gap=0): put(sp, cx, cy)
@@ -489,15 +542,10 @@ def build(art):
     # free spot along the same street (it keeps its number, so its resident just moves with it);
     # trees there come out. Each is given by a point on the road and is on the side away from
     # the middle of the map, at the edge.
-    STATIONS = [
-        # PO (November 2): the real Speedway, just past the Chandler corner; here just north of it.
-        {'name': 'Speedway', 'road': 'Park Avenue', 'near': (5540.8, 4656.3)},
-        # PO (November 2, SCREAM-109): a second one on the west side, also on a main road and away from home.
-        {'name': 'June Street', 'road': 'June Street', 'near': (1805.0, 2322.0)},
-    ]
     PAD_LEN, PAD_DEPTH = 150, 76
     gas_stations = []
     for st in STATIONS:
+        if 'near_ll' in st: st = dict(st, near=px(metres(*st['near_ll'])))
         best = None
         for name, pts in pieces:
             if name != st['road']: continue
@@ -614,7 +662,7 @@ def build(art):
     # numbers, so everything above comes out as before. Along the curbs, away from junctions,
     # home's start, potholes, the gas stations' bays and the other cars.
     cr = random.Random(114)
-    EXTRA_CARS = 40
+    EXTRA_CARS = COUNTS['extra_cars']
     keep = [(h['x'], h['y'], 200) for h in holes] + [(home_start['x'], home_start['y'], 260)]
     keep += [(g['bay']['x'], g['bay']['y'], 220) for g in gas_stations]
     cands = along(80, 150)
@@ -662,18 +710,17 @@ def build(art):
         'roadTiles': road_tiles, 'roadTileScale': RASTER,
         'roadMask': {'scale': RASTER, 'rows': road_rows},
     }
-    ts = ['// GENERATED by tools/worcester/build_map.py: edit the script, not this file.',
-          '// SCREAM-10: the streets around June St, Pleasant St, Park Ave and Chandler St in',
-          '// Worcester, MA. Street data (c) OpenStreetMap contributors (ODbL). Art: LimeZu.',
+    ts = ['// GENERATED by tools/worcester/build_map.py: edit the script, not this file.', *HEADER,
           '// Positions are in pixels from the top-left of the map; angles in degrees (0 = right, 90 = down).',
           '',
           "import type { WorcesterMap } from './mapTypes';",
           '',
-          f'export const WORCESTER: WorcesterMap = {json.dumps(out, separators=(",", ":"))};', '']
+          f'export const {EXPORT}: WorcesterMap = {json.dumps(out, separators=(",", ":"))};', '']
     open(OUT_TS, 'w').write('\n'.join(ts))
     print(f'map {W}x{H}px, {len(pieces)} road pieces, {len(labels)} labels, {len(curb)} curb spots, {len(holes)} potholes, '
-          f'{len(cars)} cars, {len(objects)} houses+trees, home on {home[0]}')
+          f'{len(cars)} cars, {len(objects)} houses+trees, home on {home[0]}, {sum(1 for o in objects if o["key"].startswith(("house", "villa")))} houses')
 
 
 if __name__ == '__main__':
+    if len(sys.argv) > 3 and sys.argv[3] == 'tutorial': use_area(TUTORIAL)
     {'extract': extract, 'build': build}[sys.argv[1]](sys.argv[2])
