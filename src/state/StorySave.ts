@@ -21,6 +21,8 @@ export type StorySave = {
   fuel: number;
   /** SCREAM-18: the run's takings so far. */
   totals: RunTotals;
+  /** SCREAM-148: picks each sometimes buyer's day. Saves from before it get a new one. */
+  seed?: number;
 };
 
 /** Bump the version only if the saved format changes in a way old saves can't be read. */
@@ -59,6 +61,7 @@ export function loadStory(): StorySave | null {
         ? data.cells.map((c) => (typeof c === 'string' && FLAVOUR_IDS.has(c) ? (c as FlavourId) : null))
         : undefined,
       fuel: typeof data.fuel === 'number' && data.fuel >= 0 && data.fuel <= 1 ? data.fuel : FUEL_STORY_START,
+      seed: Number.isInteger(data.seed) ? (data.seed as number) : undefined,
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),

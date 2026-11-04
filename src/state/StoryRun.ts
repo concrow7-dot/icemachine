@@ -46,6 +46,8 @@ export class StoryRun {
   cells: (FlavourId | null)[] | null = null;
   /** SCREAM-22: what tonight's tank started with. PO: a quarter on day 1; after that, what was left. */
   fuel = FUEL_STORY_START;
+  /** SCREAM-148: picks which day each sometimes buyer buys on; the same all run. */
+  seed = Math.floor(Math.random() * 2 ** 31);
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
@@ -60,12 +62,13 @@ export class StoryRun {
       this.cells = save.cells ? [...save.cells] : null;
       this.fuel = save.fuel;
       this.totals = { ...save.totals };
+      if (save.seed !== undefined) this.seed = save.seed;
     }
   }
 
   /** A new evening built from what tonight started with. */
   newEvening(): EveningState {
-    return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined });
+    return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined, story: { day: this.day, seed: this.seed } });
   }
 
   /** The evening is over: works out what happens next and, if the run goes on, carries the cash and stock forward. Call once per evening. */
@@ -92,7 +95,7 @@ export class StoryRun {
     if (result === 'next') {
       this.day += 1;
       // SCREAM-17: save at the end of each evening, ready for the next one.
-      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, cells: this.cells ?? undefined, fuel: this.fuel, totals: this.totals });
+      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, cells: this.cells ?? undefined, fuel: this.fuel, totals: this.totals, seed: this.seed });
     } else {
       this.outcome = result;
       clearStorySave(); // The run is over: start a new game next time.
