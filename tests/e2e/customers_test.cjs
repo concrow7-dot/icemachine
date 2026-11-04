@@ -22,12 +22,22 @@ const { chromium } = require('playwright');
 
   // ---- The chance formula (PO, November 2) ----
   await page.click('canvas'); await press('Enter'); await wait(200);
-  const chance = (h, l, indoors) => ev(`Math.round(e.residents.constructor.chance(${h}, ${l}, ${indoors}) * 10000) / 10000`);
-  check('First second heard: 25%, the most likely moment (likelihood 100%, outside)', await chance(1, 1, false), 0.25);
-  const c = []; for (const h of [1, 2, 3, 6, 12, 30, 120]) c.push(await chance(h, 1, false));
+  const chance = (h, l, indoors, regular = false) => ev(`Math.round(e.residents.constructor.chance(${h}, ${l}, ${indoors}, ${regular}) * 10000) / 10000`);
+  // SCREAM-152 (PO, November 3): 10% in the first second (was 25%), falling toward 3% (was 5%).
+  check('First second heard: 10%, the most likely moment (likelihood 100%, outside)', await chance(1, 1, false), 0.1);
+  const c = []; for (const h of [1, 2, 3, 6, 12, 20, 30]) c.push(await chance(h, 1, false));
   check('The chance falls each second after that', c.every((x, i) => i === 0 || x < c[i - 1]), true);
   check('...by less each second (diminishing)', (c[0] - c[1]) > (c[1] - c[2]), true);
-  check('...toward 5%, never below it', c[6] >= 0.05 && c[6] < 0.051, true);
+  check('...toward 3%, never below it while they still might come', c[6] >= 0.03 && c[6] < 0.036, true);
+  check('SCREAM-152: after 30 seconds heard, nobody new comes out', [await chance(31, 1, false), await chance(31, 1, false, true), await chance(120, 1, true)].join(), '0,0,0');
+  check('SCREAM-152: regulars are steady, 35% times their likelihood', [await chance(1, 0.8, false, true), await chance(25, 0.8, false, true)].join(), '0.28,0.28');
+  check('...and halved indoors', await chance(5, 0.8, true, true), 0.14);
+  const decided = await ev(`(() => { const R = e.residents.constructor; const some = e.residents.all.map(p => p.resident).filter(r => R.kind(r.likelihood) === 'sometimes').slice(0, 30);
+    const r = new R(some.map(q => ({ ...q, likelihood: 0.000001 })), Math.random, undefined, { day: 1, seed: 1 }); const d = r.all.find(p => p.buys); if (!d) return 'none';
+    const ring = { x: d.resident.door[0], y: d.resident.door[1], radius: 300, open: true }; for (let t = 0; t < 40; t++) r.update(1, ring);
+    const far = { x: -1e6, y: -1e6, radius: 1, open: true }; for (let t = 0; t < 5; t++) r.update(1, far);
+    return [d.decided, R.chance(1, 1, false) > 0].join(); })()`);
+  check('SCREAM-152: someone who heard it 30 s without coming stays decided all evening', decided, 'true,true');
   // The chance they've come out after hearing it for n seconds in a row: 1 minus the chance they said no every second.
   const comeOut = await ev('(() => { const f = e.residents.constructor.chance; const out = n => { let stay = 1; for (let h = 1; h <= n; h++) stay *= 1 - f(h, 1, false); return 1 - stay; }; return [out(1), out(5), out(15)]; })()');
   check('Overall, the longer they hear it, the more likely they come out', comeOut[0] < comeOut[1] && comeOut[1] < comeOut[2], true);
@@ -75,9 +85,11 @@ const { chromium } = require('playwright');
     }
     // SCREAM-148: only people who'd buy tonight count.
     const inRing = r.all.filter(p => p.buys).map(p => p.resident).filter(q => Math.hypot(q.door[0] - ring.x, q.door[1] - ring.y) < 250).length;
-    return { became, inRing, outsideRing, backToNone, gaveUp, late, atCurb };
+    const regulars = r.all.filter(p => p.buys && R.kind(p.resident.likelihood) === "regular" && Math.hypot(p.resident.door[0] - ring.x, p.resident.door[1] - ring.y) < 250).length;
+    return { became, inRing, outsideRing, backToNone, gaveUp, late, atCurb, regulars };
   })()`);
-  check('Parked 10 minutes: people near the truck come out for ice cream', sim.became >= Math.min(5, sim.inRing), true);
+  // SCREAM-152: regulars nearby come out; the spot then dries up, so not everyone does.
+  check('Parked 10 minutes: the regulars nearby come out for ice cream', sim.became >= sim.regulars && sim.became > 0, true);
   check('...only people who could hear it', sim.outsideRing, 0);
   check('...nobody is a customer twice in one evening', sim.backToNone, 0);
   check('...waiting customers stand at their curb spot', sim.atCurb, true);

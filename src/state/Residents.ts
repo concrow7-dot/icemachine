@@ -16,6 +16,8 @@ import {
   CUSTOMER_CHANCE_FIRST,
   CUSTOMER_CHANCE_FLOOR,
   CUSTOMER_CHANCE_SETTLE_SECONDS,
+  CUSTOMER_DECIDE_SECONDS,
+  CUSTOMER_REGULAR_CHANCE,
   CUSTOMER_INDOORS_FACTOR,
   CUSTOMER_FOLLOW_AGAIN,
   CUSTOMER_QUEUE_GAP,
@@ -27,9 +29,9 @@ import {
   RESIDENT_OUTSIDE_SECONDS,
   RESIDENT_START_OUTSIDE_CHANCE,
   RESIDENT_WALK_SPEED,
-  SOMETIMES_INSIDE_SECONDS,
-  SOMETIMES_OUTSIDE_SECONDS,
-  SOMETIMES_START_OUTSIDE_CHANCE,
+  BUYERS_INSIDE_SECONDS,
+  BUYERS_OUTSIDE_SECONDS,
+  BUYERS_START_OUTSIDE_CHANCE,
 } from '../config/tuning';
 import type { CurbFinder } from './CurbFinder';
 
@@ -159,6 +161,8 @@ interface Running extends ResidentNow {
   patience: number;
   /** SCREAM-142: where their pink square will be, once they've picked a spot by the truck. */
   waitAt?: [number, number, number];
+  /** SCREAM-152: heard the truck CUSTOMER_DECIDE_SECONDS without coming out: not tonight. */
+  decided?: boolean;
   /** SCREAM-142: true for customers who follow the truck (not the test hook's, who stay at their curb). */
   follows?: boolean;
 }
@@ -170,21 +174,26 @@ const between = (rnd: () => number, [low, high]: readonly [number, number]) => l
  * a row wants ice cream (PO, November 2): highest the moment they hear it, then falling,
  * each second by less than the last, from CUSTOMER_CHANCE_FIRST toward CUSTOMER_CHANCE_FLOOR.
  * Then times their likelihood from the sheet, and halved while they're indoors.
+ * SCREAM-152: regulars have a steady CUSTOMER_REGULAR_CHANCE instead of the falling one, and
+ * after CUSTOMER_DECIDE_SECONDS of hearing it, nobody comes out (they've made up their mind).
  */
-export function customerChance(heard: number, likelihood: number, indoors: boolean): number {
+export function customerChance(heard: number, likelihood: number, indoors: boolean, regular = false): number {
+  if (heard > CUSTOMER_DECIDE_SECONDS) return 0;
+  const indoorsFactor = indoors ? CUSTOMER_INDOORS_FACTOR : 1;
+  if (regular) return CUSTOMER_REGULAR_CHANCE * likelihood * indoorsFactor;
   const settled = 1 - Math.exp(-Math.max(0, heard - 1) / CUSTOMER_CHANCE_SETTLE_SECONDS);
   const base = CUSTOMER_CHANCE_FIRST - (CUSTOMER_CHANCE_FIRST - CUSTOMER_CHANCE_FLOOR) * settled;
-  return base * likelihood * (indoors ? CUSTOMER_INDOORS_FACTOR : 1);
+  return base * likelihood * indoorsFactor;
 }
 
-/** SCREAM-148 (PO, November 3): sometimes buyers are outside about 3/4 of the time; everyone else as before. */
+/** SCREAM-148 / 152 (PO, November 3): sometimes buyers and regulars are outside about 3/4 of the time; never buyers as before. */
 function routineFor(resident: Resident): {
   startOutside: number;
   outside: readonly [number, number];
   inside: readonly [number, number];
 } {
-  return buyerKind(resident.likelihood) === 'sometimes'
-    ? { startOutside: SOMETIMES_START_OUTSIDE_CHANCE, outside: SOMETIMES_OUTSIDE_SECONDS, inside: SOMETIMES_INSIDE_SECONDS }
+  return buyerKind(resident.likelihood) !== 'never'
+    ? { startOutside: BUYERS_START_OUTSIDE_CHANCE, outside: BUYERS_OUTSIDE_SECONDS, inside: BUYERS_INSIDE_SECONDS }
     : { startOutside: RESIDENT_START_OUTSIDE_CHANCE, outside: RESIDENT_OUTSIDE_SECONDS, inside: RESIDENT_INSIDE_SECONDS };
 }
 
@@ -325,8 +334,10 @@ export class Residents {
       const inRing = !!ring && Math.hypot(x - ring.x, y - ring.y) <= ring.radius;
       // Seconds heard are counted in a row, so someone who hears the truck again later gets a fresh first-second chance.
       p.heard = inRing ? p.heard + 1 : 0;
-      if (!inRing || !ring?.open || this.hearingOff || !p.buys) continue;
-      if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors)) this.wantIceCream(p);
+      if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
+      const regular = buyerKind(p.resident.likelihood) === 'regular';
+      if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors, regular)) this.wantIceCream(p);
+      else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
   }
 

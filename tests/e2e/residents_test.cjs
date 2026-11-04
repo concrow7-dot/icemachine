@@ -60,11 +60,11 @@ const { chromium } = require('playwright');
     return [off.length > 0, off.every(p => p.customer === 'none'), r.all.some(p => p.customer !== 'none')].join(); })()`);
   check("Two minutes in the ring: people who don't buy tonight never come; others do", nobuy, 'true,true,true');
 
-  // Start of the evening: regulars and never buyers half out, sometimes buyers 3/4 out (about 100 of 160)
+  // Start of the evening (SCREAM-152): never buyers half out, everyone else 3/4 out (about 110 of 160)
   const out0 = await ev('e.residents.all.filter(p => p.outside).length');
-  check('About 60% start outside (75 to 125)', out0 >= 75 && out0 <= 125, true);
-  const someOut = await ev(`(() => { const R = e.residents.constructor; let o = 0, n = 0; for (let k = 0; k < 10; k++) { const r = new R(e.residents.all.map(p => p.resident)); for (let t = 0; t < 1200; t++) r.update(0.5); r.all.forEach(p => { if (R.kind(p.resident.likelihood) === 'sometimes') { n++; if (p.outside) o++; } }); } return o / n; })()`);
-  check('Sometimes buyers are outside about 3/4 of the time (65% to 88%)', someOut > 0.65 && someOut < 0.88, true);
+  check('About 70% start outside (85 to 135)', out0 >= 85 && out0 <= 135, true);
+  const someOut = await ev(`(() => { const R = e.residents.constructor; let o = 0, n = 0; for (let k = 0; k < 10; k++) { const r = new R(e.residents.all.map(p => p.resident)); for (let t = 0; t < 1200; t++) r.update(0.5); r.all.forEach(p => { if (R.kind(p.resident.likelihood) !== 'never') { n++; if (p.outside) o++; } }); } return o / n; })()`);
+  check('Regulars and sometimes buyers are outside about 3/4 of the time (65% to 88%)', someOut > 0.65 && someOut < 0.88, true);
 
   // The sprite sheet: 160 looks, two rows each of 24 frames, 16 x 32 px
   check('Sprite sheet frames are 16 x 32', await drive("[s.textures.get('residents').get(0).width, s.textures.get('residents').get(0).height].join('x')"), '16x32');

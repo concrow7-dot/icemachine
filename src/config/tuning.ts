@@ -191,10 +191,13 @@ export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 export const BUYER_REGULAR_FROM = 0.5;
 /** PO: a "sometimes" buyer buys on 1 day in this many. Story picks the day; Quick play rolls 1 in this many. */
 export const BUYER_SOMETIMES_DAYS = 3;
-/** PO: sometimes buyers are outside more, about 3/4 of the time. These three are engineering's numbers for that. */
-export const SOMETIMES_START_OUTSIDE_CHANCE = 0.75;
-export const SOMETIMES_OUTSIDE_SECONDS: readonly [number, number] = [40, 100];
-export const SOMETIMES_INSIDE_SECONDS: readonly [number, number] = [10, 30];
+/**
+ * PO: sometimes buyers are outside more, about 3/4 of the time; SCREAM-152: regulars too, so
+ * players get to know them. Never buyers keep the old routine. Engineering's numbers.
+ */
+export const BUYERS_START_OUTSIDE_CHANCE = 0.75;
+export const BUYERS_OUTSIDE_SECONDS: readonly [number, number] = [40, 100];
+export const BUYERS_INSIDE_SECONDS: readonly [number, number] = [10, 30];
 
 // ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 14) ----
 
@@ -211,9 +214,24 @@ export const MUSIC_RING_RADIUS = 300;
  * more likely they've come out. Engineering's numbers. Then multiplied by the
  * resident's likelihood from the residents sheet (doc 15).
  */
-export const CUSTOMER_CHANCE_FIRST = 0.25;
-export const CUSTOMER_CHANCE_FLOOR = 0.05;
+// SCREAM-152 (PO, November 3): fewer customers per stop, to encourage exploring. Was 0.25 and 0.05.
+export const CUSTOMER_CHANCE_FIRST = 0.1;
+export const CUSTOMER_CHANCE_FLOOR = 0.03;
 export const CUSTOMER_CHANCE_SETTLE_SECONDS = 6;
+
+/**
+ * SCREAM-152 (PO, November 3): after hearing the truck this many seconds without coming out,
+ * someone has made up their mind: nobody new comes out after that. Engineering's call: it
+ * holds for the rest of the evening, so parking in one spot dries up and you have to move on.
+ */
+export const CUSTOMER_DECIDE_SECONDS = 30;
+
+/**
+ * SCREAM-152 (PO, November 3): regulars come out reliably and quickly. Each second they hear
+ * the truck, this times their likelihood (steady, not falling). Engineering's number: a 75%
+ * regular outside comes out within 5 seconds about 3 times in 4.
+ */
+export const CUSTOMER_REGULAR_CHANCE = 0.35;
 
 /** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
 export const CUSTOMER_INDOORS_FACTOR = 0.5;

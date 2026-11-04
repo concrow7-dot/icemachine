@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 034 — Fewer customers per stop; regulars you get to know (2026-11-03)
+
+**Decision (Jira SCREAM-152, under SCREAM-148, PO, November 3):** the chance someone comes out when they first hear the truck drops from 25% to 10% a second (falling toward 3%, was 5%). After about 30 seconds of hearing it without coming out, nobody new comes out. Regulars come out reliably and quickly, and are outside in their yard more (about 3/4 of the time, like the one-in-3 buyers).
+
+**Why (product owner's rationale):** to encourage more exploration. He wants people who play many times to notice the same people, so meeting someone new is an exciting moment, and to get to know the regulars, so that over several days they learn where those people are.
+
+**Options considered:** only lowering the first-second chance (engineering pointed out that alone rewards parking: everyone still comes out eventually); letting the chance keep getting lower instead of stopping at 30 seconds (PO chose stopping). Also approved, for later: a "New customer!" moment and a count of people met across games (added to SCREAM-102), and regulars' routines (SCREAM-84).
+
+**Engineering's calls (proposals):** once someone has heard the truck for 30 seconds without coming out, they've decided for the rest of the evening, even if the truck leaves and comes back (`CUSTOMER_DECIDE_SECONDS`), so a parked spot dries up; regulars' chance is a steady 35% a second times their likelihood (`CUSTOMER_REGULAR_CHANCE`; a 75% regular outside comes out within 5 seconds about 3 times in 4), still halved indoors; never buyers keep the old in-and-out routine.
+
 ## 033 — Fewer customers: regulars, sometimes buyers and never buyers (2026-11-03)
 
 **Decision (Jira SCREAM-148, PO, November 3):** residents come in three kinds. 25% are every-day regulars, more likely to buy than before; 50% buy on only 1 day in 3; 25% never buy. The 1-in-3 people are outside more, about 3/4 of the time. In Story, each 1-in-3 person buys on exactly one of the three days; in Quick play they have a 1-in-3 chance that evening. The kind comes from the Likelihood (%) in the residents sheet (sheet 15), not a new column: 0% never buys, under 50% buys 1 day in 3, 50% and up every day.
