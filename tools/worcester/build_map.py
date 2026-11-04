@@ -62,6 +62,7 @@ TUTORIAL = {
     'home_road': 'Westland Street',
     'stations': [{'name': 'Park Avenue', 'road': 'Park Avenue', 'near_ll': (42.27085, -71.81590)}],
     'curb': 10, 'holes': 4, 'cars': 10, 'extra_cars': 8, 'tree_tries': 3000,
+    'extras': True,  # SCREAM-52
     'export': 'TUTORIAL',
     'header': ['// SCREAM-146: the tutorial map: Institute Rd, Highland St, Haviland St and Park Ave in',
                '// Worcester, MA. Street data (c) OpenStreetMap contributors (ODbL). Art: LimeZu.'],
@@ -74,6 +75,7 @@ STATIONS = [
     # PO (November 2, SCREAM-109): a second one on the west side, also on a main road and away from home.
     {'name': 'June Street', 'road': 'June Street', 'near': (1805.0, 2322.0)},
 ]
+EXTRAS = False  # SCREAM-52: lamps, fences, gardens, court, playground, Park Ave shops (tutorial map)
 COUNTS = {'curb': 34, 'holes': 14, 'cars': 40, 'extra_cars': 40, 'tree_tries': 9000}
 EXPORT = 'WORCESTER'
 HEADER = ['// SCREAM-10: the streets around June St, Pleasant St, Park Ave and Chandler St in',
@@ -83,13 +85,14 @@ HEADER = ['// SCREAM-10: the streets around June St, Pleasant St, Park Ave and C
 def use_area(a):
     """Switch every setting above to another map's."""
     global OSM_JSON, OUT_TS, OUT_ART, OUT_ROADS, LAT_MAX, LON_MIN, CORNERS, ROTARY, BOUNDARY, BOUNDARY_ENDS
-    global LEAVE_OUT, HOME_ROAD, STATIONS, COUNTS, EXPORT, HEADER
+    global LEAVE_OUT, HOME_ROAD, STATIONS, COUNTS, EXPORT, HEADER, EXTRAS
     OSM_JSON, OUT_TS, OUT_ART, OUT_ROADS = a['osm_json'], a['out_ts'], a['out_art'], a['out_roads']
     LAT_MAX, LON_MIN, CORNERS = a['lat_max'], a['lon_min'], a['corners']
     ROTARY = (0.0, 0.0)  # no rotary: far off the map
     BOUNDARY_ENDS = a['boundary_ends']; BOUNDARY = set(BOUNDARY_ENDS)
     LEAVE_OUT, HOME_ROAD, STATIONS = a['leave_out'], a['home_road'], a['stations']
     COUNTS = {k: a[k] for k in COUNTS}; EXPORT, HEADER = a['export'], a['header']
+    EXTRAS = a.get('extras', False)
 
 
 # ---- Scale ----
@@ -676,8 +679,251 @@ def build(art):
         if any(math.dist(c, (q['x'], q['y'])) < 140 for q in cars): continue
         cars.append({'x': r1(c[0]), 'y': r1(c[1]), 'angle': angle(t)}); added_cars += 1
 
+    # 11. SCREAM-52 (PO, November 4): a neighbourhood that looks like one place, on the tutorial
+    # map only. Matching street lamps along every street; white picket fences round about a
+    # quarter of the houses; a few vegetable and flower gardens; a basketball court; a playground;
+    # and six businesses on Park Avenue. Its own random numbers, added after everything above.
+    signs, extra_sprites = [], []
+    if EXTRAS:
+        xr = random.Random(52)
+        from collections import Counter
+
+        def load48(name):
+            return Image.open(os.path.join(art, art_file(name))).convert('RGBA')
+
+        def shrink(im):
+            return im.resize((im.width // 3, im.height // 3), Image.NEAREST)
+
+        def save_sprite(im, key):
+            im = im.crop(im.getbbox())
+            im.save(os.path.join(OUT_ART, key + '.png'), optimize=True)
+            sp = {'key': key, 'w': im.width, 'h': im.height}
+            extra_sprites.append(sp); size[key] = sp
+            return sp
+
+        def blank_sign(im, box):
+            """Paints over a shop sign's lettering with the sign's own colour (our names go on top in the game)."""
+            px = im.load(); x0, y0, x1, y1 = box
+            c = Counter(px[x, y] for x in range(x0, x1) for y in range(y0, y1)).most_common(1)[0][0]
+            for x in range(x0, x1):
+                for y in range(y0, y1):
+                    p = px[x, y]
+                    if sum(abs(p[i] - c[i]) for i in range(3)) > 40: px[x, y] = c
+            return im
+
+        def blocked(rr, gap=4):
+            """Overlaps a house, shop, fence, playground, court, garden or the gas stations."""
+            if any(overlaps(rr, rect(o), gap) for o in objects if not o['key'].startswith(('tree', 'orn_', 'lamp'))): return True
+            return any(overlaps(rr, (g['pad']['x'] - 110, g['pad']['y'] - 110, g['pad']['x'] + 110, g['pad']['y'] + 110)) for g in gas_stations)
+
+        def clear_site(rr):
+            """Trees and ornaments standing where something new goes come out."""
+            objects[:] = [o for o in objects if not (o['key'].startswith(('tree', 'orn_')) and overlaps(tree_rect(o) if o['key'].startswith('tree') else rect(o), rr, 2))]
+
+        def put_obj(key, cx, bottom):
+            objects.append({'key': key, 'x': r1(cx), 'y': r1(bottom)})
+
+        # -- Businesses on Park Avenue (PO's list). Shop fronts from LimeZu's modular buildings with
+        #    the sign's lettering painted out, under a roof; restaurants get a striped awning.
+        F = 'ME_Singles_Floor_Modular_Building_'
+        BAKERY_SIGN, SHOP_SIGN = (98, 84, 240, 120), (104, 10, 232, 36)
+        SHOPS = [  # name, front, sign box (48 px), roof, awning, sign colour, props in front
+            ('Bagel Time', F + 'Ground_Floor_Bakery_1', BAKERY_SIGN, F + 'Roof_2', None, '#7a3b12', []),
+            ('Dippin Donuts', F + 'Ground_Floor_Bakery_5', BAKERY_SIGN, F + 'Roof_4', None, '#c2185b', []),
+            ('UPS Store', F + 'Ground_Floor_Shop_27', SHOP_SIGN, F + 'Roof_5', None, '#4e3524', []),
+            ('Fancy Florist', F + 'Ground_Floor_Shop_13', SHOP_SIGN, F + 'Roof_6', None, '#2e7d32',
+             ['ME_Singles_Garden_Medium_Pink_Flower_Vase', 'ME_Singles_Garden_Medium_Sunflower_Vase', 'ME_Singles_Garden_Medium_Red_Flower_Vase']),
+            ('The Boynton', F + 'Ground_Floor_Shop_5', SHOP_SIGN, F + 'Roof_8', 'ME_Singles_Generic_Building_Shop_Tent_2', '#1a237e',
+             ['24_Additional_Houses_Modern_House_Tiny_Table_With_Drinks_1', '24_Additional_Houses_Modern_House_Tiny_Table_With_Drinks_3']),
+            ('Thai Time', F + 'Ground_Floor_Shop_29', SHOP_SIGN, F + 'Roof_9', 'ME_Singles_Generic_Building_Shop_Tent_1', '#b71c1c',
+             ['24_Additional_Houses_Modern_House_Tiny_Table_With_Drinks_2']),
+        ]
+        shop_sps = []
+        for i, (name, front, sbox, roof, tent, colour, props) in enumerate(SHOPS):
+            fr = blank_sign(load48(front), sbox)
+            fr = fr.crop(fr.getbbox())
+            ro = load48(roof); ro = ro.crop(ro.getbbox())
+            ro = ro.crop((0, ro.height - 132, ro.width, ro.height))  # just the front of the roof, so shops stand about as tall as houses
+            # The roof sits on the front wall: a bakery's wall starts under its bread and sign.
+            wall_top = 57 if sbox == BAKERY_SIGN else 6
+            fy = max(0, ro.height - wall_top - 3)
+            im = Image.new('RGBA', (max(fr.width, ro.width), fy + fr.height))
+            im.alpha_composite(ro, ((im.width - ro.width) // 2, fy + wall_top + 3 - ro.height))
+            im.alpha_composite(fr, ((im.width - fr.width) // 2, fy))
+            if tent:
+                tn = load48(tent); tn = tn.crop(tn.getbbox())
+                tn = tn.crop((0, 0, tn.width, tn.height * 3 // 5))  # the top of the awning, over the window
+                im.alpha_composite(tn, (24, fy + sbox[3] + 4))
+            # Where the sign's middle is, from the sprite's bottom middle (at 16 px).
+            sign_dy = (im.height - fy - (sbox[1] + sbox[3]) / 2 + (Image.open(os.path.join(art, art_file(front))).getbbox()[1])) / 3
+            sp = save_sprite(shrink(im), f'shop_{i + 1}')
+            prop_sps = [save_sprite(shrink(load48(p)), 'orn_' + re.sub(r'^(ME_Singles_|24_Additional_Houses_)', '', p).lower()) for p in props]
+            shop_sps.append((name, sp, round(sign_dy, 1), colour, prop_sps))
+
+        park = [(a, b) for n, pts in pieces if n == 'Park Avenue' for a, b in zip(pts, pts[1:])]
+        houses_before = [dict(o) for o in objects if o['key'].startswith(('house', 'villa')) and o is not home_obj]
+        placed_shops = []
+        def park_dist(q):
+            return min(seg_dist(q, a, b) for a, b in park)
+        x0 = min(min(a[0], b[0]) for a, b in park) - 300; x1 = max(max(a[0], b[0]) for a, b in park) + 300
+        y0 = min(min(a[1], b[1]) for a, b in park) - 300; y1 = max(max(a[1], b[1]) for a, b in park) + 300
+        for name, sp, sign_dy, colour, prop_sps in shop_sps:
+            best = None
+            for bottom in range(int(y0), int(y1), 8):
+                for cx in range(int(x0), int(x1), 8):
+                    rr = (cx - sp['w'] / 2, bottom - sp['h'], cx + sp['w'] / 2, bottom)
+                    # Close to Park Ave: its front (the bottom edge, with the door) just above the avenue.
+                    front = (cx, bottom + 6)
+                    df = park_dist(front)
+                    above = df <= edge + 90 and roads.dist(front) >= df - 1 and any(seg_dist((cx, bottom + 60), a, b) < df for a, b in park)
+                    if not above: continue  # the front, with its door and sign, faces the avenue
+                    if not all(inside(poly, q) for q in ((rr[0], rr[1]), (rr[2], rr[1]), (rr[0], rr[3]), (rr[2], rr[3]))): continue
+                    if not lawn_ok(rr[0] - 4, rr[1] - 4, rr[2] + 4, rr[3] + 4): continue
+                    if any(overlaps(rr, q, 10) for q in placed_shops): continue
+                    if any(overlaps(rr, (g['pad']['x'] - 110, g['pad']['y'] - 110, g['pad']['x'] + 110, g['pad']['y'] + 110)) for g in gas_stations): continue
+                    if home_obj and overlaps(rr, rect(home_obj), 10): continue
+                    # The first at the north end; the rest next to the one before, like a row of shops.
+                    score = (bottom if not placed_shops else math.dist((cx, bottom), ((placed_shops[-1][0] + placed_shops[-1][2]) / 2, placed_shops[-1][3]))) + (0 if above else 400)
+                    if best is None or score < best[0]: best = (score, cx, bottom, rr)
+            if best is None: sys.exit(f'no room on Park Avenue for {name}')
+            _, cx, bottom, rr = best
+            placed_shops.append(rr)
+            # Houses on the lot come down (their residents move: see the residents sheet); trees too.
+            objects[:] = [o for o in objects if not (o['key'].startswith(('house', 'villa')) and o is not home_obj and overlaps(rect(o), rr, 6))]
+            clear_site((rr[0] - 6, rr[1] - 6, rr[2] + 6, rr[3] + 30))
+            put_obj(sp['key'], cx, bottom)
+            signs.append({'text': name, 'x': r1(cx), 'y': r1(bottom - sign_dy), 'colour': colour})
+            for j, ps in enumerate(prop_sps):
+                px_ = cx - sp['w'] / 2 + 14 + j * (sp['w'] - 28) / max(1, len(prop_sps) - 1) if len(prop_sps) > 1 else cx - sp['w'] / 2 + 16
+                if lawn_ok(px_ - ps['w'] / 2, bottom + 2, px_ + ps['w'] / 2, bottom + 4 + ps['h']):
+                    put_obj(ps['key'], px_, bottom + 4 + ps['h'])
+        house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+
+        # -- The basketball court and the playground: on open lawn near a street, trees cleared.
+        court = save_sprite(shrink(load48('ME_Singles_School_Basketball_Court_6')), 'court_basketball')
+        pg = Image.new('RGBA', (600, 420))
+        from PIL import ImageDraw
+        pd = ImageDraw.Draw(pg)
+        pd.rounded_rectangle((6, 6, 594, 414), 36, fill=(214, 182, 128, 255), outline=(150, 112, 70, 255), width=9)
+        for y in range(30, 400, 21):
+            for x in range(30 + (y % 42), 580, 42): pd.point((x, y), fill=(190, 156, 104, 255))
+        for name, at in (('ME_Singles_School_School_Yard_Toy_12', (24, 18)), ('ME_Singles_School_School_Yard_Toy_1', (300, 30)),
+                         ('ME_Singles_School_School_Yard_Toy_3', (468, 36)), ('ME_Singles_Villas_Villa_Yard_Toy_Rocking_1', (288, 270)),
+                         ('ME_Singles_Villas_Villa_Yard_Toy_Rocking_7', (468, 282)), ('ME_Singles_Villas_Villa_Yard_Toy_Sand_Box_1', (36, 300))):
+            t_im = load48(name); pg.alpha_composite(t_im, at)
+        play = save_sprite(shrink(pg), 'play_ground')
+
+        def open_lawn(sp, pad=10):
+            best = None
+            for y in range(sp['h'] + 20, H - 20, 16):
+                for x in range(sp['w'] // 2 + 20, W - sp['w'] // 2 - 20, 16):
+                    rr = (x - sp['w'] / 2, y - sp['h'], x + sp['w'] / 2, y)
+                    near = roads.dist((x, y - sp['h'] / 2))
+                    if near > edge + max(sp['w'], sp['h']) / 2 + 70: continue
+                    if not lawn_ok(rr[0] - pad, rr[1] - pad, rr[2] + pad, rr[3] + pad) or blocked(rr, 12): continue
+                    if home_obj and overlaps(rr, rect(home_obj), 30): continue
+                    score = math.dist((x, y), (W / 2, H / 2))
+                    if best is None or score < best[0]: best = (score, x, y, rr)
+            return best
+        for sp in (court, play):
+            spot = open_lawn(sp)
+            if spot is None: sys.exit(f"no open lawn for {sp['key']}")
+            _, x, y, rr = spot
+            clear_site((rr[0] - 6, rr[1] - 20, rr[2] + 6, rr[3] + 6))
+            put_obj(sp['key'], x, y)
+
+        # -- Fences: white pickets round the back and sides of about a quarter of the houses,
+        #    never across the front (doors are on the bottom wall, so only houses with the road below
+        #    or beside them; a beside-the-road house gets its back and top fenced).
+        fp = {k: save_sprite(shrink(load48(f'24_Additional_Houses_Fence_1_{k}')), f'fence_{k.lower()}')
+              for k in ('Top_Left', 'Top_Middle', 'Top_Right', 'Middle_Left', 'Middle_Right')}
+        cand = [i for i in house_idx if objects[i] is not home_obj]
+        xr.shuffle(cand)
+        want, fenced = round(len(cand) / 4), 0
+        M = 14
+        for i in cand:
+            if fenced >= want: break
+            o = objects[i]; side = road_side(o)
+            if side == 'up': continue
+            l, t, r, b = rect(o)
+            L_, T_, R_ = l - M, t - M, r + M
+            pieces_ = []
+            xs = list(range(int(L_), int(R_) - 15, 16))
+            if not xs: continue
+            R_ = xs[-1] + 16
+            top_y = T_ + 16
+            for k, x in enumerate(xs):
+                key = 'Top_Left' if k == 0 and side != 'left' else 'Top_Right' if k == len(xs) - 1 and side != 'right' else 'Top_Middle'
+                pieces_.append((key, x + 8, top_y))
+            for y in range(int(top_y) + 16, int(b) + 1, 16):
+                if side != 'left': pieces_.append(('Middle_Left', L_ + 8, y))
+                if side != 'right': pieces_.append(('Middle_Right', R_ - 8, y))
+            def piece_rect(p): return (p[1] - 8, p[2] - 16, p[1] + 8, p[2])
+            if any(not lawn_ok(*piece_rect(p)) for p in pieces_): continue
+            others_ = [rect(q) for q in objects if q is not o and not q['key'].startswith(('tree', 'orn_'))]
+            if any(overlaps(piece_rect(p), q, 3) for p in pieces_ for q in others_): continue
+            objects[:] = [q for q in objects if not (q['key'].startswith('tree') and any(overlaps(tree_rect(q), piece_rect(p), 1) for p in pieces_))
+                          and not (q['key'].startswith('orn_') and any(overlaps(rect(q), piece_rect(p), 1) for p in pieces_))]
+            for key, x, y in pieces_: put_obj(fp[key]['key'], x, y)
+            fenced += 1
+        house_idx = [i for i, o in enumerate(objects) if o['key'].startswith(('house', 'villa'))]
+
+        # -- Gardens: a bed of sprouts and flowers beside a few houses.
+        sprouts = [shrink(load48(f'ME_Singles_Garden_Small_{n}')) for n in ('Sprout_1', 'Sunflower', 'Red_Flower', 'Sprout_4', 'Yellow_Flower', 'Pink_Flower')]
+        beds = []
+        for v in range(3):
+            bed = Image.new('RGBA', (52, 34))
+            bd = ImageDraw.Draw(bed)
+            bd.rectangle((0, 6, 51, 33), fill=(112, 76, 48, 255), outline=(78, 52, 32, 255))
+            for row in range(3):
+                bd.line((3, 13 + row * 8, 48, 13 + row * 8), fill=(92, 62, 38, 255))
+                for c in range(4):
+                    s_im = sprouts[(v * 3 + row * 4 + c) % len(sprouts)]
+                    bed.alpha_composite(s_im.crop(s_im.getbbox()).resize((10, 10), Image.NEAREST), (3 + c * 12, 4 + row * 8))
+            beds.append(save_sprite(bed, f'orn_garden_bed_{v + 1}'))
+        made = 0
+        for i in xr.sample(cand, len(cand)):
+            if made >= 6: break
+            o = objects[i]
+            if o not in objects or road_side(o) == 'up': continue
+            l, t, r, b = rect(o)
+            for gx in (r + 10 + 26, l - 10 - 26):
+                sp = beds[made % 3]
+                rr = (gx - sp['w'] / 2, b - sp['h'] - 6, gx + sp['w'] / 2, b - 6)
+                if lawn_ok(*rr) and not blocked(rr, 6) and not any(overlaps(rr, rect(q), 2) for q in objects if q['key'].startswith('orn_')):
+                    clear_site(rr); put_obj(sp['key'], gx, b - 6); made += 1; break
+
+        # -- Street lamps: one design, every 300 px along every street, both sides, staggered;
+        #    on the grass just past the sidewalk, away from junctions, home's driveway and the pumps.
+        lamp = save_sprite(shrink(load48('ME_Singles_City_Props_Street_Lamp_1')), 'lamp_street')
+        lamps = []
+        keep_away = [(home_start['x'], home_start['y'], 130)] + [(g['bay']['x'], g['bay']['y'], 150) for g in gas_stations]
+        for pi, (name, pts) in enumerate(pieces):
+            run = 0.0
+            for a, b in zip(pts, pts[1:]):
+                L = math.dist(a, b); t = ((b[0] - a[0]) / L, (b[1] - a[1]) / L)
+                d = (150 - run) % 300
+                while d < L:
+                    p = (a[0] + t[0] * d, a[1] + t[1] * d)
+                    side = 1 if int((run + d) // 300) % 2 == 0 else -1
+                    for sgn in (side, -side):
+                        n = (-t[1] * sgn, t[0] * sgn)
+                        base = (p[0] + n[0] * (edge + 8), p[1] + n[1] * (edge + 8))
+                        foot = (base[0] - 6, base[1] - 6, base[0] + 6, base[1])
+                        if roads.dist(base, skip_piece=pi) < edge + 40: continue
+                        if any(math.dist(base, (x, y)) < rr_ for x, y, rr_ in keep_away): continue
+                        if not lawn_ok(*foot) or any(overlaps(foot, rect(q), 3) for q in objects if not q['key'].startswith(('tree', 'lamp'))): continue
+                        if any(math.dist(base, q) < 120 for q in lamps): continue
+                        objects[:] = [q for q in objects if not (q['key'].startswith('tree') and overlaps(tree_rect(q), foot, 2))]
+                        put_obj(lamp['key'], base[0], base[1]); lamps.append(base); break
+                    d += 300
+                run += L
+        print(f'SCREAM-52: {len(placed_shops)} shops, {fenced} fenced houses, {made} gardens, {len(lamps)} lamps, '
+              f'{len(houses_before) - len([o for o in objects if o["key"].startswith(("house", "villa")) and o is not home_obj])} houses made way for shops')
+
     # One picture sheet (a texture atlas) for every house, tree and ornament, plus the gas pump:
     # 150-odd separate files made the first drive slow to load (SCREAM-108).
+    sprites_out = sprites_out + [sp for sp in extra_sprites if sp['key'] in {o['key'] for o in objects}]
     pack = [dict(sp) for sp in sprites_out]
     if os.path.exists(os.path.join(OUT_ART, 'pump.png')):
         pump_im = Image.open(os.path.join(OUT_ART, 'pump.png'))
@@ -698,13 +944,13 @@ def build(art):
     json.dump({'frames': frames, 'meta': {'image': 'atlas.png', 'size': {'w': ATLAS_W, 'h': atlas.height}, 'scale': '1'}},
               open(os.path.join(OUT_ART, 'atlas.json'), 'w'), separators=(',', ':'))
     for f in os.listdir(OUT_ART):
-        if f.endswith('.png') and f[:-4].startswith(('house', 'villa', 'tree', 'orn_')):
+        if f.endswith('.png') and f[:-4].startswith(('house', 'villa', 'tree', 'orn_', 'shop_', 'fence_', 'lamp_', 'court_', 'play_')):
             os.remove(os.path.join(OUT_ART, f))
 
     out = {
         'width': W, 'height': H,
         'roads': [{'name': n, 'points': [c for p in pts for c in p]} for n, pts in pieces],
-        'labels': labels, 'areas': areas, 'homeStart': home_start,
+        'labels': labels, 'areas': areas, 'homeStart': home_start, **({'signs': signs} if EXTRAS else {}),
         'home': home_obj, 'gasStations': gas_stations, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
         'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in sprites_out],
         'roadTiles': road_tiles, 'roadTileScale': RASTER,
