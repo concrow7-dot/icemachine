@@ -394,6 +394,13 @@ export class Residents {
         this.walkTo(p, [spot.stand], CUSTOMER_RUN_SPEED, 'curb');
         return;
       }
+      // SCREAM-150: no room for a pink square anywhere near the truck. Rather than stand in
+      // the street with no square, they go back to their own curb spot (it always has room)
+      // and wait there, without following the truck again.
+      p.waitAt = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
+      p.follows = false;
+      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], CUSTOMER_RUN_SPEED, 'curb');
+      return;
     }
     // Toward the truck, but not into it.
     const step = Math.min(CUSTOMER_RUN_SPEED * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
