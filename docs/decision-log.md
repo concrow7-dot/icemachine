@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 036 — A smaller tutorial map from real streets, and a guided tutorial (2026-11-04)
+
+**Decision (Jira SCREAM-146, under SCREAM-5, PO, November 4):** a second, smaller map for the tutorial, built from real Worcester streets just north of the main map: Institute Rd (north), Highland St (south, out to Dover St), Haviland St and the woods (west), with Park Ave through the middle and Germain, Westland, Lee and Russell St inside. Dover St is left out. Home is on Westland St; the one gas station is on Park Ave near Market 32. 40 residents, in their own sheet (doc 23, "Tutorial residents"), with the same columns and the same buyer mix as sheet 15. The two maps will be joined at one point later. The tutorial itself is guided: the player's uncle (who dropped a box of ice cream on his foot) helps stock the cooler and set prices, drives to the gas station, pulls over for a regular, walks the player through a sale, and explains filling up (the PO's "Tutorial and Story mode idea session" note). This changes the October 29 call (SCREAM-5) of mostly learning by doing. Story keeps the $200 bike; working for the uncle before summer ends is part of the story.
+
+**Why (product owner's rationale):** he knows this area well, and its streets run mostly left-right and up-down, so driving will be a little easier for a new player. On the guided tutorial: playtest feedback asked for more direction at the start; he wants to introduce mechanics without spelling them out, and that balance is something to keep trying to hold.
+
+**Options considered:** a made-up "starting island" map (the PO's "island" is just the usual game term for a small starting area); about 20 residents (PO chose 40).
+
+**Engineering's calls (proposals):** the first version is a Tutorial option at the bottom of the title menu that plays one Quick-play-style evening on the tutorial map, with its own top-5 scores; the uncle's script, tips (SCREAM-56) and moving on to the main map come in later tickets. The map uses the same build script as Worcester (`build_map.py build <art> tutorial`), so streets keep their real angles; residents' looks start at 201, so nobody looks like someone on the main map. Restart evening and Play again stay on the tutorial map; Quick play and Story always use Worcester.
+
 ## 035 — Customers are served only from the sidewalk, and can share a spot (2026-11-03)
 
 **Decision (Jira SCREAM-150 and SCREAM-156, PO, November 3):** customers may walk across streets, but the sales window only opens for a customer standing on the sidewalk. A customer who can't be served where they are keeps looking for a spot where they can be. Customers can stand at the same spot: someone arriving near a customer who's already waiting joins them, with one pink square for the spot, and they're served one after another.

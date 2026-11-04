@@ -1,4 +1,4 @@
-import { WORCESTER } from './worcester';
+import { currentMap } from './maps';
 
 // SCREAM-22 (PO, November 2): the Speedway on Park Avenue at Chandler Street.
 // SCREAM-109 (PO, November 2): a second station, on June Street on the west side.
@@ -6,7 +6,10 @@ import { WORCESTER } from './worcester';
 // a forecourt (it keeps its number in the residents sheet). Drawn as two of
 // LimeZu's charging stations side by side as pumps, on a forecourt with a GAS sign.
 
-export const GAS_STATIONS = WORCESTER.gasStations;
+/** The gas stations on the map being played (SCREAM-146: the tutorial map has one). */
+export function gasStations() {
+  return currentMap().data.gasStations;
+}
 
 /**
  * The picture sheet with every house, tree and ornament, and the gas pump

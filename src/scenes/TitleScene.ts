@@ -22,7 +22,8 @@ import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 // the bottom, again and again, with music notes trailing behind (engineering's
 // call: the truck plays music). The rest of the screen moved to make two lanes.
 
-type Mode = 'quick' | 'story' | 'continue';
+// SCREAM-146 (PO, November 4): Tutorial plays one evening on the smaller tutorial map.
+type Mode = 'quick' | 'story' | 'continue' | 'tutorial';
 
 /** SCREAM-107: the truck's two lanes, above the title and below the menu. */
 const LANE_TOP = 40;
@@ -70,10 +71,12 @@ export class TitleScene extends Phaser.Scene {
           { id: 'quick', label: 'Quick Play' },
           { id: 'continue', label: `Continue Story: Day ${save.day}, ${formatMoney(save.cashCents)}` },
           { id: 'story', label: 'New Story' },
+          { id: 'tutorial', label: 'Tutorial' },
         ]
       : [
           { id: 'quick', label: 'Quick Play' },
           { id: 'story', label: 'Story' },
+          { id: 'tutorial', label: 'Tutorial' },
         ];
 
     this.add
@@ -92,7 +95,7 @@ export class TitleScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const spacing = this.options.length > 2 ? 30 : 34;
+    const spacing = this.options.length > 3 ? 26 : this.options.length > 2 ? 30 : 34;
     this.modeTexts = this.options.map((m, i) =>
       this.add
         .text(width / 2, 345 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
@@ -148,7 +151,8 @@ export class TitleScene extends Phaser.Scene {
         this.starting = false; // The save vanished (storage cleared): stay on the title.
         this.scene.restart();
       }
-    } else startEvening(this);
+    } else if (id === 'tutorial') startEvening(this, 'tutorial');
+    else startEvening(this);
   }
 
   private openConfirm(): void {

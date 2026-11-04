@@ -26,8 +26,13 @@ const STORAGE_KEY = 'icemachine.highscores.v1';
  * SCREAM-18: Story mode has its own top 5 (score: cash at the end of the run),
  * separate from Quick play's (tonight's profit).
  */
-export type ScoreTable = 'quick' | 'story';
-const KEYS: Record<ScoreTable, string> = { quick: STORAGE_KEY, story: 'icemachine.highscores.story.v1' };
+/** SCREAM-146: the tutorial map keeps its own table, so its scores don't mix with Quick play's. */
+export type ScoreTable = 'quick' | 'story' | 'tutorial';
+const KEYS: Record<ScoreTable, string> = {
+  quick: STORAGE_KEY,
+  story: 'icemachine.highscores.story.v1',
+  tutorial: 'icemachine.highscores.tutorial.v1',
+};
 
 /** Reads the table. Storage can be missing or blocked (private windows), so failures give an empty table. */
 export function loadHighScores(table: ScoreTable = 'quick'): HighScore[] {

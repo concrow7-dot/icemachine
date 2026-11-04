@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import type { MapId } from './config/maps';
 import { EveningState } from './state/EveningState';
 import { StoryRun } from './state/StoryRun';
 import { clearStorySave, loadStory } from './state/StorySave';
@@ -35,10 +36,10 @@ const STATE_KEY = 'evening';
 /** SCREAM-19: the Story run in progress, or null in Quick play. */
 const STORY_KEY = 'story';
 
-/** Quick play: starts a brand-new evening from any screen, everything reset. */
-export function startEvening(from: Phaser.Scene): void {
+/** Quick play: starts a brand-new evening from any screen, everything reset. SCREAM-146: on either map. */
+export function startEvening(from: Phaser.Scene, map: MapId = 'worcester'): void {
   from.registry.set(STORY_KEY, null);
-  beginEvening(from, new EveningState());
+  beginEvening(from, new EveningState(undefined, map));
 }
 
 /** Story mode (SCREAM-19): starts a new run at day 1, replacing any save (SCREAM-17). */
@@ -66,7 +67,7 @@ export function startStoryEvening(from: Phaser.Scene): void {
 /** Restart evening (pause menu): Quick play starts fresh; Story goes back to how tonight started. */
 export function restartEvening(from: Phaser.Scene): void {
   if (getStory(from)) startStoryEvening(from);
-  else startEvening(from);
+  else startEvening(from, getEvening(from).mapId);
 }
 
 /** The Story run in progress, or null in Quick play. */

@@ -179,7 +179,7 @@ const { chromium } = require('playwright');
   check('After reloading the page the save is still there', /Continue Story: Day 2/.test(await texts('Title')), true);
 
   // ---- SCREAM-17: New story asks first ----
-  await press('ArrowUp'); await press('Enter'); await wait(200);
+  await press('ArrowDown', 2); await press('Enter'); await wait(200); // New Story (Tutorial, SCREAM-146, is now last)
   check('New story over a save: asks first', /Start a new story\?/.test(await texts('Title')) && (await scenes()) === 'Title', true);
   await page.screenshot({ path: outDir + '/story_new_confirm.png' });
   await press('Enter'); await wait(200);

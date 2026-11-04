@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { RESIDENT_FRAME } from '../config/residents';
-import { residentFrame, RESIDENTS_KEY } from './residentLook';
+import { residentFrame, residentsKey } from './residentLook';
 
 // SCREAM-110 (PO, November 2): the customer at the window, blown up from their
 // 16 x 32 px map sprite, looked blocky. Scale2x (also called EPX), run three
@@ -37,17 +37,18 @@ export function scale2x(src: Uint32Array, w: number, h: number): Uint32Array {
  * as frames 0 to 5. Made once per look and kept for the rest of the game.
  */
 export function smoothCustomerTexture(scene: Phaser.Scene, look: number): string {
-  const key = `customer-smooth-${look}`;
+  const sheetKey = residentsKey();
+  const key = `customer-smooth-${sheetKey}-${look}`;
   if (scene.textures.exists(key)) return key;
   const { width: fw, height: fh } = RESIDENT_FRAME;
-  const sheet = scene.textures.get(RESIDENTS_KEY);
+  const sheet = scene.textures.get(sheetKey);
   const source = sheet.getSourceImage() as CanvasImageSource;
   const small = document.createElement('canvas');
   small.width = fw;
   small.height = fh;
   const sctx = small.getContext('2d', { willReadFrequently: true });
   const big = scene.textures.createCanvas(key, fw * SMOOTH_FACTOR * 6, fh * SMOOTH_FACTOR);
-  if (!sctx || !big) return RESIDENTS_KEY;
+  if (!sctx || !big) return sheetKey;
   const bctx = big.getContext();
   for (let i = 0; i < 6; i++) {
     const f = sheet.get(residentFrame(look, false, 'down', i));

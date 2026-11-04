@@ -161,7 +161,7 @@ const { chromium } = require('playwright');
   // SCREAM-106: the person at the window is drawn in the same look they have on the map.
   // SCREAM-110: drawn from a smoothed, 8x copy of their own look's idle, facing-down frames.
   const shown = await page.evaluate(() => { const p = window.__game.scene.getScene('Sales').children.getByName('customer'); return p ? [p.texture.key, p.frame.width, p.frame.height] : null; });
-  check('...drawn in their own look from the map (SCREAM-106)', shown && shown[0], 'customer-smooth-' + (await ev('e.customer.resident.look')));
+  check('...drawn in their own look from the map (SCREAM-106)', shown && shown[0], 'customer-smooth-residents-' + (await ev('e.customer.resident.look')));
   check('...smoothed at 8x the map sprite (SCREAM-110)', shown && shown.slice(1).join('x'), '128x256');
   const same = await page.evaluate(() => {
     // The smoothed frame shrunk back down matches the map frame: same person, same colours.

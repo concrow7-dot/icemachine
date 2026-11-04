@@ -47,7 +47,7 @@ export class ResultsScene extends Phaser.Scene {
     addTruckBackdrop(this, DUSK_SHADE);
     const { width, height } = this.scale;
     const story = data?.story ? getStory(this) : null;
-    this.table = story ? 'story' : 'quick';
+    this.table = story ? 'story' : getEvening(this).mapId === 'tutorial' ? 'tutorial' : 'quick';
     this.initials = [0, 0, 0];
     this.cursor = 0;
     this.letterTexts = [];
@@ -206,7 +206,7 @@ export class ResultsScene extends Phaser.Scene {
         }
         return;
       }
-      if (event.key === 'Enter') startEvening(this);
+      if (event.key === 'Enter') startEvening(this, getEvening(this).mapId);
       if (event.key === 'Escape') this.scene.start(SceneKeys.Title);
       return;
     }
