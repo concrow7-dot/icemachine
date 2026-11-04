@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 035 — Customers are served only from the sidewalk, and can share a spot (2026-11-03)
+
+**Decision (Jira SCREAM-150 and SCREAM-156, PO, November 3):** customers may walk across streets, but the sales window only opens for a customer standing on the sidewalk. A customer who can't be served where they are keeps looking for a spot where they can be. Customers can stand at the same spot: someone arriving near a customer who's already waiting joins them, with one pink square for the spot, and they're served one after another.
+
+**Why (product owner's rationale):** he's fine with customers walking across streets, but they should only open the sales window while they're on the sidewalk. A customer he saw in the street had been walking to stand where another customer was; when that spot was blocked, they walked to the next open location, so letting customers stand at the same location should fix it. He agreed with merging the pink squares into one.
+
+**Engineering's calls (proposals):** up to 3 customers at one spot (`CUSTOMER_SPOT_MAX`), standing 12 px apart along the curb (`CUSTOMER_SIDE_BY_SIDE`); a waiting spot is at most 240 px from the truck (`CUSTOMER_SPOT_REACH`), so customers don't set off after the truck again and come back to the same spot in a loop; "on the sidewalk" means the spot and 4 px around it are off the road, as the residents build checks; anyone found waiting in the road starts looking again; if nothing near the truck has room, they wait at their own curb spot (always on the sidewalk, with room for a square). After a sale, the next person at the same spot is served without moving the truck.
+
 ## 034 — Fewer customers per stop; regulars you get to know (2026-11-03)
 
 **Decision (Jira SCREAM-152, under SCREAM-148, PO, November 3):** the chance someone comes out when they first hear the truck drops from 25% to 10% a second (falling toward 3%, was 5%). After about 30 seconds of hearing it without coming out, nobody new comes out. Regulars come out reliably and quickly, and are outside in their yard more (about 3/4 of the time, like the one-in-3 buyers).

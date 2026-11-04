@@ -18,6 +18,8 @@ const SEARCH = 150;
 const SEARCH_STEP = 25;
 /** How far from the street a customer can be and still count as beside it (px). */
 const REACH = 120;
+/** SCREAM-150: when there's no room nearby, how far along each nearby street to look (px). */
+const SEARCH_FAR = 400;
 
 export class CurbFinder {
   private readonly roads: RoadNetwork;
@@ -34,7 +36,22 @@ export class CurbFinder {
    * of the street, as close as possible, not within `gap` px of any square in `taken`. Null if
    * (x, y) isn't near a street or there's no room within reach.
    */
-  near(x: number, y: number, taken: readonly [number, number][], gap: number): CurbSpot | null {
+  /** `around` (SCREAM-150): [x, y, max px]: only stands that close to that point (the truck) count. */
+  near(x: number, y: number, taken: readonly [number, number][], gap: number, around?: [number, number, number]): CurbSpot | null {
+    return this.nearest(x, y, taken, gap, around) ?? this.further(x, y, taken, gap, around);
+  }
+
+  /**
+   * SCREAM-150 (PO, November 3): customers are only served from the sidewalk. True if
+   * (x, y) and the points just around it are off the road (so not in a cross street at a corner).
+   */
+  standClear(x: number, y: number): boolean {
+    for (const [dx, dy] of [[0, 0], [4, 0], [-4, 0], [0, 4], [0, -4]]) if (this.roads.onRoad(x + dx, y + dy)) return false;
+    return true;
+  }
+
+  /** The first try: the nearest street only, same side, within SEARCH px. */
+  private nearest(x: number, y: number, taken: readonly [number, number][], gap: number, around?: [number, number, number]): CurbSpot | null {
     let best = null as null | { ax: number; ay: number; vx: number; vy: number; len: number; t: number; d: number; side: number; road: number };
     for (const s of this.roads.segments) {
       const vx = s.bx - s.ax;
@@ -64,8 +81,52 @@ export class CurbFinder {
       const sy = cy + ny * LANE_OFFSET;
       if (!this.squareFits(sx, sy, road)) continue;
       if (taken.some(([qx, qy]) => Math.hypot(qx - sx, qy - sy) < gap)) continue;
-      return { stand: [cx + nx * STAND_OFFSET, cy + ny * STAND_OFFSET], square: [sx, sy, angle] };
+      const stand: [number, number] = [cx + nx * STAND_OFFSET, cy + ny * STAND_OFFSET];
+      if (!this.standClear(stand[0], stand[1])) continue;
+      if (around && Math.hypot(stand[0] - around[0], stand[1] - around[1]) > around[2]) continue;
+      return { stand, square: [sx, sy, angle] };
     }
     return null;
+  }
+
+  /**
+   * SCREAM-150: no room on the nearest street (a corner, parked cars, other customers'
+   * squares). Look up to SEARCH_FAR px along every street within reach, on either side,
+   * and take the spot closest to (x, y).
+   */
+  private further(x: number, y: number, taken: readonly [number, number][], gap: number, around?: [number, number, number]): CurbSpot | null {
+    let best: CurbSpot | null = null;
+    let bestD = Infinity;
+    for (const s of this.roads.segments) {
+      const vx = s.bx - s.ax;
+      const vy = s.by - s.ay;
+      const len = Math.hypot(vx, vy);
+      if (len === 0) continue;
+      const t = Math.max(0, Math.min(1, ((x - s.ax) * vx + (y - s.ay) * vy) / (len * len)));
+      if (Math.hypot(x - s.ax - t * vx, y - s.ay - t * vy) > REACH + STAND_OFFSET) continue;
+      const angle = (Math.atan2(vy, vx) * 180) / Math.PI;
+      for (const side of [1, -1]) {
+        const nx = (-vy / len) * side;
+        const ny = (vx / len) * side;
+        for (let shift = -SEARCH_FAR; shift <= SEARCH_FAR; shift += SEARCH_STEP) {
+          const u = t + shift / len;
+          if (u < 0 || u > 1) continue;
+          const cx = s.ax + vx * u;
+          const cy = s.ay + vy * u;
+          const stand: [number, number] = [cx + nx * STAND_OFFSET, cy + ny * STAND_OFFSET];
+          const d = Math.hypot(stand[0] - x, stand[1] - y);
+          if (d >= bestD) continue;
+          if (around && Math.hypot(stand[0] - around[0], stand[1] - around[1]) > around[2]) continue;
+          const sx = cx + nx * LANE_OFFSET;
+          const sy = cy + ny * LANE_OFFSET;
+          if (!this.squareFits(sx, sy, s.road)) continue;
+          if (taken.some(([qx, qy]) => Math.hypot(qx - sx, qy - sy) < gap)) continue;
+          if (!this.standClear(stand[0], stand[1])) continue;
+          best = { stand, square: [sx, sy, angle] };
+          bestD = d;
+        }
+      }
+    }
+    return best;
   }
 }

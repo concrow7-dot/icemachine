@@ -39,7 +39,8 @@ OUT_PNG = os.path.join(ROOT, 'public', 'assets', 'limezu', 'residents.png')
 
 ROAD_HALF, SIDEWALK = 60, 14          # as tools/worcester/build_map.py
 LANE = 30                             # a lane's centre, from the road's centre line
-CAR_CLEAR = 60                        # a curb spot's pink square stays this far from parked cars' centres
+CAR_CLEAR = 80                        # a curb spot's pink square stays this far from parked cars' centres (the game's PINK_CLEAR_CAR)
+BAY_CLEAR = 100                       # ...and from pump bays and home's driveway (the game's PINK_CLEAR_BAY; SCREAM-143)
 EDGE = ROAD_HALF + SIDEWALK           # from a road's centre line to the edge of its sidewalk
 FRAME_W, FRAME_H = 16, 32             # one frame, at 16 px
 FRAMES_PER_ROW = 24                   # 4 directions x 6 frames
@@ -306,8 +307,14 @@ def curb(m, segs, door, blocks):
     house, with the pink pickup square in the curb lane beside them, clear of parked
     cars. Returns [stand x, stand y, square x, square y, road angle in degrees]."""
     near_blocks = [o for o in blocks if abs(o['x'] - door[0]) < 500 and abs(o['y'] - door[1]) < 500]
-    near_segs = [sg for sg in segs if min(sg[1], sg[3]) - 500 < door[0] < max(sg[1], sg[3]) + 500
+    # Segments as (road index, ax, ay, bx, by): the game matches a pink square to its street by index.
+    idx_segs = [(ri, r['points'][i], r['points'][i + 1], r['points'][i + 2], r['points'][i + 3])
+                for ri, r in enumerate(m['roads']) for i in range(0, len(r['points']) - 2, 2)]
+    near_segs = [sg for sg in idx_segs if min(sg[1], sg[3]) - 500 < door[0] < max(sg[1], sg[3]) + 500
                  and min(sg[2], sg[4]) - 500 < door[1] < max(sg[2], sg[4]) + 500]
+
+    def road_of(p):
+        return min(near_segs, key=lambda sg: seg_dist(p[0], p[1], *sg[1:])[0])[0]
 
     def through_house(a, b):
         steps = max(1, int(math.dist(a, b) // 4))
@@ -331,18 +338,18 @@ def curb(m, segs, door, blocks):
         return any(seg_dist(p[0], p[1], *sg[1:])[0] < half for sg in near_segs)
 
     options = []
-    for _, ax, ay, bx, by in near_segs:
+    for ri, ax, ay, bx, by in near_segs:
         L = math.hypot(bx - ax, by - ay)
         if L < 1:
             continue
         tx, ty = (bx - ax) / L, (by - ay) / L
         d, (cx, cy) = seg_dist(door[0], door[1], ax, ay, bx, by)
-        options.append((d, ax, ay, tx, ty, L, (cx - ax) * tx + (cy - ay) * ty))
+        options.append((d, ax, ay, tx, ty, L, (cx - ax) * tx + (cy - ay) * ty, ri))
     options.sort()
     # Every rule first; if no spot passes, allow the run to cross a house (rare: a corner
     # lot); the pink square is always kept clear of parked cars, so the truck can fit.
     for strict in (True, False):
-        for d, ax, ay, tx, ty, L, along in options[:6]:
+        for d, ax, ay, tx, ty, L, along, ri in options[:6]:
             for slide in (0, 25, -25, 50, -50, 80, -80, 120, -120, 160, -160):
                 u = min(L - 30, max(30, along + slide)) if L > 60 else L / 2
                 cx, cy = ax + tx * u, ay + ty * u
@@ -350,7 +357,8 @@ def curb(m, segs, door, blocks):
                 nx, ny = -ty, tx
                 if (door[0] - cx) * nx + (door[1] - cy) * ny < 0:
                     nx, ny = -nx, -ny
-                stand = (cx + nx * (ROAD_HALF + SIDEWALK / 2), cy + ny * (ROAD_HALF + SIDEWALK / 2))
+                # Rounded as saved, so the game checks exactly this point (SCREAM-150).
+                stand = (round(cx + nx * (ROAD_HALF + SIDEWALK / 2), 1), round(cy + ny * (ROAD_HALF + SIDEWALK / 2), 1))
                 square = (cx + nx * LANE, cy + ny * LANE)
                 if on_any_road(stand, ROAD_HALF + 2):
                     continue  # a corner: the sidewalk point is on another road
@@ -359,7 +367,13 @@ def curb(m, segs, door, blocks):
                 if any(math.dist(square, (c['x'], c['y'])) < CAR_CLEAR for c in m['parkedCars']):
                     continue
                 # Off the gas stations' pump bays (SCREAM-109), so a customer never waits in one.
-                if any(math.dist(square, (g['bay']['x'], g['bay']['y'])) < CAR_CLEAR for g in m.get('gasStations', [])):
+                if any(math.dist(square, (g['bay']['x'], g['bay']['y'])) < BAY_CLEAR for g in m.get('gasStations', [])):
+                    continue
+                # SCREAM-143: the same rules as the game's pinkSquareFits: off home's driveway, and
+                # nearest to this street (not across a corner), so the truck can always pull in.
+                if math.dist(square, (m['homeStart']['x'], m['homeStart']['y'])) < BAY_CLEAR:
+                    continue
+                if road_of(square) != ri:
                     continue
                 if strict and through_house(door, stand):
                     continue

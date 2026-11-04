@@ -248,7 +248,18 @@ export const CUSTOMER_RUN_SPEED = 37;
  */
 export const CUSTOMER_STOP_GAP = 150;
 export const CUSTOMER_FOLLOW_AGAIN = 260;
+/** SCREAM-150: a spot found by the wider search (or by joining someone) is at most this far from the truck, so they don't set off after it again. */
+export const CUSTOMER_SPOT_REACH = 240;
 export const CUSTOMER_QUEUE_GAP = 100;
+
+/**
+ * SCREAM-156 (PO, November 3): customers can stand at the same spot. A customer who stops
+ * near someone already waiting (their spot within CUSTOMER_STOP_GAP) joins them: same pink
+ * square, standing beside them on the sidewalk, served one after another. Engineering's
+ * numbers: up to CUSTOMER_SPOT_MAX at one spot, CUSTOMER_SIDE_BY_SIDE px apart.
+ */
+export const CUSTOMER_SPOT_MAX = 3;
+export const CUSTOMER_SIDE_BY_SIDE = 12;
 
 /** PO: a customer waits at the curb this long, then walks home. */
 export const CUSTOMER_WAIT_SECONDS = 30;

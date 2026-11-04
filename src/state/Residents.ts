@@ -22,6 +22,9 @@ import {
   CUSTOMER_FOLLOW_AGAIN,
   CUSTOMER_QUEUE_GAP,
   CUSTOMER_RUN_SPEED,
+  CUSTOMER_SIDE_BY_SIDE,
+  CUSTOMER_SPOT_REACH,
+  CUSTOMER_SPOT_MAX,
   CUSTOMER_STOP_GAP,
   CUSTOMER_WAIT_SECONDS,
   RESIDENT_IDLE_SECONDS,
@@ -161,6 +164,8 @@ interface Running extends ResidentNow {
   patience: number;
   /** SCREAM-142: where their pink square will be, once they've picked a spot by the truck. */
   waitAt?: [number, number, number];
+  /** SCREAM-156: where the first person at their spot stands (others stand beside it). */
+  spotStand?: [number, number];
   /** SCREAM-152: heard the truck CUSTOMER_DECIDE_SECONDS without coming out: not tonight. */
   decided?: boolean;
   /** SCREAM-142: true for customers who follow the truck (not the test hook's, who stay at their curb). */
@@ -322,6 +327,7 @@ export class Residents {
     p.pickup = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
     p.patience = CUSTOMER_WAIT_SECONDS;
     p.waitAt = undefined;
+    p.spotStand = [p.resident.curb[0], p.resident.curb[1]];
     p.follows = false;
     p.plan = { kind: 'idle', until: Infinity };
   }
@@ -366,6 +372,44 @@ export class Residents {
     this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], CUSTOMER_RUN_SPEED, 'curb');
   }
 
+  /**
+   * SCREAM-156: a spot near `p` where someone is already waiting (or heading) with room for
+   * one more, and where `p` would stand: beside the others along the curb, on the sidewalk.
+   */
+  private joinSpot(p: Running): { square: [number, number, number]; base: [number, number]; stand: [number, number] } | null {
+    if (!this.curbs) return null;
+    const spots = new Map<string, { square: [number, number, number]; base: [number, number]; count: number }>();
+    for (const o of this.people) {
+      if (o === p || !o.spotStand) continue;
+      const square = o.customer === 'waiting' ? o.pickup : o.customer === 'running' ? o.waitAt : undefined;
+      if (!square) continue;
+      const key = `${square[0]},${square[1]}`;
+      const s = spots.get(key);
+      if (s) s.count++;
+      else spots.set(key, { square, base: o.spotStand, count: 1 });
+    }
+    let best: { square: [number, number, number]; base: [number, number]; stand: [number, number] } | null = null;
+    let bestD = Infinity;
+    for (const s of spots.values()) {
+      if (s.count >= CUSTOMER_SPOT_MAX) continue;
+      const d = Math.hypot(s.base[0] - p.x, s.base[1] - p.y);
+      if (d > CUSTOMER_STOP_GAP || d >= bestD) continue;
+      // Beside the others along the curb: +12, -12, +24, -24 px; the first of those on the sidewalk.
+      const a = (s.square[2] * Math.PI) / 180;
+      let stand: [number, number] | null = null;
+      for (let k = s.count; k <= CUSTOMER_SPOT_MAX + 1 && !stand; k++) {
+        const shift = Math.ceil(k / 2) * CUSTOMER_SIDE_BY_SIDE * (k % 2 ? 1 : -1);
+        const pt: [number, number] = [s.base[0] + Math.cos(a) * shift, s.base[1] + Math.sin(a) * shift];
+        const reach = !this.truck || Math.hypot(pt[0] - this.truck[0], pt[1] - this.truck[1]) <= CUSTOMER_SPOT_REACH;
+        if (reach && this.curbs.standClear(pt[0], pt[1])) stand = pt;
+      }
+      if (!stand) continue;
+      best = { square: s.square, base: s.base, stand };
+      bestD = d;
+    }
+    return best;
+  }
+
   private walkHome(p: Running): void {
     this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside');
   }
@@ -382,18 +426,35 @@ export class Residents {
     const dy = ty - p.y;
     const dist = Math.hypot(dx, dy);
     if (dist <= CUSTOMER_STOP_GAP) {
+      // SCREAM-156: join someone already waiting nearby, if their spot has room.
+      const join = this.joinSpot(p);
+      if (join) {
+        p.waitAt = join.square;
+        p.spotStand = join.base;
+        this.walkTo(p, [join.stand], CUSTOMER_RUN_SPEED, 'curb');
+        return;
+      }
       const taken: [number, number][] = [];
       for (const o of this.people) {
         if (o === p) continue;
         if (o.customer === 'waiting') taken.push([o.pickup[0], o.pickup[1]]);
         else if (o.waitAt) taken.push([o.waitAt[0], o.waitAt[1]]);
       }
-      const spot = this.curbs.near(p.x, p.y, taken, CUSTOMER_QUEUE_GAP);
+      const spot = this.curbs.near(p.x, p.y, taken, CUSTOMER_QUEUE_GAP, [tx, ty, CUSTOMER_SPOT_REACH]);
       if (spot) {
         p.waitAt = spot.square;
+        p.spotStand = spot.stand;
         this.walkTo(p, [spot.stand], CUSTOMER_RUN_SPEED, 'curb');
         return;
       }
+      // SCREAM-150: no room for a pink square anywhere near the truck. Rather than stand in
+      // the street with no square, they go back to their own curb spot (it always has room)
+      // and wait there, without following the truck again.
+      p.waitAt = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
+      p.spotStand = [p.resident.curb[0], p.resident.curb[1]];
+      p.follows = false;
+      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], CUSTOMER_RUN_SPEED, 'curb');
+      return;
     }
     // Toward the truck, but not into it.
     const step = Math.min(CUSTOMER_RUN_SPEED * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
@@ -408,9 +469,21 @@ export class Residents {
     if (p.customer === 'window') return;
     if (p.customer === 'waiting') {
       p.waitLeft = Math.max(0, p.waitUntil - this.now);
+      // SCREAM-150 (PO, November 3): only served from the sidewalk. Anyone waiting in the road
+      // (it shouldn't happen) keeps looking for a spot where they can be served.
+      if (p.waitLeft > 0 && p.follows && this.curbs && !this.curbs.standClear(p.x, p.y)) {
+        p.patience = p.waitLeft;
+        p.customer = 'running';
+        p.waitAt = undefined;
+        p.spotStand = undefined;
+        p.walking = true;
+        p.plan = { kind: 'follow' };
+        return;
+      }
       // SCREAM-142: if the truck pulls away, they set off after it again (their patience paused).
       if (p.waitLeft > 0 && p.follows && this.truck && Math.hypot(this.truck[0] - p.x, this.truck[1] - p.y) > CUSTOMER_FOLLOW_AGAIN) {
         p.patience = p.waitLeft;
+        p.spotStand = undefined;
         p.customer = 'running';
         p.walking = true;
         p.plan = { kind: 'follow' };
