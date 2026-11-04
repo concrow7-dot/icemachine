@@ -44,6 +44,18 @@ const { chromium } = require('playwright');
   await wait(2500);
   await page.screenshot({ path: outDir + '/tutorial_drive.png' });
 
+  // ---- SCREAM-52: the neighbourhood's matching details ----
+  check('Six businesses on Park Avenue, with their names on their signs', await drive('s.map.signs.map(g => g.text).join()'), 'Bagel Time,Dippin Donuts,UPS Store,Fancy Florist,The Boynton,Thai Time');
+  const kinds = await drive("(() => { const c = {}; for (const o of s.map.objects) { const k = o.key.split('_')[0]; c[k] = (c[k] || 0) + 1; } return c; })()");
+  check('Matching street lamps along the streets', kinds.lamp > 15, true);
+  check('Picket fences round some houses', kinds.fence > 50, true);
+  check('A basketball court and a playground', (kinds.court || 0) + ' ' + (kinds.play || 0), '1 1');
+  check('Gardens beside a few houses', await drive("s.map.objects.filter(o => o.key.startsWith('orn_garden_bed')).length >= 4"), true);
+  check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.door[1] > 0)"), true);
+  await drive('(() => { const g = s.map.signs[0]; s.truck.setPosition(g.x + 40, g.y + 160); s.speed = 0; s.parkBrake = true; return true; })()'); await wait(2600);
+  check('...a shop sign is shown when the truck is near', await drive("(t => !!t && t.visible)(s.children.getByName('sign-Bagel Time'))"), true);
+  await page.screenshot({ path: outDir + '/tutorial_shops.png' });
+
   // ---- A customer at the window ----
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
   await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);

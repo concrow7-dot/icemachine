@@ -74,6 +74,16 @@ export interface WorcesterMap {
   roadTileScale: number;
   /** Where the asphalt is, for the road edge: per row of `scale` px, [start, end) pairs of columns. */
   roadMask: RoadMask;
+  /** SCREAM-52 (tutorial map): business names, written on each shop's sign. */
+  signs?: MapSign[];
+}
+
+/** A shop's name, centred on its sign; `colour` is the lettering's colour. */
+export interface MapSign {
+  text: string;
+  x: number;
+  y: number;
+  colour: string;
 }
 
 export interface RoadMask {

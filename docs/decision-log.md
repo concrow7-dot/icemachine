@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 037 — A neighbourhood that looks like one place: lamps, fences, gardens, a court, a playground, Park Ave shops (2026-11-04)
+
+**Decision (Jira SCREAM-52, under SCREAM-10, PO, November 4):** on the tutorial map only, for now: matching street lamps along the streets; white picket fences round about a quarter of the houses; some gardens; a basketball court; a playground; and six businesses on Park Avenue, each with art that matches its name or kind of business: Bagel Time, Dippin Donuts, UPS Store, The Boynton (restaurant), Fancy Florist, Thai Time (restaurant).
+
+**Why (product owner's rationale):** he wanted the neighbourhood to feel more uniform. He plans a few different neighbourhoods, and each should feel like its own separate place.
+
+**Options considered:** both maps (PO: tutorial map only for now); generic shops with made-up names (PO chose his list); fences round every house (PO: about a quarter).
+
+**Engineering's calls (proposals):** one lamp design (LimeZu's classic street lamp), every 300 px along each street, alternating sides, on the grass just past the sidewalk, kept off junctions, home's driveway and the pump bay; fences only round houses whose front door faces the road or that have the road beside them, never across a front, and residents walk round them; the bakery fronts for Bagel Time and Dippin Donuts (bread and donuts in the window), a front with parcel boxes in the window for the UPS Store, one with potted flowers for Fancy Florist (plus vases outside), and diner fronts with striped awnings and patio tables for the two restaurants; each sign's lettering is painted out and the name is written on it in the game, plain text, no logos; the shops stand in a row along the north-west side of Park Ave, facing it. 4 houses made way for the shops, so the residents sheet's house numbers were updated (one resident moved to the nearest empty house). The court and playground went on open lawn near the middle of the map, trees cleared.
+
 ## 036 — A smaller tutorial map from real streets, and a guided tutorial (2026-11-04)
 
 **Decision (Jira SCREAM-146, under SCREAM-5, PO, November 4):** a second, smaller map for the tutorial, built from real Worcester streets just north of the main map: Institute Rd (north), Highland St (south, out to Dover St), Haviland St and the woods (west), with Park Ave through the middle and Germain, Westland, Lee and Russell St inside. Dover St is left out. Home is on Westland St; the one gas station is on Park Ave near Market 32. 40 residents, in their own sheet (doc 23, "Tutorial residents"), with the same columns and the same buyer mix as sheet 15. The two maps will be joined at one point later. The tutorial itself is guided: the player's uncle (who dropped a box of ice cream on his foot) helps stock the cooler and set prices, drives to the gas station, pulls over for a regular, walks the player through a sale, and explains filling up (the PO's "Tutorial and Story mode idea session" note). This changes the October 29 call (SCREAM-5) of mostly learning by doing. Story keeps the $200 bike; working for the uncle before summer ends is part of the story.

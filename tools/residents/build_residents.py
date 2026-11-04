@@ -236,7 +236,7 @@ def yard(m, segs, house, others, rnd):
     near_segs = [sg for sg in segs if min(sg[1], sg[3]) - 400 < x < max(sg[1], sg[3]) + 400
                  and min(sg[2], sg[4]) - 400 < y < max(sg[2], sg[4]) + 400]
     near_houses = [o for o in others if abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
-    near_trees = [o for o in m['objects'] if o['key'].startswith('tree') and abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
+    near_trees = [o for o in m['objects'] if o['key'].startswith(('tree', 'lamp')) and abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]  # SCREAM-52: and lamp posts
     # SCREAM-108: yard ornaments (mailboxes, planters, sheds); people walk round them.
     sizes = {sp['key']: sp for sp in m['sprites']}
     near_orns = [(o['x'], o['y'], sizes[o['key']]['w'], sizes[o['key']]['h']) for o in m['objects']
@@ -400,6 +400,9 @@ def build(folder):
     sizes = {sp['key']: sp for sp in m['sprites']}
     blocks = houses + ([{'x': m['home']['x'], 'y': m['home']['y'], 'w': sizes[m['home']['key']]['w'],
                          'h': sizes[m['home']['key']]['h']}] if m['home'] else [])
+    # SCREAM-52 (tutorial map): shops, fences, the basketball court and the playground are walked round too.
+    blocks += [{'x': o['x'], 'y': o['y'], 'w': sizes[o['key']]['w'], 'h': sizes[o['key']]['h']}
+               for o in m['objects'] if o['key'].startswith(('shop_', 'fence_', 'court_', 'play_'))]
     # One image of every look in use.
     looks = sorted({(p['look'], p['kid']) for p in people})
     index = {k: i for i, k in enumerate(looks)}

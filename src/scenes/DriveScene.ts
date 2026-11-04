@@ -545,6 +545,18 @@ export class DriveScene extends Phaser.Scene {
       const y = home.y - (sprite?.h ?? 100) - 6;
       paint(home.x, y, this.make.text({ x: 0, y: 0, text: 'HOME', style: { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066', fontStyle: 'bold' } }, false).setOrigin(0.5, 1).setStroke('#3a2a10', 5));
     }
+    // SCREAM-52: the businesses' names, on their signs (the pack's own lettering is painted out).
+    for (const sign of this.map.signs ?? []) {
+      paint(
+        sign.x,
+        sign.y,
+        this.make
+          .text({ x: 0, y: 0, text: sign.text, style: { fontFamily: 'monospace', fontSize: '11px', color: sign.colour, fontStyle: 'bold' } }, false)
+          .setOrigin(0.5)
+          .setStroke('#fff8e7', 3)
+          .setName(`sign-${sign.text}`),
+      );
+    }
     // Street names, written along the road.
     for (const label of this.map.labels) {
       paint(
