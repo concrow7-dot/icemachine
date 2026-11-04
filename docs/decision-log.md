@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 033 — Fewer customers: regulars, sometimes buyers and never buyers (2026-11-03)
+
+**Decision (Jira SCREAM-148, PO, November 3):** residents come in three kinds. 25% are every-day regulars, more likely to buy than before; 50% buy on only 1 day in 3; 25% never buy. The 1-in-3 people are outside more, about 3/4 of the time. In Story, each 1-in-3 person buys on exactly one of the three days; in Quick play they have a 1-in-3 chance that evening. The kind comes from the Likelihood (%) in the residents sheet (sheet 15), not a new column: 0% never buys, under 50% buys 1 day in 3, 50% and up every day.
+
+**Why (product owner's rationale):** there were a lot of customers coming to the truck, so he never had to explore anywhere. Customers following the truck (decision 032) meant even more could reach it; before, he might have had to drive around the neighbourhood to someone on a different street.
+
+**Options considered:** a new "buyer type" column in sheet 15 (PO: no, just lower the percentages); rolling each person's kind at random every game (not chosen); a 1-in-3 chance every Story day, so someone might buy 0 to 3 times (PO chose exactly one day).
+
+**Engineering's calls (proposals):** the 50% line between the two buying groups (`BUYER_REGULAR_FROM`); sheet 15's new numbers, picked at random with last week's keenest 40 people (shuffled a little) as regulars at 60 to 90% and the least keen 40 at 0%, the rest at 15 to 35% (kids stay keener: 27 of 47 kids are regulars); the old numbers are kept in sheet 15's "Old likelihoods (before SCREAM-148)" tab. 1-in-3 people start outside 75% of the time (was 50%), stay out 40 to 100 seconds (was 25 to 70) and stay in 10 to 30 (was 20 to 60). Which day a Story 1-in-3 person buys comes from a number saved with the run, so it doesn't change if you quit and continue (older saves get a new one). Someone who isn't buying tonight never gets the "!", even with the truck parked by their house.
+
 ## 032 — Customers walk toward the truck (2026-11-02)
 
 **Decision (Jira SCREAM-140 and SCREAM-142, PO, November 2):** customers start walking toward the truck as soon as they want ice cream (when the "!" shows), not only while you serve. They head straight for the truck (not to the street first) and keep following it, with no limit on how far. They stop a short way off, where their pink square appears. Everyone walks at about half the old speed (customers 37 px/s, was 75; residents 11, was 22). Per-person speeds come later (SCREAM-141).

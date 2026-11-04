@@ -182,6 +182,20 @@ export const RESIDENT_IDLE_SECONDS: readonly [number, number] = [2, 7];
 /** At the start of an evening, this share of residents are already outside. */
 export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 
+// ---- SCREAM-148 (PO, November 3): three kinds of buyer, read from the sheet's Likelihood (%) ----
+// 0% never buys. Below BUYER_REGULAR_FROM: a "sometimes" buyer, who only buys one day in
+// BUYER_SOMETIMES_DAYS. From BUYER_REGULAR_FROM up: an every-day regular. The PO's split:
+// 25% regulars, 50% sometimes, 25% never (set in sheet 15).
+
+/** Likelihood (0 to 1) from which someone is an every-day regular. Engineering's line. */
+export const BUYER_REGULAR_FROM = 0.5;
+/** PO: a "sometimes" buyer buys on 1 day in this many. Story picks the day; Quick play rolls 1 in this many. */
+export const BUYER_SOMETIMES_DAYS = 3;
+/** PO: sometimes buyers are outside more, about 3/4 of the time. These three are engineering's numbers for that. */
+export const SOMETIMES_START_OUTSIDE_CHANCE = 0.75;
+export const SOMETIMES_OUTSIDE_SECONDS: readonly [number, number] = [40, 100];
+export const SOMETIMES_INSIDE_SECONDS: readonly [number, number] = [10, 30];
+
 // ---- Customers: the sonar ring (SCREAM-67), PO decisions November 2 (doc 14) ----
 
 /** How far the truck's music reaches, in px from the truck: residents inside this ring can hear it. Engineering's value. */

@@ -114,7 +114,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   orderPictureChance = ORDER_PICTURE_CHANCE;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
-  readonly residents = new Residents(RESIDENTS, Math.random, new CurbFinder(ROADS, pinkSquareFits));
+  readonly residents: Residents;
 
   /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
   /**
@@ -142,8 +142,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     fuel: number;
     /** SCREAM-131: where each ice cream sat (saves from before it have none, and get a fresh layout). */
     cells?: readonly (FlavourId | null)[];
+    /** SCREAM-148: Story's day and run seed, which pick the day each sometimes buyer buys. */
+    story?: { day: number; seed: number };
   }) {
     super();
+    this.residents = new Residents(RESIDENTS, Math.random, new CurbFinder(ROADS, pinkSquareFits), carry?.story);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);

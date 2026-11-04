@@ -21,6 +21,8 @@ const { chromium } = require('playwright');
   await page.click('canvas'); await press('Enter'); await wait(200);
   await press('+', 4); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(500);
+  // SCREAM-148: regulars near home now come out quickly; keep this suite about the residents' routines.
+  await ev('e.residents.hearingOff = true');
 
   // The list, from the PO's sheet (doc 38)
   const n = await ev('e.residents.all.length');
@@ -41,9 +43,28 @@ const { chromium } = require('playwright');
   check('Every yard spot is within 100 px of the door', await ev(`e.residents.all.every(p => { const r = p.resident; for (let i = 0; i < r.yard.length; i += 2) if (Math.hypot(r.yard[i] - r.door[0], r.yard[i + 1] - r.door[1]) > 100) return false; return true; })`), true);
   check('Everyone has a street name', await ev('e.residents.all.every(p => p.resident.street.endsWith("Street") || p.resident.street.endsWith("Road") || p.resident.street.endsWith("Avenue") || p.resident.street.endsWith("Place"))'), true);
 
-  // Start of the evening: about half are out
+  // SCREAM-148 (PO, November 3): 25% every-day regulars, 50% sometimes (1 day in 3), 25% never
+  const kinds = await ev(`(() => { const k = e.residents.constructor.kind; const c = { regular: 0, sometimes: 0, never: 0 }; e.residents.all.forEach(p => c[k(p.resident.likelihood)]++); return [c.regular, c.sometimes, c.never].join(','); })()`);
+  check('Buyer kinds from the sheet: 40 regular, 80 sometimes, 40 never', kinds, '40,80,40');
+  check('Kinds by likelihood: 0% never, 35% sometimes, 50% and 80% regular', await ev('[0, 0.35, 0.5, 0.8].map(e.residents.constructor.kind).join()'), 'never,sometimes,regular,regular');
+  check('Tonight: never buyers never buy, regulars always can', await ev(`e.residents.all.every(p => { const k = e.residents.constructor.kind(p.resident.likelihood); return k === 'sometimes' || p.buys === (k === 'regular'); })`), true);
+  const story = await ev(`(() => { const R = e.residents.constructor; const some = e.residents.all.filter(p => R.kind(p.resident.likelihood) === 'sometimes').map(p => p.resident);
+    let exactlyOne = true; const perDay = [0, 0, 0];
+    for (const seed of [1, 2, 3, 12345]) for (const r of some) { const days = [1, 2, 3].filter(d => R.buysTonight(r, Math.random, { day: d, seed })); if (days.length !== 1) exactlyOne = false; else if (seed === 12345) perDay[days[0] - 1]++; }
+    return [exactlyOne, perDay.every(n => n >= 12)].join(); })()`);
+  check('Story: each sometimes buyer buys on exactly 1 of the 3 days; days spread out', story, 'true,true');
+  const quick = await ev(`(() => { const R = e.residents.constructor; const r = e.residents.all.find(p => R.kind(p.resident.likelihood) === 'sometimes').resident; let n = 0; for (let i = 0; i < 3000; i++) if (R.buysTonight(r, Math.random)) n++; return n; })()`);
+  check('Quick play: a sometimes buyer buys on about 1 evening in 3', quick > 850 && quick < 1150, true);
+  const nobuy = await ev(`(() => { const R = e.residents.constructor; const r = new R(e.residents.all.map(p => p.resident), Math.random, undefined, { day: 1, seed: 7 });
+    const off = r.all.filter(p => !p.buys); r.update(0.5, { x: 0, y: 0, radius: 1e9, open: true }); for (let t = 0; t < 120; t++) r.update(1, { x: 0, y: 0, radius: 1e9, open: true });
+    return [off.length > 0, off.every(p => p.customer === 'none'), r.all.some(p => p.customer !== 'none')].join(); })()`);
+  check("Two minutes in the ring: people who don't buy tonight never come; others do", nobuy, 'true,true,true');
+
+  // Start of the evening: regulars and never buyers half out, sometimes buyers 3/4 out (about 100 of 160)
   const out0 = await ev('e.residents.all.filter(p => p.outside).length');
-  check('About half start outside (50 to 110)', out0 >= 50 && out0 <= 110, true);
+  check('About 60% start outside (75 to 125)', out0 >= 75 && out0 <= 125, true);
+  const someOut = await ev(`(() => { const R = e.residents.constructor; let o = 0, n = 0; for (let k = 0; k < 10; k++) { const r = new R(e.residents.all.map(p => p.resident)); for (let t = 0; t < 1200; t++) r.update(0.5); r.all.forEach(p => { if (R.kind(p.resident.likelihood) === 'sometimes') { n++; if (p.outside) o++; } }); } return o / n; })()`);
+  check('Sometimes buyers are outside about 3/4 of the time (65% to 88%)', someOut > 0.65 && someOut < 0.88, true);
 
   // The sprite sheet: 160 looks, two rows each of 24 frames, 16 x 32 px
   check('Sprite sheet frames are 16 x 32', await drive("[s.textures.get('residents').get(0).width, s.textures.get('residents').get(0).height].join('x')"), '16x32');

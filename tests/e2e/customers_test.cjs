@@ -73,7 +73,8 @@ const { chromium } = require('playwright');
           was[i] = p.customer; }
       });
     }
-    const inRing = list.filter(q => Math.hypot(q.door[0] - ring.x, q.door[1] - ring.y) < 250).length;
+    // SCREAM-148: only people who'd buy tonight count.
+    const inRing = r.all.filter(p => p.buys).map(p => p.resident).filter(q => Math.hypot(q.door[0] - ring.x, q.door[1] - ring.y) < 250).length;
     return { became, inRing, outsideRing, backToNone, gaveUp, late, atCurb };
   })()`);
   check('Parked 10 minutes: people near the truck come out for ice cream', sim.became >= Math.min(5, sim.inRing), true);

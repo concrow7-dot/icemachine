@@ -1,5 +1,5 @@
 // SCREAM-59 + SCREAM-73: the neighbourhood's residents. Everyone has a name, a house
-// and their own likelihood of buying (from the PO's residents sheet, doc 38), and
+// and their own likelihood of buying (from the PO's residents sheet, doc 15), and
 // spends the evening going in and out of their house and wandering their yard.
 //
 // SCREAM-67: residents are also the customers. While someone is inside the truck's
@@ -11,6 +11,8 @@
 // the evening (EveningState), so they carry on where they were after a sale.
 
 import {
+  BUYER_REGULAR_FROM,
+  BUYER_SOMETIMES_DAYS,
   CUSTOMER_CHANCE_FIRST,
   CUSTOMER_CHANCE_FLOOR,
   CUSTOMER_CHANCE_SETTLE_SECONDS,
@@ -25,6 +27,9 @@ import {
   RESIDENT_OUTSIDE_SECONDS,
   RESIDENT_START_OUTSIDE_CHANCE,
   RESIDENT_WALK_SPEED,
+  SOMETIMES_INSIDE_SECONDS,
+  SOMETIMES_OUTSIDE_SECONDS,
+  SOMETIMES_START_OUTSIDE_CHANCE,
 } from '../config/tuning';
 import type { CurbFinder } from './CurbFinder';
 
@@ -47,6 +52,45 @@ export interface Resident {
    * pink square y, the road's angle in degrees]. They run to it straight from their door.
    */
   curb: [number, number, number, number, number];
+}
+
+/**
+ * SCREAM-148 (PO, November 3): what kind of buyer someone is, from their likelihood.
+ * - regular: can buy every evening
+ * - sometimes: buys on one day in BUYER_SOMETIMES_DAYS, and is outside more
+ * - never: never buys (likelihood 0)
+ */
+export type BuyerKind = 'regular' | 'sometimes' | 'never';
+
+export function buyerKind(likelihood: number): BuyerKind {
+  if (likelihood <= 0) return 'never';
+  return likelihood >= BUYER_REGULAR_FROM ? 'regular' : 'sometimes';
+}
+
+/**
+ * SCREAM-148: which day of each BUYER_SOMETIMES_DAYS a sometimes buyer buys on (0 is the
+ * first), worked out from the Story run's seed so it stays the same for the whole run.
+ */
+export function sometimesDay(id: string, seed: number): number {
+  let h = seed >>> 0;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 2654435761) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0;
+  return ((h ^ (h >>> 13)) >>> 0) % BUYER_SOMETIMES_DAYS;
+}
+
+/**
+ * Does this resident buy tonight? Quick play leaves `story` out: a sometimes buyer then
+ * has a 1 in BUYER_SOMETIMES_DAYS chance. Story passes the day (from 1) and the run's seed.
+ */
+export function buysTonight(
+  resident: Resident,
+  rnd: () => number,
+  story?: { day: number; seed: number },
+): boolean {
+  const kind = buyerKind(resident.likelihood);
+  if (kind !== 'sometimes') return kind === 'regular';
+  if (!story) return rnd() < 1 / BUYER_SOMETIMES_DAYS;
+  return (story.day - 1) % BUYER_SOMETIMES_DAYS === sometimesDay(resident.id, story.seed);
 }
 
 export type ResidentFacing = 'right' | 'up' | 'left' | 'down';
@@ -79,6 +123,8 @@ export interface ResidentNow {
    * where they stopped (their own curb spot's square without the streets).
    */
   pickup: [number, number, number];
+  /** SCREAM-148: whether they'd buy tonight at all (never buyers, and sometimes buyers on their other days, don't). */
+  readonly buys: boolean;
 }
 
 /** The truck's music ring this frame: who can hear it, and whether anyone may start wanting ice cream. */
@@ -131,6 +177,17 @@ export function customerChance(heard: number, likelihood: number, indoors: boole
   return base * likelihood * (indoors ? CUSTOMER_INDOORS_FACTOR : 1);
 }
 
+/** SCREAM-148 (PO, November 3): sometimes buyers are outside about 3/4 of the time; everyone else as before. */
+function routineFor(resident: Resident): {
+  startOutside: number;
+  outside: readonly [number, number];
+  inside: readonly [number, number];
+} {
+  return buyerKind(resident.likelihood) === 'sometimes'
+    ? { startOutside: SOMETIMES_START_OUTSIDE_CHANCE, outside: SOMETIMES_OUTSIDE_SECONDS, inside: SOMETIMES_INSIDE_SECONDS }
+    : { startOutside: RESIDENT_START_OUTSIDE_CHANCE, outside: RESIDENT_OUTSIDE_SECONDS, inside: RESIDENT_INSIDE_SECONDS };
+}
+
 export class Residents {
   private readonly people: Running[];
   private readonly rnd: () => number;
@@ -138,6 +195,9 @@ export class Residents {
   private sinceRoll = 0;
   /** The chance formula, for the browser tests. */
   static readonly chance = customerChance;
+  /** SCREAM-148: the buyer kinds, for the browser tests. */
+  static readonly kind = buyerKind;
+  static readonly buysTonight = buysTonight;
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
@@ -147,11 +207,18 @@ export class Residents {
 
   /** `rnd` returns 0 to 1 (Math.random by default; tests pass their own). */
   /** `curbs` (SCREAM-140) lets customers walk to the truck and wait at the curb beside it. */
-  constructor(list: readonly Resident[], rnd: () => number = Math.random, curbs?: CurbFinder) {
+  /** `story` (SCREAM-148): Story mode's day and run seed, which pick each sometimes buyer's day. */
+  constructor(
+    list: readonly Resident[],
+    rnd: () => number = Math.random,
+    curbs?: CurbFinder,
+    story?: { day: number; seed: number },
+  ) {
     this.rnd = rnd;
     this.curbs = curbs;
     this.people = list.map((resident) => {
-      const outside = rnd() < RESIDENT_START_OUTSIDE_CHANCE;
+      const times = routineFor(resident);
+      const outside = rnd() < times.startOutside;
       const spot = outside ? this.yardSpot(resident) : resident.door;
       const person: Running = {
         resident,
@@ -168,12 +235,13 @@ export class Residents {
         heard: 0,
         waitUntil: 0,
         patience: 0,
+        buys: buysTonight(resident, rnd, story),
       };
       if (outside) {
-        person.goInsideAt = between(rnd, RESIDENT_OUTSIDE_SECONDS) * rnd();
+        person.goInsideAt = between(rnd, times.outside) * rnd();
         person.plan = { kind: 'idle', until: between(rnd, RESIDENT_IDLE_SECONDS) * rnd() };
       } else {
-        person.plan = { kind: 'inside', until: between(rnd, RESIDENT_INSIDE_SECONDS) * rnd() };
+        person.plan = { kind: 'inside', until: between(rnd, times.inside) * rnd() };
       }
       return person;
     });
@@ -257,7 +325,7 @@ export class Residents {
       const inRing = !!ring && Math.hypot(x - ring.x, y - ring.y) <= ring.radius;
       // Seconds heard are counted in a row, so someone who hears the truck again later gets a fresh first-second chance.
       p.heard = inRing ? p.heard + 1 : 0;
-      if (!inRing || !ring?.open || this.hearingOff) continue;
+      if (!inRing || !ring?.open || this.hearingOff || !p.buys) continue;
       if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors)) this.wantIceCream(p);
     }
   }
@@ -351,7 +419,7 @@ export class Residents {
       p.outside = true;
       p.x = p.resident.door[0];
       p.y = p.resident.door[1];
-      p.goInsideAt = this.now + between(this.rnd, RESIDENT_OUTSIDE_SECONDS);
+      p.goInsideAt = this.now + between(this.rnd, routineFor(p.resident).outside);
       this.walkTo(p, [this.yardSpot(p.resident)], RESIDENT_WALK_SPEED, 'idle');
       return;
     }
@@ -388,7 +456,7 @@ export class Residents {
     p.walking = false;
     if (then === 'inside') {
       p.outside = false;
-      p.plan = { kind: 'inside', until: this.now + between(this.rnd, RESIDENT_INSIDE_SECONDS) };
+      p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident).inside) };
     } else if (then === 'curb') {
       // At the curb: wait for the truck, the pink square beside them (SCREAM-140: where they stopped).
       p.customer = 'waiting';
