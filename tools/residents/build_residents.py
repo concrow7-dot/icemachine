@@ -357,7 +357,8 @@ def curb(m, segs, door, blocks):
                 nx, ny = -ty, tx
                 if (door[0] - cx) * nx + (door[1] - cy) * ny < 0:
                     nx, ny = -nx, -ny
-                stand = (cx + nx * (ROAD_HALF + SIDEWALK / 2), cy + ny * (ROAD_HALF + SIDEWALK / 2))
+                # Rounded as saved, so the game checks exactly this point (SCREAM-150).
+                stand = (round(cx + nx * (ROAD_HALF + SIDEWALK / 2), 1), round(cy + ny * (ROAD_HALF + SIDEWALK / 2), 1))
                 square = (cx + nx * LANE, cy + ny * LANE)
                 if on_any_road(stand, ROAD_HALF + 2):
                     continue  # a corner: the sidewalk point is on another road

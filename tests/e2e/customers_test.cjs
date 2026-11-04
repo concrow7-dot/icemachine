@@ -65,21 +65,28 @@ const { chromium } = require('playwright');
     return [stand, square, cars].join(); })()`);
   check('All 160: stand on the sidewalk, square on the road, clear of parked cars', curbs, '160,160,160');
   // SCREAM-143: every resident's own pink square passes the game's own room rule (cars, bays, home, right street).
+  check('SCREAM-150: all 160 own curb spots are on the sidewalk', await ev('e.residents.all.filter(p => e.residents.curbs.standClear(p.resident.curb[0], p.resident.curb[1])).length'), 160);
   check("SCREAM-143: all 160 own pink squares have room for the truck", await ev(`(() => { const f = e.residents.curbs; const roads = f.roads;
     return e.residents.all.filter(p => { const c = p.resident.curb; const g = roads.nearestSegment(c[2], c[3]); return g && f.squareFits(c[2], c[3], g.road); }).length; })()`), 160);
   // SCREAM-150: with the truck at road corners and bends, nobody who wants ice cream ends up stuck without a pink square.
   const stuck = await ev(`(() => { const R = e.residents.constructor; const finder = e.residents.curbs; const list = e.residents.all.map(p => ({ ...p.resident, likelihood: 1 }));
     const spots = []; finder.roads.segments.forEach(g => spots.push({ x: g.ax, y: g.ay }));
-    let total = 0, stuckN = 0, inStreet = 0;
+    let total = 0, stuckN = 0, inStreet = 0, standInRoad = 0, shared = 0;
     for (const truck of spots.slice(0, 60)) {
       const near = list.map(r => [Math.hypot(r.door[0] - truck.x, r.door[1] - truck.y), r]).sort((a, b) => a[0] - b[0]).slice(0, 6).map(a => a[1]);
       const res = new R(near, Math.random, finder); const ring = { x: truck.x, y: truck.y, radius: 0, open: false };
       res.update(0.01, ring); res.all.forEach(p => res.wantIceCream(p));
-      for (let t = 0; t < 900; t++) res.update(0.1, ring);
+      for (let t = 0; t < 900; t++) { res.update(0.1, ring); if (t % 10 === 0) { res.all.forEach(p => { if (p.customer === 'waiting' && !finder.standClear(p.x, p.y)) standInRoad++; }); const sq = res.all.filter(p => p.customer === 'waiting').map(p => p.pickup.join()); if (sq.length > new Set(sq).size) shared++; } }
       res.all.forEach(p => { total++; if (p.customer === 'running') stuckN++; else if (!finder.roads.onRoad(p.pickup[0], p.pickup[1])) inStreet++; });
     }
-    return [total > 200, stuckN, inStreet].join(); })()`);
-  check('SCREAM-150: truck at 60 corners and bends: every customer gets a pink square on the road', stuck, 'true,0,0');
+    return [total > 200, stuckN, inStreet, standInRoad, shared > 0].join(); })()`);
+  check('SCREAM-150: truck at corners and bends: nobody stuck, squares on the road, everyone waits on the sidewalk; some share a spot (SCREAM-156)', stuck, 'true,0,0,0,true');
+  // SCREAM-156: two people heading for the same place share one spot, side by side, both on the sidewalk.
+  const pair = await ev(`(() => { const R = e.residents.constructor; const finder = e.residents.curbs; const r = e.residents.all[20].resident;
+    const res = new R([{ ...r, id: 'A' }, { ...r, id: 'B' }], Math.random, finder); const [a, b] = res.all; const ring = { x: r.curb[2] + 400 * Math.cos(r.curb[4] * Math.PI / 180), y: r.curb[3] + 400 * Math.sin(r.curb[4] * Math.PI / 180), radius: 0, open: false };
+    res.update(0.01, ring); res.wantIceCream(a); res.update(1.5, ring); res.wantIceCream(b); for (let t = 0; t < 600 && !(a.customer === 'waiting' && b.customer === 'waiting'); t++) res.update(0.1, ring);
+    return [a.customer, b.customer, a.pickup.join() === b.pickup.join(), Math.hypot(a.x - b.x, a.y - b.y) >= 10, finder.standClear(a.x, a.y) && finder.standClear(b.x, b.y)].join(); })()`);
+  check('SCREAM-156: two customers heading the same way share one pink square, standing side by side on the sidewalk', pair, 'waiting,waiting,true,true,true');
 
   // ---- A simulation: a parked truck in a fresh neighbourhood ----
   const sim = await ev(`(() => {

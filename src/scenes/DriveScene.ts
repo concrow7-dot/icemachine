@@ -977,6 +977,9 @@ export class DriveScene extends Phaser.Scene {
    * few seconds before a customer gives up.
    */
   private drawCustomers(): void {
+    // SCREAM-156: several customers can share a spot; draw (and serve from) one square per spot,
+    // the first person there. SCREAM-150: only customers on the sidewalk get a square.
+    const spotTaken = new Set<string>();
     this.evening.residents.all.forEach((p, i) => {
       const wants = p.outside && (p.customer === 'running' || p.customer === 'waiting');
       let bubble = this.bubbles.get(i);
@@ -992,7 +995,12 @@ export class DriveScene extends Phaser.Scene {
           bubble.setAlpha(hurry ? 0.4 + 0.6 * Math.abs(Math.sin(this.time.now / 150)) : 1);
         }
       }
-      const waiting = p.customer === 'waiting';
+      let waiting = p.customer === 'waiting' && !this.roads.onRoad(p.x, p.y);
+      if (waiting) {
+        const key = `${p.pickup[0]},${p.pickup[1]}`;
+        if (spotTaken.has(key)) waiting = false;
+        else spotTaken.add(key);
+      }
       let zone = this.pickupZones.get(i);
       if (waiting && !zone) {
         const [zx, zy, angle] = p.pickup;
