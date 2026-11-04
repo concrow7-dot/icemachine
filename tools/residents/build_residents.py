@@ -414,11 +414,14 @@ def build(folder):
     os.makedirs(os.path.dirname(OUT_PNG), exist_ok=True)
     sheet.save(OUT_PNG, optimize=True)
 
+    # SCREAM-158: a hand-made map (Tiled) keeps each house's own number, gaps and all.
+    numbers = m.get('houseNumbers') or list(range(1, len(houses) + 1))
+    by_number = dict(zip(numbers, houses))
     out = []
     for p in people:
-        if not 1 <= p['house'] <= len(houses):
-            sys.exit(f'{p["id"]}: House must be from 1 to {len(houses)}')
-        h = houses[p['house'] - 1]
+        if p['house'] not in by_number:
+            sys.exit(f'{p["id"]}: there is no house {p["house"]} on the map')
+        h = by_number[p['house']]
         door, pts = yard(m, segs, h, blocks, rnd)
         spot = curb(m, segs, door, blocks)
         out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(segs, h),

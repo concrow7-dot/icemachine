@@ -68,6 +68,8 @@ export interface WorcesterMap {
   potholes: { x: number; y: number }[];
   parkedCars: { x: number; y: number; angle: number }[];
   objects: MapObject[];
+  /** SCREAM-158: on a hand-made map, each house's number (the residents sheet's House), in map order. */
+  houseNumbers?: number[];
   sprites: { key: string; w: number; h: number }[];
   /** The road surface as images (sidewalk, curb, asphalt; rounded corners), drawn at `roadTileScale` times their size. */
   roadTiles: { key: string; x: number; y: number }[];
