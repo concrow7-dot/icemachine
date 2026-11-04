@@ -58,18 +58,20 @@ class Tilesets:
 
     def __init__(self, tmx_dir, singles):
         self.tmx_dir, self.singles, self.sets = tmx_dir, singles, []
+        self.cache, self.missing = {}, set()
         self.by48 = {}
         if singles and os.path.isdir(singles):
             for dp, _, fs in os.walk(singles):
                 for f in fs:
                     if f.endswith('.png'): self.by48[f] = os.path.join(dp, f)
-        self.cache, self.missing = {}, set()
 
     def add(self, el):
         first = int(el.get('firstgid'))
         base_dir = self.tmx_dir
         if el.get('source'):
             path = os.path.normpath(os.path.join(self.tmx_dir, el.get('source').replace('\\', '/')))
+            if not os.path.exists(path):
+                self.missing.add(f'tileset {os.path.basename(path)} (pieces from it are left out)'); return
             el, base_dir = ET.parse(path).getroot(), os.path.dirname(path)
         name = el.get('name', '')
         align = el.get('objectalignment', 'unspecified')
@@ -240,7 +242,7 @@ def main(tmx, singles):
             if not pc: continue
             pc['layer'], pc['z'] = lname, z
             if lname == 'Houses': houses.append(pc); houses_z = z
-            elif lname.startswith('House details'): details.append(pc)
+            elif lname.lower().startswith('house details'): details.append(pc)
             elif lname == 'Gas station': continue  # kept from the generated map
             else: others.append(pc)
 

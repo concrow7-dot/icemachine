@@ -4,6 +4,8 @@ Usage (run from the repo root):
     python3 tools/worcester/build_map.py extract <map.osm>      # OSM export -> tools/worcester/worcester-osm.json
     python3 tools/worcester/build_map.py build <art-folder>     # json + LimeZu singles -> src/config/worcester.ts + sprites
     python3 tools/worcester/build_map.py build <art-folder> tutorial   # the tutorial map (SCREAM-146) -> src/config/tutorial.ts
+        (SCREAM-158: the tutorial map is now hand-made in Tiled; running this would undo the PO's changes.
+         Use tools/tiled/import_tiled.py instead.)
 
 <art-folder> is a folder of LimeZu Modern Exteriors 48x48 singles (from the private
 art repo). Only the sprites the map uses are written to public/assets/limezu/map/,

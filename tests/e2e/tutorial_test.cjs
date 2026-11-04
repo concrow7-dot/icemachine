@@ -48,7 +48,8 @@ const { chromium } = require('playwright');
   check('Six businesses on Park Avenue, with their names on their signs', await drive('s.map.signs.map(g => g.text).join()'), 'Bagel Time,Dippin Donuts,UPS Store,Fancy Florist,The Boynton,Thai Time');
   const kinds = await drive("(() => { const c = {}; for (const o of s.map.objects) { const k = o.key.split('_')[0]; c[k] = (c[k] || 0) + 1; } return c; })()");
   check('Matching street lamps along the streets', kinds.lamp > 15, true);
-  check('Picket fences round some houses', kinds.fence > 50, true);
+  // SCREAM-158: the PO's hand-made map (Tiled): 40 houses and home, no fences.
+  check('The hand-made map: 40 houses and home, no fences', ((kinds.house || 0) + (kinds.villa || 0)) + ' ' + (kinds.fence || 0), '41 0');
   check('A basketball court and a playground', (kinds.court || 0) + ' ' + (kinds.play || 0), '1 1');
   check('Gardens beside a few houses', await drive("s.map.objects.filter(o => o.key.startsWith('orn_garden_bed')).length >= 4"), true);
   check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.door[1] > 0)"), true);
