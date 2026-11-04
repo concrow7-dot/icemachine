@@ -75,7 +75,7 @@ const { chromium } = require('playwright');
   const used = before - (await ev('e.fuel'));
   const straight = Math.hypot(end[0] - start[0], end[1] - start[1]);
   check('Driving uses gas', used > 0, true);
-  near('...about 1 tank per 41,700 px (used x 41,700 / straight-line px; SCREAM-119)', Math.round((used * 41700 / straight) * 100) / 100, 0.99, 1.6);
+  near('...about 1 tank per 32,100 px (used x 32,100 / straight-line px; SCREAM-151)', Math.round((used * 32100 / straight) * 100) / 100, 0.99, 1.6);
   check('Parked, no gas is used', await (async () => { await drive('(s.speed = 0, s.parkBrake = true, true)'); const a = await ev('e.fuel'); await wait(500); return a === (await ev('e.fuel')); })(), true);
 
   // ---- An empty tank (SCREAM-119): checked at the end of this evening, as it ends the evening ----
@@ -163,9 +163,9 @@ const { chromium } = require('playwright');
   check("Full tank at the pump: says the tank's full", /tank's full/.test(await texts('Pump')), true);
   await press('Enter'); await wait(300);
   check('Enter with nothing to buy just drives off', await scenes(), 'Drive,Hud');
-  await ev('(e.burnFuel(41700 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
+  await ev('(e.burnFuel(32100 * 0.75), e.changeMoney(-e.moneyCents + 1200, "test", false), true)');
   check('$12 and a quarter tank: only whole $5 steps the wallet covers ($10)', await ev('e.maxGasCents'), 1000);
-  await ev('(e.burnFuel(41700 * 0.1), true)');
+  await ev('(e.burnFuel(32100 * 0.1), true)');
   check('A tank a step short of full in steps: 0.15 tank, room for $25', await ev('(e.changeMoney(5000, "test", false), e.maxGasCents)'), 2500);
   await ev('(e.changeMoney(-e.moneyCents + 300, "test", false), true)');
   await awayFromBay(); await wait(200); await intoBay();
@@ -204,7 +204,7 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('Day 2 starts with what was left in the tank', Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // Restart this evening (pause menu): back to how tonight started, tank included.
-  await ev('(e.burnFuel(30000), true)');
+  await ev('(e.burnFuel(32100 * 0.3), true)');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
