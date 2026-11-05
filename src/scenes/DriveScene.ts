@@ -3,7 +3,7 @@ import { BUBBLE_INK, drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
-import { currentMap, type GameMap } from '../config/maps';
+import { currentMap, versioned, type GameMap } from '../config/maps';
 import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, RoadNetwork, ROAD_HALF_WIDTH, type TurnedBox } from '../state/RoadGeometry';
 import {
@@ -206,7 +206,7 @@ export class DriveScene extends Phaser.Scene {
     loadTruckViews(this);
     // Houses, trees, yard ornaments and the gas pump, all in one picture sheet (SCREAM-108).
     if (!this.textures.exists(a.atlasKey)) this.load.atlas(a.atlasKey, a.atlasPng, a.atlasJson);
-    for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, `${a.roadDir}/${key}.png`);
+    for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, versioned(`${a.roadDir}/${key}.png`, this.map));
     loadResidentSheet(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
@@ -659,8 +659,11 @@ export class DriveScene extends Phaser.Scene {
       rt.stamp(this.assets.roadKeyPrefix + t.key, undefined, t.x - x0, t.y - y0, { originX: 0, originY: 0, scale: this.map.roadTileScale });
     }
     rt.draw(g, -x0, -y0);
+    const atlas = this.textures.get(this.assets.atlasKey);
     for (const o of this.sortedObjects) {
       if (o.x < x0 - 150 || o.x > x1 + 150 || o.y < y0 || o.y > y1 + 220) continue;
+      // SCREAM-160: a piece missing from the picture sheet is skipped (Phaser would draw the whole sheet).
+      if (!atlas.has(o.key)) continue;
       rt.stamp(this.assets.atlasKey, o.key, o.x - x0, o.y - y0, { originX: 0.5, originY: 1 });
     }
     rt.render();

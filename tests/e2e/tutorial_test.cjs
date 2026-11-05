@@ -50,6 +50,9 @@ const { chromium } = require('playwright');
   check('Matching street lamps along the streets', kinds.lamp > 15, true);
   // SCREAM-158: the PO's hand-made map (Tiled): 40 houses and home, no fences.
   check('The hand-made map: 40 houses and home, no fences', ((kinds.house || 0) + (kinds.villa || 0)) + ' ' + (kinds.fence || 0), '41 0');
+  // SCREAM-160: every piece is in the picture sheet, and the sheet's URL carries the map's version.
+  check('Every map piece is in the picture sheet', await drive("(t => s.map.objects.every(o => t.has(o.key)))(s.textures.get(s.assets.atlasKey))"), true);
+  check('...which is fetched with the map version', await drive("s.assets.atlasPng.endsWith('?v=' + s.map.assetVersion) && !!s.map.assetVersion"), true);
   check('A basketball court and a playground', (kinds.court || 0) + ' ' + (kinds.play || 0), '1 1');
   check('Gardens beside a few houses', await drive("s.map.objects.filter(o => o.key.startsWith('orn_garden_bed')).length >= 4"), true);
   check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.door[1] > 0)"), true);

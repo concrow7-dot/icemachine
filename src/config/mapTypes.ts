@@ -70,6 +70,8 @@ export interface WorcesterMap {
   objects: MapObject[];
   /** SCREAM-158: on a hand-made map, each house's number (the residents sheet's House), in map order. */
   houseNumbers?: number[];
+  /** SCREAM-160: changes whenever the map's pictures do, so browsers fetch the new ones (added to their URLs). */
+  assetVersion?: string;
   sprites: { key: string; w: number; h: number }[];
   /** The road surface as images (sidewalk, curb, asphalt; rounded corners), drawn at `roadTileScale` times their size. */
   roadTiles: { key: string; x: number; y: number }[];
