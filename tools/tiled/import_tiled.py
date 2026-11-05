@@ -108,6 +108,7 @@ class Tilesets:
             im = Image.open(path).convert('RGBA')
         else:  # a 16 px pack file that isn't here: its 48 px twin, shrunk 3x
             f = os.path.basename(path)
+            f = re.sub(r' - Copy( \(\d+\))?(?=\.png$)', '', f)  # a copy of a pack file: the original
             twin = self.by48.get(f.replace('16x16', '48x48')) or self.by48.get(f)
             if twin:
                 im = Image.open(twin).convert('RGBA')
@@ -201,7 +202,6 @@ def main(tmx, singles):
         im = flipped(im, flags)
         w, h = float(o.get('width', im.width)), float(o.get('height', im.height))
         if (round(w), round(h)) != im.size: im = im.resize((max(1, round(w)), max(1, round(h))), Image.NEAREST)
-        if float(o.get('rotation', 0)): warnings.append(f'"{o.get("name") or set_name}" is rotated: the game draws it unrotated')
         x, y = float(o.get('x')), float(o.get('y'))
         if align in ('unspecified', 'bottomleft'): left, top = x, y - h
         elif align == 'bottom': left, top = x - w / 2, y - h
@@ -210,20 +210,43 @@ def main(tmx, singles):
         elif align == 'top': left, top = x - w / 2, y
         elif align == 'center': left, top = x - w / 2, y - h / 2
         else: left, top = x, y - h
+        # A turned piece (SCREAM-157): Tiled turns it clockwise round its anchor point. Turns close
+        # to a quarter turn are snapped to it, so pixel art stays crisp; others are turned as they are.
+        rot = float(o.get('rotation', 0)) % 360
+        if rot > 0.5 and rot < 359.5:
+            q = round(rot / 90) * 90
+            if abs(rot - q) <= 10:
+                notes['snapped'] = notes.get('snapped', 0) + 1
+                rot = q % 360
+            else:
+                notes['turned'] = notes.get('turned', 0) + 1
+            if rot:
+                a = math.radians(rot)
+                pts = [(cx - x, cy - y) for cx, cy in ((left, top), (left + w, top), (left, top + h), (left + w, top + h))]
+                rp = [(px * math.cos(a) - py * math.sin(a), px * math.sin(a) + py * math.cos(a)) for px, py in pts]
+                if rot in (90, 180, 270):
+                    im = im.transpose({90: Image.ROTATE_270, 180: Image.ROTATE_180, 270: Image.ROTATE_90}[int(rot)])
+                else:
+                    im = im.rotate(-rot, resample=Image.NEAREST, expand=True)
+                left, top = x + min(p[0] for p in rp), y + min(p[1] for p in rp)
+                flags |= 1 << 8  # a picture of its own
         game = set_name.startswith('Map pieces')
+        turned = bool(flags & (1 << 8)); flags &= ~(1 << 8)
         stem = os.path.splitext(os.path.basename(src[1]))[0]
-        if game and not flags:
+        if game and not flags and not turned:
             key = stem
         else:
             name = re.sub(r'^(ME_Singles_|\d+_[A-Za-z_]+?_)', '', stem)
             name = re.sub(r'_(16x16|48x48)', '', name).lower()
-            key = PREFIX.get(layer_name, 'orn_') + ('' if game else 'me_') + name + ('_f' if flags else '')
+            key = PREFIX.get(layer_name, 'orn_') + ('' if game else 'me_') + name + ('_f' if flags else '') + (f'_r{round(rot)}' if turned else '')
             if key.startswith(('house_house', 'shop_shop', 'tree_tree', 'lamp_lamp', 'fence_fence')): key = key.split('_', 1)[1]
             if game and stem.startswith(('house', 'villa')) and layer_name in ('Houses', 'Removed houses'): key = stem + ('_f' if flags else '')
         return {'im': im, 'left': left, 'top': top, 'key': key, 'name': o.get('name', ''), 'props': props(o),
-                'game': game and not flags}
+                'game': game and not flags and not turned, 'stem': stem}
 
-    houses, removed, details, others = [], [], [], []
+    houses, removed, details, others, flat = [], [], [], [], []
+    notes = {}
+    as_decor = {'Houses': 0, 'Businesses': 0}
     houses_z = None
     for z, (el, vis) in enumerate(layers):
         if el.tag != 'objectgroup': continue
@@ -242,6 +265,20 @@ def main(tmx, singles):
             pc = place(o, lname)
             if not pc: continue
             pc['layer'], pc['z'] = lname, z
+            # Flat things (SCREAM-157): pieces on "Flat ground" from the pack, and pack terrain
+            # pieces (asphalt, paths) anywhere, are painted into the ground, under everyone.
+            if (lname == 'Flat ground' and not pc['game']) or 'Terrains' in pc['stem']:
+                flat.append(pc); continue
+            # Only numbered houses (and home) are houses; other pieces on the Houses layer, and
+            # unnamed pieces on Businesses, are decorations (mailboxes, shrubs, a bench).
+            if lname == 'Houses' and 'house number' not in pc['props'] and pc['props'].get('home') != 'true':
+                as_decor['Houses'] += 1; pc['layer'] = 'Garden ornaments'; pc['key'] = re.sub(r'^house_', 'orn_', pc['key'])
+                if not pc['key'].startswith('orn_'): pc['key'] = 'orn_' + pc['key']
+                others.append(pc); continue
+            if lname == 'Businesses' and not pc['name'] and not pc['key'].startswith('shop_') or \
+               lname == 'Businesses' and not pc['name'] and pc['key'].startswith('shop_me_'):
+                as_decor['Businesses'] += 1; pc['layer'] = 'Garden ornaments'; pc['key'] = re.sub(r'^shop_', 'orn_', pc['key'])
+                others.append(pc); continue
             if lname == 'Houses': houses.append(pc); houses_z = z
             elif lname.lower().startswith('house details'): details.append(pc)
             elif lname == 'Gas station': continue  # kept from the generated map
@@ -329,6 +366,17 @@ def main(tmx, singles):
 
     if math.hypot(home['x'] - base['homeStart']['x'], home['y'] - base['homeStart']['y']) > 400:
         warnings.append('home is far from where the truck starts (the start stays on the generated spot)')
+
+    # Flat pieces into the ground, in layer order, top to bottom.
+    for pc in sorted(flat, key=lambda q: (q['z'], q['top'] + q['im'].height)):
+        ground.alpha_composite(pc['im'], (round(pc['left']), round(pc['top']))) if pc['left'] >= 0 and pc['top'] >= 0 else \
+            ground.paste(Image.alpha_composite(ground.crop((round(pc['left']), round(pc['top']), round(pc['left']) + pc['im'].width,
+                                                            round(pc['top']) + pc['im'].height)), pc['im']), (round(pc['left']), round(pc['top'])))
+    if flat: print(f'ground: {len(flat)} flat pieces painted in (Flat ground layer, asphalt and paths)')
+    if notes.get('snapped'): warnings.append(f'{notes["snapped"]} turned piece(s) were nearly a quarter turn: snapped to exactly 90 degrees')
+    if notes.get('turned'): warnings.append(f'{notes["turned"]} piece(s) turned by an odd angle: turned as they are (pixels may look rough)')
+    for layer, n in as_decor.items():
+        if n: warnings.append(f'{n} piece(s) on the {layer} layer without a house number or business name: treated as decorations')
 
     # ---- Write the pictures ----
     for f in os.listdir(OUT_ROADS):
