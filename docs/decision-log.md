@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 039 — Park Ave gets two lanes each way; Russell St stops at Park Ave (2026-11-04)
+
+**Decision (Jira SCREAM-159, under SCREAM-10, PO, November 4):** on the tutorial map, Park Avenue (the diagonal from Highland St to Institute Rd) is twice as wide, two lanes each way, widened on its east side only; the shops' side stays where it was. Russell Street's short piece north of Park Ave is removed. Everything east of Park Ave moved east to make room (houses, Russell St, the gas station, trees); the map kept its size, so 37 trees pushed past the right edge were dropped (no houses). The roads stay generated; everything else is edited in Tiled (PO agreed to engineering's proposal, November 4).
+
+**Why (product owner's rationale):** _to come: asked November 4._
+
+**Engineering's calls (proposals):** streets can now have more than one lane each way (`lanes` in the map data); a wider street gets white dashed lines between its lanes, pink squares in its outside lane and customers at its curb. The tutorial map's roads live in `tools/tutorial/roads.json` and are built by `tools/tiled/build_roads.py`, which also makes the road picture for the PO's Tiled map. Everything east of Park Ave moved 147 px straight east (120 px out from Park Ave), so nothing ends up on the new lanes. Russell St's junction with Park Ave stays where you see it; the wide street's ends stop at Highland St and Institute Rd without bulging past them.
+
 ## 038 — The tutorial map is laid out by hand in Tiled (2026-11-04)
 
 **Decision (Jira SCREAM-158, under SCREAM-10, PO, November 4):** the PO laid out the tutorial map himself in Tiled (a free map editor), starting from an export of the generated map, and it replaces the generated tutorial map. He removed the 66 houses nobody lived in (40 houses and home remain, one per resident), removed all the fences, moved and restyled houses (some with pictures from the full LimeZu pack, some with chimneys, solar panels and side wings added), and rearranged trees and ornaments. The streets, curb spots, potholes, parked cars, the truck's start and the gas station are unchanged.

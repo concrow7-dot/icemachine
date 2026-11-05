@@ -5,7 +5,7 @@ import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
 import { currentMap, versioned, type GameMap } from '../config/maps';
 import type { WorcesterMap } from '../config/mapTypes';
-import { boxesOverlap, distanceToSegment, RoadNetwork, ROAD_HALF_WIDTH, type TurnedBox } from '../state/RoadGeometry';
+import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
   HIT_MIN_SPEED_FRACTION,
   MUSIC_RING_RADIUS,
@@ -179,7 +179,8 @@ export class DriveScene extends Phaser.Scene {
   private homeArmed = false;
   /** SCREAM-54 (Tom Cobb, round 2): an arrow toward home, shown only when sold out. */
   private homeArrow!: Phaser.GameObjects.Container;
-  private dashes: { x: number; y: number; ux: number; uy: number }[] = [];
+  /** Lane lines: yellow down the middle; SCREAM-159: white between two lanes going the same way. */
+  private dashes: { x: number; y: number; ux: number; uy: number; white?: boolean }[] = [];
   private viewKey = '';
   private potholes: { x: number; y: number; armed: boolean }[] = [];
   private spinning = false;
@@ -526,7 +527,13 @@ export class DriveScene extends Phaser.Scene {
         const x = s.ax + ux * (d + 8);
         const y = s.ay + uy * (d + 8);
         // Left out at junctions.
-        if (!this.roads.segments.some((o) => o.road !== s.road && distanceToSegment(x, y, o) < ROAD_HALF_WIDTH * 2)) this.dashes.push({ x, y, ux, uy });
+        const reach = (o: { road: number }) => this.roads.halfWidth(o.road) + this.roads.halfWidth(s.road);
+        if (this.roads.segments.some((o) => o.road !== s.road && distanceToSegment(x, y, o) < reach(o))) continue;
+        this.dashes.push({ x, y, ux, uy });
+        // SCREAM-159: a wider street gets a white dashed line between its lanes each way.
+        for (let k = 1; k * LANE_WIDTH < this.roads.halfWidth(s.road); k++) {
+          for (const side of [1, -1]) this.dashes.push({ x: x - uy * LANE_WIDTH * k * side, y: y + ux * LANE_WIDTH * k * side, ux, uy, white: true });
+        }
       }
     }
 
@@ -613,9 +620,9 @@ export class DriveScene extends Phaser.Scene {
     // The road surface (sidewalks, curbs, asphalt, rounded corners) comes as images
     // from the map generator; lane lines, potholes and parked cars are drawn over it.
     const g = this.roadGraphics.clear();
-    g.fillStyle(COLOURS.lane, 1);
-    for (const { x, y, ux, uy } of this.dashes) {
+    for (const { x, y, ux, uy, white } of this.dashes) {
       if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+      g.fillStyle(white ? 0xf2f2f2 : COLOURS.lane, white ? 0.9 : 1);
       g.fillPoints(
         [v(x - ux * 8 - uy * 1.5, y - uy * 8 + ux * 1.5), v(x + ux * 8 - uy * 1.5, y + uy * 8 + ux * 1.5), v(x + ux * 8 + uy * 1.5, y + uy * 8 - ux * 1.5), v(x - ux * 8 + uy * 1.5, y - uy * 8 - ux * 1.5)],
         true,

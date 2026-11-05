@@ -1,0 +1,324 @@
+{
+ "_about": "SCREAM-159: the tutorial map's roads (edit here, then run tools/tiled/build_roads.py). Points are x, y pairs in map pixels; lanes is lanes each way (default 1).",
+ "roads": [
+  {
+   "name": "Institute Road",
+   "points": [
+    579.4,
+    381.5,
+    776.9,
+    391.2
+   ]
+  },
+  {
+   "name": "Highland Street",
+   "points": [
+    1590.3,
+    2061.3,
+    2349.1,
+    1999.7
+   ]
+  },
+  {
+   "name": "Park Avenue",
+   "points": [
+    1590.3,
+    2061.3,
+    2672.4,
+    544.8
+   ],
+   "lanes": 2
+  },
+  {
+   "name": "Westland Street",
+   "points": [
+    1244.9,
+    2089.3,
+    1415.8,
+    445.5
+   ]
+  },
+  {
+   "name": "Russell Street",
+   "points": [
+    2349.1,
+    1999.7,
+    2491.7,
+    798.1
+   ]
+  },
+  {
+   "name": "Lee Street",
+   "points": [
+    1892.1,
+    482.4,
+    1775.5,
+    1801.8
+   ]
+  },
+  {
+   "name": "Germain Street",
+   "points": [
+    793.5,
+    2123.6,
+    958.0,
+    410.7
+   ]
+  },
+  {
+   "name": "Haviland Street",
+   "points": [
+    399.8,
+    2113.8,
+    579.4,
+    381.5
+   ]
+  },
+  {
+   "name": "Institute Road",
+   "points": [
+    776.9,
+    391.2,
+    2742.1,
+    550.4
+   ]
+  },
+  {
+   "name": "Highland Street",
+   "points": [
+    421.0,
+    2150.2,
+    1590.3,
+    2061.3
+   ]
+  }
+ ],
+ "homeStart": {
+  "x": 1426.8,
+  "y": 630.3,
+  "angle": -84.1
+ },
+ "gasStations": [
+  {
+   "name": "Park Avenue",
+   "bay": {
+    "x": 1878.6,
+    "y": 1812.3,
+    "angle": -54.5
+   },
+   "pad": {
+    "x": 1950.2,
+    "y": 1863.4,
+    "length": 150,
+    "depth": 76,
+    "angle": -54.5
+   },
+   "pumps": [
+    {
+     "x": 1929.1,
+     "y": 1882.7
+    },
+    {
+     "x": 1961.6,
+     "y": 1837.1
+    }
+   ],
+   "sign": {
+    "x": 1952.5,
+    "y": 1860.1
+   }
+  }
+ ],
+ "curbSpots": [
+  {
+   "x": 802.4,
+   "y": 1717.6,
+   "angle": -84.5,
+   "customerX": 767.5,
+   "customerY": 1714.2,
+   "street": "Germain Street"
+  },
+  {
+   "x": 2164.9,
+   "y": 533.8,
+   "angle": 4.6,
+   "customerX": 2162.1,
+   "customerY": 568.7,
+   "street": "Institute Road"
+  },
+  {
+   "x": 2345.8,
+   "y": 1772.7,
+   "angle": -83.2,
+   "customerX": 2311.1,
+   "customerY": 1768.6,
+   "street": "Russell Street"
+  },
+  {
+   "x": 592.1,
+   "y": 550.3,
+   "angle": -84.1,
+   "customerX": 626.9,
+   "customerY": 553.9,
+   "street": "Haviland Street"
+  },
+  {
+   "x": 1391.1,
+   "y": 973.4,
+   "angle": -84.1,
+   "customerX": 1425.9,
+   "customerY": 977.1,
+   "street": "Westland Street"
+  },
+  {
+   "x": 527.1,
+   "y": 1176.9,
+   "angle": -84.1,
+   "customerX": 561.9,
+   "customerY": 1180.5,
+   "street": "Haviland Street"
+  },
+  {
+   "x": 1618.7,
+   "y": 1866.6,
+   "angle": -54.5,
+   "customerX": 1590.2,
+   "customerY": 1846.3,
+   "street": "Park Avenue"
+  },
+  {
+   "x": 1787.0,
+   "y": 1331.4,
+   "angle": 95.0,
+   "customerX": 1752.1,
+   "customerY": 1328.4,
+   "street": "Lee Street"
+  },
+  {
+   "x": 1178.2,
+   "y": 453.8,
+   "angle": 4.6,
+   "customerX": 1175.3,
+   "customerY": 488.7,
+   "street": "Institute Road"
+  },
+  {
+   "x": 1335.2,
+   "y": 1510.5,
+   "angle": -84.1,
+   "customerX": 1370.0,
+   "customerY": 1514.2,
+   "street": "Westland Street"
+  }
+ ],
+ "potholes": [
+  {
+   "x": 913.7,
+   "y": 1185.8
+  },
+  {
+   "x": 2484.1,
+   "y": 653.7
+  },
+  {
+   "x": 2179.4,
+   "y": 1986.2
+  },
+  {
+   "x": 528.0,
+   "y": 2172.2
+  }
+ ],
+ "parkedCars": [
+  {
+   "x": 898.3,
+   "y": 1450.5,
+   "angle": -84.5
+  },
+  {
+   "x": 2478.4,
+   "y": 1249.7,
+   "angle": -83.2
+  },
+  {
+   "x": 1617.4,
+   "y": 419.2,
+   "angle": 4.6
+  },
+  {
+   "x": 1942.4,
+   "y": 2079.7,
+   "angle": -5.6
+  },
+  {
+   "x": 575.7,
+   "y": 805.0,
+   "angle": -84.1
+  },
+  {
+   "x": 1022.3,
+   "y": 2144.6,
+   "angle": -4.3
+  },
+  {
+   "x": 460.2,
+   "y": 1919.0,
+   "angle": -84.1
+  },
+  {
+   "x": 1893.2,
+   "y": 924.2,
+   "angle": 95.0
+  },
+  {
+   "x": 1371.5,
+   "y": 1257.9,
+   "angle": -84.1
+  },
+  {
+   "x": 982.4,
+   "y": 574.6,
+   "angle": -84.5
+  },
+  {
+   "x": 1275.4,
+   "y": 1408.8,
+   "angle": -84.1
+  },
+  {
+   "x": 772.8,
+   "y": 1920.7,
+   "angle": -84.5
+  },
+  {
+   "x": 2370.6,
+   "y": 1478.6,
+   "angle": -83.2
+  },
+  {
+   "x": 2060.7,
+   "y": 1229.9,
+   "angle": -54.5
+  },
+  {
+   "x": 501.5,
+   "y": 1521.1,
+   "angle": -84.1
+  },
+  {
+   "x": 2412.4,
+   "y": 1805.8,
+   "angle": -83.2
+  },
+  {
+   "x": 1258.9,
+   "y": 1568.0,
+   "angle": -84.1
+  },
+  {
+   "x": 1404.6,
+   "y": 939.7,
+   "angle": -84.1
+  }
+ ]
+}
