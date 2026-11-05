@@ -6,6 +6,7 @@ import { currentMap, setCurrentMap, type MapId } from '../config/maps';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
+import { TutorialRun } from './Tutorial';
 import { RoadNetwork } from './RoadGeometry';
 import {
   COOLER_CAPACITY,
@@ -133,6 +134,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** SCREAM-146: which map tonight is on: Worcester, or the smaller tutorial map. */
   readonly mapId: MapId;
+  /** SCREAM-169: the uncle's steps, on the tutorial map when he's guiding; null otherwise. */
+  readonly tutorial: TutorialRun | null;
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
@@ -168,8 +171,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     cells?: readonly (FlavourId | null)[];
     /** SCREAM-148: Story's day and run seed, which pick the day each sometimes buyer buys. */
     story?: { day: number; seed: number };
-  }, mapId: MapId = 'worcester') {
+  }, mapId: MapId = 'worcester', guided = false) {
     super();
+    this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
     // SCREAM-146: everything tonight (scenes included) uses this evening's map.
     this.mapId = mapId;
     setCurrentMap(mapId);
@@ -401,6 +405,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.fuelLeft = Math.min(1, this.fuelLeft + cents / FUEL_FULL_TANK_CENTS);
     this.gasSpentCents += cents;
     this.changeMoney(-cents, 'Gas');
+    this.tutorial?.signal('gasBought');
     return true;
   }
 
@@ -416,6 +421,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (this.customerAtWindow === waiting) return;
     this.customerAtWindow = waiting;
     this.emit(EveningEvents.CustomerChanged, waiting);
+    if (waiting) this.tutorial?.signal('customerAtWindow');
   }
 
   /** Total ice creams left in the cooler. */
@@ -534,6 +540,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
       this.tipsTotalCents += sale.outcome.tipCents;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
+      this.tutorial?.signal('salePaid');
     }
     this.afterSaleChange();
   }
@@ -560,6 +567,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.servingNow = null;
     this.setCustomerWaiting(false);
     this.emit(EveningEvents.SaleChanged);
+    this.tutorial?.signal('saleClosed');
     if (this.endPending) {
       this.endPending = false;
       this.ended = true;
@@ -626,6 +634,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Called when the player first heads for the road; from then on, people who hear the truck may want ice cream. */
   lockPrep(): void {
     this.prepLocked = true;
+    this.tutorial?.signal('setOff');
   }
 
   /**

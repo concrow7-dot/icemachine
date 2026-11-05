@@ -38,22 +38,40 @@ export function scale2x(src: Uint32Array, w: number, h: number): Uint32Array {
  */
 export function smoothCustomerTexture(scene: Phaser.Scene, look: number): string {
   const sheetKey = residentsKey();
-  const key = `customer-smooth-${sheetKey}-${look}`;
+  const sheet = scene.textures.get(sheetKey);
+  const frames = [0, 1, 2, 3, 4, 5].map((i) => {
+    const f = sheet.get(residentFrame(look, false, 'down', i));
+    return { x: f.cutX, y: f.cutY };
+  });
+  return smoothFrames(scene, `customer-smooth-${sheetKey}-${look}`, sheetKey, frames);
+}
+
+/** SCREAM-169: the uncle's picture (one look, residents' layout), idle facing down: frames 18-23 of the first row. */
+export const UNCLE_KEY = 'uncle';
+export const UNCLE_URL = 'assets/limezu/uncle.png';
+
+/** The uncle's six idle, facing-down frames, smoothed like a customer at the window. */
+export function smoothUncleTexture(scene: Phaser.Scene): string {
+  const { width: fw } = RESIDENT_FRAME;
+  const frames = [0, 1, 2, 3, 4, 5].map((i) => ({ x: (18 + i) * fw, y: 0 }));
+  return smoothFrames(scene, 'uncle-smooth', UNCLE_KEY, frames);
+}
+
+/** Smooths six 16 x 32 frames of `sourceKey` (top-left corners given) into texture `key`, frames 0 to 5. */
+function smoothFrames(scene: Phaser.Scene, key: string, sourceKey: string, frames: { x: number; y: number }[]): string {
   if (scene.textures.exists(key)) return key;
   const { width: fw, height: fh } = RESIDENT_FRAME;
-  const sheet = scene.textures.get(sheetKey);
-  const source = sheet.getSourceImage() as CanvasImageSource;
+  const source = scene.textures.get(sourceKey).getSourceImage() as CanvasImageSource;
   const small = document.createElement('canvas');
   small.width = fw;
   small.height = fh;
   const sctx = small.getContext('2d', { willReadFrequently: true });
-  const big = scene.textures.createCanvas(key, fw * SMOOTH_FACTOR * 6, fh * SMOOTH_FACTOR);
-  if (!sctx || !big) return sheetKey;
+  const big = scene.textures.createCanvas(key, fw * SMOOTH_FACTOR * frames.length, fh * SMOOTH_FACTOR);
+  if (!sctx || !big) return sourceKey;
   const bctx = big.getContext();
-  for (let i = 0; i < 6; i++) {
-    const f = sheet.get(residentFrame(look, false, 'down', i));
+  frames.forEach((f, i) => {
     sctx.clearRect(0, 0, fw, fh);
-    sctx.drawImage(source, f.cutX, f.cutY, fw, fh, 0, 0, fw, fh);
+    sctx.drawImage(source, f.x, f.y, fw, fh, 0, 0, fw, fh);
     let px: Uint32Array = new Uint32Array(sctx.getImageData(0, 0, fw, fh).data.buffer.slice(0));
     let w = fw;
     let h = fh;
@@ -64,7 +82,7 @@ export function smoothCustomerTexture(scene: Phaser.Scene, look: number): string
     }
     bctx.putImageData(new ImageData(new Uint8ClampedArray(px.buffer as ArrayBuffer), w, h), i * w, 0);
     big.add(i, 0, i * w, 0, w, h);
-  }
+  });
   big.refresh();
   big.setFilter(Phaser.Textures.FilterMode.NEAREST);
   return key;

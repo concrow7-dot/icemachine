@@ -19,10 +19,12 @@ export const SceneKeys = {
   StoryIntro: 'StoryIntro',
   Pump: 'Pump',
   Loading: 'Loading',
+  UncleIntro: 'UncleIntro',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
 export const EVENING_SCENES: string[] = [
+  SceneKeys.UncleIntro,
   SceneKeys.Truck,
   SceneKeys.Cooler,
   SceneKeys.Sales,
@@ -36,10 +38,13 @@ const STATE_KEY = 'evening';
 /** SCREAM-19: the Story run in progress, or null in Quick play. */
 const STORY_KEY = 'story';
 
-/** Quick play: starts a brand-new evening from any screen, everything reset. SCREAM-146: on either map. */
-export function startEvening(from: Phaser.Scene, map: MapId = 'worcester'): void {
+/**
+ * Quick play: starts a brand-new evening from any screen, everything reset. SCREAM-146: on either map.
+ * SCREAM-169: `guided` brings the uncle along (tutorial map only).
+ */
+export function startEvening(from: Phaser.Scene, map: MapId = 'worcester', guided = false): void {
   from.registry.set(STORY_KEY, null);
-  beginEvening(from, new EveningState(undefined, map));
+  beginEvening(from, new EveningState(undefined, map, guided));
 }
 
 /** Story mode (SCREAM-19): starts a new run at day 1, replacing any save (SCREAM-17). */
@@ -67,7 +72,7 @@ export function startStoryEvening(from: Phaser.Scene): void {
 /** Restart evening (pause menu): Quick play starts fresh; Story goes back to how tonight started. */
 export function restartEvening(from: Phaser.Scene): void {
   if (getStory(from)) startStoryEvening(from);
-  else startEvening(from, getEvening(from).mapId);
+  else startEvening(from, getEvening(from).mapId, !!getEvening(from).tutorial);
 }
 
 /** The Story run in progress, or null in Quick play. */
@@ -83,7 +88,8 @@ export function clearStory(scene: Phaser.Scene): void {
 function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   from.registry.set(STATE_KEY, evening);
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
-  from.scene.start(SceneKeys.Cooler);
+  // SCREAM-169: with the uncle, it opens on him in the truck first (the clock still waiting).
+  from.scene.start(evening.tutorial ? SceneKeys.UncleIntro : SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 
