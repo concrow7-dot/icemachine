@@ -29,6 +29,10 @@ const DEPTH = 260;
 const HORIZON_Y = 70;
 const START_Y = 600;
 const STILL_MS = 4200;
+/** PO (November 5): the scroll ran about 5 seconds too long; it now cuts to the truck this much before the last line fades out. */
+const CUT_EARLY_MS = 5000;
+/** The distance along the floor where a line is gone (its size reaches 0.1). */
+const GONE_AT = DEPTH * (1 / 0.1 - 1);
 /** The map shrunk to the screen's width; it drifts from its top to its bottom while the credits play. */
 const DRIFT_MS = 36000;
 const SHADE_ALPHA = 0.7;
@@ -125,7 +129,8 @@ export class TutorialCrawlScene extends Phaser.Scene {
       t.setVisible(near > 0.1);
       if (near > 0.1) anyLeft = true;
     });
-    if (!anyLeft && this.travelled > this.lines.length * LINE_GAP) this.finish();
+    const lastAlong = this.travelled - (this.lines.length - 1) * LINE_GAP;
+    if ((!anyLeft && this.travelled > this.lines.length * LINE_GAP) || lastAlong >= GONE_AT - (SPEED * CUT_EARLY_MS) / 1000) this.finish();
   }
 
   /** On to the uncle in the truck. */
