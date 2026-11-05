@@ -50,11 +50,16 @@ export function smoothCustomerTexture(scene: Phaser.Scene, look: number): string
 export const UNCLE_KEY = 'uncle';
 export const UNCLE_URL = 'assets/limezu/uncle.png';
 
-/** The uncle's six idle, facing-down frames, smoothed like a customer at the window. */
-export function smoothUncleTexture(scene: Phaser.Scene): string {
-  const { width: fw } = RESIDENT_FRAME;
-  const frames = [0, 1, 2, 3, 4, 5].map((i) => ({ x: (18 + i) * fw, y: 0 }));
-  return smoothFrames(scene, 'uncle-smooth', UNCLE_KEY, frames);
+/**
+ * The uncle's six frames, smoothed like a customer at the window: idle facing the player, or
+ * (SCREAM-171) walking away up the truck toward the cab (the walk row's facing-up frames).
+ */
+export function smoothUncleTexture(scene: Phaser.Scene, pose: 'idle' | 'walkAway' = 'idle'): string {
+  const { width: fw, height: fh } = RESIDENT_FRAME;
+  const frames = [0, 1, 2, 3, 4, 5].map((i) =>
+    pose === 'idle' ? { x: (18 + i) * fw, y: 0 } : { x: (6 + i) * fw, y: fh },
+  );
+  return smoothFrames(scene, pose === 'idle' ? 'uncle-smooth' : 'uncle-smooth-walk-away', UNCLE_KEY, frames);
 }
 
 /** Smooths six 16 x 32 frames of `sourceKey` (top-left corners given) into texture `key`, frames 0 to 5. */

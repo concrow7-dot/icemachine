@@ -127,6 +127,13 @@ export type Station = 'menu' | 'cooler' | 'driver' | 'window';
 
 /** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66). */
 export function returnToTruck(from: Phaser.Scene, station: Station): void {
-  getEvening(from).startClock();
+  const evening = getEvening(from);
+  evening.startClock();
+  // SCREAM-171: in the guided tutorial, after Buy Stock the uncle has a word in the truck, then
+  // walks to the cab and drives (UncleIntroScene, then the drive scene).
+  if (evening.tutorial?.legToDrive === 'toRegular' && !evening.isPrepLocked) {
+    from.scene.start(SceneKeys.UncleIntro);
+    return;
+  }
   from.scene.start(SceneKeys.Truck, { station });
 }

@@ -19,6 +19,7 @@ export type TutorialSignal =
   | 'flavourAdded'
   | 'stockBought'
   | 'setOff'
+  | 'regularSpotted'
   | 'customerAtWindow'
   | 'salePaid'
   | 'saleClosed'
@@ -62,15 +63,22 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   },
   {
     id: 'drive',
-    // SCREAM-170: the PO's line back inside the truck (SCREAM-171 has him walk to the cab
-    // and drive). Until then, the second line (engineering's draft) sends the player.
+    // SCREAM-170, 171 (PO's notes): back inside the truck he says the first line, then walks to
+    // the cab; the second, he says while he drives. It stays up until the regular comes out.
     lines: [
       "Let's go get some gas, and then you'll be ready to go.",
-      "Head for the driver's seat. The station's on Park Ave.",
+      "The sun has been setting at 8 PM... you won't get much business after that.",
     ],
-    doneWhen: 'customerAtWindow',
+    doneWhen: 'regularSpotted',
   },
-  { id: 'regular', lines: ['Look who it is: one of my regulars!'] },
+  {
+    id: 'regular',
+    // SCREAM-171 (PO's note): when the regular stops the truck. {regular} is her name.
+    lines: [
+      "Oh hey, it's {regular}... They buy ice cream pretty much every night.",
+      "Remember where they live, and they'll be your best customers.",
+    ],
+  },
   {
     id: 'sale',
     lines: ['Remember the order, fill it from the cooler, then add up the price.'],
@@ -79,13 +87,17 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   { id: 'tomorrow', lines: ["Regulars come back. They'll want you tomorrow too."], doneWhen: 'saleClosed' },
   {
     id: 'pump',
-    lines: ['Now, that gas. Pull into the bay by the pump and fill her up.'],
+    // Engineering's draft until SCREAM-173: he drives on to the pump bay while saying it.
+    lines: ["Now, let's get that gas."],
     doneWhen: 'gasBought',
   },
   { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
 ];
 
 const textOf = (line: Line | undefined): string | null => (line === undefined ? null : typeof line === 'string' ? line : line.text);
+
+/** SCREAM-171: the stretches of road the uncle drives in the tutorial. */
+export type UncleLeg = 'toRegular' | 'toPump';
 
 export const TutorialEvents = {
   /** () — the uncle's line on screen changed (a new step or the next line), or he's done. */
@@ -97,6 +109,10 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   private stepIndex = 0;
   private lineIndex = 0;
   private finished = false;
+  /** SCREAM-171: the regular's name, for his lines about her. */
+  regularName = '';
+  /** SCREAM-171: the legs he has finished driving. */
+  private readonly driven = new Set<UncleLeg>();
 
   get step(): TutorialStepId | 'done' {
     return this.finished ? 'done' : TUTORIAL_STEPS[this.stepIndex]!.id;
@@ -110,7 +126,27 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   /** The uncle's line on screen, or null once he's said everything. */
   get line(): string | null {
     if (this.finished) return null;
-    return textOf(this.current);
+    return textOf(this.current)?.replace('{regular}', this.regularName || 'my regular') ?? null;
+  }
+
+  /**
+   * SCREAM-171: the uncle has the wheel from when he walks to the cab until the truck is in
+   * the pump bay: no steering, and nobody but his regular comes out.
+   */
+  get uncleDriving(): boolean {
+    const step = this.step;
+    return step === 'drive' || step === 'regular' || step === 'sale' || step === 'tomorrow' || (step === 'pump' && !this.driven.has('toPump'));
+  }
+
+  /** Which leg he should be driving now, if any (and not yet finished). */
+  get legToDrive(): UncleLeg | null {
+    if (this.step === 'drive' && !this.driven.has('toRegular')) return 'toRegular';
+    if (this.step === 'pump' && !this.driven.has('toPump')) return 'toPump';
+    return null;
+  }
+
+  finishLeg(leg: UncleLeg): void {
+    this.driven.add(leg);
   }
 
   private get current(): Line | undefined {
@@ -165,6 +201,14 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   signal(what: TutorialSignal): void {
     if (this.finished) return;
     if (TUTORIAL_STEPS[this.stepIndex]!.doneWhen === what) return this.advance();
+    // SCREAM-171: a sale that ends without being paid (the regular gave up, or he drove off)
+    // still ends that part: on to the gas.
+    if (what === 'saleClosed' && (this.step === 'regular' || this.step === 'sale')) {
+      this.stepIndex = TUTORIAL_STEPS.findIndex((st) => st.id === 'pump');
+      this.lineIndex = 0;
+      this.emit(TutorialEvents.Changed);
+      return;
+    }
     if (this.waitingFor !== what) return;
     if (this.moreLines) {
       this.lineIndex++;

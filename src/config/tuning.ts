@@ -303,6 +303,8 @@ export const FUEL_STORY_MIN_START = 1 / 6;
 
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;
+/** SCREAM-171: the guided tutorial starts low on gas (the uncle: "Let's go get some gas"). */
+export const FUEL_TUTORIAL_START = 0.25;
 
 
 /** The HUD's gauge turns red at or below this much of a tank. */

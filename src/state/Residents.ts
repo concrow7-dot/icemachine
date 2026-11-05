@@ -357,6 +357,28 @@ export class Residents {
    * They want ice cream: out of the house if need be, then (SCREAM-142) straight toward the
    * truck. Without the streets, a run to their own curb spot as before.
    */
+  /**
+   * SCREAM-171: the tutorial's regular comes out for the uncle's truck: from wherever she is
+   * (her door if she's inside) to her own curb spot, where she waits for it. She doesn't follow
+   * the truck, and nothing is left to chance (PO: 100% likely).
+   */
+  comeOutToOwnCurb(person: ResidentNow): void {
+    const p = person as Running;
+    if (p.customer !== 'none') return;
+    p.customer = 'running';
+    p.patience = CUSTOMER_WAIT_SECONDS;
+    p.waitAt = undefined;
+    const fromDoor = !p.outside;
+    if (fromDoor) {
+      p.outside = true;
+      p.x = p.resident.door[0];
+      p.y = p.resident.door[1];
+    }
+    p.follows = false;
+    const stand: [number, number] = [p.resident.curb[0], p.resident.curb[1]];
+    this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], CUSTOMER_RUN_SPEED, 'curb');
+  }
+
   private wantIceCream(p: Running): void {
     p.customer = 'running';
     p.patience = CUSTOMER_WAIT_SECONDS;

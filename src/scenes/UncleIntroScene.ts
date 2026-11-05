@@ -37,6 +37,10 @@ export class UncleIntroScene extends Phaser.Scene {
   private askedAt = Infinity;
   /** Keys and clicks count from this time on, so the Enter that skipped the credits doesn't also skip his first line. */
   private readyAt = 0;
+  /** SCREAM-171: back in the truck after Buy Stock, he says his line and walks to the cab to drive. */
+  private headingOut = false;
+  private uncle!: Phaser.GameObjects.Sprite;
+  private bubbleParts: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super(SceneKeys.UncleIntro);
@@ -101,10 +105,13 @@ export class UncleIntroScene extends Phaser.Scene {
       .setOrigin(0.5, 1)
       .setScale(UNCLE_SCALE / SMOOTH_FACTOR)
       .setName('uncle');
+    this.uncle = uncle;
     let step = 0;
     this.time.addEvent({ delay: 160, loop: true, callback: () => uncle.setFrame(++step % 6) });
+    this.headingOut = this.run.step === 'drive';
 
     // The sales window's quote box, its tail stepping toward his face.
+    const bubbleStart = this.children.list.length;
     drawBubble(this.add.graphics(), {
       ...BUBBLE,
       unit: 4,
@@ -131,6 +138,7 @@ export class UncleIntroScene extends Phaser.Scene {
       .text(BUBBLE.x + BUBBLE.w - 22, BUBBLE.y + BUBBLE.h - 16, '▶', { fontFamily: 'monospace', fontSize: '16px', color: INK })
       .setOrigin(1, 1);
     this.tweens.add({ targets: this.more, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
+    this.bubbleParts = this.children.list.slice(bubbleStart);
     this.hint = this.add
       .text(width / 2, height - 14, '', { fontFamily: 'monospace', fontSize: '15px', color: '#ffffff', backgroundColor: '#2b1d10', padding: { x: 8, y: 3 } })
       .setOrigin(0.5, 1);
@@ -166,12 +174,41 @@ export class UncleIntroScene extends Phaser.Scene {
     this.coolerOutline.setVisible(asking);
     this.coolerTag.setVisible(asking);
     this.hint.setText(asking ? 'Click The Cooler (Or Press Enter)' : 'Click Or Enter: Next');
+    // SCREAM-171: heading out, his one line here moves on only when the player has read it (no timer).
+    if (this.headingOut) this.more.setVisible(true);
   }
 
   private next(): void {
     if (this.leaving || this.askingForCooler || this.game.getTime() < this.readyAt) return;
+    if (this.headingOut) return this.walkToCab();
     this.run.nextLine();
     this.show();
+  }
+
+  /**
+   * SCREAM-171 (PO's note): "Uncle turns around and an animation looks like he's walking towards
+   * the front of the truck. Fade out, fade in with the truck driving itself." His bubble goes,
+   * he turns and walks up the aisle, getting smaller, the screen fades, and the drive begins.
+   */
+  private walkToCab(): void {
+    this.leaving = true;
+    for (const part of this.bubbleParts) (part as unknown as Phaser.GameObjects.Components.Visible).setVisible(false);
+    this.hint.setVisible(false);
+    this.uncle.setTexture(smoothUncleTexture(this, 'walkAway'), 0);
+    this.tweens.add({
+      targets: this.uncle,
+      y: UNCLE_FEET - 150,
+      scale: (UNCLE_SCALE / SMOOTH_FACTOR) * 0.62,
+      duration: 1700,
+      ease: 'Sine.easeIn',
+    });
+    this.time.delayedCall(1300, () => this.cameras.main.fadeOut(600));
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.run.nextLine(); // his line for the drive
+      const evening = getEvening(this);
+      evening.lockPrep();
+      this.scene.start(SceneKeys.Drive);
+    });
   }
 
   private toCooler(): void {
