@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { getEvening, SceneKeys } from '../flow';
 import type { TutorialRun } from '../state/Tutorial';
 import { showLoadingWhileLoading } from './LoadingScene';
+import { CREDITS_TUNE_KEY } from './TutorialCrawlScene';
 import { HIGHLIGHT, OUTLINE, ZONES } from './TruckScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 import { drawBubble } from '../ui/speechBubble';
@@ -59,6 +60,11 @@ export class UncleIntroScene extends Phaser.Scene {
     this.readyAt = this.game.getTime() + 300;
     const { width, height } = this.scale;
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+
+    // SCREAM-178: the credits' tune fades out as the uncle appears.
+    for (const tune of this.sound.getAll(CREDITS_TUNE_KEY)) {
+      this.tweens.add({ targets: tune, volume: 0, duration: 1200, onComplete: () => tune.destroy() });
+    }
 
     // The cooler, outlined and clickable once he asks for it (the hub's outline and tag).
     const cooler = ZONES.find((z) => z.id === 'cooler')!;
@@ -147,9 +153,9 @@ export class UncleIntroScene extends Phaser.Scene {
     return this.lineText.text;
   }
 
-  /** On his last line in the truck: "Click on the cooler." (the step's last line is said at the cooler). */
+  /** On his last line in the truck: "Click on the cooler." (it waits for the cooler, SCREAM-170). */
   get askingForCooler(): boolean {
-    return this.run.lineNumber >= this.run.lineCount - 2;
+    return this.run.waitingFor === 'coolerOpened';
   }
 
   private show(): void {
@@ -171,7 +177,7 @@ export class UncleIntroScene extends Phaser.Scene {
   private toCooler(): void {
     if (this.leaving || this.game.getTime() < this.readyAt) return;
     this.leaving = true;
-    this.run.nextLine();
+    this.run.signal('coolerOpened');
     this.scene.start(SceneKeys.Cooler);
   }
 }

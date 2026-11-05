@@ -7,6 +7,7 @@ import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT, MENU_COLOURS } from '../ui/flavourArt';
 import { formatMoney } from '../util/format';
 import { showLoadingWhileLoading } from './LoadingScene';
+import { addUnclePointer } from '../ui/unclePointer';
 
 // Issue #8 (with #21 and #23): prepping the cooler. Changes are a draft order: Buy Stock
 // pays for it and goes back to the truck; B goes back and cancels it (PR #29 feedback).
@@ -113,6 +114,15 @@ export class CoolerScene extends Phaser.Scene {
     this.makeClipboard();
     this.makeCells();
     this.makeMenu();
+    // SCREAM-170: in the guided tutorial, what the uncle talks about gets an outline.
+    const tutorial = this.evening.tutorial;
+    if (tutorial && !this.locked) {
+      addUnclePointer(this, tutorial, {
+        clipboard: () => new Phaser.Geom.Rectangle(15, 46, 220, 448),
+        menu: () => new Phaser.Geom.Rectangle(250, 294, 702, 210),
+        buy: () => (this.buyButton ? Phaser.Geom.Rectangle.Inflate(this.buyButton.getBounds(), 6, 6) : null),
+      });
+    }
 
     this.note = this.add
       .text(
@@ -490,6 +500,7 @@ export class CoolerScene extends Phaser.Scene {
 
   private pick(flavour: FlavourId): void {
     if (this.order.addOne(flavour)) {
+      this.evening.tutorial?.signal('flavourAdded');
       // SCREAM-133: the picture bounces as one goes into the cooler.
       const button = this.addButtons.get(flavour);
       if (button) {

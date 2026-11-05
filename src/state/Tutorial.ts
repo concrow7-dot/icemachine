@@ -13,38 +13,60 @@ import * as Phaser from 'phaser';
  * his opening lines, which are the PO's (SCREAM-177).
  */
 
-/** Things the evening reports that can finish a step. */
-export type TutorialSignal = 'setOff' | 'customerAtWindow' | 'salePaid' | 'saleClosed' | 'gasBought';
+/** Things the game reports that can move the uncle on: finish a step, or a line that waits for them. */
+export type TutorialSignal =
+  | 'coolerOpened'
+  | 'flavourAdded'
+  | 'stockBought'
+  | 'setOff'
+  | 'customerAtWindow'
+  | 'salePaid'
+  | 'saleClosed'
+  | 'gasBought';
 
 export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'tomorrow' | 'pump' | 'alone';
+
+/** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
+export type TutorialPoint = 'clipboard' | 'menu' | 'buy';
+
+/**
+ * One of the uncle's lines. A plain line moves on when read (clicked, or after a while).
+ * SCREAM-170: a line with `until` waits for the player to do what it says.
+ */
+type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint };
 
 type Step = {
   id: TutorialStepId;
   /** The uncle's lines, shown one after another. The last one stays up until the step is done. */
-  lines: string[];
-  /** What finishes the step. Without one, the step is done once its lines have been read. */
+  lines: Line[];
+  /** What finishes the step (even if some of its lines are still to come). Without one, the step is done once its lines have been read. */
   doneWhen?: TutorialSignal;
 };
 
-/** The uncle's lines: the PO's opening lines, then engineering's DRAFTS for the PO to rewrite. */
+/** The uncle's lines: the PO's (SCREAM-170, 177), then engineering's DRAFTS for the PO to rewrite. */
 export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'stock',
-    // SCREAM-177 (PO's note, November 5): his first three lines, in the truck. The third
-    // asks the player to click the cooler; the last line (engineering's draft) is at the cooler.
+    // SCREAM-177 (PO's note, November 5): his first three lines, in the truck; the third waits
+    // for the player to click the cooler. SCREAM-170 (PO's note): his four lines at the cooler.
     lines: [
       "Thanks for helping out, kiddo. I can't work with this foot.",
       "I'll help you get set up, and then you're on your own.",
-      "Let's start by selecting your stock. Click on the cooler.",
-      "When you're happy with your stock, head for the driver's seat.",
+      { text: "Let's start by selecting your stock. Click on the cooler.", until: 'coolerOpened' },
+      { text: 'Select what you want from the "Available Ice Cream" clipboard.', until: 'flavourAdded', point: 'clipboard' },
+      { text: 'Once you\'ve added a new flavor, you can set the price in "Today\'s Menu".', point: 'menu' },
+      { text: "Be careful: too expensive, and most people won't want to buy.", point: 'menu' },
+      { text: 'When you\'re ready, "Buy Stock" and we\'ll hit the road!', point: 'buy' },
     ],
-    doneWhen: 'setOff',
+    doneWhen: 'stockBought',
   },
   {
     id: 'drive',
+    // SCREAM-170: the PO's line back inside the truck (SCREAM-171 has him walk to the cab
+    // and drive). Until then, the second line (engineering's draft) sends the player.
     lines: [
-      "The gas is low. Let's head for the station on Park Ave.",
-      'Keep your ears open on the way. People hear the music and come out.',
+      "Let's go get some gas, and then you'll be ready to go.",
+      "Head for the driver's seat. The station's on Park Ave.",
     ],
     doneWhen: 'customerAtWindow',
   },
@@ -62,6 +84,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   },
   { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
 ];
+
+const textOf = (line: Line | undefined): string | null => (line === undefined ? null : typeof line === 'string' ? line : line.text);
 
 export const TutorialEvents = {
   /** () — the uncle's line on screen changed (a new step or the next line), or he's done. */
@@ -86,7 +110,23 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   /** The uncle's line on screen, or null once he's said everything. */
   get line(): string | null {
     if (this.finished) return null;
-    return TUTORIAL_STEPS[this.stepIndex]!.lines[this.lineIndex] ?? null;
+    return textOf(this.current);
+  }
+
+  private get current(): Line | undefined {
+    return this.finished ? undefined : TUTORIAL_STEPS[this.stepIndex]!.lines[this.lineIndex];
+  }
+
+  /** SCREAM-170: what the line on screen is waiting for the player to do, if anything. */
+  get waitingFor(): TutorialSignal | null {
+    const line = this.current;
+    return typeof line === 'object' ? (line.until ?? null) : null;
+  }
+
+  /** SCREAM-170: what the line on screen is about, for the screen to outline. */
+  get pointAt(): TutorialPoint | null {
+    const line = this.current;
+    return typeof line === 'object' ? (line.point ?? null) : null;
   }
 
   /** Which line of this step is on screen (0 is the first), and how many lines it has. */
@@ -110,7 +150,7 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
 
   /** The player read the line (clicked it, or it timed out): show the next one, or finish a talk-only step. */
   nextLine(): void {
-    if (this.finished) return;
+    if (this.finished || this.waitingFor) return;
     const step = TUTORIAL_STEPS[this.stepIndex]!;
     if (this.moreLines) this.lineIndex++;
     else if (!step.doneWhen) return this.advance();
@@ -118,10 +158,18 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
     this.emit(TutorialEvents.Changed);
   }
 
-  /** The evening reports something; if it's what the current step is waiting for, move on. */
+  /**
+   * The game reports something. If it finishes the current step, on to the next step; if it's
+   * what the line on screen is waiting for, on to the next line.
+   */
   signal(what: TutorialSignal): void {
-    if (this.finished || TUTORIAL_STEPS[this.stepIndex]!.doneWhen !== what) return;
-    this.advance();
+    if (this.finished) return;
+    if (TUTORIAL_STEPS[this.stepIndex]!.doneWhen === what) return this.advance();
+    if (this.waitingFor !== what) return;
+    if (this.moreLines) {
+      this.lineIndex++;
+      this.emit(TutorialEvents.Changed);
+    } else this.advance();
   }
 
   private advance(): void {

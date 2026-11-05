@@ -11,12 +11,12 @@ import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
  *
  * It sits near the top on most screens, clear of the calculator, the buttons and the
  * controls line along the bottom, and stops short of the map's OpenStreetMap credit (top
- * right). The cooler's clipboard and crates fill its top, so there it sits bottom right,
- * over Today's Menu, clear of Buy Stock.
+ * right). On the cooler (SCREAM-170) it sits top right, over the freezer's sign, clear of the
+ * clipboard, Today's Menu and Buy Stock, which he talks about.
  */
-const BOX = { x: 0, y: 0, w: 680, h: 72, unit: 4 };
+const BOX = { x: 0, y: 0, w: 690, h: 58, unit: 4 };
 const SPOT_TOP = { x: 90, y: 48 };
-const SPOT_COOLER = { x: 262, y: 434 };
+const SPOT_COOLER = { x: 254, y: 39 };
 const LINE_MS = 6000;
 /** How long his last line stays up once he has nothing more to say. */
 const LAST_LINE_MS = 9000;
@@ -25,6 +25,10 @@ export class UncleBox {
   readonly container: Phaser.GameObjects.Container;
   private readonly text: Phaser.GameObjects.Text;
   private readonly more: Phaser.GameObjects.Text;
+  /** SCREAM-180: the bubble itself, scaled from its middle when a new line pops in. */
+  private readonly bubble: Phaser.GameObjects.Container;
+  /** SCREAM-180: a yellow glow round the bubble that flashes as a new line arrives. */
+  private readonly glow: Phaser.GameObjects.Graphics;
   private timer?: Phaser.Time.TimerEvent;
   /** He's said everything and his last line has had its time: the box stays away. */
   private gone = false;
@@ -37,27 +41,36 @@ export class UncleBox {
     this.scene = scene;
     this.run = run;
     const g = drawBubble(scene.add.graphics(), { ...BOX, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
-    const name = scene.add.text(BOX.x + 20, BOX.y + 12, 'Uncle', {
+    const name = scene.add.text(BOX.x + 18, BOX.y + 9, 'Uncle', {
       fontFamily: 'monospace',
-      fontSize: '15px',
+      fontSize: '13px',
       fontStyle: 'bold',
       color: '#c2185b',
     });
-    this.text = scene.add.text(BOX.x + 20, BOX.y + 32, '', {
+    // One row of text: his lines fit at this size (the longest, at the cooler, is 74 letters).
+    this.text = scene.add.text(BOX.x + 18, BOX.y + 27, '', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#2b1d10',
-      wordWrap: { width: BOX.w - 60 },
+      wordWrap: { width: BOX.w - 44 },
       lineSpacing: 2,
     });
     this.more = scene.add
       .text(BOX.x + BOX.w - 16, BOX.y + BOX.h - 12, '▶', { fontFamily: 'monospace', fontSize: '14px', color: '#2b1d10' })
       .setOrigin(1, 1);
     scene.tweens.add({ targets: this.more, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
+    // The bubble's parts sit round its middle, so it can pop in from there (SCREAM-180).
+    const parts = [g, name, this.text, this.more];
+    for (const p of parts) (p as unknown as { x: number; y: number }).x -= BOX.w / 2;
+    for (const p of parts) (p as unknown as { x: number; y: number }).y -= BOX.h / 2;
+    this.bubble = scene.add.container(BOX.w / 2, BOX.h / 2, parts);
+    this.glow = scene.add.graphics().setAlpha(0);
+    this.glow.lineStyle(10, 0x3b2a1a, 0.6).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
+    this.glow.lineStyle(6, 0xffe066, 1).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
     const hit = scene.add.zone(BOX.x, BOX.y, BOX.w, BOX.h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', () => run.nextLine());
     this.container = scene.add
-      .container(SPOT_TOP.x, SPOT_TOP.y, [g, name, this.text, this.more, hit])
+      .container(SPOT_TOP.x, SPOT_TOP.y, [this.glow, this.bubble, hit])
       .setName('uncle-box')
       .setDepth(50);
 
@@ -105,12 +118,36 @@ export class UncleBox {
       });
       return;
     }
-    this.text.setText(line);
+    this.popIn(line);
     // ▶ when clicking (or waiting) brings another line, or finishes a step that's only talk.
-    const goesOn = this.run.moreLines || this.run.talkOnly;
+    // SCREAM-170: a line waiting for the player to do something stays until they do.
+    const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
     this.more.setVisible(goesOn);
     if (goesOn) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
+  }
+
+  /**
+   * SCREAM-180 (PO, November 5): a new line should be obvious. The old bubble shrinks away,
+   * the new one pops in with a little overshoot, and a yellow glow flashes round it twice.
+   * (While he's talking in the truck the box is hidden, so the text just changes.)
+   */
+  private popIn(line: string): void {
+    const tweens = this.scene.tweens;
+    tweens.killTweensOf([this.bubble, this.glow]);
+    const arrive = () => {
+      this.text.setText(line);
+      this.bubble.setScale(0.5).setAlpha(0);
+      tweens.add({ targets: this.bubble, scale: 1, alpha: 1, duration: 340, ease: 'Back.easeOut' });
+      this.glow.setAlpha(0);
+      tweens.add({ targets: this.glow, alpha: 1, duration: 160, yoyo: true, repeat: 2, delay: 200 });
+    };
+    if (this.screen === 'intro' || !this.text.text) {
+      this.bubble.setScale(1).setAlpha(1);
+      if (this.screen === 'intro') return void this.text.setText(line);
+      return arrive();
+    }
+    tweens.add({ targets: this.bubble, scale: 0.6, alpha: 0, duration: 140, ease: 'Quad.easeIn', onComplete: arrive });
   }
 }
