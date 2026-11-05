@@ -80,6 +80,26 @@ const { chromium } = require('playwright');
     return tried + ' tried, ' + through + ' through a house, ' + arrived + ' reached the truck' + (dbg.length ? ' ' + JSON.stringify(dbg) : '');
   })()`);
   check('Customers behind a house walk round it to the truck (12 tries)', walk, '12 tried, 0 through a house, 12 reached the truck');
+  // SCREAM-162: nobody gets stuck at a corner: every resident, truck at their pink square and 250 px either way.
+  const stuck = await ev(`(() => {
+    const R = e.residents; let tries = 0; const out = [];
+    R.all.forEach(p => {
+      const c = p.resident.curb, a = c[4] * Math.PI / 180;
+      for (const off of [0, 250, -250]) {
+        const tx = c[2] + Math.cos(a) * off, ty = c[3] + Math.sin(a) * off;
+        p.customer = 'none'; p.outside = false; p.waitAt = undefined; p.spotStand = undefined;
+        R.wantIceCream(p); tries++;
+        let last = [p.x, p.y], t = 0, lastT = 0;
+        for (let i = 0; i < 1500 && p.customer === 'running'; i++) {
+          R.update(0.1, { x: tx, y: ty, radius: 0, open: false }); t += 0.1;
+          if (t - lastT >= 6) { if (Math.hypot(p.x - last[0], p.y - last[1]) < 8) { out.push(p.resident.id + '@' + Math.round(p.x) + ',' + Math.round(p.y)); break; } last = [p.x, p.y]; lastT = t; }
+        }
+        p.customer = 'none'; p.plan = { kind: 'inside', until: 0 }; p.outside = false; p.waitAt = undefined; p.spotStand = undefined;
+      }
+    });
+    return tries + ' walks, stuck: ' + (out.join(' ') || 'none');
+  })()`);
+  check('No customer gets stuck on the way to the truck (40 residents x 3 spots)', stuck, '120 walks, stuck: none');
 
   // ---- SCREAM-159: Park Ave has two lanes each way; Russell St stops at Park Ave ----
   check('Park Avenue: two lanes each way (240 px of asphalt)', await drive("(r => r.lanes + ' ' + s.roads.halfWidth(s.map.roads.indexOf(r)) * 2)(s.map.roads.find(r => r.name === 'Park Avenue'))"), '2 240');
