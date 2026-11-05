@@ -3,7 +3,7 @@
 // This finds that spot: the nearest street, a place along it with room for the square,
 // where to stand on the sidewalk, and the square itself. No Phaser here.
 
-import { LANE_OFFSET, ROAD_HALF_WIDTH, type RoadNetwork } from './RoadGeometry';
+import { type RoadNetwork } from './RoadGeometry';
 
 /** Where a customer stands to wait, and their pink square (x, y, the road's angle in degrees). */
 export interface CurbSpot {
@@ -11,8 +11,8 @@ export interface CurbSpot {
   square: [number, number, number];
 }
 
-/** How far from the street's centre line a waiting customer stands (just onto the sidewalk). */
-const STAND_OFFSET = ROAD_HALF_WIDTH + 8;
+/** How far past the curb a waiting customer stands (just onto the sidewalk). */
+const STAND_PAST_CURB = 8;
 /** How far from where they are a customer will look for room, and the steps they look in (px). */
 const SEARCH = 150;
 const SEARCH_STEP = 25;
@@ -65,8 +65,11 @@ export class CurbFinder {
         best = { ax: s.ax, ay: s.ay, vx, vy, len, t, d, side: cross >= 0 ? 1 : -1, road: s.road };
       }
     }
-    if (!best || best.d > REACH + STAND_OFFSET) return null;
+    if (!best || best.d > REACH + this.roads.halfWidth(best.road) + STAND_PAST_CURB) return null;
     const { ax, ay, vx, vy, len, t, side, road } = best;
+    // SCREAM-159: a wider street puts the square in its outside lane and the customer at its curb.
+    const STAND_OFFSET = this.roads.halfWidth(road) + STAND_PAST_CURB;
+    const LANE_OFFSET = this.roads.laneOffset(road);
     const nx = (-vy / len) * side;
     const ny = (vx / len) * side;
     const angle = (Math.atan2(vy, vx) * 180) / Math.PI;
@@ -103,6 +106,8 @@ export class CurbFinder {
       const len = Math.hypot(vx, vy);
       if (len === 0) continue;
       const t = Math.max(0, Math.min(1, ((x - s.ax) * vx + (y - s.ay) * vy) / (len * len)));
+      const STAND_OFFSET = this.roads.halfWidth(s.road) + STAND_PAST_CURB;
+      const LANE_OFFSET = this.roads.laneOffset(s.road);
       if (Math.hypot(x - s.ax - t * vx, y - s.ay - t * vy) > REACH + STAND_OFFSET) continue;
       const angle = (Math.atan2(vy, vx) * 180) / Math.PI;
       for (const side of [1, -1]) {

@@ -101,6 +101,17 @@ const { chromium } = require('playwright');
   })()`);
   check('No customer gets stuck on the way to the truck (40 residents x 3 spots)', stuck, '120 walks, stuck: none');
 
+  // ---- SCREAM-159: Park Ave has two lanes each way; Russell St stops at Park Ave ----
+  check('Park Avenue: two lanes each way (240 px of asphalt)', await drive("(r => r.lanes + ' ' + s.roads.halfWidth(s.map.roads.indexOf(r)) * 2)(s.map.roads.find(r => r.name === 'Park Avenue'))"), '2 240');
+  check('...white lane lines between its lanes', await drive("s.dashes.some(d => d.white)"), true);
+  check('Russell Street only south of Park Avenue', await drive("s.map.roads.filter(r => r.name === 'Russell Street').length"), 1);
+  const parkSpot = await ev("(() => { const f = e.residents.curbs; const r = f.roads; const i = r.names.indexOf('Park Avenue'); const sg = r.segments.find(q => q.road === i); const mx = (sg.ax + sg.bx) / 2, my = (sg.ay + sg.by) / 2; const L = Math.hypot(sg.bx - sg.ax, sg.by - sg.ay); const nx = -(sg.by - sg.ay) / L, ny = (sg.bx - sg.ax) / L; const sp = f.near(mx + nx * 140, my + ny * 140, [], 0); if (!sp) return 'none'; return Math.round(Math.abs((sp.square[0] - mx) * nx + (sp.square[1] - my) * ny)) + ' ' + r.onRoad(sp.square[0], sp.square[1]) + ' ' + !r.onRoad(sp.stand[0], sp.stand[1]); })()");
+  check('...a pink square beside Park Ave goes in its outside lane, the customer on the sidewalk', parkSpot, '90 true true');
+  await drive("(() => { const r = s.map.roads.find(q => q.name === 'Park Avenue').points; s.truck.setPosition((r[0] + r[2]) / 2, (r[1] + r[3]) / 2); s.speed = 0; s.parkBrake = true; return 1; })()"); await wait(2600);
+  await page.screenshot({ path: outDir + '/tutorial_parkave.png' });
+  await drive("(g => { s.truck.setPosition(g.pad.x - 250, g.pad.y); s.speed = 0; s.parkBrake = true; return 1; })(s.map.gasStations[0])"); await wait(2600);
+  await page.screenshot({ path: outDir + '/tutorial_gas.png' });
+
   // ---- A customer at the window ----
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
   await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);

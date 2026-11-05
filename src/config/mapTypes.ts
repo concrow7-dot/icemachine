@@ -6,6 +6,8 @@
 export interface MapRoad {
   name: string;
   points: number[];
+  /** SCREAM-159: lanes each way (default 1); Park Ave on the tutorial map has 2. Each lane is 60 px. */
+  lanes?: number;
 }
 
 /** A street name written along the road. */

@@ -27,8 +27,9 @@ How the Tiled file is read:
   as ornaments.
 - Businesses: the object's name is the name painted on its sign.
 - Tile layers and image layers (except grass) make the ground, in layer order.
-- Kept from the generated map (locked in the Tiled file): roads for driving, curb spots,
-  potholes, parked cars, the truck's start, the gas station, street names.
+- Kept from the road data (locked in the Tiled file; built by tools/tiled/build_roads.py from
+  tools/tutorial/roads.json, SCREAM-159): roads for driving, curb spots, potholes, parked cars,
+  the truck's start, the gas station, street names.
 """
 import base64, csv, gzip, hashlib, json, math, os, re, sys, zlib
 import xml.etree.ElementTree as ET
