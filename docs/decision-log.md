@@ -6,7 +6,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-159, under SCREAM-10, PO, November 4):** on the tutorial map, Park Avenue (the diagonal from Highland St to Institute Rd) is twice as wide, two lanes each way, widened on its east side only; the shops' side stays where it was. Russell Street's short piece north of Park Ave is removed. Everything east of Park Ave moved east to make room (houses, Russell St, the gas station, trees); the map kept its size, so 37 trees pushed past the right edge were dropped (no houses). The roads stay generated; everything else is edited in Tiled (PO agreed to engineering's proposal, November 4).
 
-**Why (product owner's rationale):** _to come: asked November 4._
+**Why (product owner's rationale):** it's true to the real streets, and he wants a difference between main roads and side roads; in future, perhaps cars that travel on the main road (see SCREAM-55 main vs side streets, SCREAM-98 moving cars).
 
 **Engineering's calls (proposals):** streets can now have more than one lane each way (`lanes` in the map data); a wider street gets white dashed lines between its lanes, pink squares in its outside lane and customers at its curb. The tutorial map's roads live in `tools/tutorial/roads.json` and are built by `tools/tiled/build_roads.py`, which also makes the road picture for the PO's Tiled map. Everything east of Park Ave moved 147 px straight east (120 px out from Park Ave), so nothing ends up on the new lanes. Russell St's junction with Park Ave stays where you see it; the wide street's ends stop at Highland St and Institute Rd without bulging past them.
 
