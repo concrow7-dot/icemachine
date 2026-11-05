@@ -669,13 +669,17 @@ export function detour(walls: readonly Wall[], x: number, y: number, tx: number,
   const corners: [number, number][] = [[first.x0 - g, first.y0 - g], [first.x1 + g, first.y0 - g], [first.x1 + g, first.y1 + g], [first.x0 - g, first.y1 + g]];
   // The rest of the way from a corner: straight on if the building's out of the way, or else
   // along its side to the next corner first (so nobody heads for a corner and then turns back).
-  const clear = (cx: number, cy: number) => hitBox(first!, cx, cy, tx, ty, WALL_GAP) === null;
+  const endPad = inBox(first, tx, ty, WALL_GAP) ? 0 : WALL_GAP; // heading right up beside it
+  const clear = (cx: number, cy: number) => hitBox(first!, cx, cy, tx, ty, endPad) === null;
+  // A corner pressed against the next building can't be walked to.
+  const squeezed = (cx: number, cy: number) => walls.some((o) => o !== first && inBox(o, cx, cy, 0));
   const onward = (cx: number, cy: number): number => {
     if (clear(cx, cy)) return Math.hypot(tx - cx, ty - cy);
     const i = corners.findIndex(([qx, qy]) => qx === cx && qy === cy);
     let via = Infinity;
     for (const j of [(i + 1) % 4, (i + 3) % 4]) {
       const [ax, ay] = corners[j]!;
+      if (squeezed(ax, ay)) continue;
       if (clear(ax, ay)) via = Math.min(via, Math.hypot(ax - cx, ay - cy) + Math.hypot(tx - ax, ty - ay));
     }
     return via === Infinity ? 1e6 : via;
@@ -683,13 +687,15 @@ export function detour(walls: readonly Wall[], x: number, y: number, tx: number,
   // Standing at a corner already: look on from the corner itself, to the next one.
   const at = corners.find(([cx, cy]) => Math.hypot(cx - x, cy - y) < 4);
   const [ox, oy] = at ?? [x, y];
+  // Round the corner already and the way on is clear: carry on (only the gap kept round the
+  // building was in the way, not the building).
+  if (at && clear(ox, oy)) return [tx, ty];
   let best: [number, number] = [tx, ty];
   let bestCost = Infinity;
   for (const [cx, cy] of corners) {
     if (at && cx === at[0] && cy === at[1]) continue;
     if (hitBox(first, ox, oy, cx, cy, at ? WALL_GAP : firstPad) !== null) continue; // round the near side only
-    // Not a corner squeezed against the next house (people would walk into it).
-    if (walls.some((o) => o !== first && inBox(o, cx, cy, 0))) continue;
+    if (squeezed(cx, cy)) continue; // people would walk into the next house
     const cost = Math.hypot(cx - x, cy - y) + onward(cx, cy);
     if (cost < bestCost) {
       best = [cx, cy];
