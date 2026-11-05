@@ -60,6 +60,27 @@ const { chromium } = require('playwright');
   check('...a shop sign is shown when the truck is near', await drive("(t => !!t && t.visible)(s.children.getByName('sign-Bagel Time'))"), true);
   await page.screenshot({ path: outDir + '/tutorial_shops.png' });
 
+  // ---- SCREAM-161: customers walk round houses, not through them ----
+  const walk = await ev(`(() => {
+    const R = e.residents, W = R.walls;
+    const inside = (x, y) => W.some(w => x > w.x0 + 2 && x < w.x1 - 2 && y > w.y0 + 2 && y < w.y1 - 2);
+    let tried = 0, through = 0, arrived = 0; const dbg = [];
+    for (const w of W) {
+      const cx = (w.x0 + w.x1) / 2, sx = cx, sy = w.y0 - 14, tx = cx, ty = w.y1 + 160;
+      if (inside(sx, sy) || W.some(o => o !== w && sx > o.x0 - 8 && sx < o.x1 + 8 && sy > o.y0 - 8 && sy < o.y1 + 8)) continue;
+      const p = R.all.filter(q => q.customer === 'none')[tried]; if (!p) break;
+      R.wantIceCream(p); p.x = sx; p.y = sy; tried++;
+      let hit = false, minD = 1e9;
+      for (let i = 0; i < 3000 && p.customer === 'running'; i++) { R.update(0.1, { x: tx, y: ty, radius: 0, open: false }); minD = Math.min(minD, Math.hypot(p.x - tx, p.y - ty)); if (inside(p.x, p.y) && !hit) { hit = true; dbg.push([Math.round(sx), Math.round(sy), Math.round(p.x), Math.round(p.y), p.plan.kind, JSON.stringify(W.filter(o => p.x > o.x0 + 2 && p.x < o.x1 - 2 && p.y > o.y0 + 2 && p.y < o.y1 - 2))]); } }
+      if (hit) through++;
+      if (minD < 200 || p.customer !== 'running') arrived++; else dbg.push([Math.round(sx), Math.round(sy), Math.round(p.x), Math.round(p.y), Math.round(minD), p.customer, p.plan.kind, tx, ty]);
+      p.customer = 'none'; p.plan = { kind: 'inside', until: 0 }; p.outside = false; p.waitAt = undefined; p.spotStand = undefined;
+      if (tried >= 12) break;
+    }
+    return tried + ' tried, ' + through + ' through a house, ' + arrived + ' reached the truck' + (dbg.length ? ' ' + JSON.stringify(dbg) : '');
+  })()`);
+  check('Customers behind a house walk round it to the truck (12 tries)', walk, '12 tried, 0 through a house, 12 reached the truck');
+
   // ---- A customer at the window ----
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
   await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);

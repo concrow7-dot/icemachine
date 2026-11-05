@@ -222,6 +222,12 @@ export class Residents {
   /** `rnd` returns 0 to 1 (Math.random by default; tests pass their own). */
   /** `curbs` (SCREAM-140) lets customers walk to the truck and wait at the curb beside it. */
   /** `story` (SCREAM-148): Story mode's day and run seed, which pick each sometimes buyer's day. */
+  /**
+   * SCREAM-161: houses, shops, fences, the court and the playground, as boxes on the map.
+   * Customers head straight for the truck but walk round these (EveningState sets them).
+   */
+  walls: readonly Wall[] = [];
+
   constructor(
     list: readonly Resident[],
     rnd: () => number = Math.random,
@@ -456,13 +462,17 @@ export class Residents {
       this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], CUSTOMER_RUN_SPEED, 'curb');
       return;
     }
-    // Toward the truck, but not into it.
+    // Toward the truck, but not into it; SCREAM-161: round any building in the way.
     const step = Math.min(CUSTOMER_RUN_SPEED * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
     p.walking = step > 0;
     if (step <= 0) return;
-    p.x += (dx / dist) * step;
-    p.y += (dy / dist) * step;
-    p.facing = facingFor(dx, dy);
+    const [vx, vy] = detour(this.walls, p.x, p.y, tx, ty);
+    const vdx = vx - p.x;
+    const vdy = vy - p.y;
+    const vd = Math.hypot(vdx, vdy) || 1;
+    p.x += (vdx / vd) * Math.min(step, vd);
+    p.y += (vdy / vd) * Math.min(step, vd);
+    p.facing = facingFor(vdx, vdy);
   }
 
   private step(p: Running, dt: number): void {
@@ -520,6 +530,17 @@ export class Residents {
       const dx = tx - p.x;
       const dy = ty - p.y;
       const dist = Math.hypot(dx, dy);
+      // SCREAM-161: round a building in the way first (yard walks never meet one).
+      const [vx, vy] = detour(this.walls, p.x, p.y, tx, ty);
+      if (vx !== tx || vy !== ty) {
+        const vdx = vx - p.x;
+        const vdy = vy - p.y;
+        const vd = Math.hypot(vdx, vdy) || 1;
+        p.x += (vdx / vd) * Math.min(stepLength, vd);
+        p.y += (vdy / vd) * Math.min(stepLength, vd);
+        p.facing = facingFor(vdx, vdy);
+        return;
+      }
       if (dist > stepLength) {
         p.x += (dx / dist) * stepLength;
         p.y += (dy / dist) * stepLength;
@@ -582,4 +603,98 @@ export class Residents {
 
 function facingFor(dx: number, dy: number): ResidentFacing {
   return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+}
+
+/** SCREAM-161: a building's box on the map (its picture: left, top, right, bottom). */
+export interface Wall {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/** How far round a building people keep (px). */
+const WALL_GAP = 6;
+
+function inBox(w: Wall, x: number, y: number, pad: number): boolean {
+  return x > w.x0 - pad && x < w.x1 + pad && y > w.y0 - pad && y < w.y1 + pad;
+}
+
+/** Where the line a-b first enters box w grown by pad, as a fraction of the way (null if it doesn't). */
+function hitBox(w: Wall, ax: number, ay: number, bx: number, by: number, pad: number): number | null {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const edges: [number, number][] = [[-dx, ax - (w.x0 - pad)], [dx, w.x1 + pad - ax], [-dy, ay - (w.y0 - pad)], [dy, w.y1 + pad - ay]];
+  for (const [q, r] of edges) {
+    if (q === 0) {
+      if (r < 0) return null;
+      continue;
+    }
+    const t = r / q;
+    if (q < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1) return null;
+  }
+  return t0;
+}
+
+/**
+ * SCREAM-161: where to head for to get from (x, y) toward (tx, ty) without walking through a
+ * building: the target itself if the way is clear, or else the corner of the first building in
+ * the way that makes the shortest walk. Buildings the walker or the target is already beside
+ * (their own front door, a spot behind a house) don't count.
+ */
+export function detour(walls: readonly Wall[], x: number, y: number, tx: number, ty: number): [number, number] {
+  let first: Wall | null = null;
+  let firstT = Infinity;
+  let firstPad = WALL_GAP;
+  for (const w of walls) {
+    if (Math.max(w.x0, Math.min(x, tx)) - WALL_GAP > Math.min(w.x1, Math.max(x, tx)) + WALL_GAP) continue;
+    if (Math.max(w.y0, Math.min(y, ty)) - WALL_GAP > Math.min(w.y1, Math.max(y, ty)) + WALL_GAP) continue;
+    // Standing in it (a spot behind a house, a front door) or heading into it: it doesn't count.
+    if (inBox(w, x, y, 0) || inBox(w, tx, ty, 0)) continue;
+    // Right beside it: only its walls count, not the gap kept round it.
+    const pad = inBox(w, x, y, WALL_GAP) || inBox(w, tx, ty, WALL_GAP) ? 0 : WALL_GAP;
+    const t = hitBox(w, x, y, tx, ty, pad);
+    if (t !== null && t < firstT) {
+      first = w;
+      firstT = t;
+      firstPad = pad;
+    }
+  }
+  if (!first) return [tx, ty];
+  const g = WALL_GAP + 1;
+  const corners: [number, number][] = [[first.x0 - g, first.y0 - g], [first.x1 + g, first.y0 - g], [first.x1 + g, first.y1 + g], [first.x0 - g, first.y1 + g]];
+  // The rest of the way from a corner: straight on if the building's out of the way, or else
+  // along its side to the next corner first (so nobody heads for a corner and then turns back).
+  const clear = (cx: number, cy: number) => hitBox(first!, cx, cy, tx, ty, WALL_GAP) === null;
+  const onward = (cx: number, cy: number): number => {
+    if (clear(cx, cy)) return Math.hypot(tx - cx, ty - cy);
+    const i = corners.findIndex(([qx, qy]) => qx === cx && qy === cy);
+    let via = Infinity;
+    for (const j of [(i + 1) % 4, (i + 3) % 4]) {
+      const [ax, ay] = corners[j]!;
+      if (clear(ax, ay)) via = Math.min(via, Math.hypot(ax - cx, ay - cy) + Math.hypot(tx - ax, ty - ay));
+    }
+    return via === Infinity ? 1e6 : via;
+  };
+  // Standing at a corner already: look on from the corner itself, to the next one.
+  const at = corners.find(([cx, cy]) => Math.hypot(cx - x, cy - y) < 4);
+  const [ox, oy] = at ?? [x, y];
+  let best: [number, number] = [tx, ty];
+  let bestCost = Infinity;
+  for (const [cx, cy] of corners) {
+    if (at && cx === at[0] && cy === at[1]) continue;
+    if (hitBox(first, ox, oy, cx, cy, at ? WALL_GAP : firstPad) !== null) continue; // round the near side only
+    // Not a corner squeezed against the next house (people would walk into it).
+    if (walls.some((o) => o !== first && inBox(o, cx, cy, 0))) continue;
+    const cost = Math.hypot(cx - x, cy - y) + onward(cx, cy);
+    if (cost < bestCost) {
+      best = [cx, cy];
+      bestCost = cost;
+    }
+  }
+  return best;
 }
