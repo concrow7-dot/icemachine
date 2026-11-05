@@ -13,15 +13,17 @@ export type PointRects = Partial<Record<TutorialPoint, () => Phaser.Geom.Rectang
 
 export function addUnclePointer(scene: Phaser.Scene, run: TutorialRun, rects: PointRects): Phaser.GameObjects.Graphics {
   const g = scene.add.graphics().setDepth(40).setName('uncle-pointer');
-  scene.tweens.add({ targets: g, alpha: 0.35, duration: 500, yoyo: true, repeat: -1 });
+  // SCREAM-180 (PO): a stronger flash, so it shows even on the clipboard's own gold frame.
+  scene.tweens.add({ targets: g, alpha: 0.2, duration: 380, yoyo: true, repeat: -1 });
   const draw = () => {
     g.clear();
     const at = run.pointAt;
     const r = at ? rects[at]?.() : null;
     if (!r) return g.setVisible(false);
     g.setVisible(true);
-    g.lineStyle(9, OUTLINE, 0.9).strokeRoundedRect(r.x, r.y, r.width, r.height, 10);
-    g.lineStyle(5, HIGHLIGHT, 1).strokeRoundedRect(r.x, r.y, r.width, r.height, 10);
+    g.fillStyle(HIGHLIGHT, 0.3).fillRoundedRect(r.x, r.y, r.width, r.height, 10);
+    g.lineStyle(12, OUTLINE, 0.9).strokeRoundedRect(r.x, r.y, r.width, r.height, 10);
+    g.lineStyle(7, HIGHLIGHT, 1).strokeRoundedRect(r.x, r.y, r.width, r.height, 10);
     return g;
   };
   run.on(TutorialEvents.Changed, draw);

@@ -118,7 +118,7 @@ export class CoolerScene extends Phaser.Scene {
     const tutorial = this.evening.tutorial;
     if (tutorial && !this.locked) {
       addUnclePointer(this, tutorial, {
-        clipboard: () => new Phaser.Geom.Rectangle(8, 44, 234, 460),
+        clipboard: () => new Phaser.Geom.Rectangle(15, 46, 220, 448),
         menu: () => new Phaser.Geom.Rectangle(250, 294, 702, 210),
         buy: () => (this.buyButton ? Phaser.Geom.Rectangle.Inflate(this.buyButton.getBounds(), 6, 6) : null),
       });

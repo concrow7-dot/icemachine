@@ -25,6 +25,10 @@ export class UncleBox {
   readonly container: Phaser.GameObjects.Container;
   private readonly text: Phaser.GameObjects.Text;
   private readonly more: Phaser.GameObjects.Text;
+  /** SCREAM-180: the bubble itself, scaled from its middle when a new line pops in. */
+  private readonly bubble: Phaser.GameObjects.Container;
+  /** SCREAM-180: a yellow glow round the bubble that flashes as a new line arrives. */
+  private readonly glow: Phaser.GameObjects.Graphics;
   private timer?: Phaser.Time.TimerEvent;
   /** He's said everything and his last line has had its time: the box stays away. */
   private gone = false;
@@ -55,10 +59,18 @@ export class UncleBox {
       .text(BOX.x + BOX.w - 16, BOX.y + BOX.h - 12, '▶', { fontFamily: 'monospace', fontSize: '14px', color: '#2b1d10' })
       .setOrigin(1, 1);
     scene.tweens.add({ targets: this.more, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
+    // The bubble's parts sit round its middle, so it can pop in from there (SCREAM-180).
+    const parts = [g, name, this.text, this.more];
+    for (const p of parts) (p as unknown as { x: number; y: number }).x -= BOX.w / 2;
+    for (const p of parts) (p as unknown as { x: number; y: number }).y -= BOX.h / 2;
+    this.bubble = scene.add.container(BOX.w / 2, BOX.h / 2, parts);
+    this.glow = scene.add.graphics().setAlpha(0);
+    this.glow.lineStyle(10, 0x3b2a1a, 0.6).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
+    this.glow.lineStyle(6, 0xffe066, 1).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
     const hit = scene.add.zone(BOX.x, BOX.y, BOX.w, BOX.h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', () => run.nextLine());
     this.container = scene.add
-      .container(SPOT_TOP.x, SPOT_TOP.y, [g, name, this.text, this.more, hit])
+      .container(SPOT_TOP.x, SPOT_TOP.y, [this.glow, this.bubble, hit])
       .setName('uncle-box')
       .setDepth(50);
 
@@ -106,7 +118,7 @@ export class UncleBox {
       });
       return;
     }
-    this.text.setText(line);
+    this.popIn(line);
     // ▶ when clicking (or waiting) brings another line, or finishes a step that's only talk.
     // SCREAM-170: a line waiting for the player to do something stays until they do.
     const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
@@ -114,5 +126,28 @@ export class UncleBox {
     if (goesOn) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
+  }
+
+  /**
+   * SCREAM-180 (PO, November 5): a new line should be obvious. The old bubble shrinks away,
+   * the new one pops in with a little overshoot, and a yellow glow flashes round it twice.
+   * (While he's talking in the truck the box is hidden, so the text just changes.)
+   */
+  private popIn(line: string): void {
+    const tweens = this.scene.tweens;
+    tweens.killTweensOf([this.bubble, this.glow]);
+    const arrive = () => {
+      this.text.setText(line);
+      this.bubble.setScale(0.5).setAlpha(0);
+      tweens.add({ targets: this.bubble, scale: 1, alpha: 1, duration: 340, ease: 'Back.easeOut' });
+      this.glow.setAlpha(0);
+      tweens.add({ targets: this.glow, alpha: 1, duration: 160, yoyo: true, repeat: 2, delay: 200 });
+    };
+    if (this.screen === 'intro' || !this.text.text) {
+      this.bubble.setScale(1).setAlpha(1);
+      if (this.screen === 'intro') return void this.text.setText(line);
+      return arrive();
+    }
+    tweens.add({ targets: this.bubble, scale: 0.6, alpha: 0, duration: 140, ease: 'Quad.easeIn', onComplete: arrive });
   }
 }
