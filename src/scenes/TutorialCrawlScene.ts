@@ -3,6 +3,12 @@ import { SceneKeys } from '../flow';
 import { currentMap } from '../config/maps';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { addMapOverview, loadMapOverview } from '../ui/mapOverview';
+import { musicFor } from '../audio/Music';
+
+/** SCREAM-178 (PO, November 5): the ice cream truck tune that plays with the credits (see public/assets/audio/README.md). */
+export const CREDITS_TUNE_KEY = 'credits-tune';
+const CREDITS_TUNE_URL = 'assets/audio/credits-tune.mp3';
+const CREDITS_TUNE_VOLUME = 0.7;
 
 /**
  * SCREAM-177 (PO's note, November 5): the guided tutorial opens with credits in the style of
@@ -21,7 +27,7 @@ const BLUE = '#4bd5ee';
 const YELLOW = '#ffe81f';
 /** How many characters fit on one line of the scroll, before it shrinks into the distance. */
 const LINE_CHARS = 30;
-const LINE_GAP = 46;
+const LINE_GAP = 54;
 /** The scroll's speed along the "floor", px per second, and how fast it shrinks with distance. */
 const SPEED = 62;
 const DEPTH = 260;
@@ -64,6 +70,7 @@ export class TutorialCrawlScene extends Phaser.Scene {
 
   preload(): void {
     loadMapOverview(this, currentMap());
+    if (!this.cache.audio.exists(CREDITS_TUNE_KEY)) this.load.audio(CREDITS_TUNE_KEY, CREDITS_TUNE_URL);
     showLoadingWhileLoading(this);
   }
 
@@ -82,7 +89,7 @@ export class TutorialCrawlScene extends Phaser.Scene {
     this.add.rectangle(0, 0, width, height, 0x000000, SHADE_ALPHA).setOrigin(0, 0);
 
     const still = this.add
-      .text(width / 2, height / 2, STILL_LINE, { fontFamily: 'monospace', fontSize: '26px', color: BLUE, stroke: '#000000', strokeThickness: 5 })
+      .text(width / 2, height / 2, STILL_LINE, { fontFamily: 'monospace', fontSize: '30px', color: BLUE, stroke: '#000000', strokeThickness: 5 })
       .setOrigin(0.5)
       .setAlpha(0)
       .setName('crawl-still');
@@ -100,7 +107,7 @@ export class TutorialCrawlScene extends Phaser.Scene {
 
     this.lines = crawlLines().map((l) =>
       this.add
-        .text(width / 2, START_Y, l, { fontFamily: 'monospace', fontSize: '34px', fontStyle: 'bold', color: YELLOW, stroke: '#000000', strokeThickness: 6 })
+        .text(width / 2, START_Y, l, { fontFamily: 'monospace', fontSize: '40px', fontStyle: 'bold', color: YELLOW, stroke: '#000000', strokeThickness: 6 })
         .setOrigin(0.5, 1)
         .setVisible(false),
     );
@@ -112,6 +119,22 @@ export class TutorialCrawlScene extends Phaser.Scene {
       if (event.key === 'Enter' || event.key === ' ') this.finish();
     });
     this.input.on('pointerdown', () => this.finish());
+
+    // The tune, unless the player has muted the music (M). It pauses with the game (Esc), and
+    // fades out once the uncle appears (UncleIntroScene), however the credits ended.
+    this.sound.stopByKey(CREDITS_TUNE_KEY);
+    if (!musicFor(this).muted) {
+      const tune = this.sound.add(CREDITS_TUNE_KEY, { volume: CREDITS_TUNE_VOLUME });
+      tune.play();
+      const pause = () => tune.pause();
+      const resume = () => tune.resume();
+      this.events.on(Phaser.Scenes.Events.PAUSE, pause);
+      this.events.on(Phaser.Scenes.Events.RESUME, resume);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.events.off(Phaser.Scenes.Events.PAUSE, pause);
+        this.events.off(Phaser.Scenes.Events.RESUME, resume);
+      });
+    }
   }
 
   update(_time: number, delta: number): void {

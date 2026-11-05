@@ -135,7 +135,8 @@ const { chromium } = require('playwright');
   check('Quick Play: no uncle', await ev('e.tutorial === null && !window.__game.scene.getScene("Hud").uncleBox'), true);
 
   // ---- SCREAM-169: the uncle's steps ----
-  await page.evaluate(() => localStorage.removeItem('icemachine.tutorial.done.v1'));
+  // Music on for this part, to hear the credits' tune (SCREAM-178).
+  await page.evaluate(() => { localStorage.removeItem('icemachine.tutorial.done.v1'); localStorage.setItem('icemachine.music.muted.v1', '0'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -143,6 +144,7 @@ const { chromium } = require('playwright');
   await press('ArrowDown', 2); await press('Enter'); await wait(500);
   check('First Tutorial: no question, the uncle comes along', await ev('!!e.tutorial'), true);
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(1500);
+  check('...the ice cream truck tune playing', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => t.isPlaying)'), true);
   check('...over the tutorial map, zoomed out', await sc('TutorialCrawl', '(m => !!m && m.scale < 0.5)(s.children.getByName("crawl-map"))'), true);
   check('It opens with the credits: the blue line, no top bar', (await sc('TutorialCrawl', 's.children.getByName("crawl-still").alpha > 0.5')) + ' ' + (await page.evaluate(() => window.__game.scene.getScene('Hud').cameras.main.visible)), 'true false');
   await page.screenshot({ path: outDir + '/uncle_credits_still.png' });
@@ -151,6 +153,8 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
   await press('Enter');
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(500);
+  await wait(1500);
+  check('...the tune fades out once the uncle appears', await sc('UncleIntro', 's.sound.getAll("credits-tune").length'), 0);
   check('Enter skips the rest: the uncle in the truck, on step 1', (await scenes()) + ' ' + (await ev('e.tutorial.step')), 'UncleIntro,Hud stock');
   check('...his first line in his quote box', await sc('UncleIntro', 's.shown'), "Thanks for helping out, kiddo. I can't work with this foot.");
   check('...drawn like a customer at the window', await sc('UncleIntro', 's.children.getByName("uncle").texture.key'), 'uncle-smooth');
@@ -210,8 +214,10 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
   await press('ArrowDown', 2); await press('Enter'); await wait(300);
+  check('The title screen credits the tune', await sc('Title', 's.children.list.some(o => o.text && o.text.includes("Tune: Travis Morgan"))'), true);
   check('Tutorial again: asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await page.screenshot({ path: outDir + '/uncle_choice.png' });
+  await page.evaluate(() => localStorage.setItem('icemachine.music.muted.v1', '1'));
   await press('o'); await wait(500);
   check('On My Own: the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
 
