@@ -9,7 +9,8 @@ import * as Phaser from 'phaser';
  * Until those land, the player does each step themselves and the tracker moves on when
  * the evening reports it done.
  *
- * The uncle's lines are engineering's drafts, waiting for the PO's wording (SCREAM-76).
+ * The uncle's lines are engineering's drafts, waiting for the PO's wording (SCREAM-76), except
+ * his opening lines, which are the PO's (SCREAM-177).
  */
 
 /** Things the evening reports that can finish a step. */
@@ -25,14 +26,17 @@ type Step = {
   doneWhen?: TutorialSignal;
 };
 
-/** DRAFT lines (engineering), for the PO to rewrite. */
+/** The uncle's lines: the PO's opening lines, then engineering's DRAFTS for the PO to rewrite. */
 export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'stock',
+    // SCREAM-177 (PO's note, November 5): his first three lines, in the truck. The third
+    // asks the player to click the cooler; the last line (engineering's draft) is at the cooler.
     lines: [
-      "Thanks for helping out, kiddo. I can't drive with this foot.",
-      'First, the cooler. Pick a few flavours and set your prices.',
-      "When you're happy with it, head for the driver's seat.",
+      "Thanks for helping out, kiddo. I can't work with this foot.",
+      "I'll help you get set up, and then you're on your own.",
+      "Let's start by selecting your stock. Click on the cooler.",
+      "When you're happy with your stock, head for the driver's seat.",
     ],
     doneWhen: 'setOff',
   },
@@ -83,6 +87,15 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   get line(): string | null {
     if (this.finished) return null;
     return TUTORIAL_STEPS[this.stepIndex]!.lines[this.lineIndex] ?? null;
+  }
+
+  /** Which line of this step is on screen (0 is the first), and how many lines it has. */
+  get lineNumber(): number {
+    return this.lineIndex;
+  }
+
+  get lineCount(): number {
+    return this.finished ? 0 : TUTORIAL_STEPS[this.stepIndex]!.lines.length;
   }
 
   /** True if there's another line in this step after the one on screen. */

@@ -20,10 +20,12 @@ export const SceneKeys = {
   Pump: 'Pump',
   Loading: 'Loading',
   UncleIntro: 'UncleIntro',
+  TutorialCrawl: 'TutorialCrawl',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
 export const EVENING_SCENES: string[] = [
+  SceneKeys.TutorialCrawl,
   SceneKeys.UncleIntro,
   SceneKeys.Truck,
   SceneKeys.Cooler,
@@ -88,8 +90,8 @@ export function clearStory(scene: Phaser.Scene): void {
 function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   from.registry.set(STATE_KEY, evening);
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
-  // SCREAM-169: with the uncle, it opens on him in the truck first (the clock still waiting).
-  from.scene.start(evening.tutorial ? SceneKeys.UncleIntro : SceneKeys.Cooler);
+  // SCREAM-169, 176: with the uncle, it opens with the credits, then him in the truck (the clock still waiting).
+  from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 

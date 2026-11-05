@@ -28,6 +28,8 @@ export class UncleBox {
   private timer?: Phaser.Time.TimerEvent;
   /** He's said everything and his last line has had its time: the box stays away. */
   private gone = false;
+  /** The screen underneath, from place(). */
+  private screen: 'intro' | 'cooler' | 'other' = 'other';
   private readonly scene: Phaser.Scene;
   private readonly run: TutorialRun;
 
@@ -73,6 +75,7 @@ export class UncleBox {
    * while he's talking in the truck at the start, where he has his own big quote box.
    */
   place(screen: 'intro' | 'cooler' | 'other'): void {
+    this.screen = screen;
     this.container.setVisible(!this.gone && screen !== 'intro');
     const spot = screen === 'cooler' ? SPOT_COOLER : SPOT_TOP;
     if (this.container.x !== spot.x || this.container.y !== spot.y) this.container.setPosition(spot.x, spot.y);
@@ -81,6 +84,12 @@ export class UncleBox {
   /** What the box says now (tests read it). */
   get shown(): string {
     return this.container.visible ? this.text.text : '';
+  }
+
+  /** His line has been up a while: the next one, unless the credits or the truck scene are on (they move him on themselves). */
+  private autoNext(): void {
+    if (this.screen === 'intro') this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
+    else this.run.nextLine();
   }
 
   private show(): void {
@@ -101,7 +110,7 @@ export class UncleBox {
     const goesOn = this.run.moreLines || this.run.talkOnly;
     this.more.setVisible(goesOn);
     if (goesOn) {
-      this.timer = this.scene.time.delayedCall(LINE_MS, () => this.run.nextLine());
+      this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
   }
 }

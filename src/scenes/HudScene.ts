@@ -188,8 +188,10 @@ export class HudScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.uncleBox?.place(
-      this.scene.isActive(SceneKeys.UncleIntro) ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other',
+      this.scene.isActive(SceneKeys.UncleIntro) || this.scene.isActive(SceneKeys.TutorialCrawl) ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other',
     );
+    // SCREAM-177: the opening credits fill the screen, so the top bar waits until they're over.
+    this.cameras.main.setVisible(!this.scene.isActive(SceneKeys.TutorialCrawl));
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
     this.keepMusicGoing();
