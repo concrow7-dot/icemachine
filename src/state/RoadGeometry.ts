@@ -7,6 +7,8 @@ import type { MapRoad, RoadMask } from '../config/mapTypes';
 export const ROAD_HALF_WIDTH = 60;
 /** Distance from the centre line to the middle of a lane. */
 export const LANE_OFFSET = 30;
+/** One lane's width (SCREAM-159: a street can have more than one lane each way). */
+export const LANE_WIDTH = 60;
 
 export interface Segment {
   ax: number;
@@ -31,6 +33,8 @@ export class RoadNetwork {
   readonly segments: Segment[] = [];
   /** Each road's street name, by index (Segment.road). */
   readonly names: string[];
+  /** SCREAM-159: each road's half width (60 px per lane each way), by index. */
+  private readonly halves: number[];
   private readonly grid = new Map<string, number[]>();
 
   /**
@@ -44,6 +48,7 @@ export class RoadNetwork {
   constructor(roads: readonly MapRoad[], mask?: RoadMask) {
     this.mask = mask;
     this.names = roads.map((r) => r.name);
+    this.halves = roads.map((r) => LANE_WIDTH * (r.lanes ?? 1));
     roads.forEach((road, i) => {
       const p = road.points;
       for (let k = 0; k + 3 < p.length; k += 2) {
@@ -52,7 +57,7 @@ export class RoadNetwork {
     });
     // Each grid cell lists the segments whose road could reach into it.
     this.segments.forEach((s, i) => {
-      const pad = ROAD_HALF_WIDTH + 4;
+      const pad = this.halves[s.road]! + 4;
       const x0 = Math.floor((Math.min(s.ax, s.bx) - pad) / CELL);
       const x1 = Math.floor((Math.max(s.ax, s.bx) + pad) / CELL);
       const y0 = Math.floor((Math.min(s.ay, s.by) - pad) / CELL);
@@ -84,7 +89,17 @@ export class RoadNetwork {
       }
       return false;
     }
-    return this.near(x, y).some((s) => distanceToSegment(x, y, s) <= ROAD_HALF_WIDTH);
+    return this.near(x, y).some((s) => distanceToSegment(x, y, s) <= this.halfWidth(s.road));
+  }
+
+  /** SCREAM-159: half of road `road`'s width: from its centre line to the curb. */
+  halfWidth(road: number): number {
+    return this.halves[road] ?? ROAD_HALF_WIDTH;
+  }
+
+  /** SCREAM-159: from road `road`'s centre line to the middle of its outside lane (where pink squares go). */
+  laneOffset(road: number): number {
+    return this.halfWidth(road) - LANE_WIDTH + LANE_OFFSET;
   }
 
   /** The nearest segment to (x, y) within reach of the road, or null. */

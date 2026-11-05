@@ -4,7 +4,7 @@ import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { currentMap, setCurrentMap, type MapId } from '../config/maps';
 import type { WorcesterMap } from '../config/mapTypes';
-import { Residents, type ResidentNow } from './Residents';
+import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { RoadNetwork } from './RoadGeometry';
 import {
@@ -74,6 +74,17 @@ function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork) {
     if (map.gasStations.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(map.homeStart, PINK_CLEAR_BAY)) return false;
     return true;
   };
+}
+/** SCREAM-161: the buildings customers walk round: houses, shops, fences, the court and playground. */
+function wallsOf(map: WorcesterMap): Wall[] {
+  const sizes = new Map(map.sprites.map((sp) => [sp.key, sp] as const));
+  const out: Wall[] = [];
+  for (const o of map.objects) {
+    if (!/^(house|villa|shop_|fence_|court_|play_)/.test(o.key)) continue;
+    const sp = sizes.get(o.key);
+    if (sp) out.push({ x0: o.x - sp.w / 2, y0: o.y - sp.h, x1: o.x + sp.w / 2, y1: o.y });
+  }
+  return out;
 }
 /** How far a pink square's centre keeps from a parked car's, and from a bay's (px). */
 const PINK_CLEAR_CAR = 80;
@@ -159,6 +170,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const roads = roadsOf(mapId, map.data);
     this.truckPosition = { x: map.data.homeStart.x, y: map.data.homeStart.y, angle: map.data.homeStart.angle };
     this.residents = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), carry?.story);
+    this.residents.walls = wallsOf(map.data);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);

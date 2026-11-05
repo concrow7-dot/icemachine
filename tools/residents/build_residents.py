@@ -47,6 +47,11 @@ LANE = 30                             # a lane's centre, from the road's centre 
 CAR_CLEAR = 80                        # a curb spot's pink square stays this far from parked cars' centres (the game's PINK_CLEAR_CAR)
 BAY_CLEAR = 100                       # ...and from pump bays and home's driveway (the game's PINK_CLEAR_BAY; SCREAM-143)
 EDGE = ROAD_HALF + SIDEWALK           # from a road's centre line to the edge of its sidewalk
+
+
+def half_of(road):
+    """SCREAM-159: a street's half width: 60 px per lane each way (Park Ave on the tutorial map has 2)."""
+    return ROAD_HALF * road.get('lanes', 1)
 FRAME_W, FRAME_H = 16, 32             # one frame, at 16 px
 FRAMES_PER_ROW = 24                   # 4 directions x 6 frames
 LOOKS_ACROSS = 5
@@ -233,6 +238,7 @@ def yard(m, segs, house, others, rnd):
     nx, ny = rx - cx, ry - cy
     L = math.hypot(nx, ny) or 1
     nx, ny = nx / L, ny / L
+    halves = {r['name']: half_of(r) for r in m['roads']}
     near_segs = [sg for sg in segs if min(sg[1], sg[3]) - 400 < x < max(sg[1], sg[3]) + 400
                  and min(sg[2], sg[4]) - 400 < y < max(sg[2], sg[4]) + 400]
     near_houses = [o for o in others if abs(o['x'] - x) < 400 and abs(o['y'] - y) < 400]
@@ -248,7 +254,7 @@ def yard(m, segs, house, others, rnd):
         front to back (SCREAM-104)."""
         if not (8 < px < m['width'] - 8 and 32 < py < m['height'] - 4):
             return False
-        if any(seg_dist(px, py, *sg[1:])[0] < EDGE + 4 for sg in near_segs):
+        if any(seg_dist(px, py, *sg[1:])[0] < halves.get(sg[0], ROAD_HALF) + SIDEWALK + 4 for sg in near_segs):
             return False
         if any(o['x'] - o['w'] / 2 - 6 < px < o['x'] + o['w'] / 2 + 6 and o['y'] - o['h'] - 2 < py < o['y'] + 3
                for o in near_houses):
@@ -342,7 +348,7 @@ def curb(m, segs, door, blocks):
     def on_any_road(p, half):
         if any(on_asphalt(p[0] + dx, p[1] + dy) for dx in (-4, 0, 4) for dy in (-4, 0, 4)):
             return True
-        return any(seg_dist(p[0], p[1], *sg[1:])[0] < half for sg in near_segs)
+        return any(seg_dist(p[0], p[1], *sg[1:])[0] < half + half_of(m['roads'][sg[0]]) - ROAD_HALF for sg in near_segs)
 
     options = []
     for ri, ax, ay, bx, by in near_segs:
@@ -365,8 +371,10 @@ def curb(m, segs, door, blocks):
                 if (door[0] - cx) * nx + (door[1] - cy) * ny < 0:
                     nx, ny = -nx, -ny
                 # Rounded as saved, so the game checks exactly this point (SCREAM-150).
-                stand = (round(cx + nx * (ROAD_HALF + SIDEWALK / 2), 1), round(cy + ny * (ROAD_HALF + SIDEWALK / 2), 1))
-                square = (cx + nx * LANE, cy + ny * LANE)
+                # SCREAM-159: on a wider street, the curb is further out and the square goes in the outside lane.
+                half = half_of(m['roads'][ri])
+                stand = (round(cx + nx * (half + SIDEWALK / 2), 1), round(cy + ny * (half + SIDEWALK / 2), 1))
+                square = (cx + nx * (half - ROAD_HALF + LANE), cy + ny * (half - ROAD_HALF + LANE))
                 if on_any_road(stand, ROAD_HALF + 2):
                     continue  # a corner: the sidewalk point is on another road
                 if not on_asphalt(*square):
@@ -414,11 +422,14 @@ def build(folder):
     os.makedirs(os.path.dirname(OUT_PNG), exist_ok=True)
     sheet.save(OUT_PNG, optimize=True)
 
+    # SCREAM-158: a hand-made map (Tiled) keeps each house's own number, gaps and all.
+    numbers = m.get('houseNumbers') or list(range(1, len(houses) + 1))
+    by_number = dict(zip(numbers, houses))
     out = []
     for p in people:
-        if not 1 <= p['house'] <= len(houses):
-            sys.exit(f'{p["id"]}: House must be from 1 to {len(houses)}')
-        h = houses[p['house'] - 1]
+        if p['house'] not in by_number:
+            sys.exit(f'{p["id"]}: there is no house {p["house"]} on the map')
+        h = by_number[p['house']]
         door, pts = yard(m, segs, h, blocks, rnd)
         spot = curb(m, segs, door, blocks)
         out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(segs, h),

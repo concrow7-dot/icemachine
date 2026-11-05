@@ -48,13 +48,49 @@ const { chromium } = require('playwright');
   check('Six businesses on Park Avenue, with their names on their signs', await drive('s.map.signs.map(g => g.text).join()'), 'Bagel Time,Dippin Donuts,UPS Store,Fancy Florist,The Boynton,Thai Time');
   const kinds = await drive("(() => { const c = {}; for (const o of s.map.objects) { const k = o.key.split('_')[0]; c[k] = (c[k] || 0) + 1; } return c; })()");
   check('Matching street lamps along the streets', kinds.lamp > 15, true);
-  check('Picket fences round some houses', kinds.fence > 50, true);
+  // SCREAM-158: the PO's hand-made map (Tiled): 40 houses and home, no fences.
+  check('The hand-made map: 40 houses and home, no fences', ((kinds.house || 0) + (kinds.villa || 0)) + ' ' + (kinds.fence || 0), '41 0');
+  // SCREAM-160: every piece is in the picture sheet, and the sheet's URL carries the map's version.
+  check('Every map piece is in the picture sheet', await drive("(t => s.map.objects.every(o => t.has(o.key)))(s.textures.get(s.assets.atlasKey))"), true);
+  check('...which is fetched with the map version', await drive("s.assets.atlasPng.endsWith('?v=' + s.map.assetVersion) && !!s.map.assetVersion"), true);
   check('A basketball court and a playground', (kinds.court || 0) + ' ' + (kinds.play || 0), '1 1');
   check('Gardens beside a few houses', await drive("s.map.objects.filter(o => o.key.startsWith('orn_garden_bed')).length >= 4"), true);
   check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.door[1] > 0)"), true);
   await drive('(() => { const g = s.map.signs[0]; s.truck.setPosition(g.x + 40, g.y + 160); s.speed = 0; s.parkBrake = true; return true; })()'); await wait(2600);
   check('...a shop sign is shown when the truck is near', await drive("(t => !!t && t.visible)(s.children.getByName('sign-Bagel Time'))"), true);
   await page.screenshot({ path: outDir + '/tutorial_shops.png' });
+
+  // ---- SCREAM-161: customers walk round houses, not through them ----
+  const walk = await ev(`(() => {
+    const R = e.residents, W = R.walls;
+    const inside = (x, y) => W.some(w => x > w.x0 + 2 && x < w.x1 - 2 && y > w.y0 + 2 && y < w.y1 - 2);
+    let tried = 0, through = 0, arrived = 0; const dbg = [];
+    for (const w of W) {
+      const cx = (w.x0 + w.x1) / 2, sx = cx, sy = w.y0 - 14, tx = cx, ty = w.y1 + 160;
+      if (inside(sx, sy) || W.some(o => o !== w && sx > o.x0 - 8 && sx < o.x1 + 8 && sy > o.y0 - 8 && sy < o.y1 + 8)) continue;
+      const p = R.all.filter(q => q.customer === 'none')[tried]; if (!p) break;
+      R.wantIceCream(p); p.x = sx; p.y = sy; tried++;
+      let hit = false, minD = 1e9;
+      for (let i = 0; i < 3000 && p.customer === 'running'; i++) { R.update(0.1, { x: tx, y: ty, radius: 0, open: false }); minD = Math.min(minD, Math.hypot(p.x - tx, p.y - ty)); if (inside(p.x, p.y) && !hit) { hit = true; dbg.push([Math.round(sx), Math.round(sy), Math.round(p.x), Math.round(p.y), p.plan.kind, JSON.stringify(W.filter(o => p.x > o.x0 + 2 && p.x < o.x1 - 2 && p.y > o.y0 + 2 && p.y < o.y1 - 2))]); } }
+      if (hit) through++;
+      if (minD < 200 || p.customer !== 'running') arrived++; else dbg.push([Math.round(sx), Math.round(sy), Math.round(p.x), Math.round(p.y), Math.round(minD), p.customer, p.plan.kind, tx, ty]);
+      p.customer = 'none'; p.plan = { kind: 'inside', until: 0 }; p.outside = false; p.waitAt = undefined; p.spotStand = undefined;
+      if (tried >= 12) break;
+    }
+    return tried + ' tried, ' + through + ' through a house, ' + arrived + ' reached the truck' + (dbg.length ? ' ' + JSON.stringify(dbg) : '');
+  })()`);
+  check('Customers behind a house walk round it to the truck (12 tries)', walk, '12 tried, 0 through a house, 12 reached the truck');
+
+  // ---- SCREAM-159: Park Ave has two lanes each way; Russell St stops at Park Ave ----
+  check('Park Avenue: two lanes each way (240 px of asphalt)', await drive("(r => r.lanes + ' ' + s.roads.halfWidth(s.map.roads.indexOf(r)) * 2)(s.map.roads.find(r => r.name === 'Park Avenue'))"), '2 240');
+  check('...white lane lines between its lanes', await drive("s.dashes.some(d => d.white)"), true);
+  check('Russell Street only south of Park Avenue', await drive("s.map.roads.filter(r => r.name === 'Russell Street').length"), 1);
+  const parkSpot = await ev("(() => { const f = e.residents.curbs; const r = f.roads; const i = r.names.indexOf('Park Avenue'); const sg = r.segments.find(q => q.road === i); const mx = (sg.ax + sg.bx) / 2, my = (sg.ay + sg.by) / 2; const L = Math.hypot(sg.bx - sg.ax, sg.by - sg.ay); const nx = -(sg.by - sg.ay) / L, ny = (sg.bx - sg.ax) / L; const sp = f.near(mx + nx * 140, my + ny * 140, [], 0); if (!sp) return 'none'; return Math.round(Math.abs((sp.square[0] - mx) * nx + (sp.square[1] - my) * ny)) + ' ' + r.onRoad(sp.square[0], sp.square[1]) + ' ' + !r.onRoad(sp.stand[0], sp.stand[1]); })()");
+  check('...a pink square beside Park Ave goes in its outside lane, the customer on the sidewalk', parkSpot, '90 true true');
+  await drive("(() => { const r = s.map.roads.find(q => q.name === 'Park Avenue').points; s.truck.setPosition((r[0] + r[2]) / 2, (r[1] + r[3]) / 2); s.speed = 0; s.parkBrake = true; return 1; })()"); await wait(2600);
+  await page.screenshot({ path: outDir + '/tutorial_parkave.png' });
+  await drive("(g => { s.truck.setPosition(g.pad.x - 250, g.pad.y); s.speed = 0; s.parkBrake = true; return 1; })(s.map.gasStations[0])"); await wait(2600);
+  await page.screenshot({ path: outDir + '/tutorial_gas.png' });
 
   // ---- A customer at the window ----
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");

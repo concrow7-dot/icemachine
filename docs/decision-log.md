@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 039 — Park Ave gets two lanes each way; Russell St stops at Park Ave (2026-11-04)
+
+**Decision (Jira SCREAM-159, under SCREAM-10, PO, November 4):** on the tutorial map, Park Avenue (the diagonal from Highland St to Institute Rd) is twice as wide, two lanes each way, widened on its east side only; the shops' side stays where it was. Russell Street's short piece north of Park Ave is removed. Everything east of Park Ave moved east to make room (houses, Russell St, the gas station, trees); the map kept its size, so 37 trees pushed past the right edge were dropped (no houses). The roads stay generated; everything else is edited in Tiled (PO agreed to engineering's proposal, November 4).
+
+**Why (product owner's rationale):** it's true to the real streets, and he wants a difference between main roads and side roads; in future, perhaps cars that travel on the main road (see SCREAM-55 main vs side streets, SCREAM-98 moving cars).
+
+**Engineering's calls (proposals):** streets can now have more than one lane each way (`lanes` in the map data); a wider street gets white dashed lines between its lanes, pink squares in its outside lane and customers at its curb. The tutorial map's roads live in `tools/tutorial/roads.json` and are built by `tools/tiled/build_roads.py`, which also makes the road picture for the PO's Tiled map. Everything east of Park Ave moved 147 px straight east (120 px out from Park Ave), so nothing ends up on the new lanes. Russell St's junction with Park Ave stays where you see it; the wide street's ends stop at Highland St and Institute Rd without bulging past them.
+
+## 038 — The tutorial map is laid out by hand in Tiled (2026-11-04)
+
+**Decision (Jira SCREAM-158, under SCREAM-10, PO, November 4):** the PO laid out the tutorial map himself in Tiled (a free map editor), starting from an export of the generated map, and it replaces the generated tutorial map. He removed the 66 houses nobody lived in (40 houses and home remain, one per resident), removed all the fences, moved and restyled houses (some with pictures from the full LimeZu pack, some with chimneys, solar panels and side wings added), and rearranged trees and ornaments. The streets, curb spots, potholes, parked cars, the truck's start and the gas station are unchanged.
+
+**Why (product owner's rationale):** it seemed like a fun thing to learn; laying it out himself lets him dial in the exact design he wants; and it should save tokens compared with describing every change for engineering to build.
+
+**Options considered:** keep generating the map with `build_map.py` and describe changes in words (the way SCREAM-52 was done); have the game read Tiled maps directly (a much bigger change to the drive scene).
+
+**Engineering's calls (proposals):** a converter, `tools/tiled/import_tiled.py`, reads the Tiled file and writes the same map data and pictures the game already uses, so driving, customers and tests work as before. The Tiled project lives in the private art repo (`tiled/tutorial-map/`), because it uses paid LimeZu art. Hidden houses are left out; the others keep their numbers (the names in Tiled, "House 27"), so sheet 23 keeps its House column and only the streets of moved houses change. Pieces on a "House details" layer that overlap a house are merged into that house's picture. Proposal, to confirm: from now on the tutorial map is edited only in Tiled (`build_map.py`'s tutorial mode would undo the PO's changes).
+
 ## 037 — A neighbourhood that looks like one place: lamps, fences, gardens, a court, a playground, Park Ave shops (2026-11-04)
 
 **Decision (Jira SCREAM-52, under SCREAM-10, PO, November 4):** on the tutorial map only, for now: matching street lamps along the streets; white picket fences round about a quarter of the houses; some gardens; a basketball court; a playground; and six businesses on Park Avenue, each with art that matches its name or kind of business: Bagel Time, Dippin Donuts, UPS Store, The Boynton (restaurant), Fancy Florist, Thai Time (restaurant).

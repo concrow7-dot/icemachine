@@ -29,6 +29,15 @@ export interface GameMap {
   residentsUrl: string;
 }
 
+/**
+ * SCREAM-160: picture files keep the same names when a map changes, so a browser could use an
+ * old picture sheet with new map data (every piece then drawn as the whole sheet). A map built
+ * from Tiled carries a version that's added to its picture URLs, so a change means a fresh download.
+ */
+export function versioned(url: string, data: WorcesterMap): string {
+  return data.assetVersion ? `${url}?v=${data.assetVersion}` : url;
+}
+
 export const MAPS: Record<MapId, GameMap> = {
   worcester: {
     id: 'worcester',
@@ -49,8 +58,8 @@ export const MAPS: Record<MapId, GameMap> = {
     data: TUTORIAL,
     residents: TUTORIAL_RESIDENTS,
     atlasKey: 'tut-atlas',
-    atlasPng: 'assets/limezu/map-tutorial/atlas.png',
-    atlasJson: 'assets/limezu/map-tutorial/atlas.json',
+    atlasPng: versioned('assets/limezu/map-tutorial/atlas.png', TUTORIAL),
+    atlasJson: versioned('assets/limezu/map-tutorial/atlas.json', TUTORIAL),
     grassKey: 'tut-grass',
     grassUrl: 'assets/limezu/map-tutorial/grass.png',
     roadKeyPrefix: 'tut-',

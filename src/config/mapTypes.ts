@@ -6,6 +6,8 @@
 export interface MapRoad {
   name: string;
   points: number[];
+  /** SCREAM-159: lanes each way (default 1); Park Ave on the tutorial map has 2. Each lane is 60 px. */
+  lanes?: number;
 }
 
 /** A street name written along the road. */
@@ -68,6 +70,10 @@ export interface WorcesterMap {
   potholes: { x: number; y: number }[];
   parkedCars: { x: number; y: number; angle: number }[];
   objects: MapObject[];
+  /** SCREAM-158: on a hand-made map, each house's number (the residents sheet's House), in map order. */
+  houseNumbers?: number[];
+  /** SCREAM-160: changes whenever the map's pictures do, so browsers fetch the new ones (added to their URLs). */
+  assetVersion?: string;
   sprites: { key: string; w: number; h: number }[];
   /** The road surface as images (sidewalk, curb, asphalt; rounded corners), drawn at `roadTileScale` times their size. */
   roadTiles: { key: string; x: number; y: number }[];
