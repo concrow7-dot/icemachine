@@ -75,17 +75,24 @@ function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork) {
     return true;
   };
 }
-/** SCREAM-161: the buildings customers walk round: houses, shops, fences, the court and playground. */
+/**
+ * SCREAM-161: the buildings customers walk round: houses, shops, fences, the court and playground;
+ * SCREAM-163: and big yard pieces (a pergola, a shed, a trampoline), anything 32 x 32 px or more.
+ */
 function wallsOf(map: WorcesterMap): Wall[] {
   const sizes = new Map(map.sprites.map((sp) => [sp.key, sp] as const));
   const out: Wall[] = [];
   for (const o of map.objects) {
-    if (!/^(house|villa|shop_|fence_|court_|play_)/.test(o.key)) continue;
     const sp = sizes.get(o.key);
-    if (sp) out.push({ x0: o.x - sp.w / 2, y0: o.y - sp.h, x1: o.x + sp.w / 2, y1: o.y });
+    if (!sp) continue;
+    const building = /^(house|villa|shop_|fence_|court_|play_)/.test(o.key);
+    const bigPiece = o.key.startsWith('orn_') && sp.w >= BIG_PIECE && sp.h >= BIG_PIECE;
+    if (building || bigPiece) out.push({ x0: o.x - sp.w / 2, y0: o.y - sp.h, x1: o.x + sp.w / 2, y1: o.y });
   }
   return out;
 }
+/** SCREAM-163: yard pieces at least this wide and tall (px) are walked round, like buildings. */
+const BIG_PIECE = 32;
 /** How far a pink square's centre keeps from a parked car's, and from a bay's (px). */
 const PINK_CLEAR_CAR = 80;
 const PINK_CLEAR_BAY = 100;

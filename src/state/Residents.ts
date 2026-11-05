@@ -640,67 +640,63 @@ function hitBox(w: Wall, ax: number, ay: number, bx: number, by: number, pad: nu
   return t0;
 }
 
+/** How far round the area between walker and target buildings are looked at (px). */
+const DETOUR_REACH = 240;
+
 /**
- * SCREAM-161: where to head for to get from (x, y) toward (tx, ty) without walking through a
- * building: the target itself if the way is clear, or else the corner of the first building in
- * the way that makes the shortest walk. Buildings the walker or the target is already beside
- * (their own front door, a spot behind a house) don't count.
+ * SCREAM-161 / SCREAM-162: where to head for to get from (x, y) toward (tx, ty) without walking
+ * through a building: the target itself if the way is clear, or else the first corner of the
+ * shortest way round the buildings in between (corners kept WALL_GAP + 1 px off each building).
+ * Being the start of the shortest way, it stays the same from one step to the next, so nobody
+ * flips between two corners. Buildings the walker or the target is inside (a spot behind a
+ * house) don't count; one they're right beside only counts its walls, not the gap kept round it.
  */
 export function detour(walls: readonly Wall[], x: number, y: number, tx: number, ty: number): [number, number] {
-  let first: Wall | null = null;
-  let firstT = Infinity;
-  let firstPad = WALL_GAP;
-  for (const w of walls) {
-    if (Math.max(w.x0, Math.min(x, tx)) - WALL_GAP > Math.min(w.x1, Math.max(x, tx)) + WALL_GAP) continue;
-    if (Math.max(w.y0, Math.min(y, ty)) - WALL_GAP > Math.min(w.y1, Math.max(y, ty)) + WALL_GAP) continue;
-    // Standing in it (a spot behind a house, a front door) or heading into it: it doesn't count.
-    if (inBox(w, x, y, 0) || inBox(w, tx, ty, 0)) continue;
-    // Right beside it: only its walls count, not the gap kept round it.
-    const pad = inBox(w, x, y, WALL_GAP) || inBox(w, tx, ty, WALL_GAP) ? 0 : WALL_GAP;
-    const t = hitBox(w, x, y, tx, ty, pad);
-    if (t !== null && t < firstT) {
-      first = w;
-      firstT = t;
-      firstPad = pad;
+  const lx = Math.min(x, tx) - DETOUR_REACH;
+  const hx = Math.max(x, tx) + DETOUR_REACH;
+  const ly = Math.min(y, ty) - DETOUR_REACH;
+  const hy = Math.max(y, ty) + DETOUR_REACH;
+  const near = walls.filter((w) => w.x1 > lx && w.x0 < hx && w.y1 > ly && w.y0 < hy && !inBox(w, x, y, 0) && !inBox(w, tx, ty, 0));
+  // Is the straight line a-b clear? A building one end is right beside only counts without its gap.
+  const open = (ax: number, ay: number, bx: number, by: number): boolean => {
+    for (const w of near) {
+      const pad = inBox(w, ax, ay, WALL_GAP) || inBox(w, bx, by, WALL_GAP) ? 0 : WALL_GAP;
+      if (hitBox(w, ax, ay, bx, by, pad) !== null) return false;
     }
-  }
-  if (!first) return [tx, ty];
-  const g = WALL_GAP + 1;
-  const corners: [number, number][] = [[first.x0 - g, first.y0 - g], [first.x1 + g, first.y0 - g], [first.x1 + g, first.y1 + g], [first.x0 - g, first.y1 + g]];
-  // The rest of the way from a corner: straight on if the building's out of the way, or else
-  // along its side to the next corner first (so nobody heads for a corner and then turns back).
-  const endPad = inBox(first, tx, ty, WALL_GAP) ? 0 : WALL_GAP; // heading right up beside it
-  const clear = (cx: number, cy: number) => hitBox(first!, cx, cy, tx, ty, endPad) === null;
-  // A corner pressed against the next building can't be walked to.
-  const squeezed = (cx: number, cy: number) => walls.some((o) => o !== first && inBox(o, cx, cy, 0));
-  const onward = (cx: number, cy: number): number => {
-    if (clear(cx, cy)) return Math.hypot(tx - cx, ty - cy);
-    const i = corners.findIndex(([qx, qy]) => qx === cx && qy === cy);
-    let via = Infinity;
-    for (const j of [(i + 1) % 4, (i + 3) % 4]) {
-      const [ax, ay] = corners[j]!;
-      if (squeezed(ax, ay)) continue;
-      if (clear(ax, ay)) via = Math.min(via, Math.hypot(ax - cx, ay - cy) + Math.hypot(tx - ax, ty - ay));
-    }
-    return via === Infinity ? 1e6 : via;
+    return true;
   };
-  // Standing at a corner already: look on from the corner itself, to the next one.
-  const at = corners.find(([cx, cy]) => Math.hypot(cx - x, cy - y) < 4);
-  const [ox, oy] = at ?? [x, y];
-  // Round the corner already and the way on is clear: carry on (only the gap kept round the
-  // building was in the way, not the building).
-  if (at && clear(ox, oy)) return [tx, ty];
-  let best: [number, number] = [tx, ty];
-  let bestCost = Infinity;
-  for (const [cx, cy] of corners) {
-    if (at && cx === at[0] && cy === at[1]) continue;
-    if (hitBox(first, ox, oy, cx, cy, at ? WALL_GAP : firstPad) !== null) continue; // round the near side only
-    if (squeezed(cx, cy)) continue; // people would walk into the next house
-    const cost = Math.hypot(cx - x, cy - y) + onward(cx, cy);
-    if (cost < bestCost) {
-      best = [cx, cy];
-      bestCost = cost;
+  if (open(x, y, tx, ty)) return [tx, ty];
+  // Corners round the buildings, leaving out any inside another building.
+  const g = WALL_GAP + 1;
+  const pts: [number, number][] = [[x, y], [tx, ty]];
+  for (const w of near) {
+    for (const c of [[w.x0 - g, w.y0 - g], [w.x1 + g, w.y0 - g], [w.x1 + g, w.y1 + g], [w.x0 - g, w.y1 + g]] as [number, number][]) {
+      if (!near.some((o) => inBox(o, c[0], c[1], 0))) pts.push(c);
     }
   }
-  return best;
+  // Shortest way from the target back to the walker (Dijkstra over the corners), so the
+  // answer is the walker's next corner.
+  const n = pts.length;
+  const dist = new Array<number>(n).fill(Infinity);
+  const done = new Array<boolean>(n).fill(false);
+  const next = new Array<number>(n).fill(-1);
+  dist[1] = 0;
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!done[i] && dist[i]! < Infinity && (u < 0 || dist[i]! < dist[u]!)) u = i;
+    if (u < 0 || u === 0) break;
+    done[u] = true;
+    const [ux, uy] = pts[u]!;
+    for (let v = 0; v < n; v++) {
+      if (done[v] || v === u) continue;
+      const [vx, vy] = pts[v]!;
+      const d = dist[u]! + Math.hypot(vx - ux, vy - uy);
+      if (d < dist[v]! && open(vx, vy, ux, uy)) {
+        dist[v] = d;
+        next[v] = u;
+      }
+    }
+  }
+  const step = next[0]!;
+  return step >= 0 ? pts[step]! : [tx, ty];
 }
