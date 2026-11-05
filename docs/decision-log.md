@@ -6,7 +6,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-158, under SCREAM-10, PO, November 4):** the PO laid out the tutorial map himself in Tiled (a free map editor), starting from an export of the generated map, and it replaces the generated tutorial map. He removed the 66 houses nobody lived in (40 houses and home remain, one per resident), removed all the fences, moved and restyled houses (some with pictures from the full LimeZu pack, some with chimneys, solar panels and side wings added), and rearranged trees and ornaments. The streets, curb spots, potholes, parked cars, the truck's start and the gas station are unchanged.
 
-**Why (product owner's rationale):** _to come: asked November 4._
+**Why (product owner's rationale):** it seemed like a fun thing to learn; laying it out himself lets him dial in the exact design he wants; and it should save tokens compared with describing every change for engineering to build.
 
 **Options considered:** keep generating the map with `build_map.py` and describe changes in words (the way SCREAM-52 was done); have the game read Tiled maps directly (a much bigger change to the drive scene).
 
