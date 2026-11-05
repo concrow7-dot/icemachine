@@ -12,6 +12,8 @@ import { DayEndScene } from './scenes/DayEndScene';
 import { StoryIntroScene } from './scenes/StoryIntroScene';
 import { TitleScene } from './scenes/TitleScene';
 import { TruckScene } from './scenes/TruckScene';
+import { UncleIntroScene } from './scenes/UncleIntroScene';
+import { TutorialCrawlScene } from './scenes/TutorialCrawlScene';
 
 // Game-wide settings. Resolution is a placeholder until the
 // camera/perspective spec is decided (roadmap item 4).
@@ -40,6 +42,8 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [
     TitleScene,
     TruckScene,
+    UncleIntroScene,
+    TutorialCrawlScene,
     CoolerScene,
     SalesScene,
     FillScene,

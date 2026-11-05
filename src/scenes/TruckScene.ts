@@ -12,8 +12,8 @@ import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 // (only while one is going on). Arrow keys move between them in screen order.
 
 
-const HIGHLIGHT = 0xffe066;
-const OUTLINE = 0x3b2a1a;
+export const HIGHLIGHT = 0xffe066;
+export const OUTLINE = 0x3b2a1a;
 
 type Zone = {
   id: Station;
@@ -25,7 +25,7 @@ type Zone = {
 };
 
 // Left to right on screen, the order the arrow keys follow.
-const ZONES: Zone[] = [
+export const ZONES: Zone[] = [
   {
     id: 'menu',
     name: 'MENU',

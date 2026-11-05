@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
 import { loadStory } from '../state/StorySave';
+import { tutorialDone } from '../state/Tutorial';
 import { formatMoney } from '../util/format';
 import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 
@@ -23,6 +24,8 @@ import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 // call: the truck plays music). The rest of the screen moved to make two lanes.
 
 // SCREAM-146 (PO, November 4): Tutorial plays one evening on the smaller tutorial map.
+// SCREAM-169 (PO, November 5): the first time, the uncle always guides it. Once a player
+// has finished an evening with him, Tutorial asks whether to bring him along or go alone.
 type Mode = 'quick' | 'story' | 'continue' | 'tutorial';
 
 /** SCREAM-107: the truck's two lanes, above the title and below the menu. */
@@ -36,8 +39,10 @@ export class TitleScene extends Phaser.Scene {
   private selected = 0;
   private modeTexts: Phaser.GameObjects.Text[] = [];
   private options: Option[] = [];
-  /** Asking "start a new story?" over a saved run. */
+  /** Asking "start a new story?" over a saved run, or (SCREAM-169) "with your uncle?". */
   private confirming = false;
+  /** SCREAM-169: which question the box is asking. */
+  private asking: 'story' | 'uncle' = 'story';
   private confirmGroup: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
@@ -64,6 +69,7 @@ export class TitleScene extends Phaser.Scene {
     this.starting = false;
     this.selected = 0;
     this.confirming = false;
+    this.asking = 'story';
     this.confirmGroup = [];
     const save = loadStory();
     this.options = save
@@ -123,6 +129,12 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (this.starting) return;
       const key = event.key;
+      if (this.confirming && this.asking === 'uncle') {
+        if (key === 'u' || key === 'U') this.startTutorial(true);
+        else if (key === 'o' || key === 'O') this.startTutorial(false);
+        else if (key === 'Escape') this.closeConfirm();
+        return;
+      }
       if (this.confirming) {
         if (key === 'y' || key === 'Y') this.start('story');
         else if (key === 'n' || key === 'N' || key === 'Escape') this.closeConfirm();
@@ -140,6 +152,7 @@ export class TitleScene extends Phaser.Scene {
   private chooseSelected(): void {
     const id = this.options[this.selected]?.id ?? 'quick';
     if (id === 'story' && loadStory()) return this.openConfirm();
+    if (id === 'tutorial' && tutorialDone()) return this.openUncleChoice();
     this.start(id);
   }
 
@@ -151,13 +164,46 @@ export class TitleScene extends Phaser.Scene {
         this.starting = false; // The save vanished (storage cleared): stay on the title.
         this.scene.restart();
       }
-    } else if (id === 'tutorial') startEvening(this, 'tutorial');
+    } else if (id === 'tutorial') startEvening(this, 'tutorial', true);
     else startEvening(this);
+  }
+
+  private startTutorial(guided: boolean): void {
+    this.starting = true;
+    startEvening(this, 'tutorial', guided);
+  }
+
+  /** SCREAM-169: after a first full play, the uncle's steps can be skipped. */
+  private openUncleChoice(): void {
+    const { width, height } = this.scale;
+    this.confirming = true;
+    this.asking = 'uncle';
+    const option = (x: number, label: string, guided: boolean) =>
+      this.add
+        .text(x, height / 2 + 50, label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.startTutorial(guided));
+    this.confirmGroup = [
+      this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
+      this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),
+      this.add
+        .text(width / 2, height / 2 - 30, 'Bring your uncle along again?', {
+          fontFamily: 'monospace',
+          fontSize: '22px',
+          color: '#ffffff',
+          align: 'center',
+        })
+        .setOrigin(0.5),
+      option(width / 2 - 120, 'With Uncle (U)', true),
+      option(width / 2 + 120, 'On My Own (O)', false),
+    ];
   }
 
   private openConfirm(): void {
     const { width, height } = this.scale;
     this.confirming = true;
+    this.asking = 'story';
     this.confirmGroup = [
       this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
       this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),

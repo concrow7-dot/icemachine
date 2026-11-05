@@ -5,6 +5,8 @@ import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../fl
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
+import { UncleBox } from '../ui/uncleBox';
+import { markTutorialDone } from '../state/Tutorial';
 
 /**
  * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
@@ -37,6 +39,8 @@ export class HudScene extends Phaser.Scene {
   /** SCREAM-121: where the needle points (0 = E, 1 = F); tests read it. */
   fuelNeedle = 1;
   private readonly wobble = new NeedleWobble();
+  /** SCREAM-169: the uncle's lines, during the guided tutorial only. */
+  uncleBox?: UncleBox;
 
   constructor() {
     super(SceneKeys.Hud);
@@ -89,12 +93,17 @@ export class HudScene extends Phaser.Scene {
 
     this.refresh();
     this.addDebugKeys();
+    this.uncleBox = this.evening.tutorial ? new UncleBox(this, this.evening.tutorial) : undefined;
 
     const onMoney = (change: number, _cash: number, label: string, popup: boolean) => {
       this.refresh();
       if (popup) this.showMoneyChange(change, label);
     };
-    const onEnded = () => endEvening(this);
+    const onEnded = () => {
+      // SCREAM-169: a whole evening with the uncle counts as done; next time he can be skipped.
+      if (this.evening.tutorial) markTutorialDone();
+      endEvening(this);
+    };
 
     const onStock = () => this.refresh();
     this.evening.on(EveningEvents.MoneyChanged, onMoney);
@@ -178,6 +187,11 @@ export class HudScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    this.uncleBox?.place(
+      this.scene.isActive(SceneKeys.UncleIntro) || this.scene.isActive(SceneKeys.TutorialCrawl) ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other',
+    );
+    // SCREAM-177: the opening credits fill the screen, so the top bar waits until they're over.
+    this.cameras.main.setVisible(!this.scene.isActive(SceneKeys.TutorialCrawl));
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
     this.keepMusicGoing();
