@@ -689,6 +689,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);
     this.stockSpentCents += cost;
     this.emit(EveningEvents.CoolerChanged);
+    this.tutorial?.signal('stockBought');
     return true;
   }
 }

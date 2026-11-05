@@ -11,12 +11,12 @@ import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
  *
  * It sits near the top on most screens, clear of the calculator, the buttons and the
  * controls line along the bottom, and stops short of the map's OpenStreetMap credit (top
- * right). The cooler's clipboard and crates fill its top, so there it sits bottom right,
- * over Today's Menu, clear of Buy Stock.
+ * right). On the cooler (SCREAM-170) it sits top right, over the freezer's sign, clear of the
+ * clipboard, Today's Menu and Buy Stock, which he talks about.
  */
-const BOX = { x: 0, y: 0, w: 680, h: 72, unit: 4 };
+const BOX = { x: 0, y: 0, w: 690, h: 58, unit: 4 };
 const SPOT_TOP = { x: 90, y: 48 };
-const SPOT_COOLER = { x: 262, y: 434 };
+const SPOT_COOLER = { x: 254, y: 39 };
 const LINE_MS = 6000;
 /** How long his last line stays up once he has nothing more to say. */
 const LAST_LINE_MS = 9000;
@@ -37,17 +37,18 @@ export class UncleBox {
     this.scene = scene;
     this.run = run;
     const g = drawBubble(scene.add.graphics(), { ...BOX, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
-    const name = scene.add.text(BOX.x + 20, BOX.y + 12, 'Uncle', {
+    const name = scene.add.text(BOX.x + 18, BOX.y + 9, 'Uncle', {
       fontFamily: 'monospace',
-      fontSize: '15px',
+      fontSize: '13px',
       fontStyle: 'bold',
       color: '#c2185b',
     });
-    this.text = scene.add.text(BOX.x + 20, BOX.y + 32, '', {
+    // One row of text: his lines fit at this size (the longest, at the cooler, is 74 letters).
+    this.text = scene.add.text(BOX.x + 18, BOX.y + 27, '', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '14px',
       color: '#2b1d10',
-      wordWrap: { width: BOX.w - 60 },
+      wordWrap: { width: BOX.w - 44 },
       lineSpacing: 2,
     });
     this.more = scene.add
@@ -107,7 +108,8 @@ export class UncleBox {
     }
     this.text.setText(line);
     // ▶ when clicking (or waiting) brings another line, or finishes a step that's only talk.
-    const goesOn = this.run.moreLines || this.run.talkOnly;
+    // SCREAM-170: a line waiting for the player to do something stays until they do.
+    const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
     this.more.setVisible(goesOn);
     if (goesOn) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());

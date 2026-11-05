@@ -147,9 +147,9 @@ export class UncleIntroScene extends Phaser.Scene {
     return this.lineText.text;
   }
 
-  /** On his last line in the truck: "Click on the cooler." (the step's last line is said at the cooler). */
+  /** On his last line in the truck: "Click on the cooler." (it waits for the cooler, SCREAM-170). */
   get askingForCooler(): boolean {
-    return this.run.lineNumber >= this.run.lineCount - 2;
+    return this.run.waitingFor === 'coolerOpened';
   }
 
   private show(): void {
@@ -171,7 +171,7 @@ export class UncleIntroScene extends Phaser.Scene {
   private toCooler(): void {
     if (this.leaving || this.game.getTime() < this.readyAt) return;
     this.leaving = true;
-    this.run.nextLine();
+    this.run.signal('coolerOpened');
     this.scene.start(SceneKeys.Cooler);
   }
 }
