@@ -24,6 +24,9 @@ const UNCLE_X = 520;
 const UNCLE_FEET = 512;
 const UNCLE_SCALE = 11;
 const BUBBLE = { x: 40, y: 92, w: 400, h: 170 };
+/** SCREAM-171: where his walk to the cab ends, beside the driver's seat (the cooler's edge is at x 362). */
+const CAB_X = 422;
+const CAB_FEET = 385;
 
 export class UncleIntroScene extends Phaser.Scene {
   private run!: TutorialRun;
@@ -197,8 +200,10 @@ export class UncleIntroScene extends Phaser.Scene {
     this.uncle.setTexture(smoothUncleTexture(this, 'walkAway'), 0);
     this.tweens.add({
       targets: this.uncle,
-      y: UNCLE_FEET - 150,
-      scale: (UNCLE_SCALE / SMOOTH_FACTOR) * 0.62,
+      // PO (November 6): toward the driver's seat on the left, clear of the cooler's edge.
+      x: CAB_X,
+      y: CAB_FEET,
+      scale: (UNCLE_SCALE / SMOOTH_FACTOR) * 0.55,
       duration: 1700,
       ease: 'Sine.easeIn',
     });

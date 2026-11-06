@@ -28,6 +28,11 @@ export interface RouteOptions {
   cars?: Point[];
   /** How far right of the centre line to pass a parked car in his lane. */
   passOffset?: number;
+  /**
+   * Places he stops, where he must be straight in his lane (PO, November 6: pull up to the
+   * customer straight). A parked car just past one is swung round only after it.
+   */
+  keepStraightAt?: Point[];
 }
 
 const STEP = 4;
@@ -66,14 +71,29 @@ export class AutoRoute {
     });
     // Parked cars in his lane: swing out to passOffset round each.
     const pass = opts.passOffset ?? 0;
+    const straight = (opts.keepStraightAt ?? []).map((p) => this.project(p[0], p[1])?.s).filter((v): v is number => v !== undefined);
     for (const car of opts.cars ?? []) {
       const at = this.project(car[0], car[1]);
       if (!at) continue;
       const lane = lanes[at.index] ?? 0;
       if (Math.abs(at.side - lane) > 45 || at.side * lane <= 0) continue; // not in the lane he's using
+      // Swing out over [rampIn, holdFrom], hold to holdTo, swing back over [holdTo, rampOut].
+      let holdFrom = at.s - PASS_HALF;
+      let rampIn = holdFrom - PASS_RAMP;
+      const holdTo = at.s + PASS_HALF;
+      const rampOut = holdTo + PASS_RAMP;
+      // A stop just before the car: stay straight there, and swing out after it (a shorter swing).
+      for (const stop of straight) {
+        if (stop > rampIn - 20 && stop < at.s) {
+          rampIn = stop + 20;
+          holdFrom = Math.max(rampIn + 60, holdFrom);
+        }
+      }
       this.centre.forEach((c, i) => {
-        const d = Math.abs(c.s - at.s);
-        const w = d <= PASS_HALF ? 1 : 1 - smooth((d - PASS_HALF) / PASS_RAMP);
+        let w = 0;
+        if (c.s >= holdFrom && c.s <= holdTo) w = 1;
+        else if (c.s > rampIn && c.s < holdFrom) w = smooth((c.s - rampIn) / (holdFrom - rampIn));
+        else if (c.s > holdTo && c.s < rampOut) w = 1 - smooth((c.s - holdTo) / (rampOut - holdTo));
         if (w > 0) lanes[i] = Math.min(lanes[i]!, lanes[i]! + (pass - lanes[i]!) * w);
       });
     }

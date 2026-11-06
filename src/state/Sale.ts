@@ -113,7 +113,7 @@ export class Sale {
   /** While the current line shows the order: any words before it ('' for the order alone); otherwise null. */
   private orderPrefix: string | null = null;
 
-  private readonly startedMs: number;
+  private startedMs: number;
   private orderHiddenMs: number | null = null;
   private showUntilMs: number;
 
@@ -131,6 +131,16 @@ export class Sale {
       this.line = describeOrder(order);
       this.orderPrefix = '';
     }
+  }
+
+  /**
+   * PO (November 6): in the guided tutorial the sale waits while the uncle explains it: the
+   * order stays up and the customer's wait doesn't count down. Pushes both timers on by `ms`.
+   */
+  wait(ms: number): void {
+    if (this.phase !== 'ordering') return;
+    this.startedMs += ms;
+    this.showUntilMs += ms;
   }
 
   /** Called every frame. Hides the order after 5 seconds and ends the sale after the 1-minute wait. */

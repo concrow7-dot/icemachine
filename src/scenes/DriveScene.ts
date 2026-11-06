@@ -47,7 +47,10 @@ import { AutoRoute, nextSpeed } from '../state/AutoRoute';
 import type { UncleLeg } from '../state/Tutorial';
 import {
   REGULAR_CALL_DISTANCE,
+  REGULAR_HOLD_MS,
   REGULAR_STOP_SHORT,
+  UNCLE_CREEP,
+  UNCLE_TO_REGULAR,
   TUTORIAL_REGULAR_ID,
   UNCLE_DRIVING,
   UNCLE_PASS_OFFSET,
@@ -488,12 +491,15 @@ export class DriveScene extends Phaser.Scene {
     if (regular) run.regularName = regular.resident.name;
     const leg = run.legToDrive;
     if (!leg) return;
+    const square = regular?.resident.curb;
     this.uncleRoute ??= new AutoRoute({
       corners: UNCLE_ROUTE_CORNERS,
       lanes: UNCLE_ROUTE_LANES,
       radius: UNCLE_ROUTE_RADIUS,
       cars: this.map.parkedCars.map((c) => [c.x, c.y]),
       passOffset: UNCLE_PASS_OFFSET,
+      // PO (November 6): he pulls up to her straight; the parked car just past her he swings round after.
+      keepStraightAt: square ? [[square[2], square[3]]] : [],
     });
     const route = this.uncleRoute;
     let from: number;
@@ -526,7 +532,14 @@ export class DriveScene extends Phaser.Scene {
     const route = this.uncleRoute;
     const run = this.evening.tutorial;
     if (!route || !run || !this.uncleLeg) return;
-    this.uncleSpeed = nextSpeed(route, this.uncleAlong, this.uncleEnd, this.uncleSpeed, dt, UNCLE_DRIVING);
+    // PO (November 6): slowly from home to his regular; the instant she has her "!", he stops
+    // while he talks about her (REGULAR_HOLD_MS); then he creeps up to her square.
+    const holding = this.uncleLeg === 'toRegular' && this.regularCalled && run.step === 'regular' && run.lineNumber === 0;
+    const profile = this.uncleLeg === 'toPump' ? UNCLE_DRIVING : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
+    const stopAt = holding ? this.uncleAlong : this.uncleEnd;
+    this.uncleSpeed = holding
+      ? Math.max(0, this.uncleSpeed - UNCLE_TO_REGULAR.brake * dt)
+      : nextSpeed(route, this.uncleAlong, stopAt, this.uncleSpeed, dt, profile);
     const step = Math.min(this.uncleSpeed * dt, this.uncleEnd - this.uncleAlong);
     this.uncleAlong += step;
     const arrived = this.uncleEnd - this.uncleAlong < 1 || (this.uncleSpeed < 2 && this.uncleEnd - this.uncleAlong < 6);
@@ -545,6 +558,9 @@ export class DriveScene extends Phaser.Scene {
         this.regularCalled = true;
         this.evening.residents.comeOutToOwnCurb(regular);
         run.signal('regularSpotted');
+        this.time.delayedCall(REGULAR_HOLD_MS, () => {
+          if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
+        });
       }
     }
     if (!arrived) return;

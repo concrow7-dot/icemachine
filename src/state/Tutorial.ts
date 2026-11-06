@@ -34,7 +34,7 @@ export type TutorialPoint = 'clipboard' | 'menu' | 'buy';
  * One of the uncle's lines. A plain line moves on when read (clicked, or after a while).
  * SCREAM-170: a line with `until` waits for the player to do what it says.
  */
-type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint };
+type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean };
 
 type Step = {
   id: TutorialStepId;
@@ -74,14 +74,18 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'regular',
     // SCREAM-171 (PO's note): when the regular stops the truck. {regular} is her name.
+    // PO (November 6): the second line reworded; it stays up while he creeps to her square
+    // and pulls up, until she's at the window.
     lines: [
       "Oh hey, it's {regular}... They buy ice cream pretty much every night.",
-      "Remember where they live, and they'll be your best customers.",
+      { text: 'Try and figure out where the regulars are. {regular} gets ice cream almost every night.', until: 'customerAtWindow' },
     ],
   },
   {
     id: 'sale',
-    lines: ['Remember the order, fill it from the cooler, then add up the price.'],
+    // PO (November 6): at the window everything waits (the order stays up, no countdown) until
+    // the player has read this: clicking it, or heading to the cooler.
+    lines: [{ text: 'Remember the order, add the ice cream from the cooler, and calculate the price.', hold: true }],
     doneWhen: 'salePaid',
   },
   { id: 'tomorrow', lines: ["Regulars come back. They'll want you tomorrow too."], doneWhen: 'saleClosed' },
@@ -109,6 +113,8 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   private stepIndex = 0;
   private lineIndex = 0;
   private finished = false;
+  /** PO (November 6): the player has read his line at the window, so the sale's clock can run. */
+  private saleReleased = false;
   /** SCREAM-171: the regular's name, for his lines about her. */
   regularName = '';
   /** SCREAM-171: the legs he has finished driving. */
@@ -159,6 +165,19 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
     return typeof line === 'object' ? (line.until ?? null) : null;
   }
 
+  /** PO (November 6): at the window, the sale waits (no countdown) until he's been read. */
+  get holdsSale(): boolean {
+    const line = this.current;
+    return this.step === 'sale' && !this.saleReleased && typeof line === 'object' && !!line.hold;
+  }
+
+  /** The sale can start counting: his line was read, or the player moved on (went to the cooler). */
+  releaseSale(): void {
+    if (this.saleReleased) return;
+    this.saleReleased = true;
+    this.emit(TutorialEvents.Changed);
+  }
+
   /** SCREAM-170: what the line on screen is about, for the screen to outline. */
   get pointAt(): TutorialPoint | null {
     const line = this.current;
@@ -187,6 +206,7 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   /** The player read the line (clicked it, or it timed out): show the next one, or finish a talk-only step. */
   nextLine(): void {
     if (this.finished || this.waitingFor) return;
+    if (this.holdsSale) return this.releaseSale();
     const step = TUTORIAL_STEPS[this.stepIndex]!;
     if (this.moreLines) this.lineIndex++;
     else if (!step.doneWhen) return this.advance();

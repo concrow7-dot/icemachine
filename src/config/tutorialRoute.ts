@@ -24,10 +24,22 @@ export const UNCLE_PASS_OFFSET = -2;
 
 /** PO (November 5): the regular he stops for, on the way: Chloe Hogan, sheet 23 (80%, an every-day regular). */
 export const TUTORIAL_REGULAR_ID = 'T008';
-/** She comes out once the truck is this close to her pink square (PO: "automatically when the truck gets within range"). */
-export const REGULAR_CALL_DISTANCE = 300;
+/** She comes out (her "!") once the truck is this close to her pink square (PO: "automatically when the truck gets within range"). */
+export const REGULAR_CALL_DISTANCE = 180;
+/**
+ * PO (November 6): the instant she has her "!", the truck stops for this long while the uncle
+ * says his first line about her; then it creeps up to her square while he says the second.
+ */
+export const REGULAR_HOLD_MS = 4000;
 /** He stops this far short of the middle of her square (still well over half on it), clear of the parked car past it. */
 export const REGULAR_STOP_SHORT = 15;
 
 /** An unhurried drive, so the player can watch the streets go by and read his lines. */
 export const UNCLE_DRIVING: DriveProfile = { cruise: 190, accel: 140, brake: 170, bendSpeed: 110 };
+/**
+ * PO (November 6): from home to his regular, 4 times as long as before (about 2.6 s, now about
+ * 10 s), so there's time to read his line about the sun.
+ */
+export const UNCLE_TO_REGULAR: DriveProfile = { cruise: 48, accel: 140, brake: 170, bendSpeed: 48 };
+/** PO (November 6): creeping up to her square (about 4 to 5 seconds), then pulling up to it. */
+export const UNCLE_CREEP: DriveProfile = { cruise: 34, accel: 60, brake: 40, bendSpeed: 34 };
