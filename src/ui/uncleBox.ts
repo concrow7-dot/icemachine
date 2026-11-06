@@ -116,6 +116,12 @@ export class UncleBox {
     this.timer?.remove();
     this.timer = undefined;
     const line = this.run.line;
+    if (line === null && this.screen === 'intro') {
+      // SCREAM-185: his last words were in the truck's big box: this one stays away.
+      this.gone = true;
+      this.container.setVisible(false);
+      return;
+    }
     if (line === null) {
       // He's said everything: keep his last words up a while, then the box goes.
       this.more.setVisible(false);

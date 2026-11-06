@@ -6,7 +6,7 @@ import { currentMap, setCurrentMap, type MapId } from '../config/maps';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
-import { TutorialRun } from './Tutorial';
+import { TutorialEvents, TutorialRun } from './Tutorial';
 import { RoadNetwork } from './RoadGeometry';
 import {
   COOLER_CAPACITY,
@@ -18,6 +18,7 @@ import {
   FUEL_FULL_TANK_CENTS,
   FUEL_CENT_STEP,
   UNCLE_GAS_CENTS,
+  UNCLE_LEFT_CENTS,
   FUEL_QUICK_PLAY_START,
   FUEL_TUTORIAL_START,
   FUEL_STEP_CENTS,
@@ -177,6 +178,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }, mapId: MapId = 'worcester', guided = false) {
     super();
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
+    // SCREAM-187 (PO, November 6): "I left $50 on the truck for you to get started." (once)
+    const run = this.tutorial;
+    if (run) {
+      const gift = () => {
+        if (!run.givesCash) return;
+        run.off(TutorialEvents.Changed, gift);
+        this.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
+      };
+      run.on(TutorialEvents.Changed, gift);
+    }
     // SCREAM-146: everything tonight (scenes included) uses this evening's map.
     this.mapId = mapId;
     setCurrentMap(mapId);
@@ -491,7 +502,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.servingNow = customer;
     }
     this.setCustomerWaiting(true);
-    this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
+    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

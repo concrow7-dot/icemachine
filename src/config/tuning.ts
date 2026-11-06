@@ -287,6 +287,9 @@ export const FUEL_CENT_STEP = 50;
 /** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
 export const UNCLE_GAS_CENTS = 2000;
 
+/** SCREAM-185 (PO, November 6): "I left $50 on the truck for you." */
+export const UNCLE_LEFT_CENTS = 5000;
+
 /**
  * How far a full tank goes, in px of driving. PO: a full evening of driving uses
  * about 2/3 of a tank. Engineering's guess at "a full evening": moving 60% of the

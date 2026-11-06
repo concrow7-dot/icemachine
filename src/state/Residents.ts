@@ -57,6 +57,8 @@ export interface Resident {
    * pink square y, the road's angle in degrees]. They run to it straight from their door.
    */
   curb: [number, number, number, number, number];
+  /** SCREAM-189 (PO): the sheet's "Order size": always this many ice creams (as many as there are, if fewer). */
+  orderSize?: number;
 }
 
 /**

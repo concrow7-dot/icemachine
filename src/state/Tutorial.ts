@@ -23,12 +23,13 @@ export type TutorialSignal =
   | 'pulledUp'
   | 'orderHidden'
   | 'atPump'
+  | 'arrivedHome'
   | 'customerAtWindow'
   | 'salePaid'
   | 'saleClosed'
   | 'gasBought';
 
-export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'alone';
+export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'home' | 'alone';
 
 /** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
 export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat' | 'gauge';
@@ -42,7 +43,7 @@ export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat' | 'gauge';
  * while); `hold`: the sale's clocks (her wait, the tip) wait until it's read (clicked, or the
  * player acts: R or the cooler).
  */
-type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean; gate?: boolean };
+type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean; gate?: boolean; gift?: boolean };
 
 type Step = {
   id: TutorialStepId;
@@ -65,7 +66,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
       { text: 'Select what you want from the "Available Ice Cream" clipboard.', until: 'flavourAdded', point: 'clipboard' },
       { text: 'Once you\'ve added a new flavor, you can set the price in "Today\'s Menu".', point: 'menu' },
       { text: "Be careful: too expensive, and most people won't want to buy.", point: 'menu' },
-      { text: 'When you\'re ready, "Buy Stock" and we\'ll hit the road!', point: 'buy' },
+      // SCREAM-187 (PO, November 6): the $50 comes with this line (it was on the drive home).
+      { text: 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started.', point: 'buy', gift: true },
     ],
     doneWhen: 'stockBought',
   },
@@ -113,13 +115,29 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     ],
     doneWhen: 'gasBought',
   },
-  { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
+  {
+    id: 'home',
+    // SCREAM-185 (PO's note, November 6): he drives home, as fast as to the gas, saying these.
+    // SCREAM-187: "I left $50..." moved to the cooler.
+    lines: ['Return home to fill up on stock when you need.'],
+    doneWhen: 'arrivedHome',
+  },
+  // SCREAM-185: back in the truck at home (the truck screen returns); read these and the player
+  // is on the road alone. SCREAM-188 (PO, November 6): his last words, in the truck at home.
+  {
+    id: 'alone',
+    lines: [
+      // SCREAM-190 (PO): Big Kev lives on Institute Rd (sheet 23, house 82).
+      "You should go find Big Kev on Institute Rd. He's usually around this time of night and gets a big order.",
+      'Good luck kiddo.',
+    ],
+  },
 ];
 
 const textOf = (line: Line | undefined): string | null => (line === undefined ? null : typeof line === 'string' ? line : line.text);
 
 /** SCREAM-171: the stretches of road the uncle drives in the tutorial. */
-export type UncleLeg = 'toRegular' | 'toPump';
+export type UncleLeg = 'toRegular' | 'toPump' | 'toHome';
 
 export const TutorialEvents = {
   /** () — the uncle's line on screen changed (a new step or the next line), or he's done. */
@@ -162,14 +180,31 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
    */
   get uncleDriving(): boolean {
     const step = this.step;
-    return step === 'drive' || step === 'regular' || step === 'sale' || (step === 'pump' && !this.driven.has('toPump'));
+    return (
+      step === 'drive' ||
+      step === 'regular' ||
+      step === 'sale' ||
+      (step === 'pump' && !this.driven.has('toPump')) ||
+      (step === 'home' && !this.driven.has('toHome'))
+    );
   }
 
   /** Which leg he should be driving now, if any (and not yet finished). */
   get legToDrive(): UncleLeg | null {
     if (this.step === 'drive' && !this.driven.has('toRegular')) return 'toRegular';
     if (this.step === 'pump' && !this.driven.has('toPump')) return 'toPump';
+    if (this.step === 'home' && !this.driven.has('toHome')) return 'toHome';
     return null;
+  }
+
+
+  /** SCREAM-190: he has stepped out of the truck to walk home (once). */
+  walkedHome = false;
+
+  /** SCREAM-187: his line about the $50 he left on the truck is on screen. */
+  get givesCash(): boolean {
+    const line = this.current;
+    return typeof line === 'object' && !!line.gift;
   }
 
   finishLeg(leg: UncleLeg): void {
