@@ -207,6 +207,7 @@ const { chromium } = require('playwright');
   await page.mouse.click(600, 80); await wait(200);
   check('Click: be careful with prices', (await uncle()).startsWith('Be careful: too expensive'), true);
   const giftBefore = await ev('e.moneyCents');
+  check('With the uncle the cash starts empty (SCREAM-191)', giftBefore, 0);
   await page.mouse.click(600, 80); await wait(400);
   check('Click: Buy Stock, outlined, and the $50 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started. | on 5000');
   await page.screenshot({ path: outDir + '/uncle_cooler_gift.png' });

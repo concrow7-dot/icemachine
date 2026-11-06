@@ -96,7 +96,8 @@ export class CoolerScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.moneyCents, this.evening.cells);
+    // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells);
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -637,7 +638,8 @@ export class CoolerScene extends Phaser.Scene {
     } else {
       this.totals.setText(
         `This order: ${formatMoney(this.order.costCents)}\n` +
-          `Cash: ${formatMoney(this.evening.moneyCents)} → ${formatMoney(this.order.cashAfterCents)}`,
+          // SCREAM-191: before the uncle hands over his $50, it's what the player is spending.
+          `${this.evening.uncleGiftComing ? "Uncle's" : 'Cash:'} ${formatMoney(this.evening.stockBudgetCents)} → ${formatMoney(this.order.cashAfterCents)}`,
       );
       this.buyButton?.setText(`BUY STOCK  ${formatMoney(this.order.costCents)}`);
     }
