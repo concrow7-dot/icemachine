@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 043 — New players play the Tutorial first (2026-11-06)
+
+**Decision (Jira SCREAM-175, under SCREAM-5, PO, November 5):** the first time someone plays, Tutorial is the only mode they can pick. Once they finish its evening (day 1) with the uncle, Quick Play and Story unlock.
+
+**Why (product owner's rationale):** _to fill in: waiting on the PO (asked November 6)._
+
+**Engineering's calls (proposals):** Quick Play and Story stay on the title screen, dimmed and marked "(Locked)", with "Finish the Tutorial to unlock Quick Play and Story." under the menu, so new players can see what's coming; the arrows skip them and a click on one makes the note flash. "Finished" means the evening reached its end (the results screen), saved in the browser. Anyone with a saved Story or any high score already counts as finished, so current players and playtesters aren't locked out.
+
 ## 042 — Some customers always order a set number of ice creams (2026-11-06)
 
 **Decision (Jira SCREAM-189, under SCREAM-11, PO, November 6):** a customer can be given a fixed order size. The residents sheets get an optional "Order size" column (sheet 23 first): blank is the usual random size (1 to 6), a number means that person always orders that many, or everything in stock if there are fewer. Big Kev (sheet 23, Institute Rd) always orders 7, and the uncle's last line in the tutorial tells the player to go find him.
