@@ -15,6 +15,8 @@ import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
  * clipboard, Today's Menu and Buy Stock, which he talks about.
  */
 const BOX = { x: 0, y: 0, w: 690, h: 58, unit: 4 };
+/** PO (November 6): a line too long for one row gets a second row; the box grows down by this much. */
+const SECOND_ROW = 18;
 const SPOT_TOP = { x: 90, y: 48 };
 const SPOT_COOLER = { x: 254, y: 39 };
 const LINE_MS = 6000;
@@ -30,6 +32,10 @@ export class UncleBox {
   /** SCREAM-180: a yellow glow round the bubble that flashes as a new line arrives. */
   private readonly glow: Phaser.GameObjects.Graphics;
   private timer?: Phaser.Time.TimerEvent;
+  private readonly frame: Phaser.GameObjects.Graphics;
+  private readonly hit: Phaser.GameObjects.Zone;
+  /** The box's height now (one row, or two). */
+  height = BOX.h;
   /** He's said everything and his last line has had its time: the box stays away. */
   private gone = false;
   /** The screen underneath, from place(). */
@@ -41,6 +47,7 @@ export class UncleBox {
     this.scene = scene;
     this.run = run;
     const g = drawBubble(scene.add.graphics(), { ...BOX, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
+    this.frame = g;
     const name = scene.add.text(BOX.x + 18, BOX.y + 9, 'Uncle', {
       fontFamily: 'monospace',
       fontSize: '13px',
@@ -65,9 +72,9 @@ export class UncleBox {
     for (const p of parts) (p as unknown as { x: number; y: number }).y -= BOX.h / 2;
     this.bubble = scene.add.container(BOX.w / 2, BOX.h / 2, parts);
     this.glow = scene.add.graphics().setAlpha(0);
-    this.glow.lineStyle(10, 0x3b2a1a, 0.6).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
-    this.glow.lineStyle(6, 0xffe066, 1).strokeRoundedRect(-6, -6, BOX.w + 12, BOX.h + 12, 12);
     const hit = scene.add.zone(BOX.x, BOX.y, BOX.w, BOX.h).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    this.hit = hit;
+    this.drawGlow();
     hit.on('pointerdown', () => run.nextLine());
     this.container = scene.add
       .container(SPOT_TOP.x, SPOT_TOP.y, [this.glow, this.bubble, hit])
@@ -124,8 +131,9 @@ export class UncleBox {
     // SCREAM-170: a line waiting for the player to do something stays until they do.
     const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
     // PO (November 6): his line at the window waits for a click (▶), with no timer.
-    this.more.setVisible(goesOn || this.run.holdsSale);
-    if (goesOn) {
+    // SCREAM-172: his line as the truck pulls up holds her window until it's clicked or has had its time.
+    this.more.setVisible(goesOn || this.run.holdsSale || this.run.holdsWindow);
+    if (goesOn || this.run.holdsWindow) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
   }
@@ -134,6 +142,23 @@ export class UncleBox {
   private fitText(line: string): void {
     this.text.setFontSize(14).setText(line);
     if (this.text.height > 24) this.text.setFontSize(13);
+    this.setHeight(this.text.height > 24 ? BOX.h + SECOND_ROW : BOX.h);
+  }
+
+  /** One row or two: the box grows down (its top stays put). */
+  private setHeight(h: number): void {
+    if (h === this.height) return;
+    this.height = h;
+    drawBubble(this.frame, { ...BOX, h, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
+    this.more.y = BOX.y + h - 12 - BOX.h / 2;
+    this.hit.setSize(BOX.w, h);
+    this.drawGlow();
+  }
+
+  private drawGlow(): void {
+    this.glow.clear();
+    this.glow.lineStyle(10, 0x3b2a1a, 0.6).strokeRoundedRect(-6, -6, BOX.w + 12, this.height + 12, 12);
+    this.glow.lineStyle(6, 0xffe066, 1).strokeRoundedRect(-6, -6, BOX.w + 12, this.height + 12, 12);
   }
 
   /**

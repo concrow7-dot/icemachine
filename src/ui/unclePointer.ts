@@ -11,7 +11,8 @@ const OUTLINE = 0x3b2a1a;
 
 export type PointRects = Partial<Record<TutorialPoint, () => Phaser.Geom.Rectangle | null>>;
 
-export function addUnclePointer(scene: Phaser.Scene, run: TutorialRun, rects: PointRects): Phaser.GameObjects.Graphics {
+/** Draws the outline; call the returned `redraw` when a part moves (e.g. the sales window's hint line changes). */
+export function addUnclePointer(scene: Phaser.Scene, run: TutorialRun, rects: PointRects): { graphics: Phaser.GameObjects.Graphics; redraw: () => void } {
   const g = scene.add.graphics().setDepth(40).setName('uncle-pointer');
   // SCREAM-180 (PO): a stronger flash, so it shows even on the clipboard's own gold frame.
   scene.tweens.add({ targets: g, alpha: 0.2, duration: 380, yoyo: true, repeat: -1 });
@@ -29,5 +30,5 @@ export function addUnclePointer(scene: Phaser.Scene, run: TutorialRun, rects: Po
   run.on(TutorialEvents.Changed, draw);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => run.off(TutorialEvents.Changed, draw));
   draw();
-  return g;
+  return { graphics: g, redraw: () => void draw() };
 }

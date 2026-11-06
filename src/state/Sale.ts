@@ -138,9 +138,11 @@ export class Sale {
    * order stays up and the customer's wait doesn't count down. Pushes both timers on by `ms`.
    */
   wait(ms: number): void {
-    if (this.phase !== 'ordering') return;
+    if (this.phase === 'over') return;
     this.startedMs += ms;
-    this.showUntilMs += ms;
+    if (this.phase === 'ordering') this.showUntilMs += ms;
+    // SCREAM-172: after the order is hidden, the tip's countdown waits too.
+    if (this.orderHiddenMs !== null) this.orderHiddenMs += ms;
   }
 
   /** Called every frame. Hides the order after 5 seconds and ends the sale after the 1-minute wait. */

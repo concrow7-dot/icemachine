@@ -20,21 +20,28 @@ export type TutorialSignal =
   | 'stockBought'
   | 'setOff'
   | 'regularSpotted'
+  | 'pulledUp'
+  | 'orderHidden'
   | 'customerAtWindow'
   | 'salePaid'
   | 'saleClosed'
   | 'gasBought';
 
-export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'tomorrow' | 'pump' | 'alone';
+export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'alone';
 
 /** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
-export type TutorialPoint = 'clipboard' | 'menu' | 'buy';
+export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat';
 
 /**
  * One of the uncle's lines. A plain line moves on when read (clicked, or after a while).
  * SCREAM-170: a line with `until` waits for the player to do what it says.
  */
-type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean };
+/**
+ * SCREAM-172: `gate`: the sales window waits to open until the line is read (clicked, or after a
+ * while); `hold`: the sale's clocks (her wait, the tip) wait until it's read (clicked, or the
+ * player acts: R or the cooler).
+ */
+type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean; gate?: boolean };
 
 type Step = {
   id: TutorialStepId;
@@ -67,7 +74,7 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     // the cab; the second, he says while he drives. It stays up until the regular comes out.
     lines: [
       "Let's go get some gas, and then you'll be ready to go.",
-      "The sun has been setting at 8 PM... you won't get much business after that.",
+      "The sun has been setting at 8 PM... you won't get business after that.",
     ],
     doneWhen: 'regularSpotted',
   },
@@ -78,17 +85,24 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     // and pulls up, until she's at the window.
     lines: [
       "Oh hey, it's {regular}... They buy ice cream pretty much every night.",
-      { text: 'Try and figure out where the regulars are. {regular} gets ice cream almost every night.', until: 'customerAtWindow' },
+      // PO (November 6, testing PR #130): his line as the truck creeps up to her.
+      { text: 'My best customers buy ice cream almost every night! Remembering where they live is the hard part.', until: 'pulledUp' },
     ],
   },
   {
     id: 'sale',
-    // PO (November 6): at the window everything waits (the order stays up, no countdown) until
-    // the player has read this: clicking it, or heading to the cooler.
-    lines: [{ text: 'Remember the order, add the ice cream from the cooler, and calculate the price.', hold: true }],
-    doneWhen: 'salePaid',
+    // SCREAM-172 (PO's note, November 6): as the truck pulls up he says the first line, then
+    // the window opens and she gives her order; once she has, the second (R is outlined), and
+    // the third stays up until she's paid.
+    lines: [
+      { text: 'Remember the order, add the ice cream from the cooler, and calculate the price.', gate: true, until: 'orderHidden' },
+      { text: 'Customers will usually let you ask for a repeat of their order. (Hit R)', hold: true, point: 'repeat' },
+      'Make sure to get the order and price correct.',
+    ],
+    // PO (November 6, testing PR #130): no "come back tomorrow" line after the sale (his lines
+    // as the truck pulls up cover regulars), so his last line stays until the window closes.
+    doneWhen: 'saleClosed',
   },
-  { id: 'tomorrow', lines: ["Regulars come back. They'll want you tomorrow too."], doneWhen: 'saleClosed' },
   {
     id: 'pump',
     // Engineering's draft until SCREAM-173: he drives on to the pump bay while saying it.
@@ -113,8 +127,11 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   private stepIndex = 0;
   private lineIndex = 0;
   private finished = false;
-  /** PO (November 6): the player has read his line at the window, so the sale's clock can run. */
-  private saleReleased = false;
+  /** SCREAM-172: which line (step:line) that gates the window or holds the sale has been read. */
+  private releasedLine = '';
+  private get released(): boolean {
+    return this.releasedLine === `${this.stepIndex}:${this.lineIndex}`;
+  }
   /** SCREAM-171: the regular's name, for his lines about her. */
   regularName = '';
   /** SCREAM-171: the legs he has finished driving. */
@@ -141,7 +158,7 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
    */
   get uncleDriving(): boolean {
     const step = this.step;
-    return step === 'drive' || step === 'regular' || step === 'sale' || step === 'tomorrow' || (step === 'pump' && !this.driven.has('toPump'));
+    return step === 'drive' || step === 'regular' || step === 'sale' || (step === 'pump' && !this.driven.has('toPump'));
   }
 
   /** Which leg he should be driving now, if any (and not yet finished). */
@@ -165,16 +182,36 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
     return typeof line === 'object' ? (line.until ?? null) : null;
   }
 
-  /** PO (November 6): at the window, the sale waits (no countdown) until he's been read. */
-  get holdsSale(): boolean {
+  /** SCREAM-172: the sales window waits to open until his line has been read. */
+  get holdsWindow(): boolean {
     const line = this.current;
-    return this.step === 'sale' && !this.saleReleased && typeof line === 'object' && !!line.hold;
+    return !this.released && typeof line === 'object' && !!line.gate;
   }
 
-  /** The sale can start counting: his line was read, or the player moved on (went to the cooler). */
-  releaseSale(): void {
-    if (this.saleReleased) return;
-    this.saleReleased = true;
+  /** SCREAM-172: the sale's clocks (her wait, the tip) wait until his line has been read. */
+  get holdsSale(): boolean {
+    const line = this.current;
+    return !this.released && typeof line === 'object' && !!line.hold;
+  }
+
+  /**
+   * His gating or holding line has been read (clicked, timed out, or the player acted). A gate
+   * stays up (until its signal); a hold moves on to the next line.
+   */
+  release(): void {
+    const line = this.current;
+    if (this.released || typeof line !== 'object' || !(line.gate || line.hold)) return;
+    this.releasedLine = `${this.stepIndex}:${this.lineIndex}`;
+    if (line.hold && this.moreLines) this.lineIndex++;
+    this.emit(TutorialEvents.Changed);
+  }
+
+  /** SCREAM-172: the player went to the cooler: past the R tip (it's no use there). */
+  skipRepeatTip(): void {
+    if (this.step !== 'sale') return;
+    const repeatAt = TUTORIAL_STEPS[this.stepIndex]!.lines.findIndex((l) => typeof l === 'object' && l.point === 'repeat');
+    if (repeatAt < 0 || this.lineIndex > repeatAt) return;
+    this.lineIndex = repeatAt + 1;
     this.emit(TutorialEvents.Changed);
   }
 
@@ -205,8 +242,9 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
 
   /** The player read the line (clicked it, or it timed out): show the next one, or finish a talk-only step. */
   nextLine(): void {
-    if (this.finished || this.waitingFor) return;
-    if (this.holdsSale) return this.releaseSale();
+    if (this.finished) return;
+    if (this.holdsWindow || this.holdsSale) return this.release();
+    if (this.waitingFor) return;
     const step = TUTORIAL_STEPS[this.stepIndex]!;
     if (this.moreLines) this.lineIndex++;
     else if (!step.doneWhen) return this.advance();

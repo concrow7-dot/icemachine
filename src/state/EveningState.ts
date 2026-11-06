@@ -273,12 +273,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   tick(deltaMs: number): void {
     if (this.ended || !this.clockRunning) return;
     this.nowMsValue += deltaMs;
-    // PO (November 6): at the window in the guided tutorial, the sale waits for the uncle's line.
-    const tutorial = this.tutorial;
-    if (tutorial?.holdsSale && this.saleNow) {
-      if (this.saleNow.phase === 'ordering') this.saleNow.wait(deltaMs);
-      else tutorial.releaseSale();
-    }
+    // SCREAM-172: at the window in the guided tutorial, the sale's clocks wait for the uncle's line.
+    if (this.tutorial?.holdsSale && this.saleNow) this.saleNow.wait(deltaMs);
     this.updateSale();
     if (this.endPending) return;
     this.elapsedMs += deltaMs;
@@ -612,6 +608,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   private afterSaleChange(): void {
+    // SCREAM-172: the customer has finished giving her order (the uncle's next tip).
+    if (this.lastSalePhase === 'ordering' && this.saleNow && this.saleNow.phase !== 'ordering') this.tutorial?.signal('orderHidden');
     this.lastSalePhase = this.saleNow?.phase ?? null;
     this.emit(EveningEvents.SaleChanged);
   }
