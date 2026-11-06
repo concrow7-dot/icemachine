@@ -74,7 +74,7 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     // the cab; the second, he says while he drives. It stays up until the regular comes out.
     lines: [
       "Let's go get some gas, and then you'll be ready to go.",
-      "The sun has been setting at 8 PM... you won't get much business after that.",
+      "The sun has been setting at 8 PM... you won't get business after that.",
     ],
     doneWhen: 'regularSpotted',
   },
