@@ -157,10 +157,18 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-169: the uncle's steps ----
   // Music on for this part, to hear the credits' tune (SCREAM-178).
-  await page.evaluate(() => { localStorage.removeItem('icemachine.tutorial.done.v1'); localStorage.setItem('icemachine.music.muted.v1', '0'); });
+  // SCREAM-175: a brand-new player (no tutorial finished, no Story, no high scores).
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '0'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
+  check('New player: Quick Play and Story locked, Tutorial picked (SCREAM-175)', await sc('Title', 's.modeTexts.map(t => t.text).join("|")'), 'Quick Play (Locked)|Story (Locked)|> Tutorial <');
+  check('...with a note saying why', await sc('Title', 's.children.getByName("lock-note").text'), 'Finish the Tutorial to unlock Quick Play and Story.');
+  await page.screenshot({ path: outDir + '/title_locked.png' });
+  await press('ArrowUp');
+  check('...the arrows skip the locked modes', await sc('Title', 's.selected'), 2);
+  await page.mouse.click(480, 345); await wait(300);
+  check('...clicking Quick Play does nothing', await scenes(), 'Title');
   const uncle = () => page.evaluate(() => (b => b ? b.shown : '')(window.__game.scene.getScene('Hud').uncleBox));
   await press('ArrowDown', 2); await press('Enter'); await wait(500);
   check('First Tutorial: no question, the uncle comes along', await ev('!!e.tutorial'), true);
@@ -332,6 +340,7 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
+  check('Tutorial finished: every mode unlocked', await sc('Title', 's.options.some(o => o.locked) + " " + s.children.getByName("lock-note").text'), 'false ');
   await press('ArrowDown', 2); await press('Enter'); await wait(300);
   check('The title screen credits the tune', await sc('Title', 's.children.list.some(o => o.text && o.text.includes("Tune: Travis Morgan"))'), true);
   check('Tutorial again: asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');

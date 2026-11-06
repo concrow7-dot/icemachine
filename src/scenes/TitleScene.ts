@@ -2,6 +2,17 @@ import * as Phaser from 'phaser';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
 import { loadStory } from '../state/StorySave';
 import { tutorialDone } from '../state/Tutorial';
+import { loadHighScores } from '../state/HighScores';
+
+/**
+ * SCREAM-175 (PO, November 5): a new player plays the Tutorial first; Quick Play and Story
+ * unlock once they've finished its evening (day 1). Anyone with a saved Story or a high score
+ * already counts as finished, so current players aren't locked out.
+ */
+export function modesUnlocked(): boolean {
+  return tutorialDone() || !!loadStory() || (['quick', 'story', 'tutorial'] as const).some((t) => loadHighScores(t).length > 0);
+}
+const LOCK_NOTE = 'Finish the Tutorial to unlock Quick Play and Story.';
 import { formatMoney } from '../util/format';
 import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 
@@ -31,7 +42,7 @@ type Mode = 'quick' | 'story' | 'continue' | 'tutorial';
 /** SCREAM-107: the truck's two lanes, above the title and below the menu. */
 const LANE_TOP = 40;
 const LANE_BOTTOM = 446;
-type Option = { id: Mode; label: string };
+type Option = { id: Mode; label: string; locked?: boolean };
 
 
 export class TitleScene extends Phaser.Scene {
@@ -39,6 +50,7 @@ export class TitleScene extends Phaser.Scene {
   private selected = 0;
   private modeTexts: Phaser.GameObjects.Text[] = [];
   private options: Option[] = [];
+  private lockNote!: Phaser.GameObjects.Text;
   /** Asking "start a new story?" over a saved run, or (SCREAM-169) "with your uncle?". */
   private confirming = false;
   /** SCREAM-169: which question the box is asking. */
@@ -84,6 +96,10 @@ export class TitleScene extends Phaser.Scene {
           { id: 'story', label: 'Story' },
           { id: 'tutorial', label: 'Tutorial' },
         ];
+    // SCREAM-175: until the tutorial's evening is finished, only Tutorial can be picked.
+    const locked = !modesUnlocked();
+    if (locked) for (const o of this.options) o.locked = o.id !== 'tutorial';
+    this.selected = Math.max(0, this.options.findIndex((o) => !o.locked));
 
     this.add
       .text(width / 2, 112, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
@@ -108,17 +124,22 @@ export class TitleScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
-          if (this.starting || this.confirming) return;
+          if (this.starting || this.confirming || this.options[i]?.locked) return;
           this.selected = i;
           this.refreshModes();
         })
         .on('pointerdown', () => {
           if (this.starting || this.confirming) return;
+          if (this.options[i]?.locked) return this.flashLockNote();
           this.selected = i;
           this.chooseSelected();
         }),
     );
     this.refreshModes();
+    this.lockNote = this.add
+      .text(width / 2, 345 + this.options.length * spacing + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
+      .setOrigin(0.5)
+      .setName('lock-note');
     this.add
       .text(width / 2, height - 32, '↑ ↓ Or Mouse: Choose    Press Enter Or Click To Start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
       .setOrigin(0.5);
@@ -141,8 +162,17 @@ export class TitleScene extends Phaser.Scene {
         return;
       }
       const n = this.options.length;
-      if (key === 'ArrowUp') this.selected = (this.selected - 1 + n) % n;
-      else if (key === 'ArrowDown') this.selected = (this.selected + 1) % n;
+      // SCREAM-175: the arrows skip locked modes.
+      const step = (d: number) => {
+        let i = this.selected;
+        for (let k = 0; k < n; k++) {
+          i = (i + d + n) % n;
+          if (!this.options[i]?.locked) return i;
+        }
+        return this.selected;
+      };
+      if (key === 'ArrowUp') this.selected = step(-1);
+      else if (key === 'ArrowDown') this.selected = step(1);
       else if (key === 'Enter') return this.chooseSelected();
       this.refreshModes();
     });
@@ -150,6 +180,7 @@ export class TitleScene extends Phaser.Scene {
 
   /** Enter or a click on the picked option. A new story over a saved run asks first (SCREAM-17). */
   private chooseSelected(): void {
+    if (this.options[this.selected]?.locked) return this.flashLockNote();
     const id = this.options[this.selected]?.id ?? 'quick';
     if (id === 'story' && loadStory()) return this.openConfirm();
     if (id === 'tutorial' && tutorialDone()) return this.openUncleChoice();
@@ -240,8 +271,17 @@ export class TitleScene extends Phaser.Scene {
     this.modeTexts.forEach((t, i) => {
       const on = i === this.selected;
       const label = this.options[i]?.label ?? '';
+      // SCREAM-175: a locked mode is dimmed and marked.
+      if (this.options[i]?.locked) return void t.setText(`${label} (Locked)`).setColor('#4d5a70');
       t.setText(on ? `> ${label} <` : label);
       t.setColor(on ? '#ffe066' : '#8a9bb3');
     });
+  }
+
+  /** SCREAM-175: a click on a locked mode makes the note say why. */
+  private flashLockNote(): void {
+    this.tweens.killTweensOf(this.lockNote);
+    this.lockNote.setColor('#ffe066').setScale(1);
+    this.tweens.add({ targets: this.lockNote, scale: 1.08, duration: 120, yoyo: true, repeat: 1, onComplete: () => this.lockNote.setColor('#8a9bb3') });
   }
 }
