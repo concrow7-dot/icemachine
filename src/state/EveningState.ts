@@ -502,7 +502,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.servingNow = customer;
     }
     this.setCustomerWaiting(true);
-    this.saleNow = new Sale(generateOrder(this.coolerSlots), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
+    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

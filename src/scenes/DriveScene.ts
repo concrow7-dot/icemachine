@@ -39,6 +39,11 @@ import {
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
+import { UNCLE_URL } from '../ui/smoothPixels';
+
+/** SCREAM-190: the uncle on the map (his sheet in the residents' layout), and how fast he walks home. */
+const UNCLE_WALKER_KEY = 'uncle-walker';
+const UNCLE_WALK_SPEED = 38;
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
@@ -239,6 +244,7 @@ export class DriveScene extends Phaser.Scene {
     if (!this.textures.exists(a.atlasKey)) this.load.atlas(a.atlasKey, a.atlasPng, a.atlasJson);
     for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, versioned(`${a.roadDir}/${key}.png`, this.map));
     loadResidentSheet(this);
+    if (!this.textures.exists(UNCLE_WALKER_KEY)) this.load.spritesheet(UNCLE_WALKER_KEY, UNCLE_URL, { frameWidth: 16, frameHeight: 32 });
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
@@ -443,6 +449,7 @@ export class DriveScene extends Phaser.Scene {
     if (this.leaving) return;
     this.music.tick();
     this.ring.setPosition(this.truck.x, this.truck.y);
+    this.walkUncleHome(Math.min(deltaMs, 100) / 1000, time);
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: this.truck.x,
       y: this.truck.y,
@@ -490,8 +497,14 @@ export class DriveScene extends Phaser.Scene {
   private setUpUncle(): void {
     this.uncleLeg = null;
     this.arrivingHome = false;
+    this.uncleWalker = undefined;
     const run = this.evening.tutorial;
     if (!run) return;
+    // SCREAM-190 (PO, November 6): his part over, he steps out of the truck and walks home.
+    if (run.step === 'done' && !run.walkedHome) {
+      run.walkedHome = true;
+      this.startUncleWalk();
+    }
     // Nobody but his regular comes out while he has the wheel.
     this.evening.residents.hearingOff = run.uncleDriving;
     const regular = this.evening.residents.all.find((p) => p.resident.id === TUTORIAL_REGULAR_ID);
@@ -548,6 +561,49 @@ export class DriveScene extends Phaser.Scene {
     this.regularCalled = leg !== 'toRegular';
     this.uncleLeg = leg;
     this.parkBrake = false;
+  }
+
+  /** SCREAM-190: the uncle, map-sized, and the points of his walk from the truck to home's front door. */
+  private uncleWalker?: Phaser.GameObjects.Sprite;
+  private uncleWalkPath: [number, number][] = [];
+
+  private startUncleWalk(): void {
+    const home = this.map.home;
+    if (!home) return;
+    const hs = this.map.homeStart;
+    const side = Math.sign(home.x - this.truck.x) || 1;
+    // Out of the truck's side toward home, across the street, along the sidewalk, then along the front to the door.
+    const out: [number, number] = [this.truck.x + side * 26, this.truck.y + 6];
+    const walkway = hs.x + side * 46;
+    this.uncleWalkPath = [
+      [walkway, out[1]],
+      [walkway, home.y + 12],
+      [home.x, home.y + 12],
+      [home.x, home.y - 2],
+    ];
+    this.uncleWalker = this.add.sprite(out[0], out[1], UNCLE_WALKER_KEY, 24).setOrigin(0.5, 1).setName('uncle-walker').setAlpha(0);
+    this.tweens.add({ targets: this.uncleWalker, alpha: 1, duration: 300 });
+  }
+
+  /** SCREAM-190: one frame of his walk home; at the door he goes in. */
+  private walkUncleHome(dt: number, timeMs: number): void {
+    const w = this.uncleWalker;
+    const next = this.uncleWalkPath[0];
+    if (!w || !w.active) return;
+    if (!next) {
+      if (w.alpha === 1 && !this.tweens.isTweening(w)) this.tweens.add({ targets: w, alpha: 0, duration: 400, onComplete: () => w.destroy() });
+      return;
+    }
+    const dx = next[0] - w.x;
+    const dy = next[1] - w.y;
+    const d = Math.hypot(dx, dy);
+    const stepPx = UNCLE_WALK_SPEED * dt;
+    if (d <= stepPx) {
+      w.setPosition(next[0], next[1]);
+      this.uncleWalkPath.shift();
+    } else w.setPosition(w.x + (dx / d) * stepPx, w.y + (dy / d) * stepPx);
+    const facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 2) : dy > 0 ? 3 : 1; // right, up, left, down columns
+    w.setFrame(24 + facing * 6 + (Math.floor(timeMs / 110) % 6)).setDepth(RESIDENT_DEPTH + w.y / DEPTH_PER_PX);
   }
 
   /** SCREAM-171: one frame of the uncle's driving. */

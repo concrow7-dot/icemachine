@@ -45,6 +45,27 @@ const { chromium } = require('playwright');
   await wait(2500);
   await page.screenshot({ path: outDir + '/tutorial_drive.png' });
 
+  // ---- SCREAM-189: Big Kev always orders 7 (sheet 23's "Order size") ----
+  check('Big Kev: an order size of 7 from the sheet', await ev("e.residents.all.find(p => p.resident.id === 'T034').resident.orderSize"), 7);
+  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) { c.quantity = 4; c.priceCents = 200; } }), e.orderPictureChance = 0, true)");
+  await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
+  await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
+  check('...he orders 7 ice creams', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 7);
+  await page.screenshot({ path: outDir + '/bigkev_words.png' });
+  await press('b'); await wait(600);
+  await ev("(e.orderPictureChance = 1, e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 4; }), true)");
+  await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
+  await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
+  check('...in pictures too', (await ev('e.sale.pictures')) + ' ' + (await ev('e.sale.order.reduce((n, l) => n + l.count, 0)')), 'true 7');
+  await page.screenshot({ path: outDir + '/bigkev_pictures.png' });
+  await press('b'); await wait(600);
+  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 1; }), e.orderPictureChance = 0.5, true)");
+  await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
+  await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(400);
+  check('...with only 3 in stock, he orders all 3', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 3);
+  await press('b'); await wait(600);
+  await ev("(e.coolerSlots.forEach(c => { c.quantity = 0; }), true)");
+
   // ---- SCREAM-52: the neighbourhood's matching details ----
   check('Six businesses on Park Avenue, with their names on their signs', await drive('s.map.signs.map(g => g.text).join()'), 'Bagel Time,Dippin Donuts,UPS Store,Fancy Florist,The Boynton,Thai Time');
   const kinds = await drive("(() => { const c = {}; for (const o of s.map.objects) { const k = o.key.split('_')[0]; c[k] = (c[k] || 0) + 1; } return c; })()");
@@ -288,13 +309,21 @@ const { chromium } = require('playwright');
   check('Arrived home: the truck screen with the uncle returns', (await ev('e.tutorial.step')) + ' ' + (await sc('UncleIntro', 's.children.getByName("uncle").visible')), 'alone true');
   check('...not the restock cooler', await ev('e.isRestocking'), false);
   check('...near home', await ev('Math.hypot(e.truck.x - 1426.8, e.truck.y - 630.3) < 90'), true);
-  check('...Big Kev, in the big box; the small one stays away (SCREAM-188)', (await sc('UncleIntro', 's.shown')) + ' | ' + (await uncle()), "You should go find Big Kev on Lee St. He's usually around this time of night and gets a big order. | ");
+  check('...Big Kev, in the big box; the small one stays away (SCREAM-188)', (await sc('UncleIntro', 's.shown')) + ' | ' + (await uncle()), "You should go find Big Kev on Institute Rd. He's usually around this time of night and gets a big order. | ");
   await page.screenshot({ path: outDir + '/uncle_home.png' });
   await page.mouse.click(600, 300); await wait(300);
   check('Click: his last words', (await sc('UncleIntro', 's.shown')) + ' ' + (await scenes()), 'Good luck kiddo. UncleIntro,Hud');
   await page.mouse.click(600, 300);
   await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 }); await wait(600);
   check('Click: on the road alone; he is done', (await ev('e.tutorial.step')) + ' ' + (await ev('e.residents.hearingOff')) + ' ' + (await uncle()), 'done false ');
+  // SCREAM-190: he steps out of the truck and walks home.
+  check('...and he steps out of the truck, map-sized', await drive('(w => !!w && w.active && w.texture.key)(s.children.getByName("uncle-walker"))'), 'uncle-walker');
+  const walkFrom = await drive('(w => w.x + "," + w.y)(s.children.getByName("uncle-walker"))');
+  await wait(5000);
+  await page.screenshot({ path: outDir + '/uncle_walk_home.png' });
+  check('...walking toward home', (await drive('(w => w.x + "," + w.y)(s.children.getByName("uncle-walker"))')) !== walkFrom, true);
+  await page.waitForFunction(() => !window.__game.scene.getScene('Drive').children.getByName('uncle-walker'), null, { timeout: 15000 });
+  check('...and he goes in at the front door', await drive('s.uncleWalkPath.length'), 0);
   await page.keyboard.down('ArrowUp'); await wait(700); await page.keyboard.up('ArrowUp');
   check('...and the player drives', await drive('s.speed > 0'), true);
   await page.keyboard.press('Shift+Digit3'); await wait(600);

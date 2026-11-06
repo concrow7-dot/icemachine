@@ -52,12 +52,17 @@ export function pickOrderSize(roll: number): number {
  * priced over $4.00 (PO, doc 12 Q10 and Q11). Returns an empty order when
  * every flavour in stock is too expensive.
  */
-export function generateOrder(slots: readonly Readonly<CoolerSlot>[], random: () => number = Math.random): OrderLine[] {
+export function generateOrder(
+  slots: readonly Readonly<CoolerSlot>[],
+  random: () => number = Math.random,
+  /** SCREAM-189: this customer always orders this many (the sheet's "Order size"). */
+  fixedSize?: number,
+): OrderLine[] {
   const left = slots.map((s) => (s.priceCents <= REFUSE_ABOVE_CENTS ? s.quantity : 0));
   const available = left.reduce((a, b) => a + b, 0);
   if (available === 0) return [];
 
-  const size = Math.min(pickOrderSize(random()), available);
+  const size = Math.min(fixedSize ?? pickOrderSize(random()), available);
   const counts = slots.map(() => 0);
   for (let n = 0; n < size; n++) {
     const choices = left.map((q, i) => (q > counts[i]! ? i : -1)).filter((i) => i >= 0);

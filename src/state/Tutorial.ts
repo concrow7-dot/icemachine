@@ -127,7 +127,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'alone',
     lines: [
-      "You should go find Big Kev on Lee St. He's usually around this time of night and gets a big order.",
+      // SCREAM-190 (PO): Big Kev lives on Institute Rd (sheet 23, house 82).
+      "You should go find Big Kev on Institute Rd. He's usually around this time of night and gets a big order.",
       'Good luck kiddo.',
     ],
   },
@@ -196,6 +197,9 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
     return null;
   }
 
+
+  /** SCREAM-190: he has stepped out of the truck to walk home (once). */
+  walkedHome = false;
 
   /** SCREAM-187: his line about the $50 he left on the truck is on screen. */
   get givesCash(): boolean {
