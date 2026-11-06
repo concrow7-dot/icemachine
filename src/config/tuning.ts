@@ -280,9 +280,9 @@ export const FUEL_STEP_CENTS = 500;
 
 /**
  * SCREAM-184 (PO, November 6): the tank can be filled right to the top; the last step costs
- * what it takes, rounded to the nearest 5 cents.
+ * what it takes, rounded to the nearest 50 cents (PO). Gas amounts are whole 50 cents.
  */
-export const FUEL_CENT_STEP = 5;
+export const FUEL_CENT_STEP = 50;
 
 /** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
 export const UNCLE_GAS_CENTS = 2000;

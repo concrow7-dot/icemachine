@@ -142,11 +142,11 @@ const { chromium } = require('playwright');
   await intoBay();
   check('Leave the bay and come back: it opens again', await until(async () => (await scenes()) === 'Pump,Hud'), true);
   check('Half a tank: the pump opens at $0.00 again', await sc('Pump', 's.amount'), 0);
-  await ev('(e.burnFuel(321), true)'); // a hundredth of a tank more: 30 cents' worth
+  await ev('(e.burnFuel(642), true)'); // two hundredths of a tank more: 60 cents' worth
   await press('ArrowUp', 4);
   const fill = await ev('e.fillUpCents');
-  check('...a fill-up costs what it takes, to the nearest 5 cents (SCREAM-184)', fill === 1530, true);
-  check('...$5, $10, $15, then the last step fills it up ($15.30)', (await sc('Pump', 's.amount')) === fill && /Fills it up/.test(await texts('Pump')), true);
+  check('...a fill-up costs what it takes, to the nearest 50 cents (SCREAM-184)', fill === 1550, true);
+  check('...$5, $10, $15, then the last step fills it up ($15.50)', (await sc('Pump', 's.amount')) === fill && /Fills it up/.test(await texts('Pump')), true);
   await press('ArrowDown');
   check('...and $5 less from there is back to $15', await sc('Pump', 's.amount'), 1500);
   const cash1 = await ev('e.moneyCents');
@@ -163,7 +163,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/fuel_station_june.png' });
 
   // ---- What can be bought ----
-  check('Gas only in whole 5 cents', await ev('e.buyGas(303)'), false);
+  check('Gas only in whole 50 cents', await ev('e.buyGas(320)'), false);
   check('No more than fits ($20 into half a tank)', await ev('e.buyGas(2000)'), false);
   check('Filling up to the top (SCREAM-184)', (await ev('e.buyGas(e.fillUpCents)')) + ' ' + (await fuel()), 'true 1');
   check('Full: nothing more to buy', await ev('e.maxGasCents'), 0);
@@ -194,7 +194,7 @@ const { chromium } = require('playwright');
   check('Driving the tank dry ends the evening (SCREAM-119)', (await ev('e.isOver + " " + e.endedOutOfGas')) + ' ' + (await scenes()), 'true true Results');
   const results = await texts('Results');
   check('...the results say OUT OF GAS', /OUT OF GAS/.test(results), true);
-  check("Results: a Gas line with tonight's gas", /Gas/.test(results) && /-\$30\.30/.test(results), true);
+  check("Results: a Gas line with tonight's gas", /Gas/.test(results) && /-\$30\.50/.test(results), true);
   await page.screenshot({ path: outDir + '/fuel_results.png' });
 
   // ---- Story: a quarter tank on day 1, carried over and saved ----

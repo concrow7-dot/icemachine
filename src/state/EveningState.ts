@@ -398,7 +398,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /**
    * SCREAM-184 (PO, November 6): what filling the tank to the top costs, in cents, rounded
-   * to the nearest 5 cents.
+   * to the nearest 50 cents.
    */
   get fillUpCents(): number {
     return Math.round(((1 - this.fuelLeft) * FUEL_FULL_TANK_CENTS) / FUEL_CENT_STEP) * FUEL_CENT_STEP;
@@ -422,7 +422,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return Math.max(0, Math.min(this.fillUpCents, affordable));
   }
 
-  /** Buys gas at the pump: whole 5 cents, no more than maxGasCents. Returns false, changing nothing, otherwise. */
+  /** Buys gas at the pump: whole 50 cents, no more than maxGasCents. Returns false, changing nothing, otherwise. */
   buyGas(cents: number): boolean {
     if (this.ended || cents <= 0 || cents % FUEL_CENT_STEP !== 0 || cents > this.maxGasCents) return false;
     this.fuelLeft = cents >= this.fillUpCents ? 1 : Math.min(1, this.fuelLeft + cents / FUEL_FULL_TANK_CENTS);
