@@ -52,7 +52,7 @@ import {
   UNCLE_CREEP,
   UNCLE_TO_REGULAR,
   TUTORIAL_REGULAR_ID,
-  UNCLE_DRIVING,
+  UNCLE_TO_PUMP,
   UNCLE_PASS_OFFSET,
   UNCLE_ROUTE_CORNERS,
   UNCLE_ROUTE_LANES,
@@ -535,7 +535,7 @@ export class DriveScene extends Phaser.Scene {
     // PO (November 6): slowly from home to his regular; the instant she has her "!", he stops
     // while he talks about her (REGULAR_HOLD_MS); then he creeps up to her square.
     const holding = this.uncleLeg === 'toRegular' && this.regularCalled && run.step === 'regular' && run.lineNumber === 0;
-    const profile = this.uncleLeg === 'toPump' ? UNCLE_DRIVING : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
+    const profile = this.uncleLeg === 'toPump' ? UNCLE_TO_PUMP : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
     const stopAt = holding ? this.uncleAlong : this.uncleEnd;
     this.uncleSpeed = holding
       ? Math.max(0, this.uncleSpeed - UNCLE_TO_REGULAR.brake * dt)

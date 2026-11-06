@@ -16,6 +16,8 @@ import {
   EVENING_LENGTH_SECONDS,
   EVENING_START_HOUR,
   FUEL_FULL_TANK_CENTS,
+  FUEL_CENT_STEP,
+  UNCLE_GAS_CENTS,
   FUEL_QUICK_PLAY_START,
   FUEL_TUTORIAL_START,
   FUEL_STEP_CENTS,
@@ -394,20 +396,40 @@ export class EveningState extends Phaser.Events.EventEmitter {
     }
   }
 
-  /** The most gas the player can buy now, in cents: whole $5 steps that fit in the tank and in the wallet. */
-  get maxGasCents(): number {
-    // The small extra lets a tank that's exactly a step short still take that step, despite rounding.
-    const room = Math.floor(((1 - this.fuelLeft) * FUEL_FULL_TANK_CENTS) / FUEL_STEP_CENTS + 1e-6) * FUEL_STEP_CENTS;
-    const affordable = Math.floor(Math.max(0, this.cashCents) / FUEL_STEP_CENTS) * FUEL_STEP_CENTS;
-    return Math.max(0, Math.min(room, affordable));
+  /**
+   * SCREAM-184 (PO, November 6): what filling the tank to the top costs, in cents, rounded
+   * to the nearest 5 cents.
+   */
+  get fillUpCents(): number {
+    return Math.round(((1 - this.fuelLeft) * FUEL_FULL_TANK_CENTS) / FUEL_CENT_STEP) * FUEL_CENT_STEP;
   }
 
-  /** Buys gas at the pump: a whole number of $5 steps, no more than maxGasCents. Returns false, changing nothing, otherwise. */
+  /**
+   * SCREAM-173 (PO, November 6): at the pump in the guided tutorial, the uncle pays, up to
+   * the $20 he has on him.
+   */
+  get unclePaysGas(): boolean {
+    return this.tutorial?.step === 'pump';
+  }
+
+  /**
+   * The most gas the player can buy now, in cents: up to a full tank (SCREAM-184), and no more
+   * than the wallet holds (or, in the tutorial, the uncle's $20).
+   */
+  get maxGasCents(): number {
+    const wallet = this.unclePaysGas ? UNCLE_GAS_CENTS : Math.max(0, this.cashCents);
+    const affordable = Math.floor(wallet / FUEL_CENT_STEP) * FUEL_CENT_STEP;
+    return Math.max(0, Math.min(this.fillUpCents, affordable));
+  }
+
+  /** Buys gas at the pump: whole 5 cents, no more than maxGasCents. Returns false, changing nothing, otherwise. */
   buyGas(cents: number): boolean {
-    if (this.ended || cents <= 0 || cents % FUEL_STEP_CENTS !== 0 || cents > this.maxGasCents) return false;
-    this.fuelLeft = Math.min(1, this.fuelLeft + cents / FUEL_FULL_TANK_CENTS);
-    this.gasSpentCents += cents;
-    this.changeMoney(-cents, 'Gas');
+    if (this.ended || cents <= 0 || cents % FUEL_CENT_STEP !== 0 || cents > this.maxGasCents) return false;
+    this.fuelLeft = cents >= this.fillUpCents ? 1 : Math.min(1, this.fuelLeft + cents / FUEL_FULL_TANK_CENTS);
+    if (!this.unclePaysGas) {
+      this.gasSpentCents += cents;
+      this.changeMoney(-cents, 'Gas');
+    }
     this.tutorial?.signal('gasBought');
     return true;
   }

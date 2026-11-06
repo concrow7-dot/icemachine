@@ -22,6 +22,7 @@ export type TutorialSignal =
   | 'regularSpotted'
   | 'pulledUp'
   | 'orderHidden'
+  | 'atPump'
   | 'customerAtWindow'
   | 'salePaid'
   | 'saleClosed'
@@ -30,7 +31,7 @@ export type TutorialSignal =
 export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'alone';
 
 /** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
-export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat';
+export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat' | 'gauge';
 
 /**
  * One of the uncle's lines. A plain line moves on when read (clicked, or after a while).
@@ -105,8 +106,11 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   },
   {
     id: 'pump',
-    // Engineering's draft until SCREAM-173: he drives on to the pump bay while saying it.
-    lines: ["Now, let's get that gas."],
+    // SCREAM-173 (PO, November 6): on the way, the gauge (outlined); at the pump, he pays.
+    lines: [
+      { text: "Keep an eye on the gauge up top. Run dry and the night's over.", until: 'atPump', point: 'gauge' },
+      "I have twenty bucks on me, add that and I'll pay this time.",
+    ],
     doneWhen: 'gasBought',
   },
   { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
