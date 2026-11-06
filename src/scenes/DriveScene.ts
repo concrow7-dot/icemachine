@@ -564,6 +564,11 @@ export class DriveScene extends Phaser.Scene {
       }
     }
     if (!arrived) return;
+    // SCREAM-172: pulled up at the regular's square: his line about the sale, then her window.
+    if (this.uncleLeg === 'toRegular') {
+      if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
+      run.signal('pulledUp');
+    }
     run.finishLeg(this.uncleLeg);
     this.uncleLeg = null;
     this.parkBrake = true;
@@ -1269,6 +1274,8 @@ export class DriveScene extends Phaser.Scene {
 
   private checkCustomer(): void {
     if (this.speed !== 0) return;
+    // SCREAM-172: the window opens once the uncle's line as he pulls up has been read.
+    if (this.evening.tutorial?.holdsWindow) return;
     const people = this.evening.residents.all;
     for (const [i, zone] of this.pickupZones) {
       const p = people[i];

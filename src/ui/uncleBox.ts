@@ -124,8 +124,9 @@ export class UncleBox {
     // SCREAM-170: a line waiting for the player to do something stays until they do.
     const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
     // PO (November 6): his line at the window waits for a click (▶), with no timer.
-    this.more.setVisible(goesOn || this.run.holdsSale);
-    if (goesOn) {
+    // SCREAM-172: his line as the truck pulls up holds her window until it's clicked or has had its time.
+    this.more.setVisible(goesOn || this.run.holdsSale || this.run.holdsWindow);
+    if (goesOn || this.run.holdsWindow) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
   }

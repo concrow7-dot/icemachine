@@ -11,6 +11,7 @@ import { formatMoney } from '../util/format';
 import { loadResidentSheet } from '../ui/residentLook';
 import { smoothCustomerTexture, SMOOTH_FACTOR } from '../ui/smoothPixels';
 import { addFlavourIcon, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
+import { addUnclePointer } from '../ui/unclePointer';
 
 // Issues #13 and #15: the sales screen, zoomed in on the window (PO sketch in
 // doc 08): a speech bubble on the left, the customer on the right of the
@@ -58,6 +59,8 @@ export class SalesScene extends Phaser.Scene {
   private priceCard!: Phaser.GameObjects.Container;
   private calculator!: Calculator;
   private hint!: Phaser.GameObjects.Text;
+  /** SCREAM-172: redraws the uncle's outline round "R: Ask Again" when the hint line changes. */
+  private redrawPointer?: () => void;
   private roadButton!: Phaser.GameObjects.Text;
   private coolerButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
@@ -174,6 +177,11 @@ export class SalesScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => this.onKey(event));
 
+    // SCREAM-172: his tip about asking again outlines the R key's hint.
+    this.redrawPointer = undefined;
+    const tutorial = this.evening.tutorial;
+    if (tutorial) this.redrawPointer = addUnclePointer(this, tutorial, { repeat: () => this.repeatHintRect() }).redraw;
+
     const onSale = () => this.refresh();
     this.evening.on(EveningEvents.SaleChanged, onSale);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.evening.off(EveningEvents.SaleChanged, onSale));
@@ -203,7 +211,10 @@ export class SalesScene extends Phaser.Scene {
 
     if (sale.phase === 'ordering' || sale.phase === 'deciding') {
       if (key === 'Enter' || key === 'c' || key === 'C') this.goToCooler();
-      else if ((key === 'r' || key === 'R') && sale.askAgain(this.evening.nowMs)) this.refresh();
+      else if ((key === 'r' || key === 'R') && sale.askAgain(this.evening.nowMs)) {
+        this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
+        this.refresh();
+      }
       return;
     }
 
@@ -219,7 +230,20 @@ export class SalesScene extends Phaser.Scene {
 
   /** To the cooler, even while the order is still showing (PO, PR #38). */
   private goToCooler(): void {
-    if (this.evening.sale?.skipToCooler(this.evening.nowMs)) this.scene.start(SceneKeys.Fill);
+    if (!this.evening.sale?.skipToCooler(this.evening.nowMs)) return;
+    this.evening.tutorial?.skipRepeatTip(); // SCREAM-172: the R tip is no use at the cooler
+    this.scene.start(SceneKeys.Fill);
+  }
+
+  /** Where "R: Ask Again (No Tip)" is in the hint line (it's monospace, so by its letters). */
+  private repeatHintRect(): Phaser.Geom.Rectangle | null {
+    const text = this.hint?.text ?? '';
+    const at = text.indexOf('R: Ask Again');
+    if (at < 0 || !this.hint.visible) return null;
+    const label = 'R: Ask Again (No Tip)';
+    const b = this.hint.getBounds();
+    const letter = b.width / text.length;
+    return new Phaser.Geom.Rectangle(b.x + at * letter - 8, b.y - 5, label.length * letter + 16, b.height + 10);
   }
 
   /** A calculator key, clicked or typed. */
@@ -374,5 +398,6 @@ export class SalesScene extends Phaser.Scene {
     }
     if (sale.phase === 'over') hint = freebie ? "Enter: Say Sorry, It's On The House" : 'Enter: Back On The Road';
     this.hint.setText(hint);
+    this.redrawPointer?.();
   }
 }
