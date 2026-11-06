@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 042 — Some customers always order a set number of ice creams (2026-11-06)
+
+**Decision (Jira SCREAM-189, under SCREAM-11, PO, November 6):** a customer can be given a fixed order size. The residents sheets get an optional "Order size" column (sheet 23 first): blank is the usual random size (1 to 6), a number means that person always orders that many, or everything in stock if there are fewer. Big Kev (sheet 23, Institute Rd) always orders 7, and the uncle's last line in the tutorial tells the player to go find him.
+
+**Why (product owner's rationale):** he wants the game to be a little like a puzzle, with people suggesting and hinting at locations with better orders, so finding them is worth the trip. "You finally find a person and they order 1 ice cream, it won't be as exciting."
+
+**Engineering's calls (proposals):** flavours stay random (a "specific flavours" column could follow); the size counts only ice creams in stock and priced $4.00 or under, like every order; the column is read only if a sheet has it, so sheet 15 can get it later.
+
 ## 041 — The uncle drives in the tutorial, stopping for Chloe Hogan (2026-11-05)
 
 **Decision (Jira SCREAM-171, under SCREAM-5, PO, November 5):** after Buy Stock, the uncle says "Let's go get some gas", turns and walks to the cab, the screen fades, and the truck drives itself: down Westland St, left along Highland St, left up Park Ave into the pump bay. On the way he stops for his regular, Chloe Hogan (a kid on Westland St). The PO picked her from engineering's options: no existing regular lived on the truck's side of the street along the direct route, so her Likelihood in sheet 23 went from 15% to 80% (an every-day regular). She comes out as soon as the truck is in range and always buys. The tutorial starts with a quarter tank. PO testing (November 6): the drive from home to Chloe takes 4 times as long (about 10 seconds), so his line can be read; at her "!" the truck stops for 4 seconds ("Oh hey, it's Chloe Hogan..."), then creeps up to her square ("Try and figure out where the regulars are...") and pulls up straight; at the window the sale waits (no countdown) until the player has read "Remember the order, add the ice cream from the cooler, and calculate the price." The parked car just past Chloe's square moved to the other side of Westland St (the PO's second option) so the truck can pull up straight; Zoe Ferreira's pink square moved 70 px along to stay clear of it. His walk to the cab now heads left toward the driver's seat.
