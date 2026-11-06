@@ -17,6 +17,7 @@ import {
   EVENING_START_HOUR,
   FUEL_FULL_TANK_CENTS,
   FUEL_QUICK_PLAY_START,
+  FUEL_TUTORIAL_START,
   FUEL_STEP_CENTS,
   FUEL_TANK_PX,
   STARTING_CASH_CENTS,
@@ -184,7 +185,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.residents.walls = wallsOf(map.data);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     this.cashCents = this.startCashCents;
-    this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? FUEL_QUICK_PLAY_START, 0, 1);
+    this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? (this.tutorial ? FUEL_TUTORIAL_START : FUEL_QUICK_PLAY_START), 0, 1);
     // Matched by flavour, so a save from before SCREAM-129 (3 slots, any flavours) carries over too.
     carry?.slots.forEach((slot) => {
       const target = this.coolerSlots.find((s) => s.flavour === slot.flavour);
@@ -272,6 +273,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
   tick(deltaMs: number): void {
     if (this.ended || !this.clockRunning) return;
     this.nowMsValue += deltaMs;
+    // PO (November 6): at the window in the guided tutorial, the sale waits for the uncle's line.
+    const tutorial = this.tutorial;
+    if (tutorial?.holdsSale && this.saleNow) {
+      if (this.saleNow.phase === 'ordering') this.saleNow.wait(deltaMs);
+      else tutorial.releaseSale();
+    }
     this.updateSale();
     if (this.endPending) return;
     this.elapsedMs += deltaMs;

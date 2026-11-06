@@ -43,6 +43,21 @@ import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { gasStations } from '../config/gasStation';
+import { AutoRoute, nextSpeed } from '../state/AutoRoute';
+import type { UncleLeg } from '../state/Tutorial';
+import {
+  REGULAR_CALL_DISTANCE,
+  REGULAR_HOLD_MS,
+  REGULAR_STOP_SHORT,
+  UNCLE_CREEP,
+  UNCLE_TO_REGULAR,
+  TUTORIAL_REGULAR_ID,
+  UNCLE_DRIVING,
+  UNCLE_PASS_OFFSET,
+  UNCLE_ROUTE_CORNERS,
+  UNCLE_ROUTE_LANES,
+  UNCLE_ROUTE_RADIUS,
+} from '../config/tutorialRoute';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to pick up a waiting customer.
@@ -174,6 +189,15 @@ export class DriveScene extends Phaser.Scene {
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
+  /** SCREAM-171: the uncle's drive in the tutorial: the route, the leg he's on, how far along, how fast. */
+  uncleRoute?: AutoRoute;
+  uncleLeg: UncleLeg | null = null;
+  private uncleAlong = 0;
+  private uncleEnd = 0;
+  private uncleSpeed = 0;
+  private uncleFrom = 0;
+  private uncleNudge = { x: 0, y: 0 };
+  private regularCalled = false;
   /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
   private homeBay!: Phaser.GameObjects.Rectangle;
   private homeArmed = false;
@@ -271,6 +295,7 @@ export class DriveScene extends Phaser.Scene {
     const { x, y, angle } = this.evening.truck;
     this.truck.setPosition(x, y);
     this.setHeading(angle);
+    this.setUpUncle();
 
     // SCREAM-22, SCREAM-109: each station's pump bay, painted on the road beside the pumps like a parking space.
     this.pumpBays = gasStations().map((g) =>
@@ -424,9 +449,19 @@ export class DriveScene extends Phaser.Scene {
     if (this.spinning) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
     const dt = Math.min(deltaMs, 100) / 1000;
-    this.driveHard(dt);
+    const tutorial = this.evening.tutorial;
+    if (this.uncleLeg) {
+      this.driveUncle(dt);
+    } else if (tutorial?.uncleDriving) {
+      // SCREAM-171: the uncle has the wheel, parked (waiting for his regular): no steering.
+      this.speed = 0;
+      this.parkBrake = true;
+      this.parkLabel.setVisible(true);
+    } else {
+      this.driveHard(dt);
+    }
 
-    if (this.speed !== 0) {
+    if (this.speed !== 0 && !this.uncleLeg) {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
       if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
@@ -438,6 +473,102 @@ export class DriveScene extends Phaser.Scene {
     this.checkHome();
     this.checkCustomer();
     this.placeHomeArrow();
+  }
+
+  /**
+   * SCREAM-171 (PO, November 5): in the guided tutorial the uncle drives: from home to his
+   * regular (who comes out once he's in range), and after the sale on to the pump bay. Each
+   * leg starts where the truck is and ends parked, park brake on; the usual rules then open
+   * the sales window when she's at her square, or the pump in the bay.
+   */
+  private setUpUncle(): void {
+    this.uncleLeg = null;
+    const run = this.evening.tutorial;
+    if (!run) return;
+    // Nobody but his regular comes out while he has the wheel.
+    this.evening.residents.hearingOff = run.uncleDriving;
+    const regular = this.evening.residents.all.find((p) => p.resident.id === TUTORIAL_REGULAR_ID);
+    if (regular) run.regularName = regular.resident.name;
+    const leg = run.legToDrive;
+    if (!leg) return;
+    const square = regular?.resident.curb;
+    this.uncleRoute ??= new AutoRoute({
+      corners: UNCLE_ROUTE_CORNERS,
+      lanes: UNCLE_ROUTE_LANES,
+      radius: UNCLE_ROUTE_RADIUS,
+      cars: this.map.parkedCars.map((c) => [c.x, c.y]),
+      passOffset: UNCLE_PASS_OFFSET,
+      // PO (November 6): he pulls up to her straight; the parked car just past her he swings round after.
+      keepStraightAt: square ? [[square[2], square[3]]] : [],
+    });
+    const route = this.uncleRoute;
+    let from: number;
+    if (leg === 'toRegular') {
+      // PO's note: fade in on the truck driving itself. He sets off from home, down Westland St.
+      const hs = this.map.homeStart;
+      from = route.distanceAlong(hs.x, hs.y);
+      const at = route.at(from);
+      this.truck.setPosition(at.x, at.y);
+      this.setHeading(at.heading);
+      const sq = regular?.resident.curb;
+      this.uncleEnd = sq ? route.distanceAlong(sq[2], sq[3]) - REGULAR_STOP_SHORT : route.length;
+      this.cameras.main.fadeIn(700);
+    } else {
+      from = route.distanceAlong(this.truck.x, this.truck.y);
+      const bay = gasStations()[0]?.bay;
+      this.uncleEnd = bay ? route.distanceAlong(bay.x, bay.y) : route.length;
+    }
+    const at = route.at(from);
+    this.uncleNudge = { x: this.truck.x - at.x, y: this.truck.y - at.y };
+    this.uncleAlong = this.uncleFrom = from;
+    this.uncleSpeed = 0;
+    this.regularCalled = leg !== 'toRegular';
+    this.uncleLeg = leg;
+    this.parkBrake = false;
+  }
+
+  /** SCREAM-171: one frame of the uncle's driving. */
+  private driveUncle(dt: number): void {
+    const route = this.uncleRoute;
+    const run = this.evening.tutorial;
+    if (!route || !run || !this.uncleLeg) return;
+    // PO (November 6): slowly from home to his regular; the instant she has her "!", he stops
+    // while he talks about her (REGULAR_HOLD_MS); then he creeps up to her square.
+    const holding = this.uncleLeg === 'toRegular' && this.regularCalled && run.step === 'regular' && run.lineNumber === 0;
+    const profile = this.uncleLeg === 'toPump' ? UNCLE_DRIVING : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
+    const stopAt = holding ? this.uncleAlong : this.uncleEnd;
+    this.uncleSpeed = holding
+      ? Math.max(0, this.uncleSpeed - UNCLE_TO_REGULAR.brake * dt)
+      : nextSpeed(route, this.uncleAlong, stopAt, this.uncleSpeed, dt, profile);
+    const step = Math.min(this.uncleSpeed * dt, this.uncleEnd - this.uncleAlong);
+    this.uncleAlong += step;
+    const arrived = this.uncleEnd - this.uncleAlong < 1 || (this.uncleSpeed < 2 && this.uncleEnd - this.uncleAlong < 6);
+    if (arrived) this.uncleAlong = this.uncleEnd;
+    const at = route.at(this.uncleAlong);
+    // Where the truck started off the path a little (back from a sale), it eases onto it.
+    const fade = Math.max(0, 1 - (this.uncleAlong - this.uncleFrom) / 120);
+    this.truck.setPosition(at.x + this.uncleNudge.x * fade, at.y + this.uncleNudge.y * fade);
+    this.setHeading(at.heading);
+    this.evening.burnFuel(step);
+    this.speed = arrived ? 0 : this.uncleSpeed;
+    if (this.uncleLeg === 'toRegular' && !this.regularCalled) {
+      const regular = this.evening.residents.all.find((p) => p.resident.id === TUTORIAL_REGULAR_ID);
+      const sq = regular?.resident.curb;
+      if (regular && sq && (arrived || Phaser.Math.Distance.Between(this.truck.x, this.truck.y, sq[2], sq[3]) < REGULAR_CALL_DISTANCE)) {
+        this.regularCalled = true;
+        this.evening.residents.comeOutToOwnCurb(regular);
+        run.signal('regularSpotted');
+        this.time.delayedCall(REGULAR_HOLD_MS, () => {
+          if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
+        });
+      }
+    }
+    if (!arrived) return;
+    run.finishLeg(this.uncleLeg);
+    this.uncleLeg = null;
+    this.parkBrake = true;
+    this.parkLabel.setVisible(true);
+    this.evening.residents.hearingOff = run.uncleDriving;
   }
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */

@@ -118,14 +118,22 @@ export class UncleBox {
       });
       return;
     }
-    this.popIn(line);
+    // Only a new line pops in (not the same one again, e.g. when the sale starts counting).
+    if (line !== this.text.text || this.screen === 'intro') this.popIn(line);
     // ▶ when clicking (or waiting) brings another line, or finishes a step that's only talk.
     // SCREAM-170: a line waiting for the player to do something stays until they do.
     const goesOn = !this.run.waitingFor && (this.run.moreLines || this.run.talkOnly);
-    this.more.setVisible(goesOn);
+    // PO (November 6): his line at the window waits for a click (▶), with no timer.
+    this.more.setVisible(goesOn || this.run.holdsSale);
     if (goesOn) {
       this.timer = this.scene.time.delayedCall(LINE_MS, () => this.autoNext());
     }
+  }
+
+  /** One row: a line too long for it at 14 px (e.g. his line at the window) is set at 13 px. */
+  private fitText(line: string): void {
+    this.text.setFontSize(14).setText(line);
+    if (this.text.height > 24) this.text.setFontSize(13);
   }
 
   /**
@@ -137,7 +145,7 @@ export class UncleBox {
     const tweens = this.scene.tweens;
     tweens.killTweensOf([this.bubble, this.glow]);
     const arrive = () => {
-      this.text.setText(line);
+      this.fitText(line);
       this.bubble.setScale(0.5).setAlpha(0);
       tweens.add({ targets: this.bubble, scale: 1, alpha: 1, duration: 340, ease: 'Back.easeOut' });
       this.glow.setAlpha(0);
@@ -145,7 +153,7 @@ export class UncleBox {
     };
     if (this.screen === 'intro' || !this.text.text) {
       this.bubble.setScale(1).setAlpha(1);
-      if (this.screen === 'intro') return void this.text.setText(line);
+      if (this.screen === 'intro') return void this.fitText(line);
       return arrive();
     }
     tweens.add({ targets: this.bubble, scale: 0.6, alpha: 0, duration: 140, ease: 'Quad.easeIn', onComplete: arrive });
