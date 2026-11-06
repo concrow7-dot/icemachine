@@ -41,8 +41,10 @@ export class PumpScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     const { width, height } = this.scale;
-    // Starts at the most you can buy: fill up, or as much as the wallet allows.
-    this.amount = this.evening.maxGasCents;
+    // SCREAM-184 (PO, November 6): it opens at $0.00.
+    this.amount = 0;
+    // SCREAM-173: the uncle's line at the pump.
+    this.evening.tutorial?.signal('atPump');
 
     // The forecourt, and a pump blown up from the map's sprite.
     this.add.rectangle(0, 44, width, height - 44, 0x6f7479).setOrigin(0, 0);
@@ -111,8 +113,14 @@ export class PumpScene extends Phaser.Scene {
       .on('pointerdown', () => this.change(cents));
   }
 
+  /**
+   * $5 more or less. SCREAM-184: from an odd amount (a fill-up, e.g. $23.45), a step goes to
+   * the next whole $5; the last step up stops at a full tank (or what the wallet allows).
+   */
   private change(cents: number): void {
-    this.amount = Phaser.Math.Clamp(this.amount + cents, 0, this.evening.maxGasCents);
+    const step = FUEL_STEP_CENTS;
+    const next = cents > 0 ? (Math.floor(this.amount / step) + 1) * step : (Math.ceil(this.amount / step) - 1) * step;
+    this.amount = Phaser.Math.Clamp(next, 0, this.evening.maxGasCents);
     this.refresh();
   }
 
@@ -130,23 +138,25 @@ export class PumpScene extends Phaser.Scene {
   private refresh(): void {
     const max = this.evening.maxGasCents;
     const now = this.evening.fuel;
-    const adds = this.amount / FUEL_FULL_TANK_CENTS;
+    const fillUp = this.evening.fillUpCents;
+    const fills = this.amount > 0 && this.amount >= fillUp;
+    const adds = fills ? 1 - now : this.amount / FUEL_FULL_TANK_CENTS;
+    const uncle = this.evening.unclePaysGas;
     this.amountText.setText(formatMoney(this.amount));
-    this.addsText.setText(this.amount <= 0 ? '' : this.amount >= FUEL_FULL_TANK_CENTS ? 'A full tank' : `+${tankFraction(this.amount)} tank`);
+    this.addsText.setText(this.amount <= 0 ? '' : fills ? 'Fills it up' : `+${tankFraction(this.amount)} tank`);
     this.noteText.setText(
-      max === 0
-        ? now >= 1 - FUEL_STEP_CENTS / FUEL_FULL_TANK_CENTS + 1e-6
-          ? "The tank's full."
-          : `Not enough cash: gas is ${formatMoney(FUEL_STEP_CENTS)} a step.`
-        : this.amount < max
-          ? ''
-          : max < this.roomCents
-            ? "That's all the cash allows."
-            : now + adds >= 0.999
-              ? 'Fills it up.'
-              : 'As much as fits (the next $5 would overflow).',
+      fillUp === 0
+        ? "The tank's full."
+        : max === 0
+          ? 'Not enough cash for gas.'
+          : this.amount < max || fills
+            ? ''
+            : uncle
+              ? "That's the uncle's $20."
+              : "That's all the cash allows.",
     );
-    this.payButton.setText(`PAY ${formatMoney(this.amount)}`).setVisible(this.amount > 0);
+    // SCREAM-173: in the tutorial the uncle pays.
+    this.payButton.setText(`${uncle ? 'UNCLE PAYS' : 'PAY'} ${formatMoney(this.amount)}`).setVisible(this.amount > 0);
     // Faded when there's no further to go that way.
     this.lessButton.setAlpha(this.amount > 0 ? 1 : 0.35);
     this.moreButton.setAlpha(this.amount < max ? 1 : 0.35);
@@ -160,16 +170,11 @@ export class PumpScene extends Phaser.Scene {
     for (let i = 1; i < 6; i++) g.lineBetween(GAUGE.x + (GAUGE.w * i) / 6, GAUGE.y, GAUGE.x + (GAUGE.w * i) / 6, GAUGE.y + 8);
     g.strokeRect(GAUGE.x, GAUGE.y, GAUGE.w, GAUGE.h);
   }
-
-  /** Whole $5 steps of room left in the tank, in cents. */
-  private get roomCents(): number {
-    return Math.floor(((1 - this.evening.fuel) * FUEL_FULL_TANK_CENTS) / FUEL_STEP_CENTS + 1e-6) * FUEL_STEP_CENTS;
-  }
 }
 
-/** $15 → "1/2", $20 → "2/3": the share of a tank, in sixths, simplified. */
+/** $15 → "1/2", $20 → "2/3": the share of a tank, in sixths, simplified (a whole number of $5 steps). */
 function tankFraction(cents: number): string {
-  const sixths = Math.round((cents / FUEL_FULL_TANK_CENTS) * 6);
+  const sixths = Math.max(1, Math.round((cents / FUEL_FULL_TANK_CENTS) * 6));
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const d = gcd(sixths, 6);
   return `${sixths / d}/${6 / d}`;

@@ -5,6 +5,7 @@ import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../fl
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
+import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
 import { markTutorialDone } from '../state/Tutorial';
 
@@ -94,6 +95,11 @@ export class HudScene extends Phaser.Scene {
     this.refresh();
     this.addDebugKeys();
     this.uncleBox = this.evening.tutorial ? new UncleBox(this, this.evening.tutorial) : undefined;
+    // SCREAM-173 (PO): "Keep an eye on the gauge up top" outlines the fuel gauge.
+    if (this.evening.tutorial) {
+      const { x, pivotY, radius } = FUEL_DIAL;
+      addUnclePointer(this, this.evening.tutorial, { gauge: () => new Phaser.Geom.Rectangle(x - radius - 8, 2, radius * 2 + 16, pivotY + 4) });
+    }
 
     const onMoney = (change: number, _cash: number, label: string, popup: boolean) => {
       this.refresh();

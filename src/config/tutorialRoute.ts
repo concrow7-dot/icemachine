@@ -34,8 +34,8 @@ export const REGULAR_HOLD_MS = 4000;
 /** He stops this far short of the middle of her square (still well over half on it), clear of the parked car past it. */
 export const REGULAR_STOP_SHORT = 15;
 
-/** An unhurried drive, so the player can watch the streets go by and read his lines. */
-export const UNCLE_DRIVING: DriveProfile = { cruise: 190, accel: 140, brake: 170, bendSpeed: 110 };
+/** SCREAM-173 (PO, November 6): on to the gas station "pretty fast" (top speed while driving is 433). */
+export const UNCLE_TO_PUMP: DriveProfile = { cruise: 380, accel: 260, brake: 280, bendSpeed: 150 };
 /**
  * PO (November 6): from home to his regular, 4 times as long as before (about 2.6 s, now about
  * 10 s), so there's time to read his line about the sun.

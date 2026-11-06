@@ -279,6 +279,15 @@ export const FUEL_FULL_TANK_CENTS = 3000;
 export const FUEL_STEP_CENTS = 500;
 
 /**
+ * SCREAM-184 (PO, November 6): the tank can be filled right to the top; the last step costs
+ * what it takes, rounded to the nearest 50 cents (PO). Gas amounts are whole 50 cents.
+ */
+export const FUEL_CENT_STEP = 50;
+
+/** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
+export const UNCLE_GAS_CENTS = 2000;
+
+/**
  * How far a full tank goes, in px of driving. PO: a full evening of driving uses
  * about 2/3 of a tank. Engineering's guess at "a full evening": moving 60% of the
  * 300 s evening at top speed (433 px/s) is about 78,000 px. It was 117,000 (2/3 of a
