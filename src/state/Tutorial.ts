@@ -122,9 +122,15 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     lines: ['Return home to fill up on stock when you need.'],
     doneWhen: 'arrivedHome',
   },
-  // SCREAM-185: back in the truck at home (the truck screen returns). Engineering's placeholder
-  // until the PO's next script; read it and the player is on the road alone.
-  { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
+  // SCREAM-185: back in the truck at home (the truck screen returns); read these and the player
+  // is on the road alone. SCREAM-188 (PO, November 6): his last words, in the truck at home.
+  {
+    id: 'alone',
+    lines: [
+      "You should go find Big Kev on Lee St. He's usually around this time of night and gets a big order.",
+      'Good luck kiddo.',
+    ],
+  },
 ];
 
 const textOf = (line: Line | undefined): string | null => (line === undefined ? null : typeof line === 'string' ? line : line.text);

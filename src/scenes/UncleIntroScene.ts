@@ -188,7 +188,7 @@ export class UncleIntroScene extends Phaser.Scene {
   private next(): void {
     if (this.leaving || this.askingForCooler || this.game.getTime() < this.readyAt) return;
     if (this.headingOut) return this.walkToCab();
-    if (this.atHome) return this.backOnTheRoad();
+    if (this.atHome && !this.run.moreLines) return this.backOnTheRoad();
     this.run.nextLine();
     this.show();
   }
