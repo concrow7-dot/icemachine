@@ -23,12 +23,13 @@ export type TutorialSignal =
   | 'pulledUp'
   | 'orderHidden'
   | 'atPump'
+  | 'arrivedHome'
   | 'customerAtWindow'
   | 'salePaid'
   | 'saleClosed'
   | 'gasBought';
 
-export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'alone';
+export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'home' | 'alone';
 
 /** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
 export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat' | 'gauge';
@@ -113,13 +114,21 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     ],
     doneWhen: 'gasBought',
   },
+  {
+    id: 'home',
+    // SCREAM-185 (PO's note, November 6): he drives home, as fast as to the gas, saying these.
+    lines: ['I left $50 on the truck for you.', 'Return home to fill up on stock when you need.'],
+    doneWhen: 'arrivedHome',
+  },
+  // SCREAM-185: back in the truck at home (the truck screen returns). Engineering's placeholder
+  // until the PO's next script; read it and the player is on the road alone.
   { id: 'alone', lines: ["That's the job. The rest of the evening is yours. Sell all you can before 8!"] },
 ];
 
 const textOf = (line: Line | undefined): string | null => (line === undefined ? null : typeof line === 'string' ? line : line.text);
 
 /** SCREAM-171: the stretches of road the uncle drives in the tutorial. */
-export type UncleLeg = 'toRegular' | 'toPump';
+export type UncleLeg = 'toRegular' | 'toPump' | 'toHome';
 
 export const TutorialEvents = {
   /** () — the uncle's line on screen changed (a new step or the next line), or he's done. */
@@ -162,15 +171,25 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
    */
   get uncleDriving(): boolean {
     const step = this.step;
-    return step === 'drive' || step === 'regular' || step === 'sale' || (step === 'pump' && !this.driven.has('toPump'));
+    return (
+      step === 'drive' ||
+      step === 'regular' ||
+      step === 'sale' ||
+      (step === 'pump' && !this.driven.has('toPump')) ||
+      (step === 'home' && !this.driven.has('toHome'))
+    );
   }
 
   /** Which leg he should be driving now, if any (and not yet finished). */
   get legToDrive(): UncleLeg | null {
     if (this.step === 'drive' && !this.driven.has('toRegular')) return 'toRegular';
     if (this.step === 'pump' && !this.driven.has('toPump')) return 'toPump';
+    if (this.step === 'home' && !this.driven.has('toHome')) return 'toHome';
     return null;
   }
+
+  /** SCREAM-185: the $50 he left on the truck has been added to the cash. */
+  gaveCash = false;
 
   finishLeg(leg: UncleLeg): void {
     this.driven.add(leg);

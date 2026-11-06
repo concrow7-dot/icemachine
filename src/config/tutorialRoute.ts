@@ -18,6 +18,19 @@ export const UNCLE_ROUTE_CORNERS: Point[] = [
   [1939, 1572],
 ];
 export const UNCLE_ROUTE_LANES = [30, 30, 90];
+
+/**
+ * SCREAM-185 (PO, November 6): after the gas he drives home. On up Park Ave from the pump bay
+ * (in its curb lane), left along Institute Rd (it meets Park Ave at 2672,545 and Westland St
+ * at 1416,446), and left down Westland St to home, stopping across the street from it.
+ */
+export const UNCLE_HOME_CORNERS: Point[] = [
+  [1590.3, 2061.3],
+  [2672.4, 544.8],
+  [1415.8, 445.5],
+  [1244.9, 2089.3],
+];
+export const UNCLE_HOME_LANES = [90, 30, 30];
 export const UNCLE_ROUTE_RADIUS = 100;
 /** Passing a parked car in his lane, he swings out to just right of the centre line. */
 export const UNCLE_PASS_OFFSET = -2;
@@ -34,7 +47,7 @@ export const REGULAR_HOLD_MS = 4000;
 /** He stops this far short of the middle of her square (still well over half on it), clear of the parked car past it. */
 export const REGULAR_STOP_SHORT = 15;
 
-/** SCREAM-173 (PO, November 6): on to the gas station "pretty fast" (top speed while driving is 433). */
+/** SCREAM-173 (PO, November 6): on to the gas station "pretty fast" (top speed while driving is 433); SCREAM-185: home at the same speed. */
 export const UNCLE_TO_PUMP: DriveProfile = { cruise: 380, accel: 260, brake: 280, bendSpeed: 150 };
 /**
  * PO (November 6): from home to his regular, 4 times as long as before (about 2.6 s, now about

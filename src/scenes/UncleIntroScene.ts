@@ -42,6 +42,8 @@ export class UncleIntroScene extends Phaser.Scene {
   private readyAt = 0;
   /** SCREAM-171: back in the truck after Buy Stock, he says his line and walks to the cab to drive. */
   private headingOut = false;
+  /** SCREAM-185: back home after the gas; his line, then the player is on the road alone. */
+  private atHome = false;
   private uncle!: Phaser.GameObjects.Sprite;
   private bubbleParts: Phaser.GameObjects.GameObject[] = [];
 
@@ -112,6 +114,8 @@ export class UncleIntroScene extends Phaser.Scene {
     let step = 0;
     this.time.addEvent({ delay: 160, loop: true, callback: () => uncle.setFrame(++step % 6) });
     this.headingOut = this.run.step === 'drive';
+    this.atHome = this.run.step === 'alone';
+    if (this.atHome) this.cameras.main.fadeIn(500);
 
     // The sales window's quote box, its tail stepping toward his face.
     const bubbleStart = this.children.list.length;
@@ -178,12 +182,13 @@ export class UncleIntroScene extends Phaser.Scene {
     this.coolerTag.setVisible(asking);
     this.hint.setText(asking ? 'Click The Cooler (Or Press Enter)' : 'Click Or Enter: Next');
     // SCREAM-171: heading out, his one line here moves on only when the player has read it (no timer).
-    if (this.headingOut) this.more.setVisible(true);
+    if (this.headingOut || this.atHome) this.more.setVisible(true);
   }
 
   private next(): void {
     if (this.leaving || this.askingForCooler || this.game.getTime() < this.readyAt) return;
     if (this.headingOut) return this.walkToCab();
+    if (this.atHome) return this.backOnTheRoad();
     this.run.nextLine();
     this.show();
   }
@@ -214,6 +219,14 @@ export class UncleIntroScene extends Phaser.Scene {
       evening.lockPrep();
       this.scene.start(SceneKeys.Drive);
     });
+  }
+
+  /** SCREAM-185: his line at home read: his part is over, and the player drives on alone. */
+  private backOnTheRoad(): void {
+    this.leaving = true;
+    this.run.nextLine(); // finishes his last step
+    this.cameras.main.fadeOut(500);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(SceneKeys.Drive));
   }
 
   private toCooler(): void {

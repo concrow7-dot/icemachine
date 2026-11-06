@@ -35,6 +35,7 @@ import {
   DRIVE_CAMERA_ZOOM,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
+  UNCLE_LEFT_CENTS,
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
@@ -53,6 +54,8 @@ import {
   UNCLE_TO_REGULAR,
   TUTORIAL_REGULAR_ID,
   UNCLE_TO_PUMP,
+  UNCLE_HOME_CORNERS,
+  UNCLE_HOME_LANES,
   UNCLE_PASS_OFFSET,
   UNCLE_ROUTE_CORNERS,
   UNCLE_ROUTE_LANES,
@@ -192,6 +195,10 @@ export class DriveScene extends Phaser.Scene {
   /** SCREAM-171: the uncle's drive in the tutorial: the route, the leg he's on, how far along, how fast. */
   uncleRoute?: AutoRoute;
   uncleLeg: UncleLeg | null = null;
+  /** SCREAM-185: which route uncleRoute is (out to the pump, or home). */
+  private uncleRouteName: 'out' | 'home' | null = null;
+  /** SCREAM-185: arrived home with the uncle, fading to the truck screen (no restock stop). */
+  private arrivingHome = false;
   private uncleAlong = 0;
   private uncleEnd = 0;
   private uncleSpeed = 0;
@@ -483,6 +490,7 @@ export class DriveScene extends Phaser.Scene {
    */
   private setUpUncle(): void {
     this.uncleLeg = null;
+    this.arrivingHome = false;
     const run = this.evening.tutorial;
     if (!run) return;
     // Nobody but his regular comes out while he has the wheel.
@@ -492,7 +500,18 @@ export class DriveScene extends Phaser.Scene {
     const leg = run.legToDrive;
     if (!leg) return;
     const square = regular?.resident.curb;
-    this.uncleRoute ??= new AutoRoute({
+    // SCREAM-185: home from the pump is a route of its own.
+    if (leg === 'toHome' && this.uncleRouteName !== 'home') this.uncleRoute = undefined;
+    this.uncleRouteName = leg === 'toHome' ? 'home' : 'out';
+    this.uncleRoute ??= leg === 'toHome'
+      ? new AutoRoute({
+          corners: UNCLE_HOME_CORNERS,
+          lanes: UNCLE_HOME_LANES,
+          radius: UNCLE_ROUTE_RADIUS,
+          cars: this.map.parkedCars.map((c) => [c.x, c.y]),
+          passOffset: UNCLE_PASS_OFFSET,
+        })
+      : new AutoRoute({
       corners: UNCLE_ROUTE_CORNERS,
       lanes: UNCLE_ROUTE_LANES,
       radius: UNCLE_ROUTE_RADIUS,
@@ -513,6 +532,16 @@ export class DriveScene extends Phaser.Scene {
       const sq = regular?.resident.curb;
       this.uncleEnd = sq ? route.distanceAlong(sq[2], sq[3]) - REGULAR_STOP_SHORT : route.length;
       this.cameras.main.fadeIn(700);
+    } else if (leg === 'toHome') {
+      // SCREAM-185: from the pump bay to home, across the street from it.
+      from = route.distanceAlong(this.truck.x, this.truck.y);
+      const hs = this.map.homeStart;
+      this.uncleEnd = route.distanceAlong(hs.x, hs.y);
+      // PO's note: "I left $50 on the truck for you." (once)
+      if (!run.gaveCash) {
+        run.gaveCash = true;
+        this.evening.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
+      }
     } else {
       from = route.distanceAlong(this.truck.x, this.truck.y);
       const bay = gasStations()[0]?.bay;
@@ -535,7 +564,7 @@ export class DriveScene extends Phaser.Scene {
     // PO (November 6): slowly from home to his regular; the instant she has her "!", he stops
     // while he talks about her (REGULAR_HOLD_MS); then he creeps up to her square.
     const holding = this.uncleLeg === 'toRegular' && this.regularCalled && run.step === 'regular' && run.lineNumber === 0;
-    const profile = this.uncleLeg === 'toPump' ? UNCLE_TO_PUMP : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
+    const profile = this.uncleLeg === 'toPump' || this.uncleLeg === 'toHome' ? UNCLE_TO_PUMP : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
     const stopAt = holding ? this.uncleAlong : this.uncleEnd;
     this.uncleSpeed = holding
       ? Math.max(0, this.uncleSpeed - UNCLE_TO_REGULAR.brake * dt)
@@ -569,11 +598,19 @@ export class DriveScene extends Phaser.Scene {
       if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
       run.signal('pulledUp');
     }
-    run.finishLeg(this.uncleLeg);
+    const leg = this.uncleLeg;
+    run.finishLeg(leg);
     this.uncleLeg = null;
     this.parkBrake = true;
     this.parkLabel.setVisible(true);
     this.evening.residents.hearingOff = run.uncleDriving;
+    // SCREAM-185 (PO's note): "You arrive home. The screen with the uncle in the truck returns."
+    if (leg === 'toHome') {
+      this.arrivingHome = true;
+      run.signal('arrivedHome');
+      this.cameras.main.fadeOut(600);
+      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(SceneKeys.UncleIntro));
+    }
   }
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */
@@ -1231,6 +1268,8 @@ export class DriveScene extends Phaser.Scene {
 
   /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock. */
   private checkHome(): void {
+    // SCREAM-185: not while the uncle drives home, or as the truck screen fades in.
+    if (this.uncleLeg || this.arrivingHome) return;
     // Cheap test first: the exact overlap is only worth working out near the driveway.
     if (Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.homeBay.x, this.homeBay.y) > 200) {
       this.homeArmed = true;
