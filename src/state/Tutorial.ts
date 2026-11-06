@@ -43,7 +43,7 @@ export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat' | 'gauge';
  * while); `hold`: the sale's clocks (her wait, the tip) wait until it's read (clicked, or the
  * player acts: R or the cooler).
  */
-type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean; gate?: boolean };
+type Line = string | { text: string; until?: TutorialSignal; point?: TutorialPoint; hold?: boolean; gate?: boolean; gift?: boolean };
 
 type Step = {
   id: TutorialStepId;
@@ -66,7 +66,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
       { text: 'Select what you want from the "Available Ice Cream" clipboard.', until: 'flavourAdded', point: 'clipboard' },
       { text: 'Once you\'ve added a new flavor, you can set the price in "Today\'s Menu".', point: 'menu' },
       { text: "Be careful: too expensive, and most people won't want to buy.", point: 'menu' },
-      { text: 'When you\'re ready, "Buy Stock" and we\'ll hit the road!', point: 'buy' },
+      // SCREAM-187 (PO, November 6): the $50 comes with this line (it was on the drive home).
+      { text: 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started.', point: 'buy', gift: true },
     ],
     doneWhen: 'stockBought',
   },
@@ -117,7 +118,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'home',
     // SCREAM-185 (PO's note, November 6): he drives home, as fast as to the gas, saying these.
-    lines: ['I left $50 on the truck for you.', 'Return home to fill up on stock when you need.'],
+    // SCREAM-187: "I left $50..." moved to the cooler.
+    lines: ['Return home to fill up on stock when you need.'],
     doneWhen: 'arrivedHome',
   },
   // SCREAM-185: back in the truck at home (the truck screen returns). Engineering's placeholder
@@ -188,8 +190,12 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
     return null;
   }
 
-  /** SCREAM-185: the $50 he left on the truck has been added to the cash. */
-  gaveCash = false;
+
+  /** SCREAM-187: his line about the $50 he left on the truck is on screen. */
+  get givesCash(): boolean {
+    const line = this.current;
+    return typeof line === 'object' && !!line.gift;
+  }
 
   finishLeg(leg: UncleLeg): void {
     this.driven.add(leg);

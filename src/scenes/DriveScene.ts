@@ -35,7 +35,6 @@ import {
   DRIVE_CAMERA_ZOOM,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
-  UNCLE_LEFT_CENTS,
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
@@ -537,11 +536,6 @@ export class DriveScene extends Phaser.Scene {
       from = route.distanceAlong(this.truck.x, this.truck.y);
       const hs = this.map.homeStart;
       this.uncleEnd = route.distanceAlong(hs.x, hs.y);
-      // PO's note: "I left $50 on the truck for you." (once)
-      if (!run.gaveCash) {
-        run.gaveCash = true;
-        this.evening.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
-      }
     } else {
       from = route.distanceAlong(this.truck.x, this.truck.y);
       const bay = gasStations()[0]?.bay;

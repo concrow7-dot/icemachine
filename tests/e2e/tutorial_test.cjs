@@ -185,8 +185,10 @@ const { chromium } = require('playwright');
   check('Adding a flavour: on to the price line, Today\'s Menu outlined', (await uncle()) + ' ' + (await pointer()), 'Once you\'ve added a new flavor, you can set the price in "Today\'s Menu". on');
   await page.mouse.click(600, 80); await wait(200);
   check('Click: be careful with prices', (await uncle()).startsWith('Be careful: too expensive'), true);
-  await page.mouse.click(600, 80); await wait(200);
-  check('Click: Buy Stock, outlined', (await uncle()).startsWith('When you\'re ready, "Buy Stock"') + ' ' + (await pointer()), 'true on');
+  const giftBefore = await ev('e.moneyCents');
+  await page.mouse.click(600, 80); await wait(400);
+  check('Click: Buy Stock, outlined, and the $50 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started. | on 5000');
+  await page.screenshot({ path: outDir + '/uncle_cooler_gift.png' });
   await page.screenshot({ path: outDir + '/uncle_buy.png' });
   await press('+', 4); await press('Enter'); await wait(700);
   // ---- SCREAM-171: the uncle drives, stopping for his regular, then on to the pump ----
@@ -275,11 +277,9 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(800);
   check('...he pays: none of it on your gas bill, $20 of gas in', ((await ev('e.breakdown.gasCents')) === 0) + ' ' + (Math.abs((await ev('e.fuel')) - fuelBefore - 2 / 3) < 0.01), 'true true');
   // ---- SCREAM-185: the uncle drives home ----
-  check('Gas bought: he drives home, saying he left $50 on the truck', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')) + ' | ' + (await uncle()), "Drive,Hud home toHome | I left $50 on the truck for you.");
-  check('...and the $50 is in the cash', (await ev('e.moneyCents')) - cashBefore, 5000);
+  check('Gas bought: he drives home, saying to come home for stock', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')) + ' | ' + (await uncle()), "Drive,Hud home toHome | Return home to fill up on stock when you need.");
+  check('...no more cash from him (the $50 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);
   check('...no steering, nobody else comes out', (await ev('e.tutorial.uncleDriving')) + ' ' + (await ev('e.residents.hearingOff')), 'true true');
-  await page.mouse.click(430, 84); await wait(500);
-  check('His second line', await uncle(), 'Return home to fill up on stock when you need.');
   const homeAt = Date.now();
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro'), null, { timeout: 25000 });
   const homeSecs = (Date.now() - homeAt) / 1000;
