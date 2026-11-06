@@ -110,6 +110,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** SCREAM-119: the evening ended because the tank ran empty. */
   private ranOutOfGas = false;
   private readonly startCashCents: number;
+  /** SCREAM-191: the uncle's $50 is still to come (guided tutorial, before his line at the cooler). */
+  private uncleGiftPending = false;
   private cashCents: number;
   private customerAtWindow = false;
   private prepLocked = false;
@@ -182,8 +184,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const run = this.tutorial;
     if (run) {
       const gift = () => {
-        if (!run.givesCash) return;
+        if (!run.givesCash || !this.uncleGiftPending) return;
         run.off(TutorialEvents.Changed, gift);
+        this.uncleGiftPending = false;
         this.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
       };
       run.on(TutorialEvents.Changed, gift);
@@ -197,7 +200,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.residents = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), carry?.story);
     this.residents.walls = wallsOf(map.data);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
-    this.cashCents = this.startCashCents;
+    // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
+    // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
+    this.uncleGiftPending = !!this.tutorial && !carry;
+    this.cashCents = this.uncleGiftPending ? this.startCashCents - UNCLE_LEFT_CENTS : this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? (this.tutorial ? FUEL_TUTORIAL_START : FUEL_QUICK_PLAY_START), 0, 1);
     // Matched by flavour, so a save from before SCREAM-129 (3 slots, any flavours) carries over too.
     carry?.slots.forEach((slot) => {
@@ -329,6 +335,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Cash on hand right now. */
   get moneyCents(): number {
     return this.cashCents;
+  }
+
+  /**
+   * SCREAM-191: with the uncle, the cash starts empty and his $50 comes a few lines into the
+   * cooler; picks made before then count it already (so the tutorial isn't stuck at $0).
+   */
+  get uncleGiftComing(): boolean {
+    return this.uncleGiftPending;
+  }
+
+  get stockBudgetCents(): number {
+    return this.cashCents + (this.uncleGiftPending ? UNCLE_LEFT_CENTS : 0);
   }
 
   /** Tonight's profit so far: cash now minus cash at the start. This is the high score. */
@@ -713,7 +731,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
   buyStock(order: CoolerOrder): boolean {
     if (!this.canStock) return false;
     const cost = order.costCents;
-    if (cost > this.cashCents) return false;
+    if (cost > this.stockBudgetCents) return false;
+    // SCREAM-191: bought before the uncle's line: his $50 is handed over first.
+    if (this.uncleGiftPending) {
+      this.uncleGiftPending = false;
+      this.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
+    }
 
     order.slots.forEach((slot) => {
       const target = this.coolerSlots.find((s) => s.flavour === slot.flavour);
