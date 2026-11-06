@@ -27,7 +27,7 @@ export type TutorialSignal =
   | 'saleClosed'
   | 'gasBought';
 
-export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'tomorrow' | 'pump' | 'alone';
+export type TutorialStepId = 'stock' | 'drive' | 'regular' | 'sale' | 'pump' | 'alone';
 
 /** SCREAM-170: what a line is about, so the screen can outline it (the cooler's clipboard, its menu, Buy Stock). */
 export type TutorialPoint = 'clipboard' | 'menu' | 'buy' | 'repeat';
@@ -85,7 +85,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     // and pulls up, until she's at the window.
     lines: [
       "Oh hey, it's {regular}... They buy ice cream pretty much every night.",
-      { text: 'Try and figure out where the regulars are. {regular} gets ice cream almost every night.', until: 'pulledUp' },
+      // PO (November 6, testing PR #130): his line as the truck creeps up to her.
+      { text: 'My best customers buy ice cream almost every night! Remembering where they live is the hard part.', until: 'pulledUp' },
     ],
   },
   {
@@ -98,9 +99,10 @@ export const TUTORIAL_STEPS: readonly Step[] = [
       { text: 'Customers will usually let you ask for a repeat of their order. (Hit R)', hold: true, point: 'repeat' },
       'Make sure to get the order and price correct.',
     ],
-    doneWhen: 'salePaid',
+    // PO (November 6, testing PR #130): no "come back tomorrow" line after the sale (his lines
+    // as the truck pulls up cover regulars), so his last line stays until the window closes.
+    doneWhen: 'saleClosed',
   },
-  { id: 'tomorrow', lines: ["Regulars come back. They'll want you tomorrow too."], doneWhen: 'saleClosed' },
   {
     id: 'pump',
     // Engineering's draft until SCREAM-173: he drives on to the pump bay while saying it.
@@ -156,7 +158,7 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
    */
   get uncleDriving(): boolean {
     const step = this.step;
-    return step === 'drive' || step === 'regular' || step === 'sale' || step === 'tomorrow' || (step === 'pump' && !this.driven.has('toPump'));
+    return step === 'drive' || step === 'regular' || step === 'sale' || (step === 'pump' && !this.driven.has('toPump'));
   }
 
   /** Which leg he should be driving now, if any (and not yet finished). */
