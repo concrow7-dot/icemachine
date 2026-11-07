@@ -1,21 +1,53 @@
 {
   "_about": "Known flaky timing checks (SCREAM-203). A FAIL whose name contains one of these is reported as FLAKY and doesn't fail the suite, so a red run means something real. Each entry: the suite, part of the check's name, and why. Fix the check and remove it from here; don't add to this list without a ticket number.",
   "feel": [
-    { "name": "rolls down to a creep only after about 10 s", "why": "frame-rate dependent; fails on main in the cloud workspace" },
-    { "name": "keeps creeping (never stops on its own)", "why": "same coasting measurement" }
+    {
+      "name": "rolls down to a creep only after about 10 s",
+      "why": "frame-rate dependent; fails on main in the cloud workspace"
+    },
+    {
+      "name": "keeps creeping (never stops on its own)",
+      "why": "same coasting measurement"
+    }
   ],
   "obstacles": [
-    { "name": "and stops on the pothole", "why": "spin timing; also fails on main" },
-    { "name": "Damage shows in the HUD as a red popup", "why": "popup caught a frame late on a slow machine" }
+    {
+      "name": "and stops on the pothole",
+      "why": "spin timing; also fails on main"
+    },
+    {
+      "name": "Damage shows in the HUD as a red popup",
+      "why": "popup caught a frame late on a slow machine"
+    },
+    {
+      "name": "Road edge: up to $2.00 for the hit",
+      "why": "road edge hit timing; passed in one Actions run and failed the next"
+    },
+    {
+      "name": "the truck stops with its nose at the curb",
+      "why": "same road edge run-up"
+    }
   ],
   "extras": [
-    { "name": "pops up", "why": "popup timing" },
-    { "name": "and fades away", "why": "popup timing" }
+    {
+      "name": "pops up",
+      "why": "popup timing"
+    },
+    {
+      "name": "and fades away",
+      "why": "popup timing"
+    }
   ],
   "buy": [
-    { "name": "B returns to the truck once stock is bought", "why": "the loading screen is sometimes still showing" }
+    {
+      "name": "B returns to the truck once stock is bought",
+      "why": "the loading screen is sometimes still showing"
+    }
   ],
   "pause": [
-    { "name": "the customer's patience stops too", "why": "off by one second; fails on main (November 5)" }
+    {
+      "name": "the customer's patience stops too",
+      "why": "off by one second; fails on main (November 5)"
+    }
   ]
 }
