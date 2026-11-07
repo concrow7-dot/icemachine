@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { getEvening, SceneKeys } from '../flow';
-import type { TutorialRun } from '../state/Tutorial';
+import { skipUncle, type TutorialRun } from '../state/Tutorial';
+import { count, secondsSinceTutorialStart } from '../state/Counter';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { CREDITS_TUNE_KEY } from './TutorialCrawlScene';
 import { HIGHLIGHT, OUTLINE, ZONES } from './TruckScene';
@@ -155,6 +156,8 @@ export class UncleIntroScene extends Phaser.Scene {
       if (!this.askingForCooler) this.next();
     });
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      // SCREAM-200: S skips the uncle from here too.
+      if ((event.key === 's' || event.key === 'S') && !event.shiftKey) return this.skipHim();
       // Esc (pause) is the HUD's, as on every evening screen. Enter picks the cooler when he asks for it.
       if (event.key !== 'Enter' && event.key !== ' ') return;
       if (this.askingForCooler) this.toCooler();
@@ -180,7 +183,8 @@ export class UncleIntroScene extends Phaser.Scene {
     this.more.setVisible(!asking);
     this.coolerOutline.setVisible(asking);
     this.coolerTag.setVisible(asking);
-    this.hint.setText(asking ? 'Click The Cooler (Or Press Enter)' : 'Click Or Enter: Next');
+    const skip = this.run.canSkip ? '   S: Skip The Uncle' : '';
+    this.hint.setText((asking ? 'Click The Cooler (Or Press Enter)' : 'Click Or Enter: Next') + skip);
     // SCREAM-171: heading out, his one line here moves on only when the player has read it (no timer).
     if (this.headingOut || this.atHome) this.more.setVisible(true);
   }
@@ -225,8 +229,25 @@ export class UncleIntroScene extends Phaser.Scene {
   private backOnTheRoad(): void {
     this.leaving = true;
     this.run.nextLine(); // finishes his last step
+    count('wheel', 'tutorial', secondsSinceTutorialStart()); // SCREAM-201: title screen to the wheel
     this.cameras.main.fadeOut(500);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(SceneKeys.Drive));
+  }
+
+  /**
+   * SCREAM-200 (PO, November 7): the player skips him. He's marked finished (the tutorial counts
+   * as done), and the evening goes on without him from wherever this screen was heading: the
+   * cooler at the start, the road when he was about to drive, or the road again at home.
+   */
+  private skipHim(): void {
+    if (this.leaving || !this.run.canSkip || this.game.getTime() < this.readyAt) return;
+    this.leaving = true;
+    skipUncle(this.run);
+    const evening = getEvening(this);
+    if (this.headingOut) evening.lockPrep();
+    const next = this.headingOut || this.atHome ? SceneKeys.Drive : SceneKeys.Cooler;
+    this.cameras.main.fadeOut(400);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(next));
   }
 
   private toCooler(): void {
