@@ -1,7 +1,8 @@
 name: Check pull request
 
-# Runs the type check and a full build on every pull request,
-# so problems show up as a red X before anyone tests by hand.
+# Runs on every pull request: the type check and build, the unit tests, and the browser
+# test suites in headless Chromium, so problems show up as a red X before anyone tests by
+# hand. Known flaky checks (tests/e2e/flaky.json) don't turn it red.
 on:
   pull_request:
     branches: [main]
@@ -16,3 +17,12 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run build
+      - run: npm run test:unit
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: tests/e2e/.shots
+          retention-days: 7

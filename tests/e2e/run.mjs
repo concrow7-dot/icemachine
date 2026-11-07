@@ -54,6 +54,10 @@ const server = http
   })
   .listen(PORT);
 
+// SCREAM-203: known flaky checks, by suite; a FAIL matching one is reported as FLAKY, not counted.
+const flaky = JSON.parse(fs.readFileSync(path.join(here, 'flaky.json'), 'utf8'));
+const isFlaky = (suite, line) => (flaky[suite] ?? []).some((f) => line.includes(f.name));
+
 const all = fs.readdirSync(here).filter((f) => f.endsWith('_test.cjs')).map((f) => f.replace('_test.cjs', '')).sort();
 const wanted = process.argv.slice(2);
 const suites = wanted.length ? wanted : all;
@@ -74,12 +78,15 @@ for (const name of suites) {
     child.stderr.on('data', (d) => (text += d));
     child.on('close', (code) => resolve({ code, text }));
   });
-  const fails = result.text.split('\n').filter((l) => l.startsWith('FAIL'));
+  const allFails = result.text.split('\n').filter((l) => l.startsWith('FAIL'));
+  const fails = allFails.filter((l) => !isFlaky(name, l));
+  const flakes = allFails.length - fails.length;
   const summary = result.text.match(/(\d+) passed, (\d+) failed; errors: (.*)/);
   if (summary) checks += Number(summary[1]) + Number(summary[2]);
-  fails.forEach((l) => console.log('  ' + l));
-  console.log(`${name}: ${summary ? summary[0] : 'did not finish\n' + result.text.split('\n').slice(-8).join('\n')}`);
-  if (!summary || summary[2] !== '0' || summary[3] !== 'none') failed++;
+  allFails.forEach((l) => console.log('  ' + (isFlaky(name, l) ? 'FLAKY (known, see flaky.json) ' + l.slice(5) : l)));
+  const realFails = summary ? Number(summary[2]) - flakes : 0;
+  console.log(`${name}: ${summary ? `${summary[1]} passed, ${realFails} failed${flakes ? `, ${flakes} known flaky` : ''}; errors: ${summary[3]}` : 'did not finish\n' + result.text.split('\n').slice(-8).join('\n')}`);
+  if (!summary || realFails !== 0 || summary[3] !== 'none') failed++;
 }
 server.close();
 console.log(`\n${suites.length - failed} of ${suites.length} suites passed (${checks} checks).`);

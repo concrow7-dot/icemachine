@@ -35,6 +35,18 @@ failed check. Screenshots land in `.shots/`. Both folders are ignored by git.
   card): they compare speeds rather than wall-clock distances, and wait for screen
   changes instead of sleeping for a fixed time.
 
+## Known flaky checks
+
+`flaky.json` lists timing checks known to fail now and then on a slow machine, by suite
+and part of the check's name. The runner reports those as FLAKY and doesn't count them, so a
+red run means something real. Fix the check and remove it from the list; add to the list only
+with a ticket number (SCREAM-203).
+
+## On every pull request
+
+`.github/workflows/check.yml` runs the build, the unit tests (`tests/unit`) and all these
+suites in GitHub Actions, and keeps the screenshots as a downloadable artifact for a week.
+
 ## Rotation (to save time)
 
 Run the suites that touch the changed code plus a third of the rest, rotating.
