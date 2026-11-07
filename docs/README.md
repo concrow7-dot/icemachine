@@ -7,6 +7,7 @@ The paper trail behind Ice Machine. What's in this folder is versioned with the 
 | Document | What it is |
 | --- | --- |
 | [Decision log](decision-log.md) | Every product and technical decision, newest first: what was decided, the options considered, the product owner's reason, and engineering's own calls (labelled as proposals). The canonical record. |
+| [Engineering notes](engineering.md) | How the code is laid out, test hooks, the uncle's tutorial, maps, debug keys, the cloud workspace. Read before changing code. |
 | [Browser tests](../tests/e2e/README.md) | How the Playwright suites work and how to run them. |
 | [LimeZu art](../public/assets/limezu/README.md) · [Audio](../public/assets/audio/README.md) | What's used from each pack and under what licence. |
 
