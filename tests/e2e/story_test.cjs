@@ -100,6 +100,17 @@ const { chromium } = require('playwright');
   const h2 = await hint(7);
   check('...then a second one, about somebody else', h2 !== 'none' && h2.split('|')[0] !== h1.split('|')[0], true);
   check('...and no more than 2 a night', await hint(20), 'none');
+  check('...Shift+6 (debug): the next tipped sale gives one anyway', await page.evaluate(async () => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    e.hintsGiven.length = 0; e.lastHintAtSale = -Infinity; e.forceHint = true;
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; s.line = 'Thanks!';
+    e.paidSales = 1; e.hintChance = 0; e.maybeHint(s);
+    const out = (s.hintAbout !== null) + ' ' + e.forceHint;
+    e.hintsGiven.length = 0; e.hintChance = 0.35;
+    return out;
+  }), 'true false');
   check('...never about the customer at the window', await page.evaluate(async () => {
     const e = window.__game.registry.get('evening');
     const { Sale } = await import('/src/state/Sale.js');

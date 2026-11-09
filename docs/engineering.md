@@ -46,7 +46,7 @@ How the code is laid out and the things you need to know before changing it. Kep
 
 ## Debug keys (temporary)
 
-Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen. They are live on the public site too.
+Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen, Shift+6 the next tipped sale ends with a hint (SCREAM-103). They are live on the public site too.
 
 ## Tests
 

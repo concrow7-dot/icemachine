@@ -156,6 +156,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   paidSales = 0;
   readonly hintsGiven: string[] = [];
   private lastHintAtSale = -Infinity;
+  /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
+  forceHint = false;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
   readonly residents: Residents;
@@ -625,12 +627,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private maybeHint(sale: Sale): void {
     if (this.tutorial) return;
     if (this.hintsGiven.length >= HINT_MAX_PER_EVENING) return;
-    if (this.paidSales < HINT_FIRST_AFTER_SALES || this.paidSales - this.lastHintAtSale < HINT_GAP_SALES) return;
+    const forced = this.forceHint;
+    if (!forced && (this.paidSales < HINT_FIRST_AFTER_SALES || this.paidSales - this.lastHintAtSale < HINT_GAP_SALES)) return;
     const me = this.servingNow?.resident.id;
     const choices = this.residents.all.filter(
       (p) => p.resident.hint && p.resident.id !== me && p.buys && p.customer !== 'done' && !this.hintsGiven.includes(p.resident.id),
     );
-    if (choices.length === 0 || Math.random() >= this.hintChance) return;
+    if (choices.length === 0 || (!forced && Math.random() >= this.hintChance)) return;
+    this.forceHint = false;
     const pick = choices[Math.floor(Math.random() * choices.length)].resident;
     sale.addHint(pick.id, pick.hint!);
     this.hintsGiven.push(pick.id);
