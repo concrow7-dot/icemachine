@@ -2,7 +2,7 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
-## 047 — The Worcester map can be laid out by hand in Tiled (2026-11-08)
+## 049 — The Worcester map can be laid out by hand in Tiled (2026-11-08)
 
 **Decision (Jira SCREAM-211, under SCREAM-10, PO, November 8):** the PO wants to edit the Worcester map (Quick play) himself in Tiled, the way he edits the tutorial map (038). Engineering exported the generated map to a Tiled project (`tiled/worcester-map/` in the private art repo) and the converter now reads either map. Until the PO imports his edits, the game's Worcester map stays the generated one.
 
