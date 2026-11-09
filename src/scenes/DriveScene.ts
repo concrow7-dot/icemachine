@@ -203,8 +203,8 @@ export class DriveScene extends Phaser.Scene {
   private homeArmed = false;
   /** SCREAM-145: counts the truck's laps of this map's roundabout (null if it has none). */
   private laps: LapCounter | null = null;
-  /** SCREAM-145: the on-screen lap count while the truck is on the roundabout. */
-  private lapLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-145: the lap count. PO (November 9): never shown, it would give the secret away; tests read it. */
+  lapLabel!: Phaser.GameObjects.Text;
   /** SCREAM-145: fading out on the way to the other map. */
   private switchingMap = false;
   /** SCREAM-54 (Tom Cobb, round 2): an arrow toward home, shown only when sold out. */
@@ -497,16 +497,15 @@ export class DriveScene extends Phaser.Scene {
 
   /**
    * SCREAM-145 (PO, November 8-9): three laps of the roundabout take the truck to the other map:
-   * from Elm Park to Foley Stadium, and from Newton Square back home. The lap count shows over
-   * the truck while it's going round. Not while the uncle has the wheel.
+   * from Elm Park to Foley Stadium, and from Newton Square back home. Nothing shows on screen
+   * (PO: a count would give the secret away). Not while the uncle has the wheel.
    */
   private checkLaps(): void {
     const laps = this.laps;
     if (!laps || this.switchingMap || this.uncleLeg) return;
     const done = laps.update(this.truck.x, this.truck.y);
-    const show = laps.onRing && (laps.laps > 0 || laps.progress > 0.1);
-    this.lapLabel.setVisible(show);
-    if (show) this.lapLabel.setPosition(this.truck.x, this.truck.y - 58).setText(`${Math.min(laps.laps, RING_LAPS)} / ${RING_LAPS} laps`);
+    // The count is kept (hidden) for the tests; the player gets no hint on screen (PO).
+    this.lapLabel.setText(laps.onRing ? `${Math.min(laps.laps, RING_LAPS)} / ${RING_LAPS} laps` : '');
     if (!done) return;
     this.goToOtherMap();
   }
