@@ -15,7 +15,7 @@ The pillars are now: race the sunset; chaos on the road; sharp at the window; co
 
 **Options considered:** keep the four pillars from the pitch; add the two (chosen).
 
-**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: it's a solid 2D game with an upgrade system and an economy this game can take inspiration from.
+**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: it's a solid 2D game with an upgrade system and an economy this game can take inspiration from. It took him a few attempts to complete (PO, November 9). (Engineering's note: the same idea as 050's reason, that a player may not win Story the first time; see SCREAM-216.)
 
 **Engineering's calls (proposals):** the pillar names and one-line descriptions are engineering's wording for the PO to change. Westworld here means the HBO series (it grew out of Michael Crichton's 1973 film; there is no original novel). Work already on main that serves "learn the loop": regulars with fixed routines (033, 034), customers' hints (048), the roundabout secret (050); and SCREAM-216 (Story runs as years). Work that serves "deep economics": calculator prices (007), stocking the cooler (028), fuel (016), crash costs, and how players get power-ups (SCREAM-79).
 
