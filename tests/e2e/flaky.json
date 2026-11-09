@@ -38,12 +38,7 @@
       "why": "popup timing"
     }
   ],
-  "buy": [
-    {
-      "name": "B returns to the truck once stock is bought",
-      "why": "the loading screen is sometimes still showing"
-    }
-  ],
+  "buy": [],
   "pause": [
     {
       "name": "the customer's patience stops too",
