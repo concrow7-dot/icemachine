@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 049 — The Worcester map can be laid out by hand in Tiled (2026-11-08)
+
+**Decision (Jira SCREAM-211, under SCREAM-10, PO, November 8):** the PO wants to edit the Worcester map (Quick play) himself in Tiled, the way he edits the tutorial map (038). Engineering exported the generated map to a Tiled project (`tiled/worcester-map/` in the private art repo) and the converter now reads either map. Until the PO imports his edits, the game's Worcester map stays the generated one.
+
+**Options considered:** keep generating Worcester with `build_map.py` and describe changes in words; edit it in Tiled like the tutorial map (chosen).
+
+**Why (product owner's rationale, November 8):** the same reasons as the tutorial map (038): it seemed like a fun thing to learn; laying it out himself lets him dial in the exact design he wants; and it should save tokens compared with describing every change for engineering to build.
+
+**Engineering's calls (proposals):** `tools/tiled/export_tiled.py` writes the Tiled project with the tutorial map's layer names; every house is "House N" with the residents sheet's (15) House number, so residents stay with their houses when houses move. The Tiled file's "map" property (worcester or tutorial) tells `import_tiled.py` which map it is. Roads, curb spots, potholes, parked cars, gas stations and the truck's start stay generated and locked, as on the tutorial map. Parks and fields are a locked picture in Tiled for reference only; the game still draws them itself. Checked: importing the unedited export gives the same 2,078 pieces in the same places and house order, and the drive, obstacles, customers, residents, home and fuel suites pass on it; importing the tutorial map gives byte-identical files. Once the PO's first Worcester import is merged, Worcester is edited only in Tiled (`build_map.py` would undo his changes), as for the tutorial map (engineering's proposal; PO agreed, November 8).
+
 ## 048 — Customers sometimes hint at a big regular after a tipped sale (2026-11-08)
 
 **Decision (Jira SCREAM-103, PO, November 8):** the first part of customer dialog is hints. A customer says something only after a sale where the player earned a tip: the sale ends, they say thanks, then pass on a hint about one of the neighbourhood's big regulars ("Here's a hint: Big Kev on Institute Road buys a ton of ice cream."). Hints are rare: about 1, maybe 2 a night, when the player is getting a good number of customers. The regulars hinted at are ones who buy a lot and often, 3 to 4 of them on the tutorial map. A hint is just words: no map marker, and the regular is no more likely to come out; the player has to remember and go find them. The lines live in a new "Hint" column in the residents sheet (23 first); engineering drafted the first four and the PO rewrites them. Parties (the rest of SCREAM-103) are a later step.
