@@ -130,6 +130,8 @@ const { TRACK } = require('./track.cjs');
   near('Clock kept running while driving', (await ev('e.clockMinutes')) - clockBefore, 0.3, 30);
 
   const cashBefore = await ev('e.moneyCents');
+  // On a slow machine the sales screen's loading screen can still be up: wait for it to clear before B.
+  await page.waitForFunction(() => window.__game.scene.isActive('Sales') && !window.__game.scene.isActive('Loading'), null, { timeout: 10000 });
   await wait(500); await press('b'); await wait(300);
   check('B: drive off, straight back on the road, no money', (await scenes()) + ' ' + ((await ev('e.moneyCents')) - cashBefore), 'Drive,Hud 0');
   check('Truck resumes where it stopped', JSON.stringify({ x: (await truck()).x, y: (await truck()).y }), parked);

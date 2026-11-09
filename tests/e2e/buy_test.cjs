@@ -115,7 +115,10 @@ const { chromium } = require('playwright');
   check('Can take extras out again', await draft(0), 'eclair:3:200');
 
   // --- B cancels, now there is stock in the cooler ---
-  await press('b'); await wait(150);
+  await press('b');
+  // On a slow machine the truck screen's loading screen can still be up for a moment.
+  await page.waitForFunction(() => window.__game.scene.isActive('Truck') && !window.__game.scene.isActive('Loading'), null, { timeout: 10000 }).catch(() => {});
+  await wait(150);
   check('B returns to the truck once stock is bought', await scenes(), 'Truck,Hud');
   check('Cancel: extras thrown away, cash still $45.00', (await owned(0)) + ' ' + (await cash()), 'eclair:2:200 4500');
   await openCooler(); await wait(200);
