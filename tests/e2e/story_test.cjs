@@ -127,6 +127,32 @@ const { chromium } = require('playwright');
     return aboutSelf;
   }), false);
 
+  // ---- SCREAM-145: a regular's second visit tells the way to the other neighbourhood (stand-in sales) ----
+  const serve = (id, tip = 0) => page.evaluate(async ([id, tip]) => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'ordering'; s.order = [{ slot: 0, flavour: 'eclair', count: 1 }];
+    e.servingNow = e.residents.all.find(p => p.resident.id === id);
+    e.saleNow = s; e.hintChance = 0;
+    s.charge = () => { s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 0, tipCents: tip, tipPercent: 0 }; s.line = 'Thanks!'; return 'paid'; }; // $0, so the wallet checks below hold
+    e.chargeForSale(0);
+    e.saleNow = null; e.servingNow = null;
+    return (s.toldAboutRotary ? 'told' : 'quiet') + '|' + s.line;
+  }, [id, tip]);
+  const regulars = await ev("e.residents.all.filter(p => p.resident.likelihood >= 0.5).map(p => p.resident.id).slice(0, 3).join(',')");
+  const [r1, r2, r3] = regulars.split(',');
+  const sometimes = await ev("e.residents.all.find(p => p.resident.likelihood > 0 && p.resident.likelihood < 0.5).resident.id");
+  check('Rotary hint: first visits say nothing', (await serve(r1)).split('|')[0] + ' ' + (await serve(r2)).split('|')[0] + ' ' + (await serve(sometimes)).split('|')[0], 'quiet quiet quiet');
+  check('...visits are counted per person', await ev(`e.visits['${r1}'] + ' ' + e.visits['${sometimes}']`), '1 1');
+  check('...the first regular served twice says nothing', (await serve(r1)).split('|')[0], 'quiet');
+  check('...a sometimes buyer served twice says nothing (not a regular)', (await serve(sometimes)).split('|')[0], 'quiet');
+  const told = await serve(r2);
+  check('...the second regular served twice tells the trick, after the thanks', /^told\|Thanks! Psst, .*Highland Street three times/.test(told), true);
+  check('...once per run: a third regular served twice says nothing', (await serve(r3)) && (await serve(r3)).split('|')[0], 'quiet');
+  check('...and no big-regular hint on top of it in the same breath', /Here's a hint/.test(told), false);
+  check('...marked as given', (await ev('e.rotaryHintGiven')) + ' ' + (await ev('e.secondVisits.join(",")')), 'true ' + r1 + ',' + r2 + ',' + r3);
+
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');
   await shift(3); await wait(300);
@@ -149,7 +175,56 @@ const { chromium } = require('playwright');
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
   check('HUD says Day 2/5', /Day 2\/5/.test(await hudClock()), true);
+  check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '2 true true 4');
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
+
+  // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
+  await press('+'); await press('Enter'); await wait(300);
+  check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4600 4');
+  await press('ArrowRight'); await press('Enter'); await wait(600);
+  check('Roundabouts: on the road in Elm Park, with a roundabout', (await scenes()) + ' ' + (await sc('Drive', 's.laps !== null')), 'Drive,Hud true');
+  check('...the roundabouts lead somewhere in Story, home is Elm Park', (await ev('e.mapsJoined')) + ' ' + (await ev('e.homeMapId')) + ' ' + (await ev('e.awayFromHome')), 'true tutorial false');
+  const ring = await sc('Drive', "JSON.stringify(s.laps.ring)");
+  check('...Elm Park\'s roundabout is at the west end of Highland Street', JSON.parse(ring).x < 300 && JSON.parse(ring).y > 2100, true);
+  // Drive round it by moving the truck along the ring (the camera glides after it).
+  const lapRing = (laps, step = 15) => page.evaluate(async ([laps, step]) => {
+    const s = window.__game.scene.getScene('Drive');
+    const r = s.laps.ring;
+    // A little over, since the count starts from wherever the truck was first seen on the ring.
+    for (let d = 0; d <= laps * 360 + 30; d += step) {
+      const a = d * Math.PI / 180;
+      s.truck.setPosition(r.x + r.r * Math.cos(a), r.y + r.r * Math.sin(a));
+      await new Promise(f => setTimeout(f, 20));
+    }
+    return true;
+  }, [laps, step]);
+  await lapRing(2); await wait(100);
+  check('...two laps: still in Elm Park, the count shows 2 / 3 laps', (await ev('e.mapId')) + ' ' + (await sc('Drive', 's.lapsDone + " " + s.lapLabel.visible + " " + s.lapLabel.text')), 'tutorial 2 true 2 / 3 laps');
+  await sc('Drive', "(s.truck.setPosition(s.laps.ring.x + 600, s.laps.ring.y), true)"); await wait(100);
+  check('...driving off the roundabout starts the count again', await sc('Drive', 's.lapsDone + " " + s.lapLabel.visible'), '0 false');
+  const clockBefore = await ev('e.nowMs');
+  const cashBefore = await ev('e.moneyCents');
+  await lapRing(3); await wait(1500);
+  check('Three laps: the truck is in Foley Stadium', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')), 'worcester 1');
+  check('...the top bar names the neighbourhood', /Day 2\/5  Foley Stadium/.test(await hudClock()), true);
+  check('...on the road there, on Newton Square (the roundabout)', (await scenes()) + ' ' + (await sc('Drive', "(() => { const r = s.laps.ring; return Math.round(Math.hypot(s.truck.x - r.x, s.truck.y - r.y)) === r.r; })()")), 'Drive,Hud true');
+  check('...Newton Square is at the top of the map', await sc('Drive', 's.laps.ring.y < 600'), true);
+  check('...Foley Stadium\'s own people are out (sheet 15), with their state kept apart from Elm Park\'s', await ev("e.residents.all.length > 100 && e.residents.all.every(p => !p.resident.id.startsWith('T'))"), true);
+  check('...the clock and the cash carried on', (await ev('e.nowMs') >= clockBefore) + ' ' + (await ev('e.moneyCents')), 'true ' + cashBefore);
+  check('...still Day 2 of the same run', await story('r.day'), 2);
+  check('...away from home: no driveway here, the way home is the roundabout', (await ev('e.awayFromHome')) + ' ' + (await sc('Drive', 's.homeBay.visible')), 'true false');
+  await ev('(e.coolerSlots.forEach(sl => sl.quantity = 0), e.syncCells(), true)'); await wait(200);
+  check('...sold out: the HOME arrow points at Newton Square, not at Foley\'s driveway', await sc('Drive', "(() => { const r = s.laps.ring; const a = s.homeArrow; const v = s.cameras.main.worldView; return a.visible && Math.hypot(a.x - r.x, a.y - (r.y - 70)) < 40 || !Phaser.Geom.Rectangle.Contains(v, r.x, r.y); })()"), true);
+  await ev('(e.coolerSlots[0].quantity = 4, e.syncCells(), true)');
+  await lapRing(3); await wait(1500);
+  check('Three laps of Newton Square: back home in Elm Park', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')) + ' ' + (await ev('e.awayFromHome')), 'tutorial 2 false');
+  check('...on Elm Park\'s roundabout, Elm Park\'s people as they were', await ev("e.residents.all.every(p => p.resident.id.startsWith('T'))"), true);
+  check('...the driveway works again', await sc('Drive', 's.homeBay.visible'), true);
+  check('...the top bar says Elm Park again', /Elm Park/.test(await hudClock()), true);
+  await page.screenshot({ path: outDir + '/story_roundabout.png' });
+  await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150);
+  await press('y'); await wait(400);
+  check('Restart evening: back at the cooler', (await scenes()).startsWith('Cooler'), true);
 
   // ---- Restart evening goes back to how tonight started ----
   await press('+'); await press('Enter'); await wait(300);

@@ -8,6 +8,8 @@ export interface MapRoad {
   points: number[];
   /** SCREAM-159: lanes each way (default 1); Park Ave on the tutorial map has 2. Each lane is 60 px. */
   lanes?: number;
+  /** SCREAM-145: a roundabout: its points go round a circle with this centre and radius (the centre line). */
+  ring?: { x: number; y: number; r: number };
 }
 
 /** A street name written along the road. */

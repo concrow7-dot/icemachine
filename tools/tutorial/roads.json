@@ -1,5 +1,5 @@
 {
- "_about": "SCREAM-159: the tutorial map's roads (edit here, then run tools/tiled/build_roads.py). Points are x, y pairs in map pixels; lanes is lanes each way (default 1).",
+ "_about": "SCREAM-159: the tutorial map's roads (edit here, then run tools/tiled/build_roads.py). Points are x, y pairs in map pixels; lanes is lanes each way (default 1). A roundabout is {\"name\", \"ring\": {\"x\", \"y\", \"r\"}} (SCREAM-145): centre and the radius of its centre line.",
  "roads": [
   {
    "name": "Institute Road",
@@ -86,11 +86,21 @@
   {
    "name": "Highland Street",
    "points": [
+    215.0,
+    2190.0,
     421.0,
     2150.2,
     1590.3,
     2061.3
    ]
+  },
+  {
+   "name": "Elm Park Rotary",
+   "ring": {
+    "x": 215,
+    "y": 2190,
+    "r": 120
+   }
   }
  ],
  "homeStart": {

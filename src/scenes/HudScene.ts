@@ -1,3 +1,4 @@
+import { currentMap } from '../config/maps';
 import * as Phaser from 'phaser';
 import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE } from '../config/tuning';
 import { musicFor } from '../audio/Music';
@@ -210,7 +211,8 @@ export class HudScene extends Phaser.Scene {
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
     this.keepMusicGoing();
-    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel);
+    // SCREAM-145: in Story the neighbourhood's name sits after the day, since the truck can change map.
+    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${currentMap().name}` : ''));
     this.placeDebugText();
     const sale = this.evening.sale;
     const warn =

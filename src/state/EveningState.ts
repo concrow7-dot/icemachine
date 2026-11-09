@@ -2,7 +2,9 @@ import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
-import { currentMap, setCurrentMap, type MapId } from '../config/maps';
+import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
+import { arrivalSpot } from './RingLaps';
+import { ROTARY_HINT_LINE } from '../config/tuning';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
@@ -43,6 +45,8 @@ export const EveningEvents = {
   CoolerChanged: 'cooler-changed',
   /** () — the sale at the window changed phase or ended (#13-#15) */
   SaleChanged: 'sale-changed',
+  /** (mapId: MapId) — SCREAM-145: the truck went through a roundabout to the other map */
+  MapChanged: 'map-changed',
 } as const;
 
 /** The four arrow keys (and W A S D): up is gas, down is brake and reverse, left and right steer (#32). */
@@ -143,8 +147,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** The truck starts each evening on the road outside home (#9); set in the constructor. */
   private truckPosition: TruckPosition;
 
-  /** SCREAM-146: which map tonight is on: Worcester, or the smaller tutorial map. */
-  readonly mapId: MapId;
+  /** SCREAM-146: which map the truck is on now: Foley Stadium (worcester) or Elm Park (tutorial). SCREAM-145: it can change mid-evening. */
+  mapId: MapId;
+  /** SCREAM-145: the map the evening started on, where home is. In Story that's Elm Park every day (PO). */
+  readonly homeMapId: MapId;
+  /**
+   * SCREAM-145: whether the roundabouts lead to the other map tonight. Story only (engineering's
+   * call: Quick play stays one evening in Foley Stadium, as the PO asked); and not while the uncle
+   * is still guiding (his evening has its own route).
+   */
+  readonly mapsJoined: boolean;
+  /** SCREAM-145: how many times the truck has gone through a roundabout tonight (for the HUD and tests). */
+  mapSwitches = 0;
   /** SCREAM-169: the uncle's steps, on the tutorial map when he's guiding; null otherwise. */
   readonly tutorial: TutorialRun | null;
 
@@ -159,8 +173,13 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
   forceHint = false;
 
-  /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
-  readonly residents: Residents;
+  /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. SCREAM-145: the current map's. */
+  get residents(): Residents {
+    return this.residentsOn(this.mapId);
+  }
+  /** SCREAM-145: each map's people, made the first time the truck gets there; they keep their state while the truck is away. */
+  private readonly residentsByMap = new Map<MapId, Residents>();
+  private readonly story: { day: number; seed: number } | undefined;
 
   /** SCREAM-129: one stock line per flavour, all empty at first, each at its suggested price. */
   /**
@@ -190,6 +209,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     cells?: readonly (FlavourId | null)[];
     /** SCREAM-148: Story's day and run seed, which pick the day each sometimes buyer buys. */
     story?: { day: number; seed: number };
+    /** SCREAM-145: paid sales per resident over the run so far, and whether the roundabout's secret is out. */
+    visits?: Readonly<Record<string, number>>;
+    rotaryHintGiven?: boolean;
   }, mapId: MapId = 'worcester', guided = false) {
     super();
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
@@ -207,12 +229,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
     }
     // SCREAM-146: everything tonight (scenes included) uses this evening's map.
     this.mapId = mapId;
+    this.homeMapId = mapId;
+    this.story = carry?.story;
+    this.visits = { ...(carry?.visits ?? {}) };
+    this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
+    this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
     const map = currentMap();
-    const roads = roadsOf(mapId, map.data);
     this.truckPosition = { x: map.data.homeStart.x, y: map.data.homeStart.y, angle: map.data.homeStart.angle };
-    this.residents = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), carry?.story);
-    this.residents.walls = wallsOf(map.data);
+    this.residentsOn(mapId);
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
     // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
@@ -231,6 +256,69 @@ export class EveningState extends Phaser.Events.EventEmitter {
       if (i < COOLER_CAPACITY) this.coolerCells[i] = f;
     });
     this.syncCells();
+  }
+
+  /** SCREAM-145: the people of a map (made on first use). */
+  private residentsOn(id: MapId): Residents {
+    let people = this.residentsByMap.get(id);
+    if (!people) {
+      const map = MAPS[id];
+      const roads = roadsOf(id, map.data);
+      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), this.story);
+      people.walls = wallsOf(map.data);
+      this.residentsByMap.set(id, people);
+    }
+    return people;
+  }
+
+  /**
+   * SCREAM-145: paid sales per resident, carried over the Story run (the uncle's guided sale
+   * on Day 1 doesn't count; PO). `rotaryHintGiven` once a regular has told the player the trick.
+   */
+  readonly visits: Record<string, number>;
+  rotaryHintGiven: boolean;
+  /** SCREAM-145: the regulars who have been served a second time, in order (the second one tells). */
+  readonly secondVisits: string[] = [];
+
+  /**
+   * SCREAM-145 (PO, November 9): counts a paid sale, and on a regular's second visit, if they're the
+   * second regular to get there this run, they pass on the way to the other neighbourhood.
+   */
+  private countVisit(sale: Sale): void {
+    const person = this.servingNow;
+    if (!person || !this.story) return;
+    if (this.tutorial?.step === 'sale') return; // the uncle's sale (PO)
+    const id = person.resident.id;
+    this.visits[id] = (this.visits[id] ?? 0) + 1;
+    if (this.visits[id] !== 2 || Residents.kind(person.resident.likelihood) !== 'regular') return;
+    this.secondVisits.push(id);
+    if (this.rotaryHintGiven || this.secondVisits.length !== 2) return;
+    this.rotaryHintGiven = true;
+    sale.addRotaryHint(ROTARY_HINT_LINE);
+  }
+
+  /** SCREAM-145: true while the truck is away from the map home is on. */
+  get awayFromHome(): boolean {
+    return this.mapId !== this.homeMapId;
+  }
+
+  /**
+   * SCREAM-145: the truck has done its laps of the roundabout: it goes to the other map, appearing
+   * on that map's roundabout (`arrivalSpot`). The clock, the cash, the cooler and the gas carry on
+   * as they are. Returns the map it went to, or null if the roundabouts don't lead anywhere tonight.
+   */
+  switchMap(): MapId | null {
+    if (!this.mapsJoined || this.isOver) return null;
+    const to: MapId = this.mapId === 'tutorial' ? 'worcester' : 'tutorial';
+    const spot = arrivalSpot(MAPS[to].data.roads);
+    if (!spot) return null;
+    this.mapId = to;
+    setCurrentMap(to);
+    this.residentsOn(to);
+    this.truckPosition = spot;
+    this.mapSwitches += 1;
+    this.emit(EveningEvents.MapChanged, to);
+    return to;
   }
 
   /** A copy of the cooler as it is now, to carry into the next evening (SCREAM-19). */
@@ -610,7 +698,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.tipsTotalCents += sale.outcome.tipCents;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
       this.paidSales += 1;
-      if (sale.outcome.tipCents > 0) this.maybeHint(sale);
+      this.countVisit(sale); // SCREAM-145
+      if (sale.outcome.tipCents > 0 && !sale.toldAboutRotary) this.maybeHint(sale);
       this.tutorial?.signal('salePaid');
       count('first-sale', this.tutorial ? 'tutorial' : this.mapId); // SCREAM-201: once a visit
     }

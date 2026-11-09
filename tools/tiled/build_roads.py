@@ -31,6 +31,38 @@ LANE_W, SIDEWALK, CORNER_RADIUS, RASTER = 60, 14, 48, 2
 def half(road): return LANE_W * road.get('lanes', 1)
 
 
+# SCREAM-145: a roundabout is a road with "ring": {"x", "y", "r"} (centre and the radius of its
+# centre line) instead of points. It's drawn as a closed circle of short straight pieces, and the
+# middle is cut out again afterwards (the rounding of corners would otherwise fill it in) to leave
+# a grass island with a curb and a sidewalk round it.
+RING_PIECES = 40
+
+
+def ring_points(ring):
+    cx, cy, r = ring['x'], ring['y'], ring['r']
+    pts = []
+    for k in range(RING_PIECES + 1):
+        a = 2 * math.pi * (k % RING_PIECES) / RING_PIECES
+        pts += [round(cx + r * math.cos(a), 1), round(cy + r * math.sin(a), 1)]
+    return pts
+
+
+def with_rings(roads):
+    return [{**r, 'points': ring_points(r['ring'])} if 'ring' in r else r for r in roads]
+
+
+def cut_islands(rings, masks, raster):
+    """Clears each roundabout's middle: asphalt stops LANE_W inside the centre line, then the curb, then the sidewalk."""
+    import numpy as np
+    h, w = masks[0].shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    for ring in rings:
+        d = np.hypot(xx * raster + raster / 2 - ring['x'], yy * raster + raster / 2 - ring['y'])
+        inner = ring['r'] - LANE_W
+        for mask, edge in zip(masks, (inner, inner - 3, inner - SIDEWALK)):
+            mask[d < edge] = False
+
+
 def strokes(road, roads):
     """The centre lines to draw a street with: its own for one lane each way; for more, lines
     LANE_W apart across its width (two lanes each way: 60 px either side of the centre), each
@@ -102,7 +134,8 @@ def main(png_out):
     i = s.index(head) + len(head)
     m, end = json.JSONDecoder().raw_decode(s[i:])
     W, H = m['width'], m['height']
-    roads = d['roads']
+    roads = with_rings(d['roads'])
+    rings = [r['ring'] for r in d['roads'] if 'ring' in r]
 
     # The road surface: distance to the nearest curb line, per street width, then rounded corners
     # (widen by the corner radius and shrink back), as build_map.py does for one width.
@@ -122,6 +155,7 @@ def main(png_out):
     asphalt = rounded(LANE_W, CORNER_RADIUS)
     curb_mask = rounded(LANE_W + 3, CORNER_RADIUS - 3)
     sidewalk_mask = rounded(LANE_W + SIDEWALK, CORNER_RADIUS - SIDEWALK)
+    cut_islands(rings, (asphalt, curb_mask, sidewalk_mask), RASTER)
     img = np.zeros((H2, W2, 4), np.uint8)
     img[sidewalk_mask] = (0xd6, 0xd0, 0xc7, 255)
     img[curb_mask] = (0x7a, 0x74, 0x70, 255)
@@ -133,9 +167,10 @@ def main(png_out):
         e = np.flatnonzero(np.diff(np.concatenate(([0], row.astype(np.int8), [0]))))
         rows.append(e.tolist())
 
-    out_roads = [{'name': r['name'], 'points': [round(v, 1) for v in r['points']], **({'lanes': r['lanes']} if r.get('lanes', 1) != 1 else {})}
+    out_roads = [{'name': r['name'], 'points': [round(v, 1) for v in r['points']], **({'lanes': r['lanes']} if r.get('lanes', 1) != 1 else {}),
+                  **({'ring': r['ring']} if 'ring' in r else {})}
                  for r in roads]
-    m.update({'roads': out_roads, 'labels': labels_for(roads), 'homeStart': d['homeStart'], 'gasStations': d['gasStations'],
+    m.update({'roads': out_roads, 'labels': labels_for([r for r in roads if 'ring' not in r]), 'homeStart': d['homeStart'], 'gasStations': d['gasStations'],
               'curbSpots': d['curbSpots'], 'potholes': d['potholes'], 'parkedCars': d['parkedCars'],
               'roadMask': {'scale': RASTER, 'rows': rows}})
     open(OUT_TS, 'w', encoding='utf-8').write(s[:i] + json.dumps(m, separators=(',', ':')) + s[i + end:])
