@@ -241,6 +241,28 @@ const { chromium } = require('playwright');
   check('...the next customer with stock is named again, in pink', (await ev('e.sale.speaker')) + ' ' + (await sc('Sales', 's.speakerText.style.color')), 'customer #c2185b');
   await press('b'); await wait(300);
 
+  // ---- SCREAM-225 (PO, November 9): the speech bubble is drawn on every visit to the window ----
+  // (Phaser reuses the scene; it used to skip drawing a bubble the same height as last time.)
+  const bubbleDrawn = () => sc('Sales', 's.bubble.commandBuffer.length > 50'); // an empty, cleared graphics still has a few commands
+  let drawnEvery = true;
+  for (let i = 0; i < 3; i++) {
+    await serveNow();
+    if (!(await bubbleDrawn())) drawnEvery = false;
+    await press('b'); await wait(300);
+  }
+  check('The speech bubble is drawn for every customer, sale after sale (SCREAM-225)', drawnEvery, true);
+  // The same picture order twice in a row: the pictures show both times.
+  // Only one Chocolate Eclair in the cooler, so both customers order exactly "1 Chocolate Eclair".
+  await ev('(e.orderPictureChance = 1, window.__keep2 = e.coolerSlots.map(s => s.quantity), e.coolerSlots.forEach((s, i) => s.quantity = i === 0 ? 1 : 0), true)');
+  const pics = [];
+  for (let i = 0; i < 2; i++) {
+    await serveNow();
+    pics.push((await ev('e.sale.order.map(l => l.count + l.flavour).join()')) + ':' + (await sc('Sales', 's.orderPictures.list.filter(o => o.name === "order-pic-eclair").length')));
+    await press('b'); await wait(300);
+  }
+  check('...and the same picture order twice in a row shows its pictures both times', pics.join(','), '1eclair:1,1eclair:1');
+  await ev('(e.orderPictureChance = 0, window.__keep2.forEach((q, i) => e.coolerSlots[i].quantity = q), true)');
+
   // ---- SCREAM-137: an order shown in pictures ----
   await ev('(e.orderPictureChance = 1, true)');
   await serveNow();

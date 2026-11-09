@@ -95,6 +95,12 @@ export class SalesScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.typed = '';
+    // SCREAM-225 (PO, November 9): Phaser reuses this scene object for every sale, so anything
+    // remembered about what's drawn must be forgotten here, or the new bubble (and picture
+    // order) is never drawn when it's the same size (or the same order) as last time.
+    this.bubbleH = 0;
+    this.bubbleSpeaker = 'customer';
+    this.orderPicturesKey = '';
     const { width, height } = this.scale;
 
     // The truck wall and the serving window (SCREAM-125: the truck drawing's style).
