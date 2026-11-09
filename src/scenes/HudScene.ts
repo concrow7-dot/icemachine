@@ -6,6 +6,7 @@ import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../fl
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
+import { debugOn } from '../util/debug';
 import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
 import { markTutorialDone, skipUncle } from '../state/Tutorial';
@@ -139,11 +140,12 @@ export class HudScene extends Phaser.Scene {
   /**
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
-   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
+   * of the clock and day, and since SCREAM-220 only with ?debug in the address. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
    * tipped sale ends with a hint, SCREAM-103) and Shift+4 (serve now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
-    this.debugText = this.add
+    // SCREAM-220 (PO, November 9): players don't see the debug hint; add ?debug to the address to show it.
+    if (debugOn()) this.debugText = this.add
       .text(0, 22, 'DEBUG Shift+3: End Evening', {
         fontFamily: 'monospace',
         fontSize: '11px',
