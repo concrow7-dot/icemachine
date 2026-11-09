@@ -4,7 +4,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 058 — Both maps' residents in one Residents sheet, in a new Customers folder (2026-11-09)
 
-**Decision (PO, November 9):** sheets 15 (Foley Stadium's residents) and 23 (Elm Park's) are one Google Sheet, **Residents**, with a tab per map (Elm Park, Foley Stadium) plus Hint lines, Rotary hint and Old likelihoods. It lives in a new **Customers** folder in IceMachine, next to Product Management Decisions. It keeps sheet 15's link. Product Management Decisions is renumbered to close the gaps: 16 → 15, 17 → 16, 18 → 17, 19 → 18, 20 → 19, 21 → 20, 22 → 21, 25 → 22 (there was no 24); the next number is 23. Both maps' tabs now have an Order size column (Elm Park's had lost it; Big Kev is 7 again).
+**Decision (PO, November 9):** sheets 15 (Foley Stadium's residents) and 23 (Elm Park's) are one Google Sheet, **Residents**, with a tab per map (Elm Park, Foley Stadium) plus Hint lines, Rotary hint and Old likelihoods. It lives in a new **Customers** folder in IceMachine, next to Product Management Decisions. It keeps sheet 15's link. Product Management Decisions is renumbered to close the gaps: 16 → 15, 17 → 16, 18 → 17, 19 → 18, 20 → 19, 21 → 20, 22 → 21, 24 → 22 (the PO renames it: the Drive connector can't find it), 25 → 23; the next number is 24. Both maps' tabs now have an Order size column (Elm Park's had lost it; Big Kev is 7 again).
 
 **Options considered:** keep sheet 15's file and copy Elm Park's tabs into it (chosen) or start a new file; leave the gaps in the numbering or renumber (chosen).
 
