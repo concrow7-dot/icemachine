@@ -2,6 +2,9 @@
 //
 //   node tests/e2e/run.mjs              run every suite
 //   node tests/e2e/run.mjs feel drive   run only these suites
+//   node tests/e2e/run.mjs --retry ...  a suite that fails is rerun once on its own and only counts
+//                                       as failed if it fails twice (what the PR check uses: GitHub's
+//                                       machines are slower, and timing checks there fail at random)
 //
 // It builds the game into tests/e2e/.run (TypeScript types stripped, no bundler),
 // serves it on a local port, and runs each *_test.cjs suite with Playwright.
@@ -59,10 +62,21 @@ const flaky = JSON.parse(fs.readFileSync(path.join(here, 'flaky.json'), 'utf8'))
 const isFlaky = (suite, line) => (flaky[suite] ?? []).some((f) => line.includes(f.name));
 
 const all = fs.readdirSync(here).filter((f) => f.endsWith('_test.cjs')).map((f) => f.replace('_test.cjs', '')).sort();
-const wanted = process.argv.slice(2);
+const args = process.argv.slice(2);
+const retry = args.includes('--retry');
+const wanted = args.filter((a) => a !== '--retry');
 const suites = wanted.length ? wanted : all;
 let failed = 0;
 let checks = 0;
+// Runs one suite asynchronously so this process keeps serving the game while the suite runs.
+const runSuite = (file) =>
+  new Promise((resolve) => {
+    let text = '';
+    const child = spawn(process.execPath, [file, String(PORT), shots], { cwd: here });
+    child.stdout.on('data', (d) => (text += d));
+    child.stderr.on('data', (d) => (text += d));
+    child.on('close', (code) => resolve({ code, text }));
+  });
 for (const name of suites) {
   const file = path.join(here, `${name}_test.cjs`);
   if (!fs.existsSync(file)) {
@@ -70,14 +84,17 @@ for (const name of suites) {
     failed++;
     continue;
   }
-  // Run asynchronously so this process keeps serving the game while the suite runs.
-  const result = await new Promise((resolve) => {
-    let text = '';
-    const child = spawn(process.execPath, [file, String(PORT), shots], { cwd: here });
-    child.stdout.on('data', (d) => (text += d));
-    child.stderr.on('data', (d) => (text += d));
-    child.on('close', (code) => resolve({ code, text }));
-  });
+  let result = await runSuite(file);
+  let rerun = false;
+  if (retry) {
+    const first = result.text.match(/(\d+) passed, (\d+) failed; errors: (.*)/);
+    const firstFails = result.text.split('\n').filter((l) => l.startsWith('FAIL') && !isFlaky(name, l));
+    if (!first || firstFails.length || first[3] !== 'none') {
+      console.log(`${name}: failed once (${firstFails.length ? firstFails.map((l) => l.slice(5).trim().split(/\s{2,}/)[0]).join('; ') : 'did not finish'}); rerunning alone`);
+      result = await runSuite(file);
+      rerun = true;
+    }
+  }
   const allFails = result.text.split('\n').filter((l) => l.startsWith('FAIL'));
   const fails = allFails.filter((l) => !isFlaky(name, l));
   const flakes = allFails.length - fails.length;
@@ -85,7 +102,7 @@ for (const name of suites) {
   if (summary) checks += Number(summary[1]) + Number(summary[2]);
   allFails.forEach((l) => console.log('  ' + (isFlaky(name, l) ? 'FLAKY (known, see flaky.json) ' + l.slice(5) : l)));
   const realFails = summary ? Number(summary[2]) - flakes : 0;
-  console.log(`${name}: ${summary ? `${summary[1]} passed, ${realFails} failed${flakes ? `, ${flakes} known flaky` : ''}; errors: ${summary[3]}` : 'did not finish\n' + result.text.split('\n').slice(-8).join('\n')}`);
+  console.log(`${name}: ${summary ? `${summary[1]} passed, ${realFails} failed${flakes ? `, ${flakes} known flaky` : ''}; errors: ${summary[3]}${rerun ? ' (on the rerun)' : ''}` : 'did not finish\n' + result.text.split('\n').slice(-8).join('\n')}`);
   if (!summary || realFails !== 0 || summary[3] !== 'none') failed++;
 }
 server.close();

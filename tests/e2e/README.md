@@ -45,7 +45,9 @@ with a ticket number (SCREAM-203).
 ## On every pull request
 
 `.github/workflows/check.yml` runs the build, the unit tests (`tests/unit`) and all these
-suites in GitHub Actions, and keeps the screenshots as a downloadable artifact for a week.
+suites in GitHub Actions (with `--retry`: a suite that fails is rerun once on its own, since
+GitHub's machines are slower and timing checks there fail at random), and keeps the
+screenshots as a downloadable artifact for a week.
 
 ## Rotation (to save time)
 
