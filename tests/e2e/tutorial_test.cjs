@@ -1,6 +1,6 @@
-// SCREAM-146: the tutorial map. Tutorial on the title screen plays one evening on the smaller
-// map (Institute Rd, Highland St, Haviland St, Park Ave) with its own 40 residents, one gas
-// station and home on Westland St. Quick play and Story stay on Worcester.
+// SCREAM-146: the tutorial map: the smaller map (Institute Rd, Highland St, Haviland St, Park Ave)
+// with its own 40 residents, one gas station and home on Westland St.
+// SCREAM-205: Story is played on it (the uncle's evening is Day 1); Quick Play stays on Worcester.
 const { chromium } = require('playwright');
 (async () => {
   const [port, outDir] = process.argv.slice(2);
@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v1'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
+  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const sc = (key, fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('${key}'); return ${fn}; })()`);
@@ -23,13 +23,16 @@ const { chromium } = require('playwright');
 
   // ---- The title menu ----
   await page.click('canvas'); await wait(200);
-  check('Title menu: Quick Play, Story, Tutorial', await sc('Title', 's.options.map(o => o.label).join()'), 'Quick Play,Story,Tutorial');
-  await press('ArrowDown', 2);
+  check('Title menu: Quick Play, Story (no Tutorial, SCREAM-205)', await sc('Title', 's.options.map(o => o.label).join()'), 'Quick Play,Story');
+  await press('ArrowDown');
   await page.screenshot({ path: outDir + '/tutorial_title.png' });
-  check('↓ ↓ highlights Tutorial', await sc('Title', 's.modeTexts[2].text'), '> Tutorial <');
+  check('↓ highlights Story', await sc('Title', 's.modeTexts[1].text'), '> Story <');
   // The map checks play without the uncle (SCREAM-169 has its own section below).
-  await press('Enter'); await press('o'); await wait(400);
-  check('Tutorial starts an evening on the tutorial map', await ev('e.mapId'), 'tutorial');
+  await press('Enter'); await wait(200);
+  check('Tutorial already played: Story asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
+  await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
+  check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
+  check('...Day 1 of 5, with $50', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/5 5000');
   check('...with its own 40 residents (sheet 23)', await ev('e.residents.all.length + " " + e.residents.all.every(p => p.resident.id.startsWith("T"))'), '40 true');
 
   // ---- On the road ----
@@ -162,16 +165,18 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
-  check('New player: Quick Play and Story locked, Tutorial picked (SCREAM-175)', await sc('Title', 's.modeTexts.map(t => t.text).join("|")'), 'Quick Play (Locked)|Story (Locked)|> Tutorial <');
-  check('...with a note saying why', await sc('Title', 's.children.getByName("lock-note").text'), 'Finish the Tutorial to unlock Quick Play and Story.');
+  check('New player: Quick Play locked, Story picked (SCREAM-175, 205)', await sc('Title', 's.modeTexts.map(t => t.text).join("|")'), 'Quick Play (Locked)|> Story <');
+  check('...with a note saying why', await sc('Title', 's.children.getByName("lock-note").text'), "Play Story's first day to unlock Quick Play.");
   await page.screenshot({ path: outDir + '/title_locked.png' });
   await press('ArrowUp');
-  check('...the arrows skip the locked modes', await sc('Title', 's.selected'), 2);
+  check('...the arrows skip the locked modes', await sc('Title', 's.selected'), 1);
   await page.mouse.click(480, 345); await wait(300);
   check('...clicking Quick Play does nothing', await scenes(), 'Title');
   const uncle = () => page.evaluate(() => (b => b ? b.shown : '')(window.__game.scene.getScene('Hud').uncleBox));
   await press('ArrowDown', 2); await press('Enter'); await wait(500);
-  check('First Tutorial: no question, the uncle comes along', await ev('!!e.tutorial'), true);
+  check('First Story: no question, the Story intro', (await sc('Title', 's.confirming')) + ' ' + (await scenes()), 'false StoryIntro');
+  await press('Enter'); await wait(500);
+  check('...then Day 1 with the uncle, on the tutorial map', (await ev('!!e.tutorial')) + ' ' + (await ev('e.mapId')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'true tutorial 1');
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(1500);
   check('...the ice cream truck tune playing', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => t.isPlaying)'), true);
   check('...over the tutorial map, zoomed out', await sc('TutorialCrawl', '(m => !!m && m.scale < 0.5)(s.children.getByName("crawl-map"))'), true);
@@ -337,17 +342,21 @@ const { chromium } = require('playwright');
   check('...and the player drives', await drive('s.speed > 0'), true);
   await page.keyboard.press('Shift+Digit3'); await wait(600);
   check('Ending the evening marks the tutorial done', await page.evaluate(() => localStorage.getItem('icemachine.tutorial.done.v1')), '1');
+  check("...and it's the end of Story's Day 1, saved for Day 2", (await scenes()) + ' ' + (await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')).day)), 'DayEnd 2');
+  await page.screenshot({ path: outDir + '/uncle_day_end.png' });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
   check('Tutorial finished: every mode unlocked', await sc('Title', 's.options.some(o => o.locked) + " " + s.children.getByName("lock-note").text'), 'false ');
+  check('...and Day 2 to continue', /^Quick Play,Continue Story: Day 2, \$[0-9.]+,New Story$/.test(await sc('Title', 's.options.map(o => o.label).join()')), true);
   await press('ArrowDown', 2); await press('Enter'); await wait(300);
   check('The title screen credits the tune', await sc('Title', 's.children.list.some(o => o.text && o.text.includes("Tune: Travis Morgan"))'), true);
-  check('Tutorial again: asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
+  await press('y'); await wait(300);
+  check('New Story again: asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await page.screenshot({ path: outDir + '/uncle_choice.png' });
   await page.evaluate(() => localStorage.setItem('icemachine.music.muted.v1', '1'));
-  await press('o'); await wait(500);
-  check('On My Own: the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
+  await press('o'); await wait(500); await press('Enter'); await wait(500); // past the Story intro
+  check('On My Own: Day 1 on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'tutorial true 1');
 
   // ---- SCREAM-200: skipping the uncle ----
   // A brand-new player again; skip him on his very first line, in the truck.
@@ -355,7 +364,7 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
-  await press('ArrowDown', 2); await press('Enter'); await wait(500);
+  await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
   await press('Enter');
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
@@ -376,7 +385,7 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
-  await press('ArrowDown', 2); await press('Enter'); await wait(500);
+  await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
   await press('Enter');
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);

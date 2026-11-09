@@ -25,8 +25,12 @@ export type StorySave = {
   seed?: number;
 };
 
-/** Bump the version only if the saved format changes in a way old saves can't be read. */
-const STORAGE_KEY = 'icemachine.story.v1';
+/**
+ * Bump the version only if the saved format changes in a way old saves can't be read.
+ * SCREAM-205 (engineering's call): v2 when Story moved to the tutorial map and 5 days; a v1 run
+ * (3 days on Worcester) isn't offered to continue.
+ */
+const STORAGE_KEY = 'icemachine.story.v2';
 
 const FLAVOUR_IDS = new Set<string>(FLAVOURS.map((f) => f.id));
 

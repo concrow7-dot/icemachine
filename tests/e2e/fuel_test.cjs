@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
+  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const sc = (key, fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('${key}'); return ${fn}; })()`);
@@ -202,8 +202,9 @@ const { chromium } = require('playwright');
   // ---- Story: a quarter tank on day 1, carried over and saved ----
   await page.goto(`http://127.0.0.1:${port}/index.html`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
-  await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(300); await press('Enter'); await wait(300);
-  check('Story day 1: $100 and a quarter tank', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '10000 0.25');
+  // SCREAM-205: a new Story asks about the uncle (O: on my own), then the intro.
+  await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300); await press('Enter'); await wait(300);
+  check('Story day 1: $50 and a quarter tank (SCREAM-205)', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '5000 0.25');
   await press('+', 2); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
@@ -216,7 +217,7 @@ const { chromium } = require('playwright');
   near('...$20 is 2/3 of a tank: now 11/12', Math.round(tank * 1000) / 1000, 0.916, 0.917);
   await shift(3); await wait(300);
   check('End of day 1: Gas line on the end-of-day screen', /Gas/.test(await texts('DayEnd')) && /-\$20\.00/.test(await texts('DayEnd')), true);
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v1')));
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')));
   check("The save keeps the tank and the run's gas", Math.abs(saved.fuel - tank) < 1e-9 && saved.totals.gasCents === 2000, true);
   await press('Enter'); await wait(300);
   check('Day 2 starts with what was left in the tank', Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
@@ -233,11 +234,11 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
   // A save from before fuel: a quarter tank.
-  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); d.day = 2; localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); d.day = 2; localStorage.setItem('icemachine.story.v2', JSON.stringify(d)); });
   // ...and from before SCREAM-129: three slots, any flavours (cookies in the third).
-  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v1')); delete d.fuel; delete d.totals.gasCents;
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); delete d.fuel; delete d.totals.gasCents;
     d.slots = [{ flavour: 'eclair', quantity: 3, priceCents: 225 }, { flavour: 'spongepop', quantity: 0, priceCents: 250 }, { flavour: 'cookie', quantity: 2, priceCents: 325 }];
-    localStorage.setItem('icemachine.story.v1', JSON.stringify(d)); });
+    localStorage.setItem('icemachine.story.v2', JSON.stringify(d)); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(400);

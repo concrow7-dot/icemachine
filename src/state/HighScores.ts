@@ -30,7 +30,8 @@ const STORAGE_KEY = 'icemachine.highscores.v1';
 export type ScoreTable = 'quick' | 'story' | 'tutorial';
 const KEYS: Record<ScoreTable, string> = {
   quick: STORAGE_KEY,
-  story: 'icemachine.highscores.story.v1',
+  // SCREAM-205 (engineering's call): a fresh Story table for 5-day runs on the tutorial map.
+  story: 'icemachine.highscores.story.v2',
   tutorial: 'icemachine.highscores.tutorial.v1',
 };
 
