@@ -2,6 +2,56 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 056 — One skip key in the uncle's evening: X (2026-11-09)
+
+**Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9; changed from S to X the same day while testing, SCREAM-226):** X skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "X: Skip". The truck screen and the small box on the road said "S: Skip The Uncle"; now "X: Skip The Uncle". S no longer skips anything.
+
+**Options considered:** S everywhere (engineering's proposal, first built); Enter everywhere; X everywhere (chosen by the PO while testing).
+
+**Why (product owner's rationale, November 9):** *placeholder, to ask the PO: why one key, and why X rather than S.*
+
+**Engineering's calls (proposals):** on the credits, X skips the credits only (then the uncle, who can be skipped with X again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held X (the keyboard repeating it) counts once, so holding X on the credits doesn't skip the uncle too.
+
+## 055 — The gas gauge sits at the top right, left of the money (2026-11-09)
+
+**Decision (Jira SCREAM-219, under SCREAM-7, PO, November 9):** the gas gauge moves from the middle of the top bar to the top right, just left of the money ("Cash $..."), while driving and at the pump.
+
+**Options considered:** left of the money (chosen); right of the money (the gauge in the far corner).
+
+**Why (product owner's rationale, November 9):** *placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** the gauge follows the money's left edge, so it moves over as the amount gets wider; SOLD OUT and the customer's 5-second "!" now sit left of the gauge (left of the money when the gauge is hidden). The uncle's outline round the gauge ("Keep an eye on the gauge up top") follows it.
+
+## 054 — Out of gas: a tow message before the end-of-evening screen (2026-11-09)
+
+**Decision (Jira SCREAM-208, under SCREAM-7, PO, November 8):** when the tank runs dry on the road the truck stops, the gas gauge flashes and "Needed a tow home." shows; then the end-of-evening screen opens as before. Running out of gas still ends the evening (016, 025, SCREAM-119). The $30 tow charge is SCREAM-209.
+
+**Options considered:** straight to the end-of-evening screen (as before); a pause with the message first (chosen).
+
+**Why (product owner's rationale, November 8):** *placeholder, to ask the PO* (the ticket says it was easy to miss why the evening ended).
+
+**Engineering's calls (proposals):** the message shows for 2.5 seconds (`TOW_MESSAGE_SECONDS`), in the middle of the screen; the gauge's red edge flashes faster and bolder meanwhile. The clock jumps to 8:00 PM as the evening ends, as it did before (now visible during the message).
+
+## 053 — Sold out at the window: the player says "Sorry, I'm sold out." (2026-11-09)
+
+**Decision (Jira SCREAM-218, under SCREAM-154, PO, November 9):** a customer who reaches the window after the truck has sold out no longer says "Too expensive!". Instead the player speaks: the speech bubble reads "Sorry, I'm sold out." and looks like it comes from the player. Sold out is checked before any price, and isn't an overcharge (no second chance used, 026).
+
+**Options considered:** the customer says "Aw, you're sold out!" (the ticket's example); the customer says "Sold out? Next time!" (engineering's alternative); the player says "Sorry, I'm sold out." (chosen, the PO's own wording).
+
+**Why (product owner's rationale, November 9):** *placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** "from the player" is drawn as the same bubble named "You" in the truck's blue (instead of the customer's name in pink), with its tail pointing down toward the player inside the truck instead of across to the customer. The customer then goes home as after any sale that didn't happen. SCREAM-155 (customers still coming after a sell-out) is unchanged.
+
+## 052 — The HUD's debug hint shows only with ?debug (2026-11-09)
+
+**Decision (Jira SCREAM-220, under SCREAM-202, PO, November 9):** players no longer see the purple "DEBUG Shift+3: End Evening" at the top of the HUD. It shows only when the address ends in `?debug` (e.g. https://concrow7-dot.github.io/icemachine/?debug).
+
+**Options considered:** show it only with `?debug` (chosen; engineering's proposal); remove it completely.
+
+**Why (product owner's rationale, November 9):** players shouldn't see it (from the ticket); *why keep it behind ?debug: placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** the Shift debug keys (Shift+1 to Shift+6) still work without `?debug`; gating them too is a separate job (Current state's loose ends).
+
 ## 051 — Two new design pillars: deep economics (RollerCoaster Tycoon) and learn the loop (Westworld) (2026-11-09)
 
 **Decision (PO, November 9):** the game gets two more design pillars, each with the work it takes after, the way the first four name theirs (Crash Team Racing, Overcooked, Backyard Baseball). They are written into the pitch (doc 04) and the project brief.
