@@ -1,6 +1,6 @@
 import { currentMap } from '../config/maps';
 import * as Phaser from 'phaser';
-import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE } from '../config/tuning';
+import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
 import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -35,6 +35,11 @@ export class HudScene extends Phaser.Scene {
   private moneyText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
   private patienceWarning!: Phaser.GameObjects.Container;
+  /** SCREAM-208: true from running out of gas until the end-of-evening screen; the message shown meanwhile. */
+  towing = false;
+  /** True on the frames the gauge's edge is red (it flashes when the tank is empty); a test hook. */
+  gaugeRed = false;
+  towText?: Phaser.GameObjects.Text;
   /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
   private fuelGauge!: Phaser.GameObjects.Container;
   private dialFace!: Phaser.GameObjects.Graphics;
@@ -109,6 +114,12 @@ export class HudScene extends Phaser.Scene {
       if (popup) this.showMoneyChange(change, label);
     };
     const onEnded = () => {
+      // SCREAM-208 (PO, November 8): out of gas on the road, the truck stops, the gauge flashes and
+      // "Needed a tow home." shows for a moment first, so it's clear why the evening ended.
+      if (this.evening.endedOutOfGas && this.scene.isActive(SceneKeys.Drive) && !this.towing) {
+        this.towHome(onEnded);
+        return;
+      }
       // SCREAM-169: a whole evening with the uncle counts as done; next time he can be skipped.
       if (this.evening.tutorial) markTutorialDone();
       // SCREAM-201: anonymous counts of evenings played and tutorials finished.
@@ -309,13 +320,15 @@ export class HudScene extends Phaser.Scene {
     this.fuelNeedle = this.wobble.update(fuel, this.time.now, delta);
     const { radius, from, to } = FUEL_DIAL;
     const rad = Phaser.Math.DegToRad;
-    const flash = fuel <= 0 && Math.floor(this.time.now / 300) % 2 === 0;
+    // SCREAM-208: faster and bolder while the tow message shows.
+    const flash = fuel <= 0 && Math.floor(this.time.now / (this.towing ? 200 : 300)) % 2 === 0;
+    this.gaugeRed = flash;
     this.emptyLabel.setColor(fuel <= FUEL_LOW ? DIAL_LOW_CSS : DIAL_INK_CSS);
     const angle = rad(from + (to - from) * this.fuelNeedle);
     const tipX = Math.cos(angle) * (radius - 6);
     const tipY = Math.sin(angle) * (radius - 6);
     const g = this.needle.clear();
-    g.lineStyle(2, flash ? 0xff5252 : DIAL_EDGE, 1).beginPath().arc(0, 0, radius, rad(from), rad(to), false);
+    g.lineStyle(flash && this.towing ? 4 : 2, flash ? 0xff5252 : DIAL_EDGE, 1).beginPath().arc(0, 0, radius, rad(from), rad(to), false);
     g.lineTo(0, 0).closePath().strokePath();
     g.lineStyle(5, DIAL_EDGE, 1).lineBetween(0, 0, tipX, tipY);
     g.lineStyle(3, DIAL_INK, 1).lineBetween(0, 0, tipX, tipY);
@@ -331,6 +344,23 @@ export class HudScene extends Phaser.Scene {
     this.soldOutText
       .setVisible(this.evening.isSoldOut)
       .setX(this.moneyText.x - this.moneyText.width - 20);
+  }
+
+  /** SCREAM-208: stops the truck, shows "Needed a tow home." (the gauge flashes meanwhile), then `then`. */
+  private towHome(then: () => void): void {
+    this.towing = true;
+    (this.scene.get(SceneKeys.Drive) as unknown as { stopForTow?: () => void }).stopForTow?.();
+    const { width, height } = this.scale;
+    this.towText = this.add
+      .text(width / 2, height / 2, 'Needed a tow home.', {
+        fontFamily: 'monospace',
+        fontSize: '30px',
+        color: '#ffffff',
+        backgroundColor: '#14161c',
+        padding: { x: 18, y: 10 },
+      })
+      .setOrigin(0.5);
+    this.time.delayedCall(TOW_MESSAGE_SECONDS * 1000, then);
   }
 
   /** Shows "+$4.50 Sale" or "-$2.00 Damage" under the total, then fades it out. */

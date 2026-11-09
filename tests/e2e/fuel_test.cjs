@@ -193,6 +193,13 @@ const { chromium } = require('playwright');
   // SCREAM-119 (PO): driving the tank dry ends the evening, on the OUT OF GAS results screen.
   await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); return true; })()`);
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  // SCREAM-208: first the truck stops, the gauge flashes and "Needed a tow home." shows.
+  check('Out of gas: the truck stops and "Needed a tow home." shows (SCREAM-208)', (await scenes()) + ' ' + (await sc('Drive', 's.speed')) + ' ' + (await sc('Hud', 's.towing && s.towText.visible && s.towText.text')), 'Drive,Hud 0 Needed a tow home.');
+  const flashes = new Set();
+  for (let i = 0; i < 8; i++) { flashes.add(await sc('Hud', 's.gaugeRed')); await wait(60); }
+  check('...the gas gauge flashes (red on and off)', [...flashes].sort().join(','), 'false,true');
+  await page.screenshot({ path: outDir + '/fuel_tow.png' });
+  await until(async () => (await scenes()) === 'Results');
   check('Driving the tank dry ends the evening (SCREAM-119)', (await ev('e.isOver + " " + e.endedOutOfGas')) + ' ' + (await scenes()), 'true true Results');
   const results = await texts('Results');
   check('...the results say OUT OF GAS', /OUT OF GAS/.test(results), true);
@@ -228,7 +235,11 @@ const { chromium } = require('playwright');
   // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
+  // SCREAM-208: the tank only runs dry on the road, so drive off first.
+  if ((await scenes()).startsWith('Truck')) { await press('ArrowRight'); await press('Enter'); await wait(400); }
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  check('Story: out of gas shows "Needed a tow home." first too', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text')), 'Drive,Hud Needed a tow home.');
+  await until(async () => (await scenes()).startsWith('DayEnd'));
   const dayEnd = await texts('DayEnd');
   check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
   await press('Enter'); await wait(300);
