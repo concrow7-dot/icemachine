@@ -291,6 +291,7 @@ const { chromium } = require('playwright');
   await page.mouse.click(cx, cy); await wait(300);
   check('Quick play: $50, no Story run', (await ev('e.moneyCents')) + ' ' + (await story('r')), '5000 null');
   check('Quick play: HUD shows no day', /Day/.test(await hudClock()), false);
+  check('Quick play: no hints (PO: Story only)', await ev('e.hintFor.size'), 0);
   await shift(3); await wait(300);
   check('Quick play ends on the results screen', await scenes(), 'Results');
 

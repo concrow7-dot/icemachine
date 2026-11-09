@@ -217,8 +217,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.truckPosition = { x: map.data.homeStart.x, y: map.data.homeStart.y, angle: map.data.homeStart.angle };
     this.residents = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), carry?.story);
     this.residents.walls = wallsOf(map.data);
-    // PO, November 8: the same reason for a regular all through a Story run (Quick Play: one evening).
-    this.hintFor = assignHints(map.residents, HINT_LINES, carry?.story?.seed ?? Math.floor(Math.random() * 2 ** 31));
+    // PO, November 8: the same reason for a regular all through a Story run, and Story only (Quick Play
+    // is one evening: not enough time for the neighbourhood's story).
+    this.hintFor = carry?.story ? assignHints(map.residents, HINT_LINES, carry.story.seed) : new Map();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
     // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
