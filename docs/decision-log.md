@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** keep sheet 15's file and copy Elm Park's tabs into it (chosen) or start a new file; leave the gaps in the numbering or renumber (chosen).
 
-**Why (product owner's rationale, November 9):** "The decision log is getting large so I wanted to separate that out for easier finding." (Product Management Decisions had grown long; the customer sheets are used often and are easier to find on their own.)
+**Why (product owner's rationale, November 9):** "The decision log is getting large so I wanted to separate that out for easier finding."
 
 **Engineering's calls (proposals):** the old Elm Park file is locked, renamed "OLD - Tutorial Residents (now the Elm Park tab of Residents)" and kept in Customers until the PO deletes it. Old doc numbers in tickets, devlogs and code comments are not rewritten; the brief lists the mapping. One combined "How to use" tab.
 
