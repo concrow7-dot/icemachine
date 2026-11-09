@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 047 — Customers get parody names of famous people and characters (2026-11-08)
+
+**Decision (Jira SCREAM-210, under SCREAM-11, PO, November 8):** every customer in sheet 15 (Residents) and sheet 23 (Tutorial Residents) gets a play-on-words name of a celebrity, TV or film character, world leader, athlete or video game character (e.g. "Taylor Shift", "Lebron Jams", "Mary Poppsicles"), except the 25 names the PO had already set himself and Chloe Hogan (the uncle's regular, 041), which stay. 145 new names in sheet 15, 29 in sheet 23. The four real names the PO set (Helen Keller, Barack Obama, Drake Maye, Michael Jordan) stay for now; open question below.
+
+**Options considered:** the real names; parody names (engineering's proposal, since the game is public and the project rule is "never copy licensed characters"). The PO chose parody names.
+
+**Why (product owner's rationale, November 8):** done now because he wants to start adding customer hints about other customers (SCREAM-103), so the names need to be settled first. *Why famous names at all: placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** each new name keeps the person's age (kid or adult) and roughly matches the old first name's gender, so it fits the existing look; a lot of the puns are dessert or ice cream themed; a few nods to Boston sport (Tom Brrrady, Larry Birdseed, Pedro Martinice, Big Poppsicle). Only the Name column changed; nothing else in either sheet.
+
+**Open:** keep the four real names, or give them parody names too?
+
 ## 046 — Story is 5 days, starts with $50, and the bike costs $600 (2026-11-08)
 
 **Decision (Jira SCREAM-85, PO, November 8):** a Story run is 5 evenings, a full week (was 3; the first idea was 7). It starts with the uncle's $50 (was $100), and the bike now costs $600 (was $200). Built together with 045.
