@@ -383,6 +383,7 @@ export const HINT_MAX_PER_EVENING = 2;
 export const RING_LAPS = 3;
 /**
  * PO (November 9): the hint comes from a regular on their second visit: the second regular in
- * the Story run to be served a second time. The line is engineering's draft, for the PO to rewrite.
+ * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
+ * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
  */
 export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
