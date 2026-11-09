@@ -228,6 +228,19 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   await ev('(e.coolerSlots.forEach((s, i) => s.priceCents = [200, 250, 250, 300][i]), true)');
 
+  // ---- SCREAM-218: sold out (even at prices over $4.00) is its own line, said by the player ----
+  await ev('(e.coolerSlots.forEach(s => s.priceCents = 450), window.__keep = e.coolerSlots.map(s => s.quantity), e.coolerSlots.forEach(s => s.quantity = 0), true)');
+  await serveNow();
+  check('Sold out: the player says "Sorry, I\'m sold out." (not "Too expensive!")', (await ev('e.sale.outcome.kind')) + ' ' + (await sc('Sales', 's.bubbleText.text')), "sold-out Sorry, I'm sold out.");
+  check('...the bubble is named "You", in blue, its tail pointing down', (await ev('e.sale.speaker')) + ' ' + (await sc('Sales', 's.speakerText.text')) + ' ' + (await sc('Sales', 's.speakerText.style.color')), 'player You #1d5c8c');
+  check('...no price check, nothing charged, back on the road next', (await ev('e.sale.repriceUsed')) + ' ' + (await sc('Sales', 's.hint.text')), 'false Enter: Back On The Road');
+  await page.screenshot({ path: outDir + '/sale_sold_out.png' });
+  await press('Enter'); await wait(300);
+  await ev('(window.__keep.forEach((q, i) => e.coolerSlots[i].quantity = q), e.coolerSlots.forEach((s, i) => s.priceCents = [200, 250, 250, 300][i]), true)');
+  await serveNow();
+  check('...the next customer with stock is named again, in pink', (await ev('e.sale.speaker')) + ' ' + (await sc('Sales', 's.speakerText.style.color')), 'customer #c2185b');
+  await press('b'); await wait(300);
+
   // ---- SCREAM-137: an order shown in pictures ----
   await ev('(e.orderPictureChance = 1, true)');
   await serveNow();
