@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 051 — Two new design pillars: deep economics (RollerCoaster Tycoon) and learn the loop (Westworld) (2026-11-09)
+
+**Decision (PO, November 9):** the game gets two more design pillars, each with the work it takes after, the way the first four name theirs (Crash Team Racing, Overcooked, Backyard Baseball). They are written into the pitch (doc 04) and the project brief.
+
+- **Deep economics.** Money decisions have real depth: what to stock, what to charge, where to drive, what to spend on. Like RollerCoaster Tycoon.
+- **Learn the loop.** Each evening the neighbourhood resets: the same people, the same routines, the same secrets. The map is a puzzle you solve over many evenings, and customers' hints point the way. Like Westworld.
+
+A third inspiration, **Motherload** (XGen Studios' 2004 Flash mining game), was added the same night (PO, November 9); which pillar it belongs to is still to ask the PO.
+
+The pillars are now: race the sunset; chaos on the road; sharp at the window; comfortable inside; deep economics; learn the loop.
+
+**Options considered:** keep the four pillars from the pitch; add the two (chosen).
+
+**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: _to ask the PO._
+
+**Engineering's calls (proposals):** the pillar names and one-line descriptions are engineering's wording for the PO to change. Westworld here means the HBO series (it grew out of Michael Crichton's 1973 film; there is no original novel). Work already on main that serves "learn the loop": regulars with fixed routines (033, 034), customers' hints (048), the roundabout secret (050); and SCREAM-216 (Story runs as years). Engineering's guess, not decided: Motherload fits "deep economics" (earn, upgrade, go further, and watch your fuel to get back; Ice Machine already has gas and a trip home). Work that serves "deep economics": calculator prices (007), stocking the cooler (028), fuel (016), crash costs, and how players get power-ups (SCREAM-79).
+
 ## 050 — The maps join: 3 laps of a roundabout take the truck to the other neighbourhood (2026-11-09)
 
 **Decision (Jira SCREAM-145, under SCREAM-10, PO, November 8-9):** the two maps get names: **Elm Park** (the tutorial map, where home is) and **Foley Stadium** (the Worcester map). In Story, every day starts at home in Elm Park. At the west end of Highland Street there's a roundabout; drive round it three times and the truck comes out on Newton Square in Foley Stadium, at the top of that map, which is a roundabout too; three laps of Newton Square bring the truck home. The clock, cash, cooler and gas carry on as they are. The way the player finds out: a regular tells them, on the regular's second visit of the run: the second regular in the Story run to be served a second time says it after their thanks. Visits add up across the whole run (not per evening) and the run's save keeps them; the uncle's guided sale on Day 1 doesn't count, every other sale that night does. A "teleport home" power-up is a separate ticket (SCREAM-215). Quick play is unchanged: one evening in Foley Stadium.
