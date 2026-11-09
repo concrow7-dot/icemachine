@@ -631,7 +631,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.servingNow = customer;
     }
     this.setCustomerWaiting(true);
-    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance);
+    // SCREAM-218: an empty cooler (the HUD's SOLD OUT) is "sold out", not "too expensive".
+    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

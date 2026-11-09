@@ -27,6 +27,9 @@ const CALC_X = 390;
 const CALC_Y = 278;
 /** The speech bubble's top and usual height; SCREAM-103: room for the name above a hint, and padding. */
 const BUBBLE_Y = 125;
+/** SCREAM-127: the customer's name colour; SCREAM-218: "You" in the truck's blue when the player talks. */
+const CUSTOMER_NAME_CSS = '#c2185b';
+const PLAYER_NAME_CSS = '#1d5c8c';
 const BUBBLE_H = 150;
 const BUBBLE_NAME_SPACE = 36;
 const BUBBLE_PAD = 14;
@@ -60,6 +63,10 @@ export class SalesScene extends Phaser.Scene {
   /** The speech bubble, and its height now (SCREAM-103: it grows for a long hint). */
   private bubble!: Phaser.GameObjects.Graphics;
   private bubbleH = 0;
+  /** SCREAM-218: who the bubble is drawn for (its tail points at them), and the name at its top left. */
+  private bubbleSpeaker: 'customer' | 'player' = 'customer';
+  private speakerText!: Phaser.GameObjects.Text;
+  private customerName = '';
   /** SCREAM-137: the order drawn as pictures in the bubble, and what it shows (so it's only rebuilt on a change). */
   private orderPictures!: Phaser.GameObjects.Container;
   private orderPicturesKey = '';
@@ -88,6 +95,12 @@ export class SalesScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     this.typed = '';
+    // SCREAM-225 (PO, November 9): Phaser reuses this scene object for every sale, so anything
+    // remembered about what's drawn must be forgotten here, or the new bubble (and picture
+    // order) is never drawn when it's the same size (or the same order) as last time.
+    this.bubbleH = 0;
+    this.bubbleSpeaker = 'customer';
+    this.orderPicturesKey = '';
     const { width, height } = this.scale;
 
     // The truck wall and the serving window (SCREAM-125: the truck drawing's style).
@@ -124,14 +137,13 @@ export class SalesScene extends Phaser.Scene {
     this.sizeBubble(BUBBLE_H);
     // SCREAM-127 (PO, November 2): the customer's name sits in the speech bubble, top left, like
     // the speaker's name in a Pokémon text box (it used to be a name tag under the customer).
-    if (customer) {
-      this.add.text(118, 141, customer.resident.name, {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        fontStyle: 'bold',
-        color: '#c2185b',
-      });
-    }
+    this.customerName = customer?.resident.name ?? '';
+    this.speakerText = this.add.text(118, 141, this.customerName, {
+      fontFamily: 'monospace',
+      fontSize: '18px',
+      fontStyle: 'bold',
+      color: CUSTOMER_NAME_CSS,
+    });
     this.bubbleText = this.add
       .text(330, 212, '', {
         fontFamily: 'monospace',
@@ -352,6 +364,7 @@ export class SalesScene extends Phaser.Scene {
    * pictures ("2 ×" and the ice cream), at random. Any words before the order go above the pictures.
    */
   private showLine(sale: NonNullable<EveningState['sale']>): void {
+    this.showSpeaker(sale.speaker);
     const pictures = sale.pictureLine;
     if (!pictures) {
       this.bubbleText.setText(sale.line);
@@ -367,13 +380,28 @@ export class SalesScene extends Phaser.Scene {
     this.setOrderPictures(key, pictures.order, pictures.prefix ? 236 : 212);
   }
 
+  /**
+   * SCREAM-218 (PO, November 9): when the truck is sold out, the player talks ("Sorry, I'm
+   * sold out."): the bubble is named "You" in the truck's blue, and its tail points down
+   * toward the player, inside the truck, instead of across to the customer.
+   */
+  private showSpeaker(speaker: 'customer' | 'player'): void {
+    if (speaker === this.bubbleSpeaker) return;
+    this.bubbleSpeaker = speaker;
+    const player = speaker === 'player';
+    this.speakerText.setText(player ? 'You' : this.customerName).setColor(player ? PLAYER_NAME_CSS : CUSTOMER_NAME_CSS);
+    const h = this.bubbleH;
+    this.bubbleH = 0;
+    this.sizeBubble(h);
+  }
+
   /** Draws the speech bubble at this height (its top and tail stay put). */
   private sizeBubble(h: number): void {
     if (h === this.bubbleH) return;
     this.bubbleH = h;
     drawBubble(this.bubble.clear(), {
       x: 90, y: BUBBLE_Y, w: 480, h, unit: 4, innerLine: true,
-      tail: { side: 'right', at: 96, steps: 7, reach: 3 },
+      tail: this.bubbleSpeaker === 'player' ? { side: 'down', at: 216, steps: 7, reach: 2 } : { side: 'right', at: 96, steps: 7, reach: 3 },
     });
   }
 

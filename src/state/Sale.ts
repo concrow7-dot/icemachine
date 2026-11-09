@@ -33,6 +33,7 @@ export type SaleOutcome =
   | { kind: 'wrong-order' } // wrong items with no retry left: they leave with them for free
   | { kind: 'timed-out' } // waited the full minute: "Sorry, I have to go"
   | { kind: 'too-expensive' } // every flavour over $4.00: no order
+  | { kind: 'sold-out' } // SCREAM-218: nothing left in the cooler; the player says sorry
   | { kind: 'drove-off' }; // the player left without serving: a lost sale
 
 /** Picks an order size from 1 to 6 using the PO's weights. `roll` is a random number from 0 to 1. */
@@ -110,6 +111,11 @@ export class Sale {
   /** The customer's current line in the speech bubble. */
   line = '';
   /**
+   * SCREAM-218 (PO, November 9): who is talking in the speech bubble. Usually the customer;
+   * when the truck is sold out, the player says "Sorry, I'm sold out."
+   */
+  speaker: 'customer' | 'player' = 'customer';
+  /**
    * SCREAM-137 (PO, November 2): true if this customer shows the ice creams' pictures instead
    * of saying their names (decided at random when the sale starts). Repeats (R) and "I wanted..."
    * after a mistake follow the same choice.
@@ -124,13 +130,17 @@ export class Sale {
 
   readonly order: OrderLine[];
 
-  constructor(order: OrderLine[], slotCount: number, nowMs: number, pictures = false) {
+  constructor(order: OrderLine[], slotCount: number, nowMs: number, pictures = false, soldOut = false) {
     this.order = order;
     this.pictures = pictures;
     this.bag = Array.from({ length: slotCount }, () => 0);
     this.startedMs = nowMs;
     this.showUntilMs = nowMs + ORDER_SHOW_SECONDS * 1000;
-    if (order.length === 0) {
+    if (soldOut) {
+      // SCREAM-218: sold out is checked before any price, and isn't an overcharge (no second chance used, 026).
+      this.speaker = 'player';
+      this.finish({ kind: 'sold-out' }, "Sorry, I'm sold out.");
+    } else if (order.length === 0) {
       this.finish({ kind: 'too-expensive' }, 'Too expensive!');
     } else {
       this.line = describeOrder(order);
