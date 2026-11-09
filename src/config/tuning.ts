@@ -317,6 +317,12 @@ export const FUEL_STORY_START = 0.25;
  */
 export const FUEL_STORY_MIN_START = 1 / 6;
 
+/**
+ * SCREAM-208 (PO, November 8): when the tank runs dry the truck stops, the gas gauge flashes and
+ * "Needed a tow home." shows for this long before the end-of-evening screen. Engineering's call: 2.5 s.
+ */
+export const TOW_MESSAGE_SECONDS = 2.5;
+
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;
 /** SCREAM-171: the guided tutorial starts low on gas (the uncle: "Let's go get some gas"). */

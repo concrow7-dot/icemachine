@@ -27,7 +27,7 @@ export class UncleBox {
   readonly container: Phaser.GameObjects.Container;
   private readonly text: Phaser.GameObjects.Text;
   private readonly more: Phaser.GameObjects.Text;
-  /** SCREAM-200: "S: Skip The Uncle", bottom left, while he can still be skipped. */
+  /** SCREAM-200: "X: Skip The Uncle", bottom left, while he can still be skipped. */
   private readonly skipHint: Phaser.GameObjects.Text;
   /** SCREAM-180: the bubble itself, scaled from its middle when a new line pops in. */
   private readonly bubble: Phaser.GameObjects.Container;
@@ -70,7 +70,7 @@ export class UncleBox {
     scene.tweens.add({ targets: this.more, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
     // SCREAM-200 (PO, November 7): a visible way past him, from his first line on.
     this.skipHint = scene.add
-      .text(BOX.x + BOX.w - 34, BOX.y + 9, 'S: Skip The Uncle', { fontFamily: 'monospace', fontSize: '11px', color: '#7a6a5a' })
+      .text(BOX.x + BOX.w - 34, BOX.y + 9, 'X: Skip The Uncle', { fontFamily: 'monospace', fontSize: '11px', color: '#7a6a5a' })
       .setOrigin(1, 0)
       .setName('uncle-skip')
       .setInteractive({ useHandCursor: true });

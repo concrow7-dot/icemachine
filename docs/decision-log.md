@@ -22,15 +22,15 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Engineering's calls (proposals):** the occasional customers' days were picked at random but kept even, so each weekday has about the same number, with a different mix; they are ticked on weekdays only, since Story is Monday to Friday. A customer ticked on all seven days counts as a regular (reliable at the window, 034). Hints (048) point only at customers home that day. The weekday shows on the hub and by the day number in the HUD. Not built yet (SCREAM-221).
 
-## 056 — One skip key in the uncle's evening: S (2026-11-09)
+## 056 — One skip key in the uncle's evening: X (2026-11-09)
 
-**Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9):** S skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "S: Skip". The truck screen and the small box on the road already said "S: Skip The Uncle".
+**Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9; changed from S to X the same day while testing, SCREAM-226):** X skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "X: Skip". The truck screen and the small box on the road said "S: Skip The Uncle"; now "X: Skip The Uncle". S no longer skips anything.
 
-**Options considered:** S everywhere (chosen; engineering's proposal); Enter everywhere.
+**Options considered:** S everywhere (engineering's proposal, first built); Enter everywhere; X everywhere (chosen by the PO while testing).
 
-**Why (product owner's rationale, November 9):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 9):** *placeholder, to ask the PO: why one key, and why X rather than S.*
 
-**Engineering's calls (proposals):** on the credits, S skips the credits only (then the uncle, who can be skipped with S again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held S (the keyboard repeating it) counts once, so holding S on the credits doesn't skip the uncle too.
+**Engineering's calls (proposals):** on the credits, X skips the credits only (then the uncle, who can be skipped with X again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held X (the keyboard repeating it) counts once, so holding X on the credits doesn't skip the uncle too.
 
 ## 055 — The gas gauge sits at the top right, left of the money (2026-11-09)
 
@@ -85,7 +85,7 @@ The pillars are now: race the sunset; chaos on the road; sharp at the window; co
 
 **Options considered:** keep the four pillars from the pitch; add the two (chosen).
 
-**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: it's a solid 2D game with an upgrade system and an economy this game can take inspiration from.
+**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: it's a solid 2D game with an upgrade system and an economy this game can take inspiration from. It took him a few attempts to complete (PO, November 9). (Engineering's note: the same idea as 050's reason, that a player may not win Story the first time; see SCREAM-216.)
 
 **Engineering's calls (proposals):** the pillar names and one-line descriptions are engineering's wording for the PO to change. Westworld here means the HBO series (it grew out of Michael Crichton's 1973 film; there is no original novel). Work already on main that serves "learn the loop": regulars with fixed routines (033, 034), customers' hints (048), the roundabout secret (050); and SCREAM-216 (Story runs as years). Work that serves "deep economics": calculator prices (007), stocking the cooler (028), fuel (016), crash costs, and how players get power-ups (SCREAM-79).
 

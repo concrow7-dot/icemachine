@@ -77,9 +77,8 @@ const { chromium } = require('playwright');
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
   check('HUD shows the day beside the clock', /Day 1\/5/.test(await hudClock()), true);
   check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
-  // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
-  check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: End Evening');
-  check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
+  // SCREAM-220: players see no debug hint (it shows only with ?debug; checked at the end).
+  check('No debug hint on the HUD for players (SCREAM-220)', await sc('Hud', 's.debugText === undefined'), true);
   // ---- SCREAM-103: hints about big regulars after tipped sales (the rules, on a stand-in sale) ----
   const hint = (paid, chance = 1) => page.evaluate(async ([paid, chance]) => {
     const e = window.__game.registry.get('evening');
@@ -369,6 +368,14 @@ const { chromium } = require('playwright');
   check('Quick play: no hints (PO: Story only)', await ev('e.hintFor.size'), 0);
   await shift(3); await wait(300);
   check('Quick play ends on the results screen', await scenes(), 'Results');
+
+  // ---- SCREAM-220: with ?debug in the address, the debug hint is back (SCREAM-88: only Shift+3, right of the clock) ----
+  await page.goto(`http://127.0.0.1:${port}/index.html?debug`);
+  await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
+  const [dx, dy] = await optionAt('Quick Play');
+  await page.mouse.click(dx, dy); await wait(400);
+  check('?debug: the debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText && s.debugText.text'), 'DEBUG Shift+3: End Evening');
+  check('...and starts right of the clock', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();

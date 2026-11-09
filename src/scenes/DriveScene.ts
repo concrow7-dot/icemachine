@@ -450,6 +450,12 @@ export class DriveScene extends Phaser.Scene {
 
   }
 
+  /** SCREAM-208: out of gas: the truck stops where it is while the HUD says it needed a tow. */
+  stopForTow(): void {
+    this.speed = 0;
+    this.leaving = true;
+  }
+
   update(time: number, deltaMs: number): void {
     this.refreshVisibleMap();
     if (this.leaving) return;

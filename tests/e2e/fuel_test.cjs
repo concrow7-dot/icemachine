@@ -47,6 +47,16 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
   check('On the road: the gauge shows in the top bar', await sc('Hud', 's.fuelGauge.visible'), true);
+  // SCREAM-219 (PO, November 9): top right, just left of the money, clear of it.
+  const gaugeAt = () => sc('Hud', '(() => { const g = s.fuelGauge, m = s.moneyText; const right = g.x + 46, moneyLeft = m.x - m.width; return right < moneyLeft && moneyLeft - right <= 20 && g.x > s.scale.width / 2; })()');
+  check('The gauge sits at the top right, just left of the money (SCREAM-219)', await gaugeAt(), true);
+  await ev('(e.changeMoney(123400, "test", false), true)'); await wait(150);
+  check('...and moves over when the cash gets wider ($1,000s)', await gaugeAt(), true);
+  await ev('(e.changeMoney(-123400, "test", false), true)'); await wait(150);
+  await ev('(window.__q = e.coolerSlots.map(s => s.quantity), e.coolerSlots.forEach(s => s.quantity = 0), e.emit("cooler-changed"), true)'); await wait(150);
+  check('...SOLD OUT sits left of the gauge, not on it', await sc('Hud', 's.soldOutText.visible && s.soldOutText.x < s.fuelGauge.x - 46'), true);
+  await page.screenshot({ path: outDir + '/fuel_gauge_sold_out.png' });
+  await ev('(window.__q.forEach((q, i) => e.coolerSlots[i].quantity = q), e.emit("cooler-changed"), true)'); await wait(150);
   await page.screenshot({ path: outDir + '/fuel_hud.png' });
 
   // ---- SCREAM-121: the old-school dial; steady above a quarter tank, jumping around below ----
@@ -193,6 +203,13 @@ const { chromium } = require('playwright');
   // SCREAM-119 (PO): driving the tank dry ends the evening, on the OUT OF GAS results screen.
   await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); return true; })()`);
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  // SCREAM-208: first the truck stops, the gauge flashes and "Needed a tow home." shows.
+  check('Out of gas: the truck stops and "Needed a tow home." shows (SCREAM-208)', (await scenes()) + ' ' + (await sc('Drive', 's.speed')) + ' ' + (await sc('Hud', 's.towing && s.towText.visible && s.towText.text')), 'Drive,Hud 0 Needed a tow home.');
+  const flashes = new Set();
+  for (let i = 0; i < 8; i++) { flashes.add(await sc('Hud', 's.gaugeRed')); await wait(60); }
+  check('...the gas gauge flashes (red on and off)', [...flashes].sort().join(','), 'false,true');
+  await page.screenshot({ path: outDir + '/fuel_tow.png' });
+  await until(async () => (await scenes()) === 'Results');
   check('Driving the tank dry ends the evening (SCREAM-119)', (await ev('e.isOver + " " + e.endedOutOfGas')) + ' ' + (await scenes()), 'true true Results');
   const results = await texts('Results');
   check('...the results say OUT OF GAS', /OUT OF GAS/.test(results), true);
@@ -228,7 +245,11 @@ const { chromium } = require('playwright');
   // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
+  // SCREAM-208: the tank only runs dry on the road, so drive off first.
+  if ((await scenes()).startsWith('Truck')) { await press('ArrowRight'); await press('Enter'); await wait(400); }
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
+  check('Story: out of gas shows "Needed a tow home." first too', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text')), 'Drive,Hud Needed a tow home.');
+  await until(async () => (await scenes()).startsWith('DayEnd'));
   const dayEnd = await texts('DayEnd');
   check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
   await press('Enter'); await wait(300);

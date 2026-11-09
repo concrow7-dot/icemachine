@@ -15,7 +15,8 @@ const CREDITS_TUNE_VOLUME = 0.7;
  * a famous space film's opening: one still line in blue, then the story scrolling away from
  * the player in yellow. SCREAM-178 (PO, November 5): behind it, a zoomed-out view of the tutorial map
  * (not space), drifting slowly, under a dark layer so the text reads clearly. Original text only (the PO's); no logo or music
- * from the film. Enter, Space or a click skips it. Then the uncle, in the truck.
+ * from the film. X or a click skips it (SCREAM-217: X is the tutorial's one skip key; it used to be
+ * Enter or Space, then S). Then the uncle, in the truck.
  */
 const STILL_LINE = 'In an ice cream truck, not that far away...';
 /** The PO's words (spelling tidied). */
@@ -113,10 +114,11 @@ export class TutorialCrawlScene extends Phaser.Scene {
     );
 
     this.add
-      .text(width - 12, height - 10, 'Enter: Skip', { fontFamily: 'monospace', fontSize: '13px', color: '#c0c8d6' })
+      .text(width - 12, height - 10, 'X: Skip', { fontFamily: 'monospace', fontSize: '13px', color: '#c0c8d6' })
       .setOrigin(1, 1);
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter' || event.key === ' ') this.finish();
+      // SCREAM-217 (PO, November 9): X skips, as everywhere in the uncle's evening; a held X doesn't repeat into his part.
+      if ((event.key === 'x' || event.key === 'X') && !event.shiftKey && !event.repeat) this.finish();
     });
     this.input.on('pointerdown', () => this.finish());
 
