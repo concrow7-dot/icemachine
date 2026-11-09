@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 048 — Customers sometimes hint at a big regular after a tipped sale (2026-11-08)
+
+**Decision (Jira SCREAM-103, PO, November 8):** the first part of customer dialog is hints. A customer says something only after a sale where the player earned a tip: the sale ends, they say thanks, then pass on a hint about one of the neighbourhood's big regulars ("Here's a hint: Big Kev on Institute Road buys a ton of ice cream."). Hints are rare: about 1, maybe 2 a night, when the player is getting a good number of customers. The regulars hinted at are ones who buy a lot and often, 3 to 4 of them on the tutorial map. A hint is just words: no map marker, and the regular is no more likely to come out; the player has to remember and go find them. The lines live in a new "Hint" column in the residents sheet (23 first); engineering drafted the first four and the PO rewrites them. Parties (the rest of SCREAM-103) are a later step.
+
+**Options considered:** a "Talk" button at the window that costs time; a line during every sale; the hint marking the map, or making the regular more likely to come out; the PO writing every line, or lines generated from each resident's traits; doing parties in the same change.
+
+**Why (product owner's rationale):** _to ask the PO._ (Related: decision 047's reason, the names were settled first so hints could name people; decision 042's reason, finding people with better orders should feel like a puzzle.)
+
+**Engineering's calls (proposals):** the numbers (in `tuning.ts`): no hint before the 3rd paid sale of the evening, at least 4 paid sales between hints, at most 2 a night, and a 35% chance on each tipped sale once those allow one. Never about the customer at the window, someone already hinted at tonight, someone already served tonight, or someone who doesn't buy tonight. No hints during the uncle's evening (his lines only). The four regulars picked: Big Kev, Julia Crowley, Shamooz and Erin Broccolich (the highest Likelihood; Big Kev's order of 7). Hint lines are capped at 80 characters and shown a size smaller in the bubble. Worcester's sheet (15) has no Hint column yet, so Quick Play has no hints.
+
 ## 047 — Customers get parody names of famous people and characters (2026-11-08)
 
 **Decision (Jira SCREAM-210, under SCREAM-11, PO, November 8):** every customer in sheet 15 (Residents) and sheet 23 (Tutorial Residents) gets a play-on-words name of a celebrity, TV or film character, world leader, athlete or video game character (e.g. "Taylor Shift", "Lebron Jams", "Mary Poppsicles"), except the 25 names the PO had already set himself and Chloe Hogan (the uncle's regular, 041), which stay. 145 new names in sheet 15, 29 in sheet 23. The four real names the PO set (Helen Keller, Barack Obama, Drake Maye, Michael Jordan) stay for now; open question below.

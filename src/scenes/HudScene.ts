@@ -138,8 +138,8 @@ export class HudScene extends Phaser.Scene {
   /**
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
-   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75) and Shift+4 (serve
-   * now) still work for testing, but aren't shown.
+   * of the clock and day. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
+   * tipped sale ends with a hint, SCREAM-103) and Shift+4 (serve now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
     this.debugText = this.add
@@ -173,6 +173,7 @@ export class HudScene extends Phaser.Scene {
       if (event.code === 'Digit3') this.evening.endNow();
       if (event.code === 'Digit4') this.serveNow();
       if (event.code === 'Digit5') this.previewLoading();
+      if (event.code === 'Digit6') this.evening.forceHint = true; // SCREAM-103: the next tipped sale gives a hint
     });
   }
 
