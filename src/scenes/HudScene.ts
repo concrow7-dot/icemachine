@@ -16,7 +16,9 @@ import { count } from '../state/Counter';
  * middle; the face is a fan from E (left) to F (right), angles in degrees clockwise from
  * pointing right (so 270 is straight up).
  */
-const FUEL_DIAL = { x: 585, pivotY: 46, radius: 46, from: 200, to: 340 };
+const FUEL_DIAL = { pivotY: 46, radius: 46, from: 200, to: 340 };
+/** SCREAM-219 (PO, November 9): the gauge sits at the top right, just left of the money; the gap between them, in px. */
+const FUEL_DIAL_GAP = 14;
 const DIAL_FACE = 0x4b4440;
 const DIAL_EDGE = 0x241f1c;
 const DIAL_INK = 0xf4ead2;
@@ -99,8 +101,8 @@ export class HudScene extends Phaser.Scene {
     this.uncleBox = this.evening.tutorial ? new UncleBox(this, this.evening.tutorial) : undefined;
     // SCREAM-173 (PO): "Keep an eye on the gauge up top" outlines the fuel gauge.
     if (this.evening.tutorial) {
-      const { x, pivotY, radius } = FUEL_DIAL;
-      addUnclePointer(this, this.evening.tutorial, { gauge: () => new Phaser.Geom.Rectangle(x - radius - 8, 2, radius * 2 + 16, pivotY + 4) });
+      const { pivotY, radius } = FUEL_DIAL;
+      addUnclePointer(this, this.evening.tutorial, { gauge: () => new Phaser.Geom.Rectangle(this.fuelGauge.x - radius - 8, 2, radius * 2 + 16, pivotY + 4) });
     }
 
     const onMoney = (change: number, _cash: number, label: string, popup: boolean) => {
@@ -217,8 +219,9 @@ export class HudScene extends Phaser.Scene {
     const sale = this.evening.sale;
     const warn =
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
-    this.patienceWarning.setVisible(warn).setX(this.moneyText.x - this.moneyText.width - 30);
+    this.patienceWarning.setVisible(warn).setX(this.leftOfMoneyAndGauge() - 16);
     this.drawFuel(delta);
+    this.soldOutText.setX(this.leftOfMoneyAndGauge() - 6);
   }
 
   /**
@@ -263,7 +266,7 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * SCREAM-121 (PO, November 2): an old car's gas gauge, a dark fan with E, 1/2 and F and a
-   * pale needle (the PO's reference photo), in the middle of the top bar.
+   * pale needle (the PO's reference photo). SCREAM-219: at the top right, left of the money.
    */
   private buildFuelDial(): void {
     const { radius, from, to } = FUEL_DIAL;
@@ -291,7 +294,7 @@ export class HudScene extends Phaser.Scene {
     const half = label(270, '½', 15, 'Arial, sans-serif');
     const full = label(to - 10, 'F', 16);
     this.needle = this.add.graphics();
-    this.fuelGauge = this.add.container(FUEL_DIAL.x, FUEL_DIAL.pivotY, [face, this.emptyLabel, half, full, this.needle]);
+    this.fuelGauge = this.add.container(0, FUEL_DIAL.pivotY, [face, this.emptyLabel, half, full, this.needle]);
   }
 
   /**
@@ -326,9 +329,17 @@ export class HudScene extends Phaser.Scene {
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
+    // SCREAM-219: the gauge follows the money's left edge (the amount's width changes).
+    this.fuelGauge.setX(this.moneyText.x - this.moneyText.width - FUEL_DIAL_GAP - FUEL_DIAL.radius);
     this.soldOutText
       .setVisible(this.evening.isSoldOut)
-      .setX(this.moneyText.x - this.moneyText.width - 20);
+      .setX(this.leftOfMoneyAndGauge() - 6);
+  }
+
+  /** SCREAM-219: the left edge of the top right's money and gas gauge (the gauge only while it shows). */
+  private leftOfMoneyAndGauge(): number {
+    const moneyLeft = this.moneyText.x - this.moneyText.width;
+    return this.fuelGauge.visible ? this.fuelGauge.x - FUEL_DIAL.radius - 8 : moneyLeft - 14;
   }
 
   /** Shows "+$4.50 Sale" or "-$2.00 Damage" under the total, then fades it out. */
