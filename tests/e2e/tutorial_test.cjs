@@ -185,11 +185,16 @@ const { chromium } = require('playwright');
   await wait(6000);
   check('...then the story scrolls away in yellow', await sc('TutorialCrawl', 's.lines.filter(t => t.visible).length > 2 && s.lines[0].scale < 1'), true);
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
-  await press('Enter');
+  // SCREAM-217 (PO, November 9): S is the one skip key in the uncle's evening; Enter no longer skips the credits.
+  check('The credits say S skips them (SCREAM-217)', await sc('TutorialCrawl', "s.children.list.filter(o => o.type === 'Text').some(t => t.text === 'S: Skip')"), true);
+  await press('Enter'); await wait(300);
+  check('...Enter does not skip the credits', await page.evaluate(() => window.__game.scene.isActive('TutorialCrawl')), true);
+  await page.keyboard.down('s'); await wait(900); await page.keyboard.up('s'); await wait(200);
+  check('...a held S skips the credits but not the uncle too', (await page.evaluate(() => window.__game.scene.isActive('UncleIntro'))) + ' ' + (await ev('e.tutorial.skipped')), 'true false');
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(500);
   await wait(1500);
   check('...the tune fades out once the uncle appears', await sc('UncleIntro', 's.sound.getAll("credits-tune").length'), 0);
-  check('Enter skips the rest: the uncle in the truck, on step 1', (await scenes()) + ' ' + (await ev('e.tutorial.step')), 'UncleIntro,Hud stock');
+  check('S skips the rest: the uncle in the truck, on step 1', (await scenes()) + ' ' + (await ev('e.tutorial.step')), 'UncleIntro,Hud stock');
   check('...his first line in his quote box', await sc('UncleIntro', 's.shown'), "Thanks for helping out, kiddo. I can't work with this foot.");
   check('...drawn like a customer at the window', await sc('UncleIntro', 's.children.getByName("uncle").texture.key'), 'uncle-smooth');
   check('...the small box hidden meanwhile', await uncle(), '');
@@ -375,7 +380,7 @@ const { chromium } = require('playwright');
   await page.click('canvas'); await wait(200);
   await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
-  await press('Enter');
+  await press('s'); // SCREAM-217: S skips the credits
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
   check('In the truck: the hint says S skips him', (await sc('UncleIntro', 's.hint.text')).includes('S: Skip The Uncle'), true);
   await press('s');
@@ -396,11 +401,11 @@ const { chromium } = require('playwright');
   await page.click('canvas'); await wait(200);
   await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
-  await press('Enter');
+  await press('s'); // SCREAM-217: S skips the credits
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
   await page.mouse.click(700, 200); await wait(200); await page.mouse.click(700, 200); await wait(200);
   await page.mouse.click(150, 450); await wait(600);
-  check('Back with him: the small box shows the skip hint', await page.evaluate(() => (b => b && b.skipHint.visible)(window.__game.scene.getScene('Hud').uncleBox)), true);
+  check('Back with him: the small box shows the skip hint, naming S', await page.evaluate(() => (b => b && b.skipHint.visible && b.skipHint.text)(window.__game.scene.getScene('Hud').uncleBox)), 'S: Skip The Uncle');
   await press('+'); await wait(300); await page.mouse.click(600, 80); await wait(200); await page.mouse.click(600, 80); await wait(400);
   await press('+', 3); await press('Enter'); await wait(700);
   await press('Enter'); await wait(900);
