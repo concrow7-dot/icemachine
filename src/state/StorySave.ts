@@ -23,6 +23,9 @@ export type StorySave = {
   totals: RunTotals;
   /** SCREAM-148: picks each sometimes buyer's day. Saves from before it get a new one. */
   seed?: number;
+  /** SCREAM-145: paid sales per resident so far, and whether a regular has told the roundabout's trick. */
+  visits?: Record<string, number>;
+  rotaryHintGiven?: boolean;
 };
 
 /**
@@ -66,6 +69,11 @@ export function loadStory(): StorySave | null {
         : undefined,
       fuel: typeof data.fuel === 'number' && data.fuel >= 0 && data.fuel <= 1 ? data.fuel : FUEL_STORY_START,
       seed: Number.isInteger(data.seed) ? (data.seed as number) : undefined,
+      visits:
+        typeof data.visits === 'object' && data.visits !== null
+          ? Object.fromEntries(Object.entries(data.visits as Record<string, unknown>).filter(([, v]) => Number.isInteger(v) && (v as number) > 0) as [string, number][])
+          : undefined,
+      rotaryHintGiven: data.rotaryHintGiven === true,
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),

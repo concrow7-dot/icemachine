@@ -292,6 +292,15 @@ const { chromium } = require('playwright');
   check('R: she repeats it, and his last line', (await ev('e.sale.phase')) + ' ' + (await ev('e.tutorial.holdsSale')) + ' | ' + (await uncle()), 'ordering false | Make sure to get the order and price correct.');
   await wait(1500);
   check('...her wait counts down now', await ev(`e.sale.patienceLeftSeconds(e.nowMs) < ${patience0} - 1`), true);
+  // SCREAM-145 (PO, November 9): the uncle's guided sale doesn't count as a visit to Chloe.
+  check('The uncle\'s sale would not count as a visit (SCREAM-145)', await page.evaluate(async () => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 0, tipCents: 0, tipPercent: 0 }; s.line = 'Thanks!';
+    e.countVisit(s);
+    return e.tutorial.step + ' ' + JSON.stringify(e.visits) + ' ' + e.mapsJoined;
+  }), 'sale {} false');
   await press('b'); await wait(900);
   check('Sale over (here, driven off): back on the road, he drives on to the pump', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')), 'Drive,Hud pump toPump');
   check('...saying (SCREAM-173)', await uncle(), "Keep an eye on the gauge up top. Run dry and the night's over.");

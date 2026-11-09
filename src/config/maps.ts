@@ -14,6 +14,8 @@ export type MapId = 'worcester' | 'tutorial';
 
 export interface GameMap {
   id: MapId;
+  /** SCREAM-145 (PO, November 9): the neighbourhood's name, as the player sees it. */
+  name: string;
   data: WorcesterMap;
   residents: Resident[];
   /** Texture keys and files. */
@@ -41,6 +43,7 @@ export function versioned(url: string, data: WorcesterMap): string {
 export const MAPS: Record<MapId, GameMap> = {
   worcester: {
     id: 'worcester',
+    name: 'Foley Stadium',
     data: WORCESTER,
     residents: RESIDENTS,
     atlasKey: 'map-atlas',
@@ -56,6 +59,7 @@ export const MAPS: Record<MapId, GameMap> = {
   },
   tutorial: {
     id: 'tutorial',
+    name: 'Elm Park',
     data: TUTORIAL,
     residents: TUTORIAL_RESIDENTS,
     atlasKey: 'tut-atlas',

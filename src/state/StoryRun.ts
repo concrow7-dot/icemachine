@@ -55,6 +55,9 @@ export class StoryRun {
   fuel = FUEL_STORY_START;
   /** SCREAM-148: picks which day each sometimes buyer buys on; the same all run. */
   seed = Math.floor(Math.random() * 2 ** 31);
+  /** SCREAM-145: paid sales per resident so far this run, and whether a regular has told the roundabout's trick. */
+  visits: Record<string, number> = {};
+  rotaryHintGiven = false;
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
@@ -73,6 +76,8 @@ export class StoryRun {
       this.cells = save.cells ? [...save.cells] : null;
       this.fuel = save.fuel;
       this.totals = { ...save.totals };
+      this.visits = { ...(save.visits ?? {}) };
+      this.rotaryHintGiven = save.rotaryHintGiven ?? false;
       if (save.seed !== undefined) this.seed = save.seed;
     }
   }
@@ -80,7 +85,15 @@ export class StoryRun {
   /** A new evening built from what tonight started with. */
   newEvening(): EveningState {
     return new EveningState(
-      { cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined, story: { day: this.day, seed: this.seed } },
+      {
+        cashCents: this.cashCents,
+        slots: this.slots ?? [],
+        fuel: this.fuel,
+        cells: this.cells ?? undefined,
+        story: { day: this.day, seed: this.seed },
+        visits: this.visits,
+        rotaryHintGiven: this.rotaryHintGiven,
+      },
       STORY_MAP,
       this.withUncle && this.day === 1,
     );
@@ -98,6 +111,8 @@ export class StoryRun {
     this.cells = evening.cellsSnapshot;
     // SCREAM-119: out of gas (or nearly), the next day starts with 1/6 of a tank, enough to reach a station.
     this.fuel = Math.max(evening.fuel, FUEL_STORY_MIN_START);
+    this.visits = { ...evening.visits }; // SCREAM-145
+    this.rotaryHintGiven = evening.rotaryHintGiven;
     const b = evening.breakdown;
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,
@@ -110,7 +125,17 @@ export class StoryRun {
     if (result === 'next') {
       this.day += 1;
       // SCREAM-17: save at the end of each evening, ready for the next one.
-      saveStory({ day: this.day, cashCents: this.cashCents, slots: this.slots, cells: this.cells ?? undefined, fuel: this.fuel, totals: this.totals, seed: this.seed });
+      saveStory({
+        day: this.day,
+        cashCents: this.cashCents,
+        slots: this.slots,
+        cells: this.cells ?? undefined,
+        fuel: this.fuel,
+        totals: this.totals,
+        seed: this.seed,
+        visits: this.visits,
+        rotaryHintGiven: this.rotaryHintGiven,
+      });
     } else {
       this.outcome = result;
       clearStorySave(); // The run is over: start a new game next time.

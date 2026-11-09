@@ -4,6 +4,7 @@ import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
 import { currentMap, versioned, type GameMap } from '../config/maps';
+import { LapCounter, ringOf } from '../state/RingLaps';
 import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
@@ -35,6 +36,7 @@ import {
   DRIVE_CAMERA_ZOOM,
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
+  RING_LAPS,
 } from '../config/tuning';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
@@ -199,6 +201,12 @@ export class DriveScene extends Phaser.Scene {
   /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
   private homeBay!: Phaser.GameObjects.Rectangle;
   private homeArmed = false;
+  /** SCREAM-145: counts the truck's laps of this map's roundabout (null if it has none). */
+  private laps: LapCounter | null = null;
+  /** SCREAM-145: the lap count. PO (November 9): never shown, it would give the secret away; tests read it. */
+  lapLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-145: fading out on the way to the other map. */
+  private switchingMap = false;
   /** SCREAM-54 (Tom Cobb, round 2): an arrow toward home, shown only when sold out. */
   private homeArrow!: Phaser.GameObjects.Container;
   /** Lane lines: yellow down the middle; SCREAM-159: white between two lanes going the same way. */
@@ -307,13 +315,23 @@ export class DriveScene extends Phaser.Scene {
     this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
     // SCREAM-54 (PO, November 2): Home's driveway, a marked spot on the road outside home
     // (where each evening starts). Stopping in it like a customer pickup opens the cooler to restock.
+    // SCREAM-145: away from home (Story, in Foley Stadium) there's no driveway: home is back through the roundabout.
     const hs = this.map.homeStart;
     this.homeBay = this.add
       .rectangle(hs.x, hs.y, PICKUP_ZONE_LENGTH + 10, PICKUP_ZONE_WIDTH, 0x4fc3f7, 0.14)
       .setStrokeStyle(3, 0x4fc3f7, 0.95)
       .setAngle(hs.angle)
-      .setDepth(4);
+      .setDepth(4)
+      .setVisible(!this.evening.awayFromHome);
     this.homeArmed = this.pickupOverlap(this.homeBay) === 0;
+    const ring = ringOf(this.map.roads);
+    this.laps = ring && this.evening.mapsJoined ? new LapCounter(ring, RING_LAPS) : null;
+    this.switchingMap = false;
+    this.lapLabel = this.add
+      .text(0, 0, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff', backgroundColor: '#0d3b66', padding: { x: 6, y: 2 } })
+      .setOrigin(0.5)
+      .setDepth(12)
+      .setVisible(false);
     this.homeArrow = this.add
       .container(0, 0, [
         this.add.triangle(0, 0, -14, -10, -14, 10, 14, 0, 0x4fc3f7).setStrokeStyle(3, 0x0d3b66),
@@ -424,7 +442,8 @@ export class DriveScene extends Phaser.Scene {
       this.music.stop();
       this.music.onSong = undefined;
       this.game.events.off(Phaser.Core.Events.BLUR, this.releaseKeys, this);
-      this.evening.parkTruck({ x: this.truck.x, y: this.truck.y, angle: this.heading });
+      // SCREAM-145: not when leaving through a roundabout: the evening has already put the truck on the other map.
+      if (!this.switchingMap) this.evening.parkTruck({ x: this.truck.x, y: this.truck.y, angle: this.heading });
     });
     // SCREAM-114: keep the on-screen labels where they belong despite the camera's zoom.
     for (const o of this.children.list) if (o instanceof Phaser.GameObjects.Text && o.getData('pin')) this.pin(o);
@@ -471,8 +490,48 @@ export class DriveScene extends Phaser.Scene {
     this.checkPotholes();
     this.checkPump();
     this.checkHome();
+    this.checkLaps();
     this.checkCustomer();
     this.placeHomeArrow();
+  }
+
+  /**
+   * SCREAM-145 (PO, November 8-9): three laps of the roundabout take the truck to the other map:
+   * from Elm Park to Foley Stadium, and from Newton Square back home. Nothing shows on screen
+   * (PO: a count would give the secret away). Not while the uncle has the wheel.
+   */
+  private checkLaps(): void {
+    const laps = this.laps;
+    if (!laps || this.switchingMap || this.uncleLeg) return;
+    const done = laps.update(this.truck.x, this.truck.y);
+    // The count is kept (hidden) for the tests; the player gets no hint on screen (PO).
+    this.lapLabel.setText(laps.onRing ? `${Math.min(laps.laps, RING_LAPS)} / ${RING_LAPS} laps` : '');
+    if (!done) return;
+    this.goToOtherMap();
+  }
+
+  /** SCREAM-145: fades out, moves the evening to the other map and starts this screen again there. */
+  private goToOtherMap(): void {
+    this.switchingMap = true;
+    this.leaving = true;
+    this.speed = 0;
+    this.releaseKeys();
+    this.cameras.main.fadeOut(500, 0, 0, 0);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      if (!this.evening.switchMap()) {
+        this.switchingMap = false;
+        this.leaving = false;
+        this.cameras.main.fadeIn(300);
+        return;
+      }
+      // Restarting runs preload again, which loads the other map's pictures (useMap).
+      this.scene.restart();
+    });
+  }
+
+  /** Test hook (SCREAM-145): how many laps the truck has done of this map's roundabout. */
+  get lapsDone(): number {
+    return this.laps?.laps ?? 0;
   }
 
   /** SCREAM-171, 185, 190: the uncle's driving and his walk home live in UncleDrive. */
@@ -1164,6 +1223,7 @@ export class DriveScene extends Phaser.Scene {
   private checkHome(): void {
     // SCREAM-185: not while the uncle drives home, or as the truck screen fades in.
     if (this.uncleLeg || this.arrivingHome) return;
+    if (this.evening.awayFromHome) return; // SCREAM-145: home is on the other map
     // Cheap test first: the exact overlap is only worth working out near the driveway.
     if (Phaser.Math.Distance.Between(this.truck.x, this.truck.y, this.homeBay.x, this.homeBay.y) > 200) {
       this.homeArmed = true;
@@ -1190,7 +1250,8 @@ export class DriveScene extends Phaser.Scene {
     this.homeArrow.setVisible(show);
     if (!show) return;
     const view = this.cameras.main.worldView;
-    const bay = this.homeBay;
+    // SCREAM-145: away from home, the way home is the roundabout.
+    const bay = this.evening.awayFromHome && this.laps ? this.laps.ring : this.homeBay;
     const margin = 46 / this.cameras.main.zoom;
     const inside = Phaser.Geom.Rectangle.Contains(view, bay.x, bay.y);
     const bob = Math.sin(this.time.now / 200) * 6;

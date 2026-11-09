@@ -104,6 +104,9 @@ ROAD_HALF = 60          # two 60 px lanes, as on the old map (room for a U-turn)
 SIDEWALK = 14
 # Street corners are rounded with this radius (PO, testing PR #80: corners were too sharp).
 CORNER_RADIUS = 48
+# SCREAM-145: the radius of Newton Square's centre line (px), as Elm Park's roundabout.
+NEWTON_RING_R = 120
+NEWTON_RING_DX, NEWTON_RING_DY = 95, -70
 # The road image and the road-edge map are made at half size (one pixel = 2 x 2 map pixels).
 RASTER = 2
 ROAD_TILE = 512   # road image tiles, in half-size pixels (1024 map pixels)
@@ -341,6 +344,32 @@ def build(art):
     asphalt = rounded(ROAD_HALF, CORNER_RADIUS)
     curb_mask = rounded(ROAD_HALF + 3, CORNER_RADIUS - 3)
     sidewalk_mask = rounded(edge, CORNER_RADIUS - SIDEWALK)
+    # SCREAM-145 (PO, November 9): Newton Square becomes a real roundabout (3 laps of it takes the
+    # truck home to Elm Park in Story). Only the picture and the road edge change: houses, trees and
+    # customers are placed as before (with the masks above), and anything on the ring is taken off
+    # afterwards, so the rest of the map stays exactly as it was.
+    ring = None
+    if NEWTON_RING_R and not os.environ.get('NO_RING') and OUT_TS.endswith('worcester.ts'):
+        # Moved a little north-east of the junction (into the woods) so no house is lost, and the
+        # two streets that met there carry on into its middle.
+        rot_px = px(rot_m)
+        rc = (rot_px[0] + NEWTON_RING_DX, rot_px[1] + NEWTON_RING_DY)
+        ring = {'x': rc[0], 'y': rc[1], 'r': NEWTON_RING_R}
+        # (The streets are only changed in the output, below: moving them here would reshuffle every house.)
+        ld.line([(x / RASTER, y / RASTER) for x, y in (rot_px, rc)], fill=0, width=1)
+        ring_pts = [(rc[0] + NEWTON_RING_R * math.cos(2 * math.pi * k / 40), rc[1] + NEWTON_RING_R * math.sin(2 * math.pi * k / 40))
+                    for k in range(41)]
+        ld.line([(x / RASTER, y / RASTER) for x, y in ring_pts], fill=0, width=1)
+        to_centre = ndimage.distance_transform_edt(np.array(lines) > 0) * RASTER
+        placing_sidewalk = sidewalk_mask
+        asphalt = rounded(ROAD_HALF, CORNER_RADIUS)
+        curb_mask = rounded(ROAD_HALF + 3, CORNER_RADIUS - 3)
+        sidewalk_mask = rounded(edge, CORNER_RADIUS - SIDEWALK)
+        yy, xx = np.mgrid[0:H2, 0:W2]
+        dc = np.hypot(xx * RASTER + RASTER / 2 - rc[0], yy * RASTER + RASTER / 2 - rc[1])
+        inner = NEWTON_RING_R - ROAD_HALF
+        for mask, cut in ((asphalt, inner), (curb_mask, inner - 3), (sidewalk_mask, inner - SIDEWALK)):
+            mask[dc < cut] = False
     img = np.zeros((H2, W2, 4), np.uint8)
     img[sidewalk_mask] = (0xd6, 0xd0, 0xc7, 255)
     img[curb_mask] = (0x7a, 0x74, 0x70, 255)
@@ -361,6 +390,7 @@ def build(art):
     for row in asphalt:
         edges = np.flatnonzero(np.diff(np.concatenate(([0], row.astype(np.int8), [0]))))
         road_rows.append(edges.tolist())
+    if ring: sidewalk_mask = placing_sidewalk  # houses and trees go where they always did
     def on_sidewalk_or_road(x, y):
         x2, y2 = int(x // RASTER), int(y // RASTER)
         return 0 <= x2 < W2 and 0 <= y2 < H2 and bool(sidewalk_mask[y2, x2])
@@ -949,9 +979,24 @@ def build(art):
         if f.endswith('.png') and f[:-4].startswith(('house', 'villa', 'tree', 'orn_', 'shop_', 'fence_', 'lamp_', 'court_', 'play_')):
             os.remove(os.path.join(OUT_ART, f))
 
+    out_roads = [{'name': n, 'points': [c for p in pts for c in p]} for n, pts in pieces]
+    if ring:
+        corner = rot_px
+        for r in out_roads:  # the two streets that met at the corner now reach the roundabout's middle
+            for k in (0, len(r['points']) - 2):
+                if math.dist((r['points'][k], r['points'][k + 1]), corner) < 1: r['points'][k:k + 2] = [r1(ring['x']), r1(ring['y'])]
+        out_roads.append({'name': 'Newton Square', 'points': [r1(c) for p in ring_pts for c in p], 'ring': ring})
+        clear = NEWTON_RING_R + edge + 4
+        def off_ring(o):
+            sp = next((s for s in sprites_out if s['key'] == o['key']), None)
+            if not sp: return True
+            nx = min(max(ring['x'], o['x'] - sp['w'] / 2), o['x'] + sp['w'] / 2)
+            ny = min(max(ring['y'], o['y'] - sp['h']), o['y'])
+            return math.hypot(nx - ring['x'], ny - ring['y']) >= clear
+        objects = [o for o in objects if off_ring(o)]
     out = {
         'width': W, 'height': H,
-        'roads': [{'name': n, 'points': [c for p in pts for c in p]} for n, pts in pieces],
+        'roads': out_roads,
         'labels': labels, 'areas': areas, 'homeStart': home_start, **({'signs': signs} if EXTRAS else {}),
         'home': home_obj, 'gasStations': gas_stations, 'curbSpots': curb, 'potholes': holes, 'parkedCars': cars, 'objects': objects,
         'sprites': [{'key': s['key'], 'w': s['w'], 'h': s['h']} for s in sprites_out],

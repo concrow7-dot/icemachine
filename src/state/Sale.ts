@@ -291,6 +291,19 @@ export class Sale {
     this.say(`${this.line} Here's a hint: ${hint}`);
   }
 
+  /** SCREAM-145: this customer told the player the trick at the roundabout. */
+  toldAboutRotary = false;
+
+  /**
+   * SCREAM-145 (PO, November 9): a regular's second visit can come with the way to the other
+   * neighbourhood, after their thanks (the second regular to be served a second time in the run).
+   */
+  addRotaryHint(text: string): void {
+    if (this.outcome?.kind !== 'paid') return;
+    this.toldAboutRotary = true;
+    this.say(`${this.line} ${text}`);
+  }
+
   /** A line that isn't the order. */
   private say(line: string): void {
     this.line = line;
