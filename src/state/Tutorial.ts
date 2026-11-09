@@ -53,7 +53,7 @@ type Step = {
   doneWhen?: TutorialSignal;
 };
 
-/** SCREAM-200: what he says when the player skips him (engineering's draft; the PO may reword). */
+/** SCREAM-200: what he says when the player skips him (approved by the PO, November 8). */
 export const SKIP_LINE = "Alright, you've got this. Good luck kiddo.";
 
 /** The uncle's lines, in the PO's words. */
