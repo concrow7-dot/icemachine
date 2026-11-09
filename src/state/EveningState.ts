@@ -8,6 +8,8 @@ import { ROTARY_HINT_LINE } from '../config/tuning';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
+import { assignHints } from './Hints';
+import { HINT_LINES } from '../config/hintLines';
 import { TutorialEvents, TutorialRun } from './Tutorial';
 import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
@@ -170,6 +172,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   paidSales = 0;
   readonly hintsGiven: string[] = [];
   private lastHintAtSale = -Infinity;
+  /** SCREAM-103: each hinted regular's one line for this run (resident id → line), from the run's seed. */
+  readonly hintFor: Map<string, string>;
   /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
   forceHint = false;
 
@@ -238,6 +242,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const map = currentMap();
     this.truckPosition = { x: map.data.homeStart.x, y: map.data.homeStart.y, angle: map.data.homeStart.angle };
     this.residentsOn(mapId);
+    // PO, November 8: the same reason for a regular all through a Story run, and Story only (Quick Play
+    // is one evening: not enough time for the neighbourhood's story). SCREAM-145: the lines come from the
+    // home map's (Elm Park's) residents.
+    this.hintFor = carry?.story ? assignHints(map.residents, HINT_LINES, carry.story.seed) : new Map();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
     // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
@@ -720,12 +728,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!forced && (this.paidSales < HINT_FIRST_AFTER_SALES || this.paidSales - this.lastHintAtSale < HINT_GAP_SALES)) return;
     const me = this.servingNow?.resident.id;
     const choices = this.residents.all.filter(
-      (p) => p.resident.hint && p.resident.id !== me && p.buys && p.customer !== 'done' && !this.hintsGiven.includes(p.resident.id),
+      (p) => this.hintFor.has(p.resident.id) && p.resident.id !== me && p.buys && p.customer !== 'done' && !this.hintsGiven.includes(p.resident.id),
     );
     if (choices.length === 0 || (!forced && Math.random() >= this.hintChance)) return;
     this.forceHint = false;
     const pick = choices[Math.floor(Math.random() * choices.length)].resident;
-    sale.addHint(pick.id, pick.hint!);
+    sale.addHint(pick.id, this.hintFor.get(pick.id)!);
     this.hintsGiven.push(pick.id);
     this.lastHintAtSale = this.paidSales;
   }

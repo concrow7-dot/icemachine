@@ -65,7 +65,7 @@ test('SCREAM-103: a hint follows the thanks, only after a paid sale', async () =
   const paid = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
   paid.phase = 'over'; paid.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; paid.line = 'Thanks!';
   paid.addHint('T034', 'Big Kev on Institute Road buys a ton of ice cream.');
-  assert.equal(paid.line, "Thanks! Here's a hint: Big Kev on Institute Road buys a ton of ice cream.");
+  assert.equal(paid.line, 'Thanks! Big Kev on Institute Road buys a ton of ice cream.');
   assert.equal(paid.hintAbout, 'T034');
   const lost = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
   lost.addHint('T034', 'Anything.');

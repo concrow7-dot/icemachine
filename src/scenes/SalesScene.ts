@@ -25,6 +25,11 @@ const BUTTON_Y = 478;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
 const CALC_X = 390;
 const CALC_Y = 278;
+/** The speech bubble's top and usual height; SCREAM-103: room for the name above a hint, and padding. */
+const BUBBLE_Y = 125;
+const BUBBLE_H = 150;
+const BUBBLE_NAME_SPACE = 36;
+const BUBBLE_PAD = 14;
 /** The paid flash (PO, doc 08 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
@@ -52,6 +57,9 @@ export class SalesScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private bubbleText!: Phaser.GameObjects.Text;
+  /** The speech bubble, and its height now (SCREAM-103: it grows for a long hint). */
+  private bubble!: Phaser.GameObjects.Graphics;
+  private bubbleH = 0;
   /** SCREAM-137: the order drawn as pictures in the bubble, and what it shows (so it's only rebuilt on a change). */
   private orderPictures!: Phaser.GameObjects.Container;
   private orderPicturesKey = '';
@@ -112,10 +120,8 @@ export class SalesScene extends Phaser.Scene {
 
     // The speech bubble, reaching across from the customer.
     // SCREAM-126: the game's shared pixel bubble (Pokémon Yellow-style), tail stepping toward the customer.
-    drawBubble(this.add.graphics(), {
-      x: 90, y: 125, w: 480, h: 150, unit: 4, innerLine: true,
-      tail: { side: 'right', at: 96, steps: 7, reach: 3 },
-    });
+    this.bubble = this.add.graphics();
+    this.sizeBubble(BUBBLE_H);
     // SCREAM-127 (PO, November 2): the customer's name sits in the speech bubble, top left, like
     // the speaker's name in a Pokémon text box (it used to be a name tag under the customer).
     if (customer) {
@@ -348,14 +354,27 @@ export class SalesScene extends Phaser.Scene {
   private showLine(sale: NonNullable<EveningState['sale']>): void {
     const pictures = sale.pictureLine;
     if (!pictures) {
-      // SCREAM-103: a hint makes a long line: a size smaller keeps it clear of the name.
-      this.bubbleText.setFontSize(sale.hintAbout ? 20 : 22).setText(sale.line).setY(sale.hintAbout ? 216 : 212);
+      this.bubbleText.setText(sale.line);
+      // SCREAM-103 (PO, November 8): a long hint makes the bubble taller (downwards), not the text smaller.
+      const h = sale.hintAbout ? Math.max(BUBBLE_H, Math.ceil(this.bubbleText.height) + BUBBLE_NAME_SPACE + 2 * BUBBLE_PAD) : BUBBLE_H;
+      this.sizeBubble(h);
+      this.bubbleText.setY(sale.hintAbout ? BUBBLE_Y + BUBBLE_NAME_SPACE + (h - BUBBLE_NAME_SPACE) / 2 : 212);
       this.setOrderPictures('', []);
       return;
     }
     this.bubbleText.setText(pictures.prefix).setY(pictures.prefix ? 184 : 212);
     const key = `${pictures.prefix ? 'low' : 'mid'}|${pictures.order.map((l) => `${l.count}${l.flavour}`).join(',')}`;
     this.setOrderPictures(key, pictures.order, pictures.prefix ? 236 : 212);
+  }
+
+  /** Draws the speech bubble at this height (its top and tail stay put). */
+  private sizeBubble(h: number): void {
+    if (h === this.bubbleH) return;
+    this.bubbleH = h;
+    drawBubble(this.bubble.clear(), {
+      x: 90, y: BUBBLE_Y, w: 480, h, unit: 4, innerLine: true,
+      tail: { side: 'right', at: 96, steps: 7, reach: 3 },
+    });
   }
 
   private setOrderPictures(key: string, order: readonly { flavour: Parameters<typeof addFlavourIcon>[3]; count: number }[], y = 212): void {
