@@ -59,8 +59,8 @@ export interface Resident {
   curb: [number, number, number, number, number];
   /** SCREAM-189 (PO): the sheet's "Order size": always this many ice creams (as many as there are, if fewer). */
   orderSize?: number;
-  /** SCREAM-103 (PO): the sheet's "Hint": what another customer sometimes says about this big regular after a tipped sale. */
-  hint?: string;
+  /** SCREAM-103 (PO): the sheet's "Hinted": other customers sometimes point the player to this big regular. */
+  hinted?: boolean;
 }
 
 /**
