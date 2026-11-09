@@ -278,6 +278,19 @@ export class Sale {
     return this.pictures && this.orderPrefix !== null ? { prefix: this.orderPrefix, order: this.order } : null;
   }
 
+  /** SCREAM-103: the resident this customer pointed the player to, or null. */
+  hintAbout: string | null = null;
+
+  /**
+   * SCREAM-103 (PO, November 8): after a tipped sale the customer sometimes passes on a hint
+   * about a big regular, after their thanks.
+   */
+  addHint(residentId: string, hint: string): void {
+    if (this.outcome?.kind !== 'paid') return;
+    this.hintAbout = residentId;
+    this.say(`${this.line} Here's a hint: ${hint}`);
+  }
+
   /** A line that isn't the order. */
   private say(line: string): void {
     this.line = line;

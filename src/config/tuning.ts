@@ -365,3 +365,15 @@ export const PARKED_CAR_SCALE = 0.8;
 
 /** PO: zoom in slightly while driving, so you see closer to the street. 1 is the old view. */
 export const DRIVE_CAMERA_ZOOM = 1.2;
+
+// ---- Customer hints (SCREAM-103) ----
+// PO, November 8: hints come only after a sale where the player earned a tip, about 1 or 2 a
+// night when the player is getting a good number of customers. The numbers are engineering's.
+/** The chance that a tipped sale ends with a hint, once the rules below allow one. */
+export const HINT_CHANCE = 0.35;
+/** No hint before this many paid sales tonight. */
+export const HINT_FIRST_AFTER_SALES = 3;
+/** At least this many paid sales between one hint and the next. */
+export const HINT_GAP_SALES = 4;
+/** At most this many hints in an evening. */
+export const HINT_MAX_PER_EVENING = 2;

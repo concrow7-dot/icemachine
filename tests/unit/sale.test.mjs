@@ -59,3 +59,15 @@ test('the tip steps down 20, 15, 10, 5, then 0 over the countdown', () => {
   assert.equal(tipPercentAt(TIP_COUNTDOWN_SECONDS), 0);
   assert.equal(tipPercentAt(-3), 20);
 });
+
+test('SCREAM-103: a hint follows the thanks, only after a paid sale', async () => {
+  const { Sale } = await game('state/Sale');
+  const paid = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+  paid.phase = 'over'; paid.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; paid.line = 'Thanks!';
+  paid.addHint('T034', 'Big Kev on Institute Road buys a ton of ice cream.');
+  assert.equal(paid.line, "Thanks! Here's a hint: Big Kev on Institute Road buys a ton of ice cream.");
+  assert.equal(paid.hintAbout, 'T034');
+  const lost = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+  lost.addHint('T034', 'Anything.');
+  assert.equal(lost.hintAbout, null);
+});
