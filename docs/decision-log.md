@@ -2,15 +2,15 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
-## 056 — One skip key in the uncle's evening: S (2026-11-09)
+## 056 — One skip key in the uncle's evening: X (2026-11-09)
 
-**Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9):** S skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "S: Skip". The truck screen and the small box on the road already said "S: Skip The Uncle".
+**Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9; changed from S to X the same day while testing, SCREAM-226):** X skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "X: Skip". The truck screen and the small box on the road said "S: Skip The Uncle"; now "X: Skip The Uncle". S no longer skips anything.
 
-**Options considered:** S everywhere (chosen; engineering's proposal); Enter everywhere.
+**Options considered:** S everywhere (engineering's proposal, first built); Enter everywhere; X everywhere (chosen by the PO while testing).
 
-**Why (product owner's rationale, November 9):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 9):** *placeholder, to ask the PO: why one key, and why X rather than S.*
 
-**Engineering's calls (proposals):** on the credits, S skips the credits only (then the uncle, who can be skipped with S again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held S (the keyboard repeating it) counts once, so holding S on the credits doesn't skip the uncle too.
+**Engineering's calls (proposals):** on the credits, X skips the credits only (then the uncle, who can be skipped with X again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held X (the keyboard repeating it) counts once, so holding X on the credits doesn't skip the uncle too.
 
 ## 055 — The gas gauge sits at the top right, left of the money (2026-11-09)
 
