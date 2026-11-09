@@ -12,6 +12,28 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Engineering's calls (proposals):** `tools/tiled/export_tiled.py` writes the Tiled project with the tutorial map's layer names; every house is "House N" with the residents sheet's (15) House number, so residents stay with their houses when houses move. The Tiled file's "map" property (worcester or tutorial) tells `import_tiled.py` which map it is. Roads, curb spots, potholes, parked cars, gas stations and the truck's start stay generated and locked, as on the tutorial map. Parks and fields are a locked picture in Tiled for reference only; the game still draws them itself. Checked: importing the unedited export gives the same 2,078 pieces in the same places and house order, and the drive, obstacles, customers, residents, home and fuel suites pass on it; importing the tutorial map gives byte-identical files. Once the PO's first Worcester import is merged, Worcester is edited only in Tiled (`build_map.py` would undo his changes), as for the tutorial map (engineering's proposal; PO agreed, November 8).
 
+## 048 — Customers sometimes hint at a big regular after a tipped sale (2026-11-08)
+
+**Decision (Jira SCREAM-103, PO, November 8):** the first part of customer dialog is hints. A customer says something only after a sale where the player earned a tip: the sale ends, they say thanks, then pass on a hint about one of the neighbourhood's big regulars ("Here's a hint: Big Kev on Institute Road buys a ton of ice cream."). Hints are rare: about 1, maybe 2 a night, when the player is getting a good number of customers. The regulars hinted at are ones who buy a lot and often, 3 to 4 of them on the tutorial map. A hint is just words: no map marker, and the regular is no more likely to come out; the player has to remember and go find them. The lines live in a new "Hint" column in the residents sheet (23 first); engineering drafted the first four and the PO rewrites them. Parties (the rest of SCREAM-103) are a later step.
+
+**Options considered:** a "Talk" button at the window that costs time; a line during every sale; the hint marking the map, or making the regular more likely to come out; the PO writing every line, or lines generated from each resident's traits; doing parties in the same change.
+
+**Why (product owner's rationale):** _to ask the PO._ (Related: decision 047's reason, the names were settled first so hints could name people; decision 042's reason, finding people with better orders should feel like a puzzle.)
+
+**Engineering's calls (proposals):** the numbers (in `tuning.ts`): no hint before the 3rd paid sale of the evening, at least 4 paid sales between hints, at most 2 a night, and a 35% chance on each tipped sale once those allow one. Never about the customer at the window, someone already hinted at tonight, someone already served tonight, or someone who doesn't buy tonight. No hints during the uncle's evening (his lines only). The four regulars picked: Big Kev, Julia Crowley, Shamooz and Erin Broccolich (the highest Likelihood; Big Kev's order of 7). Hint lines are capped at 80 characters and shown a size smaller in the bubble. Worcester's sheet (15) has no Hint column yet, so Quick Play has no hints.
+
+## 047 — Customers get parody names of famous people and characters (2026-11-08)
+
+**Decision (Jira SCREAM-210, under SCREAM-11, PO, November 8):** every customer in sheet 15 (Residents) and sheet 23 (Tutorial Residents) gets a play-on-words name of a celebrity, TV or film character, world leader, athlete or video game character (e.g. "Taylor Shift", "Lebron Jams", "Mary Poppsicles"), except the 25 names the PO had already set himself and Chloe Hogan (the uncle's regular, 041), which stay. 145 new names in sheet 15, 29 in sheet 23. The four real names the PO set (Helen Keller, Barack Obama, Drake Maye, Michael Jordan) stay for now; open question below.
+
+**Options considered:** the real names; parody names (engineering's proposal, since the game is public and the project rule is "never copy licensed characters"). The PO chose parody names.
+
+**Why (product owner's rationale, November 8):** done now because he wants to start adding customer hints about other customers (SCREAM-103), so the names need to be settled first. *Why famous names at all: placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** each new name keeps the person's age (kid or adult) and roughly matches the old first name's gender, so it fits the existing look; a lot of the puns are dessert or ice cream themed; a few nods to Boston sport (Tom Brrrady, Larry Birdseed, Pedro Martinice, Big Poppsicle). Only the Name column changed; nothing else in either sheet.
+
+**Open:** keep the four real names, or give them parody names too?
+
 ## 046 — Story is 5 days, starts with $50, and the bike costs $600 (2026-11-08)
 
 **Decision (Jira SCREAM-85, PO, November 8):** a Story run is 5 evenings, a full week (was 3; the first idea was 7). It starts with the uncle's $50 (was $100), and the bike now costs $600 (was $200). Built together with 045.

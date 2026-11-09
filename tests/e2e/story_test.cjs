@@ -80,6 +80,53 @@ const { chromium } = require('playwright');
   // SCREAM-88: only Shift+3 shows, to the right of the day, not on top of it.
   check('Debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText.text'), 'DEBUG Shift+3: End Evening');
   check('...and starts right of the clock and day', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
+  // ---- SCREAM-103: hints about big regulars after tipped sales (the rules, on a stand-in sale) ----
+  const hint = (paid, chance = 1) => page.evaluate(async ([paid, chance]) => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; s.line = 'Thanks!';
+    e.paidSales = paid; e.hintChance = chance;
+    e.maybeHint(s);
+    return s.hintAbout ? s.hintAbout + '|' + s.line : 'none';
+  }, [paid, chance]);
+  const hinters = await ev("e.residents.all.filter(p => p.resident.hint).map(p => p.resident.id).sort().join(',')");
+  check('Hints: 4 big regulars on the tutorial map have a hint line', hinters, 'T003,T015,T024,T034');
+  check('...none before the 3rd paid sale', await hint(2), 'none');
+  check('...none when the dice say no', await hint(3, 0), 'none');
+  const h1 = await hint(3);
+  check('...the 3rd paid sale can give one, after the thanks', /^T0\d\d\|Thanks! Here's a hint: .+\.$/.test(h1), true);
+  check('...none again until 4 more paid sales', await hint(6), 'none');
+  const h2 = await hint(7);
+  check('...then a second one, about somebody else', h2 !== 'none' && h2.split('|')[0] !== h1.split('|')[0], true);
+  check('...and no more than 2 a night', await hint(20), 'none');
+  check('...Shift+6 (debug): the next tipped sale gives one anyway', await page.evaluate(async () => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    e.hintsGiven.length = 0; e.lastHintAtSale = -Infinity; e.forceHint = true;
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; s.line = 'Thanks!';
+    e.paidSales = 1; e.hintChance = 0; e.maybeHint(s);
+    const out = (s.hintAbout !== null) + ' ' + e.forceHint;
+    e.hintsGiven.length = 0; e.hintChance = 0.35;
+    return out;
+  }), 'true false');
+  check('...never about the customer at the window', await page.evaluate(async () => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const kev = e.residents.all.find(p => p.resident.id === 'T034');
+    let aboutSelf = false;
+    for (let i = 0; i < 30; i++) {
+      e.hintsGiven.length = 0; e.paidSales = 3; e.servingNow = kev;
+      const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+      s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 200, tipCents: 20, tipPercent: 10 }; s.line = 'Thanks!';
+      e.lastHintAtSale = -Infinity; e.maybeHint(s);
+      if (s.hintAbout === 'T034') aboutSelf = true;
+    }
+    e.servingNow = null; e.hintsGiven.length = 0; e.paidSales = 0; e.lastHintAtSale = -Infinity;
+    return aboutSelf;
+  }), false);
+
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');
   await shift(3); await wait(300);

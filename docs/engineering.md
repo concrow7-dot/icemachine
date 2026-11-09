@@ -26,6 +26,7 @@ How the code is laid out and the things you need to know before changing it. Kep
 - Curb spots: `CurbFinder.near(x, y, taken, gap, around?)` tries the nearest street first (150 px, same side), then `further` (400 px along every street within reach, both sides); every stand must pass `standClear` (on the sidewalk) and be within `around` (the truck, 240 px). `Residents.joinSpot` lets a customer share a waiting spot (`spotStand`); DriveScene draws one square per spot and only for customers off the road. The residents build's `curb()` mirrors the game's pink-square check (CAR_CLEAR 80, BAY_CLEAR 100, home, road index).
 - Test hooks: `residents.hearingOff`, `residents.callNow(person)` (works on anyone; waits at their own curb and doesn't follow), `residents.wantIceCream(person)`, `Residents.kind`, `Residents.buysTonight`, `DriveScene.pickupZone`, `e.residents.curbs` (`finder.squareFits`, `finder.roads`). Camera lerp: wait about 2.5 s after teleporting the truck in tests.
 - Order sizes: sheet 23's optional "Order size" column → `Resident.orderSize` → `generateOrder(..., fixedSize)`. The build reads the column only if a sheet has it.
+- Hints (SCREAM-103): sheet 23's optional "Hint" column → `Resident.hint`. After a tipped paid sale `EveningState.maybeHint` may call `Sale.addHint` (the line becomes "Thanks! Here's a hint: ..."; `sale.hintAbout` is the resident's id). Rules in `tuning.ts` (`HINT_*`); `evening.hintChance` (tests set 0 or 1), `evening.paidSales`, `evening.hintsGiven`. Off during the uncle's evening.
 
 ## Cooler, sales, fuel, music
 
@@ -45,7 +46,7 @@ How the code is laid out and the things you need to know before changing it. Kep
 
 ## Debug keys (temporary)
 
-Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen. They are live on the public site too.
+Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen, Shift+6 the next tipped sale ends with a hint (SCREAM-103). They are live on the public site too.
 
 ## Tests
 

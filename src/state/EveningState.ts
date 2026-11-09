@@ -12,6 +12,10 @@ import { RoadNetwork } from './RoadGeometry';
 import {
   COOLER_CAPACITY,
   ORDER_PICTURE_CHANCE,
+  HINT_CHANCE,
+  HINT_FIRST_AFTER_SALES,
+  HINT_GAP_SALES,
+  HINT_MAX_PER_EVENING,
   CRATE_SIDE,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
@@ -146,6 +150,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
+  /** SCREAM-103: the chance a tipped sale ends with a hint (tests set 0 or 1). */
+  hintChance = HINT_CHANCE;
+  /** SCREAM-103: paid sales tonight, and who customers have pointed the player to (resident IDs). */
+  paidSales = 0;
+  readonly hintsGiven: string[] = [];
+  private lastHintAtSale = -Infinity;
+  /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
+  forceHint = false;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. */
   readonly residents: Residents;
@@ -597,10 +609,36 @@ export class EveningState extends Phaser.Events.EventEmitter {
       if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
       this.tipsTotalCents += sale.outcome.tipCents;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
+      this.paidSales += 1;
+      if (sale.outcome.tipCents > 0) this.maybeHint(sale);
       this.tutorial?.signal('salePaid');
       count('first-sale', this.tutorial ? 'tutorial' : this.mapId); // SCREAM-201: once a visit
     }
     this.afterSaleChange();
+  }
+
+  /**
+   * SCREAM-103 (PO, November 8): after a tipped sale, sometimes the customer points the player to
+   * a big regular (the residents sheet's "Hint" column). Just words: no marker on the map.
+   * Engineering's calls: not during the uncle's evening (his lines only); never about the customer
+   * themselves, someone already pointed to tonight, someone already served, or someone who
+   * doesn't buy tonight.
+   */
+  private maybeHint(sale: Sale): void {
+    if (this.tutorial) return;
+    if (this.hintsGiven.length >= HINT_MAX_PER_EVENING) return;
+    const forced = this.forceHint;
+    if (!forced && (this.paidSales < HINT_FIRST_AFTER_SALES || this.paidSales - this.lastHintAtSale < HINT_GAP_SALES)) return;
+    const me = this.servingNow?.resident.id;
+    const choices = this.residents.all.filter(
+      (p) => p.resident.hint && p.resident.id !== me && p.buys && p.customer !== 'done' && !this.hintsGiven.includes(p.resident.id),
+    );
+    if (choices.length === 0 || (!forced && Math.random() >= this.hintChance)) return;
+    this.forceHint = false;
+    const pick = choices[Math.floor(Math.random() * choices.length)].resident;
+    sale.addHint(pick.id, pick.hint!);
+    this.hintsGiven.push(pick.id);
+    this.lastHintAtSale = this.paidSales;
   }
 
   /** B on the sales screen: drive off without serving (a lost sale). */
