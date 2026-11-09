@@ -6,18 +6,18 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (PO, November 9):** the game gets two more design pillars, each with the work it takes after, the way the first four name theirs (Crash Team Racing, Overcooked, Backyard Baseball). They are written into the pitch (doc 04) and the project brief.
 
-- **Deep economics.** Money decisions have real depth: what to stock, what to charge, where to drive, what to spend on. Like RollerCoaster Tycoon.
+- **Deep economics.** Money decisions have real depth: what to stock, what to charge, where to drive, what to spend on. Like RollerCoaster Tycoon and Motherload.
 - **Learn the loop.** Each evening the neighbourhood resets: the same people, the same routines, the same secrets. The map is a puzzle you solve over many evenings, and customers' hints point the way. Like Westworld.
 
-A third inspiration, **Motherload** (XGen Studios' 2004 Flash mining game), was added the same night (PO, November 9); which pillar it belongs to is still to ask the PO.
+A third inspiration, **Motherload** (XGen Studios' 2004 Flash mining game), goes with **deep economics** (PO, November 9). In this game, deep economics means (PO, November 9): customers' price points, how long a customer waits before they won't buy any more, power-ups, and marketing (business cards, a newspaper ad, a billboard); all under the power-ups epic SCREAM-78 (SCREAM-222 price points and waiting, SCREAM-83 marketing).
 
 The pillars are now: race the sunset; chaos on the road; sharp at the window; comfortable inside; deep economics; learn the loop.
 
 **Options considered:** keep the four pillars from the pitch; add the two (chosen).
 
-**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: _to ask the PO._
+**Why (product owner's rationale, November 9):** RollerCoaster Tycoon for its deep economics mechanics; Westworld for its puzzle: a map that resets, with hints. Motherload: it's a solid 2D game with an upgrade system and an economy this game can take inspiration from.
 
-**Engineering's calls (proposals):** the pillar names and one-line descriptions are engineering's wording for the PO to change. Westworld here means the HBO series (it grew out of Michael Crichton's 1973 film; there is no original novel). Work already on main that serves "learn the loop": regulars with fixed routines (033, 034), customers' hints (048), the roundabout secret (050); and SCREAM-216 (Story runs as years). Engineering's guess, not decided: Motherload fits "deep economics" (earn, upgrade, go further, and watch your fuel to get back; Ice Machine already has gas and a trip home). Work that serves "deep economics": calculator prices (007), stocking the cooler (028), fuel (016), crash costs, and how players get power-ups (SCREAM-79).
+**Engineering's calls (proposals):** the pillar names and one-line descriptions are engineering's wording for the PO to change. Westworld here means the HBO series (it grew out of Michael Crichton's 1973 film; there is no original novel). Work already on main that serves "learn the loop": regulars with fixed routines (033, 034), customers' hints (048), the roundabout secret (050); and SCREAM-216 (Story runs as years). Work that serves "deep economics": calculator prices (007), stocking the cooler (028), fuel (016), crash costs, and how players get power-ups (SCREAM-79).
 
 ## 050 — The maps join: 3 laps of a roundabout take the truck to the other neighbourhood (2026-11-09)
 
