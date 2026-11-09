@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** 7 days (SCREAM-85's first idea); keeping $200 with the longer run; starting with $100.
 
-**Why (product owner's rationale):** _to be filled in by the PO._
+**Why (product owner's rationale, November 8):** the goal over time is to make the game longer, but a longer run is harder to test, so he is increasing the number of days slowly as features get added.
 
 **Engineering's calls (proposals):** sometimes buyers keep buying one day in 3 (decision 033), so over 5 days some buy twice (days 1 and 4, or 2 and 5). Running out of money is still game over. The Story intro's placeholder text (SCREAM-76) reads the new numbers.
 
@@ -18,7 +18,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** the tutorial as a prologue with Days 1 to 5 after it (6 evenings); the uncle on every new Story, or only on the very first; keeping Tutorial on the menu as a one-evening practice mode; new players picking Tutorial (which would then run on into Story) rather than Story.
 
-**Why (product owner's rationale):** _to be filled in by the PO._
+**Why (product owner's rationale, November 8):** the tutorial is only helpful once, so he wanted it on the first play and that's it.
 
 **Engineering's calls (proposals):** a new Story shows the Story intro (bike, days left; placeholder text) first, then, with the uncle, the credits and him in the truck. Story saves from before this (3 days on Worcester) aren't offered to continue: the save moved to a new key (`icemachine.story.v2`). Story gets a fresh high score table (`icemachine.highscores.story.v2`), since 5-day runs on the smaller map don't compare with the old ones. Anyone with an old high score or a finished tutorial still has Quick Play unlocked. Quick Play stays first on the menu, so Enter alone still starts it for returning players; for a new player the arrow starts on Story.
 
