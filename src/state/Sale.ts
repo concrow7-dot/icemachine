@@ -288,7 +288,7 @@ export class Sale {
   addHint(residentId: string, hint: string): void {
     if (this.outcome?.kind !== 'paid') return;
     this.hintAbout = residentId;
-    this.say(`${this.line} Here's a hint: ${hint}`);
+    this.say(`${this.line} ${hint}`);
   }
 
   /** A line that isn't the order. */

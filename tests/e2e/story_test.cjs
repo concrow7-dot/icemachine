@@ -90,12 +90,14 @@ const { chromium } = require('playwright');
     e.maybeHint(s);
     return s.hintAbout ? s.hintAbout + '|' + s.line : 'none';
   }, [paid, chance]);
-  const hinters = await ev("e.residents.all.filter(p => p.resident.hint).map(p => p.resident.id).sort().join(',')");
-  check('Hints: 4 big regulars on the tutorial map have a hint line', hinters, 'T003,T015,T024,T034');
+  const hinters = await ev("[...e.hintFor.keys()].sort().join(',')");
+  check('Hints: the 4 Hinted regulars on the tutorial map each have one line this run', hinters, 'T003,T015,T024,T034');
+  const day1Hints = await ev("JSON.stringify([...e.hintFor.entries()].sort())");
   check('...none before the 3rd paid sale', await hint(2), 'none');
   check('...none when the dice say no', await hint(3, 0), 'none');
   const h1 = await hint(3);
-  check('...the 3rd paid sale can give one, after the thanks', /^T0\d\d\|Thanks! Here's a hint: .+\.$/.test(h1), true);
+  check('...the 3rd paid sale can give one, after the thanks', /^T0\d\d\|Thanks! .+$/.test(h1), true);
+  check("...and it's that regular's line for this run", await ev(`e.hintFor.get('${h1.split('|')[0]}')`) === h1.split('|')[1].replace(/^Thanks! /, ''), true);
   check('...none again until 4 more paid sales', await hint(6), 'none');
   const h2 = await hint(7);
   check('...then a second one, about somebody else', h2 !== 'none' && h2.split('|')[0] !== h1.split('|')[0], true);
@@ -149,6 +151,7 @@ const { chromium } = require('playwright');
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
   check('HUD says Day 2/5', /Day 2\/5/.test(await hudClock()), true);
+  check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
   // ---- Restart evening goes back to how tonight started ----

@@ -349,7 +349,7 @@ export class SalesScene extends Phaser.Scene {
     const pictures = sale.pictureLine;
     if (!pictures) {
       // SCREAM-103: a hint makes a long line: a size smaller keeps it clear of the name.
-      this.bubbleText.setFontSize(sale.hintAbout ? 20 : 22).setText(sale.line).setY(sale.hintAbout ? 216 : 212);
+      this.bubbleText.setFontSize(sale.hintAbout ? (sale.line.length > 100 ? 18 : 20) : 22).setText(sale.line).setY(sale.hintAbout ? 216 : 212);
       this.setOrderPictures('', []);
       return;
     }
