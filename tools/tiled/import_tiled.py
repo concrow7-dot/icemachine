@@ -1,14 +1,17 @@
-"""Brings the PO's hand-made tutorial map from Tiled into the game (SCREAM-158).
+"""Brings the PO's hand-made maps from Tiled into the game: the tutorial map (SCREAM-158) and
+Worcester (SCREAM-211; the Tiled file made by tools/tiled/export_tiled.py).
 
 Usage (run from the repo root):
     python3 tools/tiled/import_tiled.py <map.tmx> <singles folder>
 
-<map.tmx> is the PO's Tiled map (private art repo, tiled/tutorial-map/). <singles folder> is
+<map.tmx> is the PO's Tiled map (private art repo, tiled/tutorial-map/ or tiled/worcester-map/);
+its "map" property (tutorial or worcester) says which map it is. <singles folder> is
 LimeZu Modern Exteriors' 48x48 singles (the zip in the private art repo, unzipped): pieces
 from the PO's own 16 px tilesets are looked up there by name when the 16 px file isn't at
 hand (the 48 px files are exact 3x enlargements).
 
-What it writes: src/config/tutorial.ts (the map data), public/assets/limezu/map-tutorial/
+What it writes (Worcester: src/config/worcester.ts, public/assets/limezu/map/ and public/assets/map/;
+then rebuild the residents without "tutorial"): src/config/tutorial.ts (the map data), public/assets/limezu/map-tutorial/
 atlas.png + atlas.json (only the pictures the map uses) and public/assets/map-tutorial/roads_*.png
 (the ground: roads, sidewalks and anything the PO painted). Then rebuild the residents:
     python3 tools/residents/build_residents.py build <Character_Generator folder> tutorial
@@ -26,7 +29,8 @@ How the Tiled file is read:
   (in front if the layer is above Houses, behind if below). Pieces that touch no house stay
   as ornaments.
 - Businesses: the object's name is the name painted on its sign.
-- Tile layers and image layers (except grass) make the ground, in layer order.
+- Tile layers and image layers (except grass, and "Parks and fields", which the game draws itself)
+  make the ground, in layer order.
 - Kept from the road data (locked in the Tiled file; built by tools/tiled/build_roads.py from
   tools/tutorial/roads.json, SCREAM-159): roads for driving, curb spots, potholes, parked cars,
   the truck's start, the gas station, street names.
@@ -37,11 +41,26 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
-OUT_TS = os.path.join(ROOT, 'src', 'config', 'tutorial.ts')
-OUT_ART = os.path.join(ROOT, 'public', 'assets', 'limezu', 'map-tutorial')
-OUT_ROADS = os.path.join(ROOT, 'public', 'assets', 'map-tutorial')
-RESIDENTS_CSV = os.path.join(ROOT, 'tools', 'tutorial', 'residents.csv')
-EXPORT = 'TUTORIAL'
+# Where each map's data and pictures go (SCREAM-211: Worcester too).
+MAPS = {
+    'tutorial': dict(ts='tutorial.ts', export='TUTORIAL', art='map-tutorial', roads='map-tutorial',
+                     residents=os.path.join('tools', 'tutorial', 'residents.csv'), sheet='sheet 23'),
+    'worcester': dict(ts='worcester.ts', export='WORCESTER', art='map', roads='map',
+                      residents=os.path.join('tools', 'residents', 'residents.csv'), sheet='sheet 15'),
+}
+
+
+def use_map(name):
+    global OUT_TS, OUT_ART, OUT_ROADS, RESIDENTS_CSV, EXPORT, SHEET
+    c = MAPS[name]
+    OUT_TS = os.path.join(ROOT, 'src', 'config', c['ts'])
+    OUT_ART = os.path.join(ROOT, 'public', 'assets', 'limezu', c['art'])
+    OUT_ROADS = os.path.join(ROOT, 'public', 'assets', c['roads'])
+    RESIDENTS_CSV = os.path.join(ROOT, c['residents'])
+    EXPORT, SHEET = c['export'], c['sheet']
+
+
+use_map('tutorial')
 GROUND_TILE = 512
 FLIP_H, FLIP_V, FLIP_D, FLIP_R = 0x80000000, 0x40000000, 0x20000000, 0x10000000
 PREFIX = {'Houses': 'house_', 'Removed houses': 'house_', 'Businesses': 'shop_', 'Trees': 'tree_',
@@ -143,9 +162,13 @@ def walk_layers(el, out, visible=True):
 
 
 def main(tmx, singles):
+    root = ET.parse(tmx).getroot()
+    which = props(root).get('map', 'tutorial')
+    if which not in MAPS: sys.exit(f'the Tiled map\'s "map" property is "{which}": expected one of {", ".join(MAPS)}')
+    use_map(which)
+    print(f'map: {which}')
     base = read_base()
     W, H = base['width'], base['height']
-    root = ET.parse(tmx).getroot()
     ts = Tilesets(os.path.dirname(os.path.abspath(tmx)), singles)
     for el in root.findall('tileset'): ts.add(el)
     TW, TH = int(root.get('tilewidth')), int(root.get('tileheight'))
@@ -158,7 +181,8 @@ def main(tmx, singles):
         if not vis: continue
         if el.tag == 'imagelayer':
             img = el.find('image')
-            if img is None or 'grass' in el.get('name', '').lower() or el.get('repeatx') == '1': continue
+            lname = el.get('name', '').lower()
+            if img is None or 'grass' in lname or lname.startswith('parks and fields') or el.get('repeatx') == '1': continue
             im = Image.open(os.path.join(os.path.dirname(os.path.abspath(tmx)), img.get('source'))).convert('RGBA')
             ground.alpha_composite(im.crop((0, 0, min(im.width, W), min(im.height, H))),
                                    (round(float(el.get('offsetx', 0))), round(float(el.get('offsety', 0)))))
@@ -438,7 +462,7 @@ def main(tmx, singles):
         for r in csv.DictReader(open(RESIDENTS_CSV, newline='', encoding='utf-8')):
             if r.get('House', '').strip() and int(r['House']) not in house_numbers:
                 warnings.append(f'resident {r["ID"]} lives in house {r["House"]}, which is hidden or gone: '
-                                'give them another house in sheet 23')
+                                f'give them another house in {SHEET}')
 
     kinds = {}
     for o in objects: kinds[o['key'].split('_')[0]] = kinds.get(o['key'].split('_')[0], 0) + 1

@@ -44,8 +44,9 @@ export const MAPS: Record<MapId, GameMap> = {
     data: WORCESTER,
     residents: RESIDENTS,
     atlasKey: 'map-atlas',
-    atlasPng: 'assets/limezu/map/atlas.png',
-    atlasJson: 'assets/limezu/map/atlas.json',
+    // SCREAM-211: versioned once Worcester is imported from Tiled (no version until then).
+    atlasPng: versioned('assets/limezu/map/atlas.png', WORCESTER),
+    atlasJson: versioned('assets/limezu/map/atlas.json', WORCESTER),
     grassKey: 'map-grass',
     grassUrl: 'assets/limezu/map/grass.png',
     roadKeyPrefix: 'map-',

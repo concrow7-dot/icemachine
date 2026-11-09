@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 047 — The Worcester map can be laid out by hand in Tiled (2026-11-08)
+
+**Decision (Jira SCREAM-211, under SCREAM-10, PO, November 8):** the PO wants to edit the Worcester map (Quick play) himself in Tiled, the way he edits the tutorial map (038). Engineering exported the generated map to a Tiled project (`tiled/worcester-map/` in the private art repo) and the converter now reads either map. Until the PO imports his edits, the game's Worcester map stays the generated one.
+
+**Options considered:** keep generating Worcester with `build_map.py` and describe changes in words; edit it in Tiled like the tutorial map (chosen).
+
+**Why (product owner's rationale):** _to ask the PO._
+
+**Engineering's calls (proposals):** `tools/tiled/export_tiled.py` writes the Tiled project with the tutorial map's layer names; every house is "House N" with the residents sheet's (15) House number, so residents stay with their houses when houses move. The Tiled file's "map" property (worcester or tutorial) tells `import_tiled.py` which map it is. Roads, curb spots, potholes, parked cars, gas stations and the truck's start stay generated and locked, as on the tutorial map. Parks and fields are a locked picture in Tiled for reference only; the game still draws them itself. Checked: importing the unedited export gives the same 2,078 pieces in the same places and house order, and the drive, obstacles, customers, residents, home and fuel suites pass on it; importing the tutorial map gives byte-identical files. Proposal, to confirm: once the PO's first Worcester import is merged, Worcester is edited only in Tiled (`build_map.py` would undo his changes), as 038 did for the tutorial map.
+
 ## 046 — Story is 5 days, starts with $50, and the bike costs $600 (2026-11-08)
 
 **Decision (Jira SCREAM-85, PO, November 8):** a Story run is 5 evenings, a full week (was 3; the first idea was 7). It starts with the uncle's $50 (was $100), and the bike now costs $600 (was $200). Built together with 045.
