@@ -164,8 +164,8 @@ export class HudScene extends Phaser.Scene {
         if (event.key === 'm' || event.key === 'M') musicFor(this).toggleMute();
         if (event.key === 'n' || event.key === 'N') musicFor(this).skip();
       }
-      // SCREAM-200: S skips the uncle (the truck screen handles it itself while he's talking there).
-      if (!event.shiftKey && !event.repeat && (event.key === 's' || event.key === 'S') && this.evening.tutorial?.canSkip) {
+      // SCREAM-200: X skips the uncle (S until SCREAM-217's change, PO November 9) (the truck screen handles it itself while he's talking there).
+      if (!event.shiftKey && !event.repeat && (event.key === 'x' || event.key === 'X') && this.evening.tutorial?.canSkip) {
         if (!this.scene.isActive(SceneKeys.UncleIntro) && !this.scene.isActive(SceneKeys.TutorialCrawl)) skipUncle(this.evening.tutorial);
       }
       if (!event.shiftKey) return;
