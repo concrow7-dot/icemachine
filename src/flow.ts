@@ -3,6 +3,7 @@ import type { MapId } from './config/maps';
 import { EveningState } from './state/EveningState';
 import { StoryRun } from './state/StoryRun';
 import { clearStorySave, loadStory } from './state/StorySave';
+import { count } from './state/Counter';
 
 /** Scene names, kept in one place so a typo can't break the flow. */
 export const SceneKeys = {
@@ -89,6 +90,7 @@ export function clearStory(scene: Phaser.Scene): void {
 
 function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   from.registry.set(STATE_KEY, evening);
+  if (evening.tutorial) count('tutorial-started', 'tutorial'); // SCREAM-201
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
   // SCREAM-169, 176: with the uncle, it opens with the credits, then him in the truck (the clock still waiting).
   from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);

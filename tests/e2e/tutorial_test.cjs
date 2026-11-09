@@ -349,6 +349,53 @@ const { chromium } = require('playwright');
   await press('o'); await wait(500);
   check('On My Own: the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
 
+  // ---- SCREAM-200: skipping the uncle ----
+  // A brand-new player again; skip him on his very first line, in the truck.
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '1'); });
+  await page.reload();
+  await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
+  await page.click('canvas'); await wait(200);
+  await press('ArrowDown', 2); await press('Enter'); await wait(500);
+  await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
+  await press('Enter');
+  await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
+  check('In the truck: the hint says S skips him', (await sc('UncleIntro', 's.hint.text')).includes('S: Skip The Uncle'), true);
+  await press('s');
+  await page.waitForFunction(() => window.__game.scene.isActive('Cooler'), null, { timeout: 5000 }); await wait(500);
+  check('S in the truck: straight to the cooler, his part over', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await ev('e.tutorial.skipped')), 'Cooler,Hud done true');
+  check('...he says goodbye in the small box', await uncle(), "Alright, you've got this. Good luck kiddo.");
+  check('...his $50 handed over anyway', await ev('e.moneyCents'), 5000);
+  check('...and the tutorial counts as finished', await page.evaluate(() => localStorage.getItem('icemachine.tutorial.done.v1')), '1');
+  check('...no outline left behind at the cooler', await sc('Cooler', '(g => !g || !g.visible)(s.children.getByName("uncle-pointer"))'), true);
+  await page.screenshot({ path: outDir + '/uncle_skipped_cooler.png' });
+  await press('+', 3); await press('Enter'); await wait(700);
+  check('Buy Stock: the plain truck screen (no uncle walking to the cab)', await scenes(), 'Truck,Hud');
+
+  // Skip him while he drives: the truck stops, the player has the wheel.
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); });
+  await page.reload();
+  await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
+  await page.click('canvas'); await wait(200);
+  await press('ArrowDown', 2); await press('Enter'); await wait(500);
+  await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
+  await press('Enter');
+  await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
+  await page.mouse.click(700, 200); await wait(200); await page.mouse.click(700, 200); await wait(200);
+  await page.mouse.click(150, 450); await wait(600);
+  check('Back with him: the small box shows the skip hint', await page.evaluate(() => (b => b && b.skipHint.visible)(window.__game.scene.getScene('Hud').uncleBox)), true);
+  await press('+'); await wait(300); await page.mouse.click(600, 80); await wait(200); await page.mouse.click(600, 80); await wait(400);
+  await press('+', 3); await press('Enter'); await wait(700);
+  await press('Enter'); await wait(900);
+  await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 8000 }); await wait(1500);
+  check('He is driving', (await drive('s.uncleLeg')) + ' ' + (await drive('s.speed > 0')), 'toRegular true');
+  await press('s'); await wait(300);
+  check('S on the road: he stops, parked, the player has the wheel', (await drive('s.uncleLeg')) + ' ' + (await drive('s.speed')) + ' ' + (await drive('s.parkBrake')) + ' ' + (await ev('e.tutorial.step')), 'null 0 true done');
+  check('...everyone can hear the truck again', await ev('e.residents.hearingOff'), false);
+  check('...the hint is gone, his goodbye up', (await page.evaluate(() => (b => b.skipHint.visible)(window.__game.scene.getScene('Hud').uncleBox))) + ' ' + (await uncle()), "false Alright, you've got this. Good luck kiddo.");
+  await page.keyboard.down('ArrowUp'); await wait(700); await page.keyboard.up('ArrowUp');
+  check('...and the player drives', await drive('s.speed > 0'), true);
+  await page.screenshot({ path: outDir + '/uncle_skipped_road.png' });
+
   console.log(`tutorial: ${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' / ') : 'none'}`);
   await browser.close();
   process.exit(fail || errors.length ? 1 : 0);

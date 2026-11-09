@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 044 — The uncle can be skipped; the game counts anonymous plays (2026-11-07)
+
+**Decision (Jira SCREAM-200 and SCREAM-201, under SCREAM-5, PO, November 7):** from the uncle's first line on, the player can skip him: "S: Skip The Uncle" shows in his box (and in the hint line while he talks in the truck). Skipping ends his part at once wherever the player is, he says one goodbye line, the $50 is handed over if it hasn't been, and the rest of the tutorial evening plays alone. Skipping counts as having finished the tutorial, so Quick Play and Story unlock. The PO chose a visible skip over a hidden link for hiring managers, or no skip at all. And the game counts anonymous plays: tutorial started, skipped and finished, the first paid sale of a visit, each evening ended, and the seconds from the start of the guided tutorial to taking the wheel. The PO chose a Google Form (answers in a sheet in Product Management Decisions) over an analytics service.
+
+**Why (product owner's rationale, November 8):** the skip is so that experienced players don't need to keep getting instructions. Counting plays is to find out how many people are using the game, and especially how many finish it; it should give some insight into the game, and make for a more impressive story if play-throughs can be shown. Engineering's case, which the PO accepted: since decision 043 the first thing anyone sees at the public link is the credits and the uncle's drive, which playtesters need but a visitor with three minutes may not sit through; and with no counts at all, every product decision rests on the PO's own play and a few playtest forms.
+
+**Engineering's calls (proposals):** the skip key is S (it is also brake/reverse with WASD, but the player never has the wheel while the uncle can still be skipped); the goodbye line is engineering's draft ("Alright, you've got this. Good luck kiddo."); skipping at the pump means the uncle doesn't pay and no gas is pumped for free: the player buys their own if they want it (confirmed by the PO, November 8); the counter is off on localhost and in the tests, sends nothing personal and keeps nothing in the browser between visits, each visit gets a random id so its events can be grouped, the build's commit is sent so counts can be split by version, and the title screen says "Counts anonymous plays" once the form is connected. Until the PO makes the form and its ids go into `src/config/counter.ts`, the counter is off. The uncle's driving moved out of DriveScene into `src/scenes/uncleDrive.ts` while this was built.
+
 ## 043 — New players play the Tutorial first (2026-11-06)
 
 **Decision (Jira SCREAM-175, under SCREAM-5, PO, November 5):** the first time someone plays, Tutorial is the only mode they can pick. Once they finish its evening (day 1) with the uncle, Quick Play and Story unlock.

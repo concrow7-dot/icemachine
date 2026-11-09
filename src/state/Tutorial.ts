@@ -1,16 +1,16 @@
 import * as Phaser from 'phaser';
+import { count, secondsSinceTutorialStart } from './Counter';
 
 /**
  * SCREAM-169 (PO, November 4-5): the uncle's guided tutorial (SCREAM-5). This tracks which
- * of his steps the player is on and what he says at each one. The six steps are the PO's
- * (SCREAM-5's description); each later ticket fills one in:
- *   1 stocking and prices (SCREAM-170), 2-3 and 6 the uncle drives (SCREAM-171),
- *   4-5 the guided sale with a regular (SCREAM-172), 6 the pump (SCREAM-173).
- * Until those land, the player does each step themselves and the tracker moves on when
- * the evening reports it done.
+ * of his steps the player is on and what he says at each one. The steps are the PO's
+ * (SCREAM-5's description): stocking and prices (SCREAM-170), the uncle drives (171, 185),
+ * the guided sale with his regular (172), the pump (173), home and his goodbye (185, 188).
+ * The game reports what the player does (`signal`) and the tracker moves on.
  *
- * The uncle's lines are engineering's drafts, waiting for the PO's wording (SCREAM-76), except
- * his opening lines, which are the PO's (SCREAM-177).
+ * The uncle's lines are the PO's words (SCREAM-170, 172, 173, 177, 183, 185, 188).
+ * SCREAM-200: the player can skip him at any point (`skip`); he says goodbye and the evening
+ * is theirs, and it counts as having finished the tutorial.
  */
 
 /** Things the game reports that can move the uncle on: finish a step, or a line that waits for them. */
@@ -53,7 +53,10 @@ type Step = {
   doneWhen?: TutorialSignal;
 };
 
-/** The uncle's lines: the PO's (SCREAM-170, 177), then engineering's DRAFTS for the PO to rewrite. */
+/** SCREAM-200: what he says when the player skips him (engineering's draft; the PO may reword). */
+export const SKIP_LINE = "Alright, you've got this. Good luck kiddo.";
+
+/** The uncle's lines, in the PO's words. */
 export const TUTORIAL_STEPS: readonly Step[] = [
   {
     id: 'stock',
@@ -149,6 +152,8 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
   private stepIndex = 0;
   private lineIndex = 0;
   private finished = false;
+  /** SCREAM-200: the player skipped him; his goodbye is on screen and the evening is theirs. */
+  skipped = false;
   /** SCREAM-172: which line (step:line) that gates the window or holds the sale has been read. */
   private releasedLine = '';
   private get released(): boolean {
@@ -170,6 +175,7 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
 
   /** The uncle's line on screen, or null once he's said everything. */
   get line(): string | null {
+    if (this.skipped) return SKIP_LINE;
     if (this.finished) return null;
     return textOf(this.current)?.replace('{regular}', this.regularName || 'my regular') ?? null;
   }
@@ -209,6 +215,25 @@ export class TutorialRun extends Phaser.Events.EventEmitter {
 
   finishLeg(leg: UncleLeg): void {
     this.driven.add(leg);
+  }
+
+  /** SCREAM-200: he can be skipped from his first line until he has said goodbye. */
+  get canSkip(): boolean {
+    return !this.finished;
+  }
+
+  /**
+   * SCREAM-200 (PO, November 7): the player skips the uncle. Every hold and gate is dropped,
+   * his steps are over (no more driving, nobody held back), and he says one goodbye line.
+   * The evening's screens listen for the change: the drive stops where it is, the $50 is
+   * handed over if it hasn't been, and the title screen counts the tutorial as finished.
+   */
+  skip(): void {
+    if (this.finished) return;
+    this.finished = true;
+    this.skipped = true;
+    this.releasedLine = '';
+    this.emit(TutorialEvents.Changed);
   }
 
   private get current(): Line | undefined {
@@ -332,6 +357,14 @@ export function tutorialDone(): boolean {
   } catch {
     return false;
   }
+}
+
+/** SCREAM-200: the player skipped the uncle: his goodbye, and the tutorial counts as finished from now on. */
+export function skipUncle(run: TutorialRun): void {
+  if (!run.canSkip) return;
+  run.skip();
+  markTutorialDone();
+  count('tutorial-skipped', 'tutorial', secondsSinceTutorialStart()); // SCREAM-201
 }
 
 export function markTutorialDone(): void {

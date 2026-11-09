@@ -7,6 +7,7 @@ import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { TutorialEvents, TutorialRun } from './Tutorial';
+import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
 import {
   COOLER_CAPACITY,
@@ -184,7 +185,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const run = this.tutorial;
     if (run) {
       const gift = () => {
-        if (!run.givesCash || !this.uncleGiftPending) return;
+        // SCREAM-200: skipped before his line about the $50: he leaves it anyway.
+        if (!(run.givesCash || run.skipped) || !this.uncleGiftPending) return;
         run.off(TutorialEvents.Changed, gift);
         this.uncleGiftPending = false;
         this.changeMoney(UNCLE_LEFT_CENTS, 'From the uncle');
@@ -595,6 +597,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.tipsTotalCents += sale.outcome.tipCents;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
       this.tutorial?.signal('salePaid');
+      count('first-sale', this.tutorial ? 'tutorial' : this.mapId); // SCREAM-201: once a visit
     }
     this.afterSaleChange();
   }

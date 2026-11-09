@@ -41,30 +41,13 @@ import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
 import { UNCLE_URL } from '../ui/smoothPixels';
 
-/** SCREAM-190: the uncle on the map (his sheet in the residents' layout), and how fast he walks home. */
-const UNCLE_WALKER_KEY = 'uncle-walker';
-const UNCLE_WALK_SPEED = 38;
 import type { ResidentNow } from '../state/Residents';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { gasStations } from '../config/gasStation';
-import { AutoRoute, nextSpeed } from '../state/AutoRoute';
+import type { AutoRoute } from '../state/AutoRoute';
 import type { UncleLeg } from '../state/Tutorial';
-import {
-  REGULAR_CALL_DISTANCE,
-  REGULAR_HOLD_MS,
-  REGULAR_STOP_SHORT,
-  UNCLE_CREEP,
-  UNCLE_TO_REGULAR,
-  TUTORIAL_REGULAR_ID,
-  UNCLE_TO_PUMP,
-  UNCLE_HOME_CORNERS,
-  UNCLE_HOME_LANES,
-  UNCLE_PASS_OFFSET,
-  UNCLE_ROUTE_CORNERS,
-  UNCLE_ROUTE_LANES,
-  UNCLE_ROUTE_RADIUS,
-} from '../config/tutorialRoute';
+import { UncleDrive, UNCLE_WALKER_KEY } from './uncleDrive';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
 // The only way back into the truck is to pick up a waiting customer.
@@ -196,19 +179,23 @@ export class DriveScene extends Phaser.Scene {
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
-  /** SCREAM-171: the uncle's drive in the tutorial: the route, the leg he's on, how far along, how fast. */
-  uncleRoute?: AutoRoute;
-  uncleLeg: UncleLeg | null = null;
-  /** SCREAM-185: which route uncleRoute is (out to the pump, or home). */
-  private uncleRouteName: 'out' | 'home' | null = null;
+  /** SCREAM-171, 185, 190: the uncle driving the truck and walking home, in the guided tutorial (scenes/uncleDrive.ts). */
+  private uncle?: UncleDrive;
+  /** The leg he's driving now, if any (tests read these). */
+  get uncleLeg(): UncleLeg | null {
+    return this.uncle?.leg ?? null;
+  }
+  get uncleRoute(): AutoRoute | undefined {
+    return this.uncle?.route;
+  }
+  get uncleAlong(): number {
+    return this.uncle?.along ?? 0;
+  }
+  get uncleWalkPath(): [number, number][] {
+    return this.uncle?.walkPath ?? [];
+  }
   /** SCREAM-185: arrived home with the uncle, fading to the truck screen (no restock stop). */
   private arrivingHome = false;
-  private uncleAlong = 0;
-  private uncleEnd = 0;
-  private uncleSpeed = 0;
-  private uncleFrom = 0;
-  private uncleNudge = { x: 0, y: 0 };
-  private regularCalled = false;
   /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
   private homeBay!: Phaser.GameObjects.Rectangle;
   private homeArmed = false;
@@ -449,7 +436,7 @@ export class DriveScene extends Phaser.Scene {
     if (this.leaving) return;
     this.music.tick();
     this.ring.setPosition(this.truck.x, this.truck.y);
-    this.walkUncleHome(Math.min(deltaMs, 100) / 1000, time);
+    this.uncle?.update(Math.min(deltaMs, 100) / 1000, time);
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: this.truck.x,
       y: this.truck.y,
@@ -464,7 +451,7 @@ export class DriveScene extends Phaser.Scene {
     const dt = Math.min(deltaMs, 100) / 1000;
     const tutorial = this.evening.tutorial;
     if (this.uncleLeg) {
-      this.driveUncle(dt);
+      // The uncle drove the truck this frame (UncleDrive.update).
     } else if (tutorial?.uncleDriving) {
       // SCREAM-171: the uncle has the wheel, parked (waiting for his regular): no steering.
       this.speed = 0;
@@ -488,179 +475,36 @@ export class DriveScene extends Phaser.Scene {
     this.placeHomeArrow();
   }
 
-  /**
-   * SCREAM-171 (PO, November 5): in the guided tutorial the uncle drives: from home to his
-   * regular (who comes out once he's in range), and after the sale on to the pump bay. Each
-   * leg starts where the truck is and ends parked, park brake on; the usual rules then open
-   * the sales window when she's at her square, or the pump in the bay.
-   */
+  /** SCREAM-171, 185, 190: the uncle's driving and his walk home live in UncleDrive. */
   private setUpUncle(): void {
-    this.uncleLeg = null;
     this.arrivingHome = false;
-    this.uncleWalker = undefined;
     const run = this.evening.tutorial;
     if (!run) return;
-    // SCREAM-190 (PO, November 6): his part over, he steps out of the truck and walks home.
-    if (run.step === 'done' && !run.walkedHome) {
-      run.walkedHome = true;
-      this.startUncleWalk();
-    }
-    // Nobody but his regular comes out while he has the wheel.
-    this.evening.residents.hearingOff = run.uncleDriving;
-    const regular = this.evening.residents.all.find((p) => p.resident.id === TUTORIAL_REGULAR_ID);
-    if (regular) run.regularName = regular.resident.name;
-    const leg = run.legToDrive;
-    if (!leg) return;
-    const square = regular?.resident.curb;
-    // SCREAM-185: home from the pump is a route of its own.
-    if (leg === 'toHome' && this.uncleRouteName !== 'home') this.uncleRoute = undefined;
-    this.uncleRouteName = leg === 'toHome' ? 'home' : 'out';
-    this.uncleRoute ??= leg === 'toHome'
-      ? new AutoRoute({
-          corners: UNCLE_HOME_CORNERS,
-          lanes: UNCLE_HOME_LANES,
-          radius: UNCLE_ROUTE_RADIUS,
-          cars: this.map.parkedCars.map((c) => [c.x, c.y]),
-          passOffset: UNCLE_PASS_OFFSET,
-        })
-      : new AutoRoute({
-      corners: UNCLE_ROUTE_CORNERS,
-      lanes: UNCLE_ROUTE_LANES,
-      radius: UNCLE_ROUTE_RADIUS,
-      cars: this.map.parkedCars.map((c) => [c.x, c.y]),
-      passOffset: UNCLE_PASS_OFFSET,
-      // PO (November 6): he pulls up to her straight; the parked car just past her he swings round after.
-      keepStraightAt: square ? [[square[2], square[3]]] : [],
-    });
-    const route = this.uncleRoute;
-    let from: number;
-    if (leg === 'toRegular') {
-      // PO's note: fade in on the truck driving itself. He sets off from home, down Westland St.
-      const hs = this.map.homeStart;
-      from = route.distanceAlong(hs.x, hs.y);
-      const at = route.at(from);
-      this.truck.setPosition(at.x, at.y);
-      this.setHeading(at.heading);
-      const sq = regular?.resident.curb;
-      this.uncleEnd = sq ? route.distanceAlong(sq[2], sq[3]) - REGULAR_STOP_SHORT : route.length;
-      this.cameras.main.fadeIn(700);
-    } else if (leg === 'toHome') {
-      // SCREAM-185: from the pump bay to home, across the street from it.
-      from = route.distanceAlong(this.truck.x, this.truck.y);
-      const hs = this.map.homeStart;
-      this.uncleEnd = route.distanceAlong(hs.x, hs.y);
-    } else {
-      from = route.distanceAlong(this.truck.x, this.truck.y);
-      const bay = gasStations()[0]?.bay;
-      this.uncleEnd = bay ? route.distanceAlong(bay.x, bay.y) : route.length;
-    }
-    const at = route.at(from);
-    this.uncleNudge = { x: this.truck.x - at.x, y: this.truck.y - at.y };
-    this.uncleAlong = this.uncleFrom = from;
-    this.uncleSpeed = 0;
-    this.regularCalled = leg !== 'toRegular';
-    this.uncleLeg = leg;
-    this.parkBrake = false;
-  }
-
-  /** SCREAM-190: the uncle, map-sized, and the points of his walk from the truck to home's front door. */
-  private uncleWalker?: Phaser.GameObjects.Sprite;
-  private uncleWalkPath: [number, number][] = [];
-
-  private startUncleWalk(): void {
-    const home = this.map.home;
-    if (!home) return;
-    const hs = this.map.homeStart;
-    const side = Math.sign(home.x - this.truck.x) || 1;
-    // Out of the truck's side toward home, across the street, along the sidewalk, then along the front to the door.
-    const out: [number, number] = [this.truck.x + side * 26, this.truck.y + 6];
-    const walkway = hs.x + side * 46;
-    this.uncleWalkPath = [
-      [walkway, out[1]],
-      [walkway, home.y + 12],
-      [home.x, home.y + 12],
-      [home.x, home.y - 2],
-    ];
-    this.uncleWalker = this.add.sprite(out[0], out[1], UNCLE_WALKER_KEY, 24).setOrigin(0.5, 1).setName('uncle-walker').setAlpha(0);
-    this.tweens.add({ targets: this.uncleWalker, alpha: 1, duration: 300 });
-  }
-
-  /** SCREAM-190: one frame of his walk home; at the door he goes in. */
-  private walkUncleHome(dt: number, timeMs: number): void {
-    const w = this.uncleWalker;
-    const next = this.uncleWalkPath[0];
-    if (!w || !w.active) return;
-    if (!next) {
-      if (w.alpha === 1 && !this.tweens.isTweening(w)) this.tweens.add({ targets: w, alpha: 0, duration: 400, onComplete: () => w.destroy() });
-      return;
-    }
-    const dx = next[0] - w.x;
-    const dy = next[1] - w.y;
-    const d = Math.hypot(dx, dy);
-    const stepPx = UNCLE_WALK_SPEED * dt;
-    if (d <= stepPx) {
-      w.setPosition(next[0], next[1]);
-      this.uncleWalkPath.shift();
-    } else w.setPosition(w.x + (dx / d) * stepPx, w.y + (dy / d) * stepPx);
-    const facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 2) : dy > 0 ? 3 : 1; // right, up, left, down columns
-    w.setFrame(24 + facing * 6 + (Math.floor(timeMs / 110) % 6)).setDepth(RESIDENT_DEPTH + w.y / DEPTH_PER_PX);
-  }
-
-  /** SCREAM-171: one frame of the uncle's driving. */
-  private driveUncle(dt: number): void {
-    const route = this.uncleRoute;
-    const run = this.evening.tutorial;
-    if (!route || !run || !this.uncleLeg) return;
-    // PO (November 6): slowly from home to his regular; the instant she has her "!", he stops
-    // while he talks about her (REGULAR_HOLD_MS); then he creeps up to her square.
-    const holding = this.uncleLeg === 'toRegular' && this.regularCalled && run.step === 'regular' && run.lineNumber === 0;
-    const profile = this.uncleLeg === 'toPump' || this.uncleLeg === 'toHome' ? UNCLE_TO_PUMP : this.regularCalled ? UNCLE_CREEP : UNCLE_TO_REGULAR;
-    const stopAt = holding ? this.uncleAlong : this.uncleEnd;
-    this.uncleSpeed = holding
-      ? Math.max(0, this.uncleSpeed - UNCLE_TO_REGULAR.brake * dt)
-      : nextSpeed(route, this.uncleAlong, stopAt, this.uncleSpeed, dt, profile);
-    const step = Math.min(this.uncleSpeed * dt, this.uncleEnd - this.uncleAlong);
-    this.uncleAlong += step;
-    const arrived = this.uncleEnd - this.uncleAlong < 1 || (this.uncleSpeed < 2 && this.uncleEnd - this.uncleAlong < 6);
-    if (arrived) this.uncleAlong = this.uncleEnd;
-    const at = route.at(this.uncleAlong);
-    // Where the truck started off the path a little (back from a sale), it eases onto it.
-    const fade = Math.max(0, 1 - (this.uncleAlong - this.uncleFrom) / 120);
-    this.truck.setPosition(at.x + this.uncleNudge.x * fade, at.y + this.uncleNudge.y * fade);
-    this.setHeading(at.heading);
-    this.evening.burnFuel(step);
-    this.speed = arrived ? 0 : this.uncleSpeed;
-    if (this.uncleLeg === 'toRegular' && !this.regularCalled) {
-      const regular = this.evening.residents.all.find((p) => p.resident.id === TUTORIAL_REGULAR_ID);
-      const sq = regular?.resident.curb;
-      if (regular && sq && (arrived || Phaser.Math.Distance.Between(this.truck.x, this.truck.y, sq[2], sq[3]) < REGULAR_CALL_DISTANCE)) {
-        this.regularCalled = true;
-        this.evening.residents.comeOutToOwnCurb(regular);
-        run.signal('regularSpotted');
-        this.time.delayedCall(REGULAR_HOLD_MS, () => {
-          if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
-        });
-      }
-    }
-    if (!arrived) return;
-    // SCREAM-172: pulled up at the regular's square: his line about the sale, then her window.
-    if (this.uncleLeg === 'toRegular') {
-      if (run.step === 'regular' && run.lineNumber === 0) run.nextLine();
-      run.signal('pulledUp');
-    }
-    const leg = this.uncleLeg;
-    run.finishLeg(leg);
-    this.uncleLeg = null;
-    this.parkBrake = true;
-    this.parkLabel.setVisible(true);
-    this.evening.residents.hearingOff = run.uncleDriving;
-    // SCREAM-185 (PO's note): "You arrive home. The screen with the uncle in the truck returns."
-    if (leg === 'toHome') {
-      this.arrivingHome = true;
-      run.signal('arrivedHome');
-      this.cameras.main.fadeOut(600);
-      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(SceneKeys.UncleIntro));
-    }
+    this.uncle = new UncleDrive(
+      {
+        scene: this,
+        truck: this.truck,
+        map: this.map,
+        evening: this.evening,
+        setHeading: (d) => this.setHeading(d),
+        setParked: (on) => {
+          this.parkBrake = on;
+          // The label is made after the uncle is set up at the start of the scene.
+          (this.parkLabel as Phaser.GameObjects.Text | undefined)?.setVisible(on);
+        },
+        setSpeed: (px) => {
+          this.speed = px;
+        },
+        walkerDepth: (y) => RESIDENT_DEPTH + y / DEPTH_PER_PX,
+        arriveHome: () => {
+          this.arrivingHome = true;
+          this.cameras.main.fadeOut(600);
+          this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start(SceneKeys.UncleIntro));
+        },
+      },
+      run,
+    );
+    this.uncle.setUp();
   }
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */

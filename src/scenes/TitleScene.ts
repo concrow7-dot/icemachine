@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { counterOn } from '../state/Counter';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
 import { loadStory } from '../state/StorySave';
 import { tutorialDone } from '../state/Tutorial';
@@ -144,7 +145,7 @@ export class TitleScene extends Phaser.Scene {
       .text(width / 2, height - 32, '↑ ↓ Or Mouse: Choose    Press Enter Or Click To Start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)   Map data © OpenStreetMap contributors   Tune: Travis Morgan (SoundEffectsFactory.com)', { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
+      .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)   Map data © OpenStreetMap contributors   Tune: Travis Morgan (SoundEffectsFactory.com)' + (counterOn() ? '   Counts anonymous plays' : ''), { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
       .setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {

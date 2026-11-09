@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { drawBubble } from './speechBubble';
-import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
+import { skipUncle, TutorialEvents, type TutorialRun } from '../state/Tutorial';
 
 /**
  * SCREAM-169: the uncle's lines during the guided tutorial, in the sales window's quote box
@@ -27,6 +27,8 @@ export class UncleBox {
   readonly container: Phaser.GameObjects.Container;
   private readonly text: Phaser.GameObjects.Text;
   private readonly more: Phaser.GameObjects.Text;
+  /** SCREAM-200: "S: Skip The Uncle", bottom left, while he can still be skipped. */
+  private readonly skipHint: Phaser.GameObjects.Text;
   /** SCREAM-180: the bubble itself, scaled from its middle when a new line pops in. */
   private readonly bubble: Phaser.GameObjects.Container;
   /** SCREAM-180: a yellow glow round the bubble that flashes as a new line arrives. */
@@ -66,8 +68,18 @@ export class UncleBox {
       .text(BOX.x + BOX.w - 16, BOX.y + BOX.h - 12, '▶', { fontFamily: 'monospace', fontSize: '14px', color: '#2b1d10' })
       .setOrigin(1, 1);
     scene.tweens.add({ targets: this.more, alpha: 0.2, duration: 450, yoyo: true, repeat: -1 });
+    // SCREAM-200 (PO, November 7): a visible way past him, from his first line on.
+    this.skipHint = scene.add
+      .text(BOX.x + BOX.w - 34, BOX.y + 9, 'S: Skip The Uncle', { fontFamily: 'monospace', fontSize: '11px', color: '#7a6a5a' })
+      .setOrigin(1, 0)
+      .setName('uncle-skip')
+      .setInteractive({ useHandCursor: true });
+    this.skipHint.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+      skipUncle(run);
+    });
     // The bubble's parts sit round its middle, so it can pop in from there (SCREAM-180).
-    const parts = [g, name, this.text, this.more];
+    const parts = [g, name, this.text, this.more, this.skipHint];
     for (const p of parts) (p as unknown as { x: number; y: number }).x -= BOX.w / 2;
     for (const p of parts) (p as unknown as { x: number; y: number }).y -= BOX.h / 2;
     this.bubble = scene.add.container(BOX.w / 2, BOX.h / 2, parts);
@@ -120,6 +132,17 @@ export class UncleBox {
       // SCREAM-185: his last words were in the truck's big box: this one stays away.
       this.gone = true;
       this.container.setVisible(false);
+      return;
+    }
+    this.skipHint.setVisible(this.run.canSkip);
+    if (this.run.skipped) {
+      // SCREAM-200: his goodbye pops in, stays a while, and the box goes for good.
+      if (line !== this.text.text) this.popIn(line!);
+      this.more.setVisible(false);
+      this.timer = this.scene.time.delayedCall(LAST_LINE_MS, () => {
+        this.gone = true;
+        this.container.setVisible(false);
+      });
       return;
     }
     if (line === null) {

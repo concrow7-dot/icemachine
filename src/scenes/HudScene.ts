@@ -7,7 +7,8 @@ import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
 import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
-import { markTutorialDone } from '../state/Tutorial';
+import { markTutorialDone, skipUncle } from '../state/Tutorial';
+import { count } from '../state/Counter';
 
 /**
  * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
@@ -108,6 +109,9 @@ export class HudScene extends Phaser.Scene {
     const onEnded = () => {
       // SCREAM-169: a whole evening with the uncle counts as done; next time he can be skipped.
       if (this.evening.tutorial) markTutorialDone();
+      // SCREAM-201: anonymous counts of evenings played and tutorials finished.
+      count('evening-ended', this.evening.tutorial ? 'tutorial' : story ? 'story' : this.evening.mapId === 'tutorial' ? 'tutorial-alone' : 'quick');
+      if (this.evening.tutorial && !this.evening.tutorial.skipped) count('tutorial-finished', 'tutorial');
       endEvening(this);
     };
 
@@ -158,6 +162,10 @@ export class HudScene extends Phaser.Scene {
       if (!this.scene.isActive(SceneKeys.Drive) && !event.shiftKey) {
         if (event.key === 'm' || event.key === 'M') musicFor(this).toggleMute();
         if (event.key === 'n' || event.key === 'N') musicFor(this).skip();
+      }
+      // SCREAM-200: S skips the uncle (the truck screen handles it itself while he's talking there).
+      if (!event.shiftKey && (event.key === 's' || event.key === 'S') && this.evening.tutorial?.canSkip) {
+        if (!this.scene.isActive(SceneKeys.UncleIntro) && !this.scene.isActive(SceneKeys.TutorialCrawl)) skipUncle(this.evening.tutorial);
       }
       if (!event.shiftKey) return;
       if (event.code === 'Digit1') this.evening.changeMoney(450, 'Sale');
