@@ -39,7 +39,7 @@ export class UncleIntroScene extends Phaser.Scene {
   private leaving = false;
   /** When he asked for the cooler (scene time). */
   private askedAt = Infinity;
-  /** Keys and clicks count from this time on, so the Enter that skipped the credits doesn't also skip his first line. */
+  /** Keys and clicks count from this time on, so the X that skipped the credits doesn't also skip him (SCREAM-217). */
   private readyAt = 0;
   /** SCREAM-171: back in the truck after Buy Stock, he says his line and walks to the cab to drive. */
   private headingOut = false;
@@ -156,8 +156,9 @@ export class UncleIntroScene extends Phaser.Scene {
       if (!this.askingForCooler) this.next();
     });
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      // SCREAM-200: S skips the uncle from here too.
-      if ((event.key === 's' || event.key === 'S') && !event.shiftKey) return this.skipHim();
+      // SCREAM-200: X skips the uncle from here too (SCREAM-217: X, not S).
+      // SCREAM-217: a held X (key repeat) from skipping the credits doesn't skip him too.
+      if ((event.key === 'x' || event.key === 'X') && !event.shiftKey) return event.repeat ? undefined : this.skipHim();
       // Esc (pause) is the HUD's, as on every evening screen. Enter picks the cooler when he asks for it.
       if (event.key !== 'Enter' && event.key !== ' ') return;
       if (this.askingForCooler) this.toCooler();
@@ -183,7 +184,7 @@ export class UncleIntroScene extends Phaser.Scene {
     this.more.setVisible(!asking);
     this.coolerOutline.setVisible(asking);
     this.coolerTag.setVisible(asking);
-    const skip = this.run.canSkip ? '   S: Skip The Uncle' : '';
+    const skip = this.run.canSkip ? '   X: Skip The Uncle' : '';
     this.hint.setText((asking ? 'Click The Cooler (Or Press Enter)' : 'Click Or Enter: Next') + skip);
     // SCREAM-171: heading out, his one line here moves on only when the player has read it (no timer).
     if (this.headingOut || this.atHome) this.more.setVisible(true);
