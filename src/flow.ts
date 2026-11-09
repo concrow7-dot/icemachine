@@ -50,10 +50,13 @@ export function startEvening(from: Phaser.Scene, map: MapId = 'worcester', guide
   beginEvening(from, new EveningState(undefined, map, guided));
 }
 
-/** Story mode (SCREAM-19): starts a new run at day 1, replacing any save (SCREAM-17). */
-export function startStory(from: Phaser.Scene): void {
+/**
+ * Story mode (SCREAM-19): starts a new run at day 1, replacing any save (SCREAM-17).
+ * SCREAM-205: `withUncle` makes Day 1 the uncle's tutorial evening (credits, then him in the truck).
+ */
+export function startStory(from: Phaser.Scene, withUncle = false): void {
   clearStorySave();
-  from.registry.set(STORY_KEY, new StoryRun());
+  from.registry.set(STORY_KEY, new StoryRun(undefined, withUncle));
   // SCREAM-18: a new run opens with the story's intro; Enter there starts day 1.
   from.scene.start(SceneKeys.StoryIntro);
 }

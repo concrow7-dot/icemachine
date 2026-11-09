@@ -204,7 +204,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
     // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
-    this.uncleGiftPending = !!this.tutorial && !carry;
+    // SCREAM-205: Story's Day 1 with the uncle too (its start cash is his $50).
+    this.uncleGiftPending = !!this.tutorial && this.startCashCents >= UNCLE_LEFT_CENTS;
     this.cashCents = this.uncleGiftPending ? this.startCashCents - UNCLE_LEFT_CENTS : this.startCashCents;
     this.fuelLeft = Phaser.Math.Clamp(carry?.fuel ?? (this.tutorial ? FUEL_TUTORIAL_START : FUEL_QUICK_PLAY_START), 0, 1);
     // Matched by flavour, so a save from before SCREAM-129 (3 slots, any flavours) carries over too.

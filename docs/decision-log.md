@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 046 — Story is 5 days, starts with $50, and the bike costs $600 (2026-11-08)
+
+**Decision (Jira SCREAM-85, PO, November 8):** a Story run is 5 evenings, a full week (was 3; the first idea was 7). It starts with the uncle's $50 (was $100), and the bike now costs $600 (was $200). Built together with 045.
+
+**Options considered:** 7 days (SCREAM-85's first idea); keeping $200 with the longer run; starting with $100.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** sometimes buyers keep buying one day in 3 (decision 033), so over 5 days some buy twice (days 1 and 4, or 2 and 5). Running out of money is still game over. The Story intro's placeholder text (SCREAM-76) reads the new numbers.
+
+## 045 — The tutorial leads into Story: the uncle's evening is Day 1, on the tutorial map (2026-11-08)
+
+**Decision (Jira SCREAM-205, under SCREAM-5, PO, November 8):** Story is played on the tutorial map for now; the Worcester map is left alone, to be connected to the tutorial map in the game later (SCREAM-145), and Quick Play stays on Worcester. The uncle's tutorial evening is Day 1 of the Story, and its cash, stock and gas carry on into Day 2. A brand-new player sees only Story; Quick Play unlocks after the uncle's evening (finished or skipped). Tutorial comes off the title menu: the uncle's evening only happens in Story. After the first run, New Story asks "With Uncle" or "On My Own" (On My Own plays Day 1 without him). This replaces 040's "Tutorial stays its own mode" and changes 043: new players still play the uncle's evening first, now as Story's first day.
+
+**Options considered:** the tutorial as a prologue with Days 1 to 5 after it (6 evenings); the uncle on every new Story, or only on the very first; keeping Tutorial on the menu as a one-evening practice mode; new players picking Tutorial (which would then run on into Story) rather than Story.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** a new Story shows the Story intro (bike, days left; placeholder text) first, then, with the uncle, the credits and him in the truck. Story saves from before this (3 days on Worcester) aren't offered to continue: the save moved to a new key (`icemachine.story.v2`). Story gets a fresh high score table (`icemachine.highscores.story.v2`), since 5-day runs on the smaller map don't compare with the old ones. Anyone with an old high score or a finished tutorial still has Quick Play unlocked. Quick Play stays first on the menu, so Enter alone still starts it for returning players; for a new player the arrow starts on Story.
+
 ## 044 — The uncle can be skipped; the game counts anonymous plays (2026-11-07)
 
 **Decision (Jira SCREAM-200 and SCREAM-201, under SCREAM-5, PO, November 7):** from the uncle's first line on, the player can skip him: "S: Skip The Uncle" shows in his box (and in the hint line while he talks in the truck). Skipping ends his part at once wherever the player is, he says one goodbye line, the $50 is handed over if it hasn't been, and the rest of the tutorial evening plays alone. Skipping counts as having finished the tutorial, so Quick Play and Story unlock. The PO chose a visible skip over a hidden link for hiring managers, or no skip at all. And the game counts anonymous plays: tutorial started, skipped and finished, the first paid sale of a visit, each evening ended, and the seconds from the start of the guided tutorial to taking the wheel. The PO chose a Google Form (answers in a sheet in Product Management Decisions) over an analytics service.

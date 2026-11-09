@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
+  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const sc = (key, fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('${key}'); return ${fn}; })()`);

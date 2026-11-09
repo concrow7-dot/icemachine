@@ -1,6 +1,7 @@
 import type { FlavourId } from '../config/flavours';
 import { FLAVOURS } from '../config/flavours';
 import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
+import type { MapId } from '../config/maps';
 import { EveningState, type CoolerSlot } from './EveningState';
 import { clearStorySave, saveStory, type StorySave } from './StorySave';
 
@@ -8,6 +9,12 @@ import { clearStorySave, saveStory, type StorySave } from './StorySave';
 // and the ice cream left in the cooler carry from one evening to the next
 // (leftover ice cream keeps overnight, for now), and so does the gas (SCREAM-22). Running out of money is game
 // over. Quick play doesn't use any of this.
+
+/**
+ * SCREAM-205 (PO, November 8): Story is played on the tutorial map for now. The Worcester map is
+ * left alone; later it's reached from the tutorial map in the game (SCREAM-145). Quick Play stays on Worcester.
+ */
+export const STORY_MAP: MapId = 'tutorial';
 
 /** How an evening of a Story run ended. */
 export type DayOutcome = 'next' | 'complete' | 'broke';
@@ -53,8 +60,12 @@ export class StoryRun {
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
   totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, largestSaleCents: 0 };
 
-  /** A new run at day 1, or (SCREAM-17) one picked up from a save. */
-  constructor(save?: StorySave) {
+  /** SCREAM-205 (PO, November 8): the uncle's tutorial evening is Day 1 (unless the player chose On My Own). */
+  readonly withUncle: boolean;
+
+  /** A new run at day 1 (with or without the uncle), or (SCREAM-17) one picked up from a save. */
+  constructor(save?: StorySave, withUncle = false) {
+    this.withUncle = !save && withUncle;
     if (save) {
       this.day = save.day;
       this.cashCents = save.cashCents;
@@ -68,7 +79,11 @@ export class StoryRun {
 
   /** A new evening built from what tonight started with. */
   newEvening(): EveningState {
-    return new EveningState({ cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined, story: { day: this.day, seed: this.seed } });
+    return new EveningState(
+      { cashCents: this.cashCents, slots: this.slots ?? [], fuel: this.fuel, cells: this.cells ?? undefined, story: { day: this.day, seed: this.seed } },
+      STORY_MAP,
+      this.withUncle && this.day === 1,
+    );
   }
 
   /** The evening is over: works out what happens next and, if the run goes on, carries the cash and stock forward. Call once per evening. */

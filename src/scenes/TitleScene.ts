@@ -6,14 +6,16 @@ import { tutorialDone } from '../state/Tutorial';
 import { loadHighScores } from '../state/HighScores';
 
 /**
- * SCREAM-175 (PO, November 5): a new player plays the Tutorial first; Quick Play and Story
+ * SCREAM-175 (PO, November 5): a new player plays the Tutorial first; the other modes
  * unlock once they've finished its evening (day 1). Anyone with a saved Story or a high score
  * already counts as finished, so current players aren't locked out.
+ * SCREAM-205 (PO, November 8): the uncle's evening is now Story's Day 1, so a new player starts
+ * with Story; Quick Play unlocks once his evening is finished (or skipped).
  */
 export function modesUnlocked(): boolean {
   return tutorialDone() || !!loadStory() || (['quick', 'story', 'tutorial'] as const).some((t) => loadHighScores(t).length > 0);
 }
-const LOCK_NOTE = 'Finish the Tutorial to unlock Quick Play and Story.';
+const LOCK_NOTE = "Play Story's first day to unlock Quick Play.";
 import { formatMoney } from '../util/format';
 import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 
@@ -35,10 +37,12 @@ import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
 // the bottom, again and again, with music notes trailing behind (engineering's
 // call: the truck plays music). The rest of the screen moved to make two lanes.
 
-// SCREAM-146 (PO, November 4): Tutorial plays one evening on the smaller tutorial map.
+// SCREAM-146 (PO, November 4): Tutorial played one evening on the smaller tutorial map.
 // SCREAM-169 (PO, November 5): the first time, the uncle always guides it. Once a player
-// has finished an evening with him, Tutorial asks whether to bring him along or go alone.
-type Mode = 'quick' | 'story' | 'continue' | 'tutorial';
+// has finished an evening with him, he's optional (With Uncle / On My Own).
+// SCREAM-205 (PO, November 8): Tutorial is off the menu; the uncle's evening is Story's Day 1.
+// A new Story asks With Uncle / On My Own once his evening has been played.
+type Mode = 'quick' | 'story' | 'continue';
 
 /** SCREAM-107: the truck's two lanes, above the title and below the menu. */
 const LANE_TOP = 40;
@@ -90,16 +94,14 @@ export class TitleScene extends Phaser.Scene {
           { id: 'quick', label: 'Quick Play' },
           { id: 'continue', label: `Continue Story: Day ${save.day}, ${formatMoney(save.cashCents)}` },
           { id: 'story', label: 'New Story' },
-          { id: 'tutorial', label: 'Tutorial' },
         ]
       : [
           { id: 'quick', label: 'Quick Play' },
           { id: 'story', label: 'Story' },
-          { id: 'tutorial', label: 'Tutorial' },
         ];
-    // SCREAM-175: until the tutorial's evening is finished, only Tutorial can be picked.
+    // SCREAM-175, SCREAM-205: until the uncle's evening is finished, only Story can be picked.
     const locked = !modesUnlocked();
-    if (locked) for (const o of this.options) o.locked = o.id !== 'tutorial';
+    if (locked) for (const o of this.options) o.locked = o.id === 'quick';
     this.selected = Math.max(0, this.options.findIndex((o) => !o.locked));
 
     this.add
@@ -152,13 +154,13 @@ export class TitleScene extends Phaser.Scene {
       if (this.starting) return;
       const key = event.key;
       if (this.confirming && this.asking === 'uncle') {
-        if (key === 'u' || key === 'U') this.startTutorial(true);
-        else if (key === 'o' || key === 'O') this.startTutorial(false);
+        if (key === 'u' || key === 'U') this.startNewStory(true);
+        else if (key === 'o' || key === 'O') this.startNewStory(false);
         else if (key === 'Escape') this.closeConfirm();
         return;
       }
       if (this.confirming) {
-        if (key === 'y' || key === 'Y') this.start('story');
+        if (key === 'y' || key === 'Y') this.newStory();
         else if (key === 'n' || key === 'N' || key === 'Escape') this.closeConfirm();
         return;
       }
@@ -184,25 +186,30 @@ export class TitleScene extends Phaser.Scene {
     if (this.options[this.selected]?.locked) return this.flashLockNote();
     const id = this.options[this.selected]?.id ?? 'quick';
     if (id === 'story' && loadStory()) return this.openConfirm();
-    if (id === 'tutorial' && tutorialDone()) return this.openUncleChoice();
+    if (id === 'story') return this.newStory();
     this.start(id);
   }
 
   private start(id: Mode): void {
     this.starting = true;
-    if (id === 'story') startStory(this);
-    else if (id === 'continue') {
+    if (id === 'continue') {
       if (!continueStory(this)) {
         this.starting = false; // The save vanished (storage cleared): stay on the title.
         this.scene.restart();
       }
-    } else if (id === 'tutorial') startEvening(this, 'tutorial', true);
-    else startEvening(this);
+    } else startEvening(this);
   }
 
-  private startTutorial(guided: boolean): void {
+  /** SCREAM-205: a new Story. The first time, the uncle's evening is Day 1; after that, ask. */
+  private newStory(): void {
+    this.closeConfirm();
+    if (tutorialDone()) return this.openUncleChoice();
+    this.startNewStory(true);
+  }
+
+  private startNewStory(withUncle: boolean): void {
     this.starting = true;
-    startEvening(this, 'tutorial', guided);
+    startStory(this, withUncle);
   }
 
   /** SCREAM-169: after a first full play, the uncle's steps can be skipped. */
@@ -215,7 +222,7 @@ export class TitleScene extends Phaser.Scene {
         .text(x, height / 2 + 50, label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.startTutorial(guided));
+        .on('pointerdown', () => this.startNewStory(guided));
     this.confirmGroup = [
       this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
       this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),
@@ -253,7 +260,7 @@ export class TitleScene extends Phaser.Scene {
         .text(width / 2 - 110, height / 2 + 50, 'Yes, Start Over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.start('story')),
+        .on('pointerdown', () => this.newStory()),
       this.add
         .text(width / 2 + 140, height / 2 + 50, 'No (N)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
         .setOrigin(0.5)

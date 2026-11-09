@@ -11,17 +11,21 @@ export const EVENING_END_HOUR = 20;
 /** Issue #21: cash the player starts with, in cents ($50). Quick play: resets each evening. */
 export const STARTING_CASH_CENTS = 5000;
 
-/** SCREAM-19 (PO, October 31): Story mode starts with $100; cash and stock then carry over. */
-export const STORY_START_CASH_CENTS = 10000;
+/**
+ * SCREAM-19 (PO, October 31): Story mode starts with set cash; cash and stock then carry over.
+ * SCREAM-205 (PO, November 8): the uncle's $50 (was $100). With the uncle on Day 1 it arrives with his line at the cooler.
+ */
+export const STORY_START_CASH_CENTS = 5000;
 
 /**
- * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run is 3 evenings for now,
- * to grow to 21 later. Lower it to 1 or 2 to test the end of a run quickly.
+ * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run was 3 evenings.
+ * SCREAM-85 (PO, November 8): 5 evenings, a full week; the uncle's evening is Day 1 (SCREAM-205).
+ * Lower it to 1 or 2 to test the end of a run quickly.
  */
-export const STORY_DAYS = 3;
+export const STORY_DAYS = 5;
 
-/** SCREAM-18 (PO, October 31): the story's goal, a new bike, costs $200. */
-export const BIKE_PRICE_CENTS = 20000;
+/** SCREAM-18 (PO, October 31): the story's goal, a new bike, cost $200. SCREAM-85 (PO, November 8): $600 for the 5-day run. */
+export const BIKE_PRICE_CENTS = 60000;
 
 /**
  * SCREAM-129 (PO, November 2): the cooler is 3 crates of 4 x 4 squares, one ice cream per
