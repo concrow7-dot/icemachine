@@ -22,7 +22,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Each person keeps the same few lines for a whole run, one of each kind (so a kid's excuse is always soccer, not soccer on Monday and swimming on Wednesday), picked from the run's seed: that follows 063 (traits don't change in a playthrough). Different people get different lines. Kid, Adult or Any, like the hint lines.
 - When: after any paid sale, with or without a tip (it's about themselves, not a reward like the hints of 048); a 30% chance; 4 a night at most; never on top of a hint or the rotary hint; not in the uncle's evening (his lines only). Both maps' people. Numbers in `tuning.ts` (`SCHEDULE_LINE_CHANCE`, `SCHEDULE_LINES_MAX_PER_EVENING`).
 - People with no ticked days say nothing. Quick play has none (063).
-- 16 of the 21 starting lines are engineering's drafts, marked so in the sheet.
+- **After the PO's first test (November 10: "The only prompt I got was, Im home every day. I didn't get any others, I would like a variety"):** the customers a player meets most are the regulars, who are home all seven days and had only a few "every day" lines between them. Now each regular gets three different "every day" lines (everyone else still one line per kind); there are 16 "every day" wordings, most of which don't say "every day" ("See you tomorrow!"); the same wording is never heard twice in one evening; and people with only some days ticked, who come out less and whose line tells the player more, say theirs 60% of the time (`SCHEDULE_LINE_CHANCE_SOME_DAYS`).
+- 33 of the 38 starting lines are engineering's drafts, marked so in the sheet.
 - Debug: Shift+7 makes the next paid sale end with the customer's line.
 
 ## 063 — Customers get fixed personal traits, in Story only, each with a tell (2026-11-10)

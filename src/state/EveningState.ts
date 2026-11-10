@@ -23,6 +23,7 @@ import {
   HINT_GAP_SALES,
   HINT_MAX_PER_EVENING,
   SCHEDULE_LINE_CHANCE,
+  SCHEDULE_LINE_CHANCE_SOME_DAYS,
   SCHEDULE_LINES_MAX_PER_EVENING,
   STORY_DAYS,
   CRATE_SIDE,
@@ -181,8 +182,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
   readonly hintFor: Map<string, string>;
   /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
   forceHint = false;
-  /** SCREAM-247: the chance a paid sale ends with the customer's own schedule line (tests set 0 or 1). */
-  scheduleLineChance = SCHEDULE_LINE_CHANCE;
+  /** SCREAM-247: the chance a paid sale ends with the customer's own schedule line (tests set 0 or 1); null = the tuning values (people with some days ticked say theirs more often). */
+  scheduleLineChance: number | null = null;
+  /** SCREAM-247: the lines (ids) heard tonight: no wording twice in an evening. */
+  readonly scheduleLinesHeard: string[] = [];
   /** SCREAM-247: each resident's own few schedule lines for this run (resident id → lines), from the run's seed. Empty outside Story. */
   readonly scheduleLinesFor: Map<string, ScheduleLine[]>;
   /** SCREAM-247: how many customers have mentioned their schedule tonight. */
@@ -769,10 +772,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!me) return;
     const forced = this.forceScheduleLine;
     if (!forced && this.scheduleLinesSaid >= SCHEDULE_LINES_MAX_PER_EVENING) return;
-    const line = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS);
-    if (!line || (!forced && Math.random() >= this.scheduleLineChance)) return;
+    const line = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard);
+    const chance = this.scheduleLineChance ?? ((me.days?.length ?? 0) >= 7 ? SCHEDULE_LINE_CHANCE : SCHEDULE_LINE_CHANCE_SOME_DAYS);
+    if (!line || (!forced && Math.random() >= chance)) return;
     this.forceScheduleLine = false;
-    sale.addScheduleLine(line);
+    sale.addScheduleLine(line.text);
+    this.scheduleLinesHeard.push(line.id);
     this.scheduleLinesSaid += 1;
   }
 

@@ -108,5 +108,90 @@ export const SCHEDULE_LINES: ScheduleLine[] = [
   "id": "S021",
   "who": "any",
   "text": "Any day works for me. I'm always around."
+ },
+ {
+  "id": "S022",
+  "who": "any",
+  "text": "See you tomorrow!"
+ },
+ {
+  "id": "S023",
+  "who": "any",
+  "text": "Same time tomorrow?"
+ },
+ {
+  "id": "S024",
+  "who": "any",
+  "text": "Rain or shine, I'll be out here tomorrow too."
+ },
+ {
+  "id": "S025",
+  "who": "any",
+  "text": "I never miss the truck. Ever."
+ },
+ {
+  "id": "S026",
+  "who": "any",
+  "text": "Tomorrow, same spot. I'll be waiting."
+ },
+ {
+  "id": "S027",
+  "who": "any",
+  "text": "You can count on me every evening."
+ },
+ {
+  "id": "S028",
+  "who": "kid",
+  "text": "I listen for your music every single night."
+ },
+ {
+  "id": "S029",
+  "who": "kid",
+  "text": "My allowance is all yours. Every day."
+ },
+ {
+  "id": "S030",
+  "who": "kid",
+  "text": "I'll be right here tomorrow. And the day after."
+ },
+ {
+  "id": "S031",
+  "who": "adult",
+  "text": "This is my treat after work, every day."
+ },
+ {
+  "id": "S032",
+  "who": "adult",
+  "text": "Seven days a week, this is dinner. Don't judge."
+ },
+ {
+  "id": "S033",
+  "who": "adult",
+  "text": "I haven't missed an evening yet. See you tomorrow."
+ },
+ {
+  "id": "S034",
+  "who": "any",
+  "text": "Catch me again [Next]."
+ },
+ {
+  "id": "S035",
+  "who": "kid",
+  "text": "I'm not allowed out again until [Back]."
+ },
+ {
+  "id": "S036",
+  "who": "adult",
+  "text": "I won't be around until [Back]."
+ },
+ {
+  "id": "S037",
+  "who": "any",
+  "text": "[Home]. That's when you'll find me."
+ },
+ {
+  "id": "S038",
+  "who": "any",
+  "text": "Skip our house on [Away]."
  }
 ];

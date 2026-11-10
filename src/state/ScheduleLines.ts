@@ -32,6 +32,13 @@ export const SCHEDULE_TAGS: Record<Exclude<ScheduleKind, 'every'>, string> = {
   away: '[Away]',
 };
 
+/**
+ * PO (November 10, testing): the regulars are who the player meets most, and they're home every
+ * day, so they'd all say the same thing. People home all seven days get this many "every day"
+ * lines each; everyone else keeps one line per kind (one excuse).
+ */
+export const EVERY_DAY_LINES_EACH = 3;
+
 /** A list of days is only said out loud when it's this short (longer ones are said the other way round). */
 export const SCHEDULE_LIST_MAX = 3;
 
@@ -117,23 +124,35 @@ export function assignScheduleLines(residents: readonly Resident[], lines: reado
     const own: ScheduleLine[] = [];
     for (const kind of ['next', 'back', 'home', 'away', 'every'] as const) {
       const fits = lines.filter((l) => kindOfLine(l.text) === kind && (l.who === 'any' || (l.who === 'kid') === r.kid));
-      const pick = fits.length > 0 ? fits[Math.floor(rnd() * fits.length)] : undefined; // always roll, so one kind's lines don't shift another's
-      if (pick) own.push(pick);
+      const roll = rnd(); // always roll, so one kind's lines don't shift another's
+      if (fits.length === 0) continue;
+      if (kind !== 'every') {
+        if (r.days.length < 7) own.push(fits[Math.floor(roll * fits.length)]!);
+        continue;
+      }
+      if (r.days.length < 7) continue;
+      for (let n = 0; n < EVERY_DAY_LINES_EACH && fits.length > 0; n++) own.push(fits.splice(Math.floor(rnd() * fits.length), 1)[0]!);
     }
     if (own.length > 0) out.set(r.id, own);
   }
   return out;
 }
 
-/** One of the resident's own lines that fits today, filled in; null when none fits. */
+/**
+ * One of the resident's own lines that fits today, filled in; null when none fits. Lines in
+ * `heard` (ids already said this evening, by anyone) are left out, so the player never hears
+ * the same wording twice in an evening; null if that leaves nothing.
+ */
 export function scheduleLineToday(
   own: readonly ScheduleLine[] | undefined,
   resident: Pick<Resident, 'days'>,
   day: number,
   lastDay: number,
   rnd: () => number = Math.random,
-): string | null {
-  const fits = (own ?? []).filter((l) => kindFits(kindOfLine(l.text), resident, day, lastDay));
+  heard: readonly string[] = [],
+): { id: string; text: string } | null {
+  const fits = (own ?? []).filter((l) => !heard.includes(l.id) && kindFits(kindOfLine(l.text), resident, day, lastDay));
   if (fits.length === 0) return null;
-  return fillSchedule(fits[Math.floor(rnd() * fits.length)]!.text, resident, day);
+  const line = fits[Math.floor(rnd() * fits.length)]!;
+  return { id: line.id, text: fillSchedule(line.text, resident, day) };
 }

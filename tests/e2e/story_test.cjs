@@ -169,6 +169,7 @@ const { chromium } = require('playwright');
     const p = e.residents.all.find(p => p.resident.id === id);
     e.servingNow = p; e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = chance;
     if (opts.said !== undefined) e.scheduleLinesSaid = opts.said;
+    if (opts.heard === 'clear') e.scheduleLinesHeard.length = 0;
     if (opts.force) e.forceScheduleLine = true;
     s.charge = () => { s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 0, tipCents: 0, tipPercent: 0 }; s.line = 'Thanks!'; return 'paid'; };
     const before = { visits: JSON.stringify(e.visits), second: e.secondVisits.length, paid: e.paidSales }; // leave the SCREAM-145 counts as they were
@@ -186,15 +187,18 @@ const { chromium } = require('playwright');
   check('...none when the dice say no', (await sched(allWeek, 0, { said: 0 })).said, false);
   const s1 = await sched(allWeek, 1, { said: 0 });
   check("...a paid sale (no tip needed) can end with one, after the thanks, from the customer's own lines", s1.said + ' ' + s1.own + ' ' + /^Thanks! .+/.test(s1.line), 'true true true');
-  check('...someone home every day names no day', /day\b/.test(s1.line.replace(/every day|Any day|Every\. Single\. Day/g, '')), false);
+  check('...someone home every day names no weekday', /Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/.test(s1.line), false);
+  const s1b = await sched(allWeek, 1, { said: 0 }), s1c = await sched(allWeek, 1, { said: 0 }), s1d = await sched(allWeek, 1, { said: 0 });
+  check('...(PO, testing) the same regular says three different things, then nothing new is left tonight', new Set([s1.line, s1b.line, s1c.line]).size + ' ' + s1d.said, '3 false');
+  await sched(allWeek, 0, { heard: 'clear' });
   if (monThuOnly) {
     const s2 = await sched(monThuOnly, 1, { said: 0 });
     check('...on Monday, someone away until Thursday says so truthfully (names Thursday, never Tuesday or Wednesday as home)', s2.said + ' ' + s2.own + ' ' + /Thursday/.test(s2.line), 'true true true');
   }
   check('...no more than 4 a night', (await sched(allWeek, 1, { said: 4 })).said, false);
-  const forced = await sched(allWeek, 0, { said: 4, force: true });
+  const forced = await sched(allWeek, 0, { said: 4, force: true, heard: 'clear' });
   check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
-  await ev('(e.scheduleLinesSaid = 0, e.scheduleLineChance = 0, 0)');
+  await ev('(e.scheduleLinesSaid = 0, e.scheduleLinesHeard.length = 0, e.scheduleLineChance = 0, 0)');
 
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');

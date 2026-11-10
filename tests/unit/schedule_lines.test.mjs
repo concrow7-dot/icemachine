@@ -73,8 +73,9 @@ test('Decision 063: each person keeps the same few lines all run (same seed), on
   assert.equal(a.has('X5'), false);
   assert.equal(a.has('X6'), false);
   for (const [id, own] of a) {
-    const kinds = own.map((l) => kindOfLine(l.text));
+    const kinds = own.map((l) => kindOfLine(l.text)).filter((k) => k !== 'every');
     assert.equal(new Set(kinds).size, kinds.length, `${id}: one line per kind`);
+    assert.equal(new Set(own.map((l) => l.id)).size, own.length, `${id}: no line twice`);
     const kid = people.find((p) => p.id === id).kid;
     for (const l of own) assert.ok(l.who === 'any' || (l.who === 'kid') === kid, `${id} ${l.id}`);
   }
@@ -89,14 +90,14 @@ test('PO (064): not repetitive: across a neighbourhood many different lines are 
 test('Today\'s line is one of the person\'s own, filled in, and null when none fits', () => {
   const m = assignScheduleLines([monThu, weekend], SCHEDULE_LINES, 1);
   for (let i = 0; i < 50; i++) {
-    const said = scheduleLineToday(m.get('X1'), monThu, 1, 5);
+    const said = scheduleLineToday(m.get('X1'), monThu, 1, 5).text;
     assert.ok(m.get('X1').some((l) => fillSchedule(l.text, monThu, 1) === said), said);
     assert.equal(/\[/.test(said), false);
   }
   assert.equal(scheduleLineToday(undefined, monThu, 1, 5), null);
   // The weekend person on any Story day: only their list of days can be said, never "See you Saturday!".
   for (let day = 1; day <= 5; day++) {
-    const said = scheduleLineToday(m.get('X4'), weekend, day, 5);
+    const said = scheduleLineToday(m.get('X4'), weekend, day, 5).text;
     assert.match(said, /Saturday and Sunday/);
   }
 });
@@ -116,5 +117,32 @@ test('Every real resident with ticks has something true to say on every Story da
         assert.notEqual(scheduleLineToday(m.get(r.id), r, day, STORY_DAYS), null, `${r.name} on day ${day}`);
       }
     }
+  }
+});
+
+test('PO (testing, November 10): regulars are home every day, so each gets 3 different "every day" lines, and nobody else gets one', () => {
+  const m = assignScheduleLines([monThu, everyDay], SCHEDULE_LINES, 5);
+  assert.equal(m.get('X2').length, 3);
+  assert.equal(new Set(m.get('X2').map((l) => l.id)).size, 3);
+  assert.ok(m.get('X2').every((l) => kindOfLine(l.text) === 'every'));
+  assert.ok(m.get('X1').every((l) => kindOfLine(l.text) !== 'every'));
+  const everyLines = SCHEDULE_LINES.filter((l) => kindOfLine(l.text) === 'every');
+  assert.ok(everyLines.length >= 12, `${everyLines.length} every-day lines`);
+});
+
+test('PO (testing): the same wording is never heard twice in an evening', () => {
+  const m = assignScheduleLines([everyDay], SCHEDULE_LINES, 5);
+  const heard = [];
+  for (let i = 0; i < 3; i++) heard.push(scheduleLineToday(m.get('X2'), everyDay, 1, 5, Math.random, heard).id);
+  assert.equal(new Set(heard).size, 3);
+  assert.equal(scheduleLineToday(m.get('X2'), everyDay, 1, 5, Math.random, heard), null);
+});
+
+test('PO (testing): across Elm Park\'s regulars at least 8 different "every day" wordings are in use', () => {
+  for (const seed of [1, 99, 123456]) {
+    const m = assignScheduleLines(TUTORIAL_RESIDENTS, SCHEDULE_LINES, seed);
+    const regs = TUTORIAL_RESIDENTS.filter((r) => r.days && r.days.length === 7);
+    const used = new Set(regs.flatMap((r) => m.get(r.id).map((l) => l.id)));
+    assert.ok(used.size >= 8, `seed ${seed}: ${used.size}`);
   }
 });
