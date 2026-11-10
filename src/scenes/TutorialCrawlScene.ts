@@ -4,6 +4,8 @@ import { currentMap } from '../config/maps';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { addMapOverview, loadMapOverview } from '../ui/mapOverview';
 import { musicFor } from '../audio/Music';
+import { BIKE_PRICE_CENTS } from '../config/tuning';
+import { formatMoney } from '../util/format';
 
 /** SCREAM-178 (PO, November 5): the ice cream truck tune that plays with the credits (see public/assets/audio/README.md). */
 export const CREDITS_TUNE_KEY = 'credits-tune';
@@ -19,11 +21,15 @@ const CREDITS_TUNE_VOLUME = 0.7;
  * Enter or Space, then S). Then the uncle, in the truck.
  */
 const STILL_LINE = 'In an ice cream truck, not that far away...';
-/** The PO's words (spelling tidied). */
+/**
+ * The PO's words (spelling tidied). SCREAM-236 (PO, November 10): the bike, the Story's goal, joins the
+ * scroll now that riding with the uncle skips the New Bike screen (SCREAM-235). The price follows the tuning.
+ */
 const STORY =
   'Your uncle, who owns an ice cream truck, dropped a pallet of Chaco Tacos on his foot. ' +
   'Out of commission, he has asked for your help. ' +
-  'You agree, since you could use a little more money before school starts in the fall...';
+  `You saw a new bike in the shop window the other day for ${formatMoney(BIKE_PRICE_CENTS)}. ` +
+  "Better get to work, that's a lot of Ice Cream...";
 const BLUE = '#4bd5ee';
 const YELLOW = '#ffe81f';
 /** How many characters fit on one line of the scroll, before it shrinks into the distance. */

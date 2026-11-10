@@ -183,7 +183,7 @@ export class HudScene extends Phaser.Scene {
       }
       // SCREAM-200: X skips the uncle (S until SCREAM-217's change, PO November 9) (the truck screen handles it itself while he's talking there).
       if (!event.shiftKey && !event.repeat && (event.key === 'x' || event.key === 'X') && this.evening.tutorial?.canSkip) {
-        if (!this.scene.isActive(SceneKeys.UncleIntro) && !this.scene.isActive(SceneKeys.TutorialCrawl)) skipUncle(this.evening.tutorial);
+        if (!this.onIntro()) skipUncle(this.evening.tutorial);
       }
       if (!event.shiftKey) return;
       if (event.code === 'Digit1') this.evening.changeMoney(450, 'Sale');
@@ -214,15 +214,25 @@ export class HudScene extends Phaser.Scene {
     this.scene.bringToTop();
   }
 
+  /**
+   * The credits or the uncle's truck scene are on, or one of them is still starting. SCREAM-235: the truck
+   * scene loads his picture on a first run, and for those frames neither scene was "active", so the small
+   * box's 6 s timer could move him on to his second line before the truck scene showed his first.
+   */
+  private onIntro(): boolean {
+    return [SceneKeys.UncleIntro, SceneKeys.TutorialCrawl].some((key) => {
+      const status = this.scene.getStatus(key);
+      return this.scene.isActive(key) || (status >= Phaser.Scenes.INIT && status <= Phaser.Scenes.CREATING);
+    });
+  }
+
   /** SCREAM-88: keeps the debug hint just right of the clock (and the day, in Story), never on top of it. */
   private placeDebugText(): void {
     this.debugText?.setX(this.clockText.x + this.clockText.width + 24);
   }
 
   update(_time: number, delta: number): void {
-    this.uncleBox?.place(
-      this.scene.isActive(SceneKeys.UncleIntro) || this.scene.isActive(SceneKeys.TutorialCrawl) ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other',
-    );
+    this.uncleBox?.place(this.onIntro() ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other');
     // SCREAM-177: the opening credits fill the screen, so the top bar waits until they're over.
     this.cameras.main.setVisible(!this.scene.isActive(SceneKeys.TutorialCrawl));
     this.evening.tick(delta);

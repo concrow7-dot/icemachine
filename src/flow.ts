@@ -56,8 +56,12 @@ export function startEvening(from: Phaser.Scene, map: MapId = 'worcester', guide
  */
 export function startStory(from: Phaser.Scene, withUncle = false): void {
   clearStorySave();
-  from.registry.set(STORY_KEY, new StoryRun(undefined, withUncle));
-  // SCREAM-18: a new run opens with the story's intro; Enter there starts day 1.
+  const run = new StoryRun(undefined, withUncle);
+  from.registry.set(STORY_KEY, run);
+  // SCREAM-235 (PO, November 10): With Uncle goes straight into his evening, with no New Bike screen;
+  // the credits' scroll sets up the bike instead (SCREAM-236).
+  if (run.withUncle) return startStoryEvening(from);
+  // SCREAM-18: On My Own opens with the story's intro (the New Bike screen); Enter there starts day 1.
   from.scene.start(SceneKeys.StoryIntro);
 }
 

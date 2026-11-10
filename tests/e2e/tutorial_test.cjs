@@ -174,9 +174,9 @@ const { chromium } = require('playwright');
   check('...clicking Quick Play does nothing', await scenes(), 'Title');
   const uncle = () => page.evaluate(() => (b => b ? b.shown : '')(window.__game.scene.getScene('Hud').uncleBox));
   await press('ArrowDown', 2); await press('Enter'); await wait(500);
-  check('First Story: no question, the Story intro', (await sc('Title', 's.confirming')) + ' ' + (await scenes()), 'false StoryIntro');
-  await press('Enter'); await wait(500);
-  check('...then Day 1 with the uncle, on the tutorial map', (await ev('!!e.tutorial')) + ' ' + (await ev('e.mapId')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'true tutorial 1');
+  // SCREAM-235 (PO, November 10): riding with the uncle skips the New Bike screen.
+  check('First Story: no question, no New Bike screen', (await sc('Title', 's.confirming')) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('StoryIntro'))), 'false false');
+  check('...straight into Day 1 with the uncle, on the tutorial map', (await ev('!!e.tutorial')) + ' ' + (await ev('e.mapId')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'true tutorial 1');
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(1500);
   check('...the ice cream truck tune playing', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => t.isPlaying)'), true);
   check('...over the tutorial map, zoomed out', await sc('TutorialCrawl', '(m => !!m && m.scale < 0.5)(s.children.getByName("crawl-map"))'), true);
@@ -184,6 +184,8 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_credits_still.png' });
   await wait(6000);
   check('...then the story scrolls away in yellow', await sc('TutorialCrawl', 's.lines.filter(t => t.visible).length > 2 && s.lines[0].scale < 1'), true);
+  // SCREAM-236: the scroll sets up the bike instead.
+  check('...ending with the $600 bike', /new bike in the shop window the other day for \$600\.00\. Better get to work/.test(await sc('TutorialCrawl', 's.lines.map(t => t.text).join(" ")')), true);
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
   // SCREAM-217 (PO, November 9): X is the one skip key in the uncle's evening (PO changed it from S the same day); Enter and S no longer skip the credits.
   check('The credits say X skips them (SCREAM-217)', await sc('TutorialCrawl', "s.children.list.filter(o => o.type === 'Text').some(t => t.text === 'X: Skip')"), true);
@@ -382,7 +384,7 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
-  await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
+  await press('ArrowDown', 2); await press('Enter'); await wait(500); // With Uncle: no Story intro (SCREAM-235)
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
   await press('x'); // SCREAM-217: X skips the credits
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
@@ -405,7 +407,7 @@ const { chromium } = require('playwright');
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
-  await press('ArrowDown', 2); await press('Enter'); await wait(500); await press('Enter'); await wait(300); // past the Story intro
+  await press('ArrowDown', 2); await press('Enter'); await wait(500); // With Uncle: no Story intro (SCREAM-235)
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(800);
   await press('s'); await wait(300);
   check('S does not skip the credits (X does)', await page.evaluate(() => window.__game.scene.isActive('TutorialCrawl')), true);
