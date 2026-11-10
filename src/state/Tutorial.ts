@@ -54,7 +54,7 @@ type Step = {
 };
 
 /** SCREAM-200: what he says when the player skips him (engineering's draft; the PO may reword). */
-export const SKIP_LINE = "Alright, you've got this. Good luck kiddo.";
+export const SKIP_LINE = "Alright, you've got this. Good luck, kiddo.";
 
 /** The uncle's lines, in the PO's words. */
 export const TUTORIAL_STEPS: readonly Step[] = [
@@ -132,7 +132,7 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     lines: [
       // SCREAM-190 (PO): Big Kev lives on Institute Rd (sheet 23, house 82).
       "You should go find Big Kev on Institute Rd. He's usually around this time of night and gets a big order.",
-      'Good luck kiddo.',
+      'Good luck, kiddo.',
     ],
   },
 ];
