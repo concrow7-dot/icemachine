@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 058 — Both maps' residents in one Residents sheet, in a new Customers folder (2026-11-09)
+
+**Decision (PO, November 9):** sheets 15 (Foley Stadium's residents) and 23 (Elm Park's) are one Google Sheet, **Residents**, with a tab per map (Elm Park, Foley Stadium) plus Hint lines, Rotary hint and Old likelihoods. It lives in a new **Customers** folder in IceMachine, next to Product Management Decisions. It keeps sheet 15's link. Product Management Decisions is renumbered to close the gaps: 16 → 15, 17 → 16, 18 → 17, 19 → 18, 20 → 19, 21 → 20, 22 → 21, 24 → 22 (the PO renames it: the Drive connector can't find it), 25 → 23; the next number is 24. Both maps' tabs now have an Order size column (Elm Park's had lost it; Big Kev is 7 again).
+
+**Options considered:** keep sheet 15's file and copy Elm Park's tabs into it (chosen) or start a new file; leave the gaps in the numbering or renumber (chosen).
+
+**Why (product owner's rationale, November 9):** "The decision log is getting large so I wanted to separate that out for easier finding."
+
+**Engineering's calls (proposals):** the old Elm Park file is locked, renamed "OLD - Tutorial Residents (now the Elm Park tab of Residents)" and kept in Customers until the PO deletes it. Old doc numbers in tickets, devlogs and code comments are not rewritten; the brief lists the mapping. One combined "How to use" tab.
+
+## 057 — Customers have a weekly schedule (2026-11-09)
+
+**Decision (Jira SCREAM-221 and SCREAM-223, under SCREAM-11, PO, November 9):** each customer has seven checkboxes, Mon to Sun: checked means home that day. In Story the checkboxes replace Likelihood's buyer kind (033): someone ticked for Monday comes out every Monday. Story's evenings get weekday names the player can see, starting on Monday. Quick play is separate: the day of the week doesn't affect it, and it keeps using Likelihood. Starting ticks (SCREAM-223): regulars every day; customers who bought one day in 3 now 2 or 3 weekdays; never-buyers no days. Customers who aren't home may later be found at a park (SCREAM-224, Low).
+
+**Options considered:** one "days available" text column, or seven checkboxes (chosen); replace Likelihood (chosen) or apply both; Quick play on a fixed day, a random day, or unaffected (chosen).
+
+**Why (product owner's rationale, November 9):** "I want to create a schedule and pattern that people can figure out over time." And for the starting ticks: "The goal is to have neighborhoods that are different throughout the week."
+
+**Engineering's calls (proposals):** the occasional customers' days were picked at random but kept even, so each weekday has about the same number, with a different mix; they are ticked on weekdays only, since Story is Monday to Friday. A customer ticked on all seven days counts as a regular (reliable at the window, 034). Hints (048) point only at customers home that day. The weekday shows on the hub and by the day number in the HUD. Not built yet (SCREAM-221).
+
 ## 056 — One skip key in the uncle's evening: X (2026-11-09)
 
 **Decision (Jira SCREAM-217, under SCREAM-5, PO, November 9; changed from S to X the same day while testing, SCREAM-226):** X skips at every point of the uncle's evening (Story Day 1), and every prompt names it. The opening credits used to skip with Enter or Space ("Enter: Skip"); now they say "X: Skip". The truck screen and the small box on the road said "S: Skip The Uncle"; now "X: Skip The Uncle". S no longer skips anything.
