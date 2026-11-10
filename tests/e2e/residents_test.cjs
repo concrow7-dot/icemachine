@@ -47,7 +47,11 @@ const { chromium } = require('playwright');
 
   // SCREAM-148 (PO, November 3): 25% every-day regulars, 50% sometimes (1 day in 3), 25% never
   const kinds = await ev(`(() => { const k = e.residents.constructor.kind; const c = { regular: 0, sometimes: 0, never: 0 }; e.residents.all.forEach(p => c[k(p.resident.likelihood)]++); return [c.regular, c.sometimes, c.never].join(','); })()`);
-  check('Buyer kinds from the sheet: 40 regular, 80 sometimes, 40 never', kinds, '40,80,40');
+  // SCREAM-231 (PO, November 9): the mix follows the sheet (SCREAM-228 made most former 0% customers 1-16%),
+  // so the expected counts come from the likelihoods by the rule (0% never, 50%+ regular, else sometimes).
+  const byRule = await ev(`(() => { const c = [0, 0, 0]; e.residents.all.forEach(p => { const l = p.resident.likelihood; c[l >= 0.5 ? 0 : l > 0 ? 1 : 2]++; }); return c.join(','); })()`);
+  check('Buyer kinds from the sheet (regular, sometimes, never) follow the likelihoods: ' + byRule, kinds, byRule);
+  check('...and the sheet has some of each kind', byRule.split(',').every(n => +n > 0), true);
   check('Kinds by likelihood: 0% never, 35% sometimes, 50% and 80% regular', await ev('[0, 0.35, 0.5, 0.8].map(e.residents.constructor.kind).join()'), 'never,sometimes,regular,regular');
   check('Tonight: never buyers never buy, regulars always can', await ev(`e.residents.all.every(p => { const k = e.residents.constructor.kind(p.resident.likelihood); return k === 'sometimes' || p.buys === (k === 'regular'); })`), true);
   const story = await ev(`(() => { const R = e.residents.constructor; const some = e.residents.all.filter(p => R.kind(p.resident.likelihood) === 'sometimes').map(p => p.resident);
@@ -95,7 +99,9 @@ const { chromium } = require('playwright');
   check('...and walk around', sim.walked > 1000, true);
   check('...facing the way they walk', sim.facingOk, true);
   check('...never more than 100 px from their door', sim.farthest <= 100, true);
-  check('...and some are still out at the end (30 to 130)', sim.out >= 30 && sim.out <= 130, true);
+  // SCREAM-231: about half the never buyers and 3/4 of everyone else are out at any time (SCREAM-152), give or take 25.
+  const outExpected = await ev(`e.residents.all.reduce((n, p) => n + (p.resident.likelihood > 0 ? 0.75 : 0.5), 0)`);
+  check(`...and some are still out at the end (about ${Math.round(outExpected)}, give or take 25)`, Math.abs(sim.out - outExpected) <= 25 ? 'ok' : sim.out, 'ok');
 
   // On screen: drive to someone who is outside
   const target = await ev('(p => [p.resident.id, Math.round(p.x), Math.round(p.y)])(e.residents.all.find(p => p.outside && !p.walking) || e.residents.all.find(p => p.outside))');

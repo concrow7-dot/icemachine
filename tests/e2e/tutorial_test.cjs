@@ -257,6 +257,9 @@ const { chromium } = require('playwright');
   const leftHome = Date.now();
   await page.waitForFunction(() => window.__game.registry.get('evening').tutorial.step === 'regular', null, { timeout: 25000 });
   const toRegular = (Date.now() - leftHome) / 1000 + 1.3;
+  // SCREAM-231: his stop is timed in game time (a Phaser timer), which runs behind the wall clock on a
+  // slow machine; so add up the game's own frame times from the moment he spots her.
+  await ev(`(window.__held = 0, window.__heldFn = (t, d) => { window.__held += d; }, window.__game.scene.getScene('Drive').events.on('update', window.__heldFn), true)`);
   check('Home to his regular takes about 10 seconds (was about 2.6)', toRegular > 8.5 && toRegular < 13.5 ? 'ok' : toRegular.toFixed(1), 'ok');
   await wait(600);
   check('The instant she has her "!": he names her', (await uncle()) + ' | ' + (await ev("e.residents.all.find(p => p.resident.id === 'T008').customer")), "Oh hey, it's Chloe Hogan... They buy ice cream pretty much every night. | running");
@@ -264,14 +267,15 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_spotted.png' });
   const spottedAt = Date.now();
   await page.waitForFunction(() => window.__game.registry.get('evening').tutorial.lineNumber === 1, null, { timeout: 9000 });
-  const held = (Date.now() - spottedAt) / 1000 + 0.6;
+  const heldWall = (Date.now() - spottedAt) / 1000 + 0.6;   // the creep below is measured on the wall clock
+  const held = await ev(`(window.__game.scene.getScene('Drive').events.off('update', window.__heldFn), window.__held / 1000)`);
   check('...for about 4 seconds', held > 3.4 && held < 4.8 ? 'ok' : held.toFixed(1), 'ok');
   await wait(1200);
   check('Then his second line, and the truck creeps forward', (await uncle()) + ' | ' + (await drive('s.speed > 5 && s.speed < 40')), 'My best customers buy ice cream almost every night! Remembering where they live is the hard part. | true');
   check('...a long line: his box grows a second row, and it fits', await page.evaluate(() => (b => b.height > 58 && b.text.y + b.text.height <= b.height - 58 / 2 - 6)(window.__game.scene.getScene('Hud').uncleBox)), true);
   await page.screenshot({ path: outDir + '/uncle_creep.png' });
   await page.waitForFunction(() => { const s = window.__game.scene.getScene('Drive'); return !s.scene.isActive() || !s.uncleLeg; }, null, { timeout: 15000 });
-  const creep = (Date.now() - spottedAt) / 1000 - held;
+  const creep = (Date.now() - spottedAt) / 1000 - heldWall;
   check('...for about 4 to 6 seconds, up to her square', creep > 3.5 && creep < 7 ? 'ok' : creep.toFixed(1), 'ok');
   if (await drive('s.scene.isActive()')) check('He pulls up straight, at her square, park brake on', (await drive('s.speed === 0 && s.parkBrake')) + ' ' + (await drive("(c => Math.hypot(s.truck.x - c[2], s.truck.y - c[3]) < 30)(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T008').resident.curb)")) + ' ' + (await drive('Math.abs(s.uncleRoute.at(s.uncleRoute.distanceAlong(s.truck.x, s.truck.y)).heading - 95.9) < 2')), 'true true true');
   await page.screenshot({ path: outDir + '/uncle_regular.png' });

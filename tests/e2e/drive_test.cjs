@@ -83,7 +83,10 @@ const { TRACK } = require('./track.cjs');
   await wait(800);
   const tc = await truck(); await wait(300);
   check('Let go: the truck keeps creeping forward', (await truck()).x > tc.x, true);
-  await page.keyboard.down('s'); await wait(250); await page.keyboard.press('q'); await page.keyboard.up('s'); await wait(300);
+  // SCREAM-231: hold S until the truck has actually stopped (a fixed 250 ms was too short on a slow machine), then Q.
+  await page.keyboard.down('s');
+  await page.waitForFunction(() => Math.abs(window.__game.scene.getScene('Drive').speed) < 1, null, { timeout: 5000 });
+  await page.keyboard.press('q'); await page.keyboard.up('s'); await wait(300);
   const t2 = await truck(); await wait(300);
   check('S (brake) to a full stop, then Q (park brake): it stays stopped', JSON.stringify(await truck()), JSON.stringify(t2));
 

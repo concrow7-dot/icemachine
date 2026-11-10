@@ -62,6 +62,8 @@ const { chromium } = require('playwright');
   // ---- SCREAM-121: the old-school dial; steady above a quarter tank, jumping around below ----
   const needleSpread = async (fuelLevel) => {
     await ev(`(e.fuelLeft = ${fuelLevel}, true)`);
+    // SCREAM-231: let the HUD draw a few frames first, so the first reading isn't the old level.
+    await wait(200);
     let lo = 9, hi = -9;
     for (let i = 0; i < 25; i++) { const n = await sc('Hud', 's.fuelNeedle'); lo = Math.min(lo, n); hi = Math.max(hi, n); await wait(60); }
     return [lo, hi];
