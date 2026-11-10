@@ -366,7 +366,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
   check('Tutorial finished: every mode unlocked', await sc('Title', 's.options.some(o => o.locked) + " " + s.children.getByName("lock-note").text'), 'false ');
-  check('...and Day 2 to continue', /^Quick Play,Continue Story: Day 2, \$[0-9.]+,New Story$/.test(await sc('Title', 's.options.map(o => o.label).join()')), true);
+  check('...and Day 2 to continue', /^Quick Play,Continue Story: Tuesday, Day 2, \$[0-9.]+,New Story$/.test(await sc('Title', 's.options.map(o => o.label).join()')), true);
   await press('ArrowDown', 2); await press('Enter'); await wait(300);
   check('The title screen credits the tune', await sc('Title', 's.children.list.some(o => o.text && o.text.includes("Tune: Travis Morgan"))'), true);
   await press('y'); await wait(300);

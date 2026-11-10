@@ -6,6 +6,7 @@ import { largestSaleLine, offerLargestSale } from '../state/Records';
 import { BIKE_PRICE_CENTS } from '../config/tuning';
 import { addTruckBackdrop, DUSK_SHADE, loadTruckInterior } from '../ui/truckInterior';
 import { showLoadingWhileLoading } from './LoadingScene';
+import { weekdayName } from '../state/Residents';
 
 // SCREAM-19 (PO, October 31): the end of an evening in Story mode. Tonight's
 // takings and what you carry into tomorrow: the wallet and the ice cream left
@@ -48,7 +49,7 @@ export class DayEndScene extends Phaser.Scene {
       .text(width / 2, 50, heading, { fontFamily: MONO, fontSize: '36px', color: this.outcome === 'broke' ? '#ff9c9c' : '#ffe8a3' })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, 92, `Day ${finishedDay} of ${story.days}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' })
+      .text(width / 2, 92, `${weekdayName(finishedDay)}: Day ${finishedDay} of ${story.days}`, { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' })
       .setOrigin(0.5);
 
     // ---- Tonight ----
@@ -110,7 +111,7 @@ export class DayEndScene extends Phaser.Scene {
     this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
     const footer =
-      this.outcome === 'next' ? `Enter: Start Day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';
+      this.outcome === 'next' ? `Enter: Start ${weekdayName(story.day)}, Day ${story.day}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';
     this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {

@@ -44,7 +44,7 @@ export class StoryIntroScene extends Phaser.Scene {
         color: '#6b7a93',
       })
       .setOrigin(0.5);
-    this.add.text(width / 2, height - 36, 'Enter: Start Day 1', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
+    this.add.text(width / 2, height - 36, 'Enter: Start Monday, Day 1', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (event.key !== 'Enter' || this.leaving) return;

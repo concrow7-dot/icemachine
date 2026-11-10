@@ -11,6 +11,7 @@ import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
 import { markTutorialDone, skipUncle } from '../state/Tutorial';
 import { count } from '../state/Counter';
+import { weekdayName } from '../state/Residents';
 
 /**
  * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
@@ -61,7 +62,8 @@ export class HudScene extends Phaser.Scene {
     this.evening = getEvening(this);
     const story = getStory(this);
     // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
-    this.dayLabel = story ? `   Day ${story.day}/${story.days}` : '';
+    // SCREAM-221 (decision 057): the weekday by the day number; Story starts on a Monday.
+    this.dayLabel = story ? `   ${weekdayName(story.day)}, Day ${story.day}/${story.days}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);

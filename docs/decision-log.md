@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 061 — Foley Stadium's new likelihoods are on purpose; the tests follow the sheet (2026-11-10)
+
+**Decision (Jira SCREAM-231, PO, November 9):** the likelihoods synced in SCREAM-228 stay: most Foley Stadium customers who were 0% ("never") now have 1-16%, so in Quick play the mix is 40 regulars, 117 one-day-in-3 buyers and 3 never-buyers (it was 40 / 80 / 40, the 25% / 50% / 25% split of SCREAM-148). The residents tests now work out the expected mix from the sheet, so a later sync doesn't turn them red.
+
+**Options considered:** keep the new percentages and update the tests (chosen); set those customers back to 0% in the sheet; decide later.
+
+**Why (product owner's rationale, November 9):** _to ask the PO (why more one-day-in-3 buyers and fewer never-buyers in Quick play)._
+
+**Engineering's calls (proposals):** in Story the weekly ticks (057) decide instead, so this mix is Quick play's only.
+
 ## 060 — The residents build leaves roundabouts out of streets and curbs; each resident's yard has its own seed (2026-11-09)
 
 **Decision (Jira SCREAM-230, under SCREAM-202; engineering, November 9):** when the build works out a resident's street, which way their house faces, and their curb, it uses the ordinary streets only: a roundabout (a road with a `ring`, 050) is never anyone's street or curb. The ring still counts as road, so nobody stands on it and no pink square is nearer to it than to its own street. Each resident's yard spots now come from their own random seed (their ID) instead of one shared sequence, so one person's change no longer shifts everyone listed after them. A `check` command lists who a build would move, without the art; `build --no-art` rewrites only the residents file.
@@ -40,7 +50,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Why (product owner's rationale, November 9):** "I want to create a schedule and pattern that people can figure out over time." And for the starting ticks: "The goal is to have neighborhoods that are different throughout the week."
 
-**Engineering's calls (proposals):** the occasional customers' days were picked at random but kept even, so each weekday has about the same number, with a different mix; they are ticked on weekdays only, since Story is Monday to Friday. A customer ticked on all seven days counts as a regular (reliable at the window, 034). Hints (048) point only at customers home that day. The weekday shows on the hub and by the day number in the HUD. Not built yet (SCREAM-221).
+**Engineering's calls (proposals):** the occasional customers' days were picked at random but kept even, so each weekday has about the same number, with a different mix; they are ticked on weekdays only, since Story is Monday to Friday. A customer ticked on all seven days counts as a regular (reliable at the window, 034). Hints (048) point only at customers home that day. The weekday shows on the hub and by the day number in the HUD. **Built (SCREAM-221, November 10):** the HUD (over the hub and the road) shows "Monday, Day 1/5"; the end-of-day screen "Monday: Day 1 of 5" and "Enter: Start Tuesday, Day 2"; the title "Continue Story: Tuesday, Day 2, $0.50"; the Story intro "Enter: Start Monday, Day 1". In Story, Likelihood no longer decides who buys, but it still sets how quickly someone comes out once they hear the truck (the chance each second), so the build warns about anyone ticked with 0%. A map without day columns falls back to Likelihood. The buyer kind used for the rotary hint's "second visit by a regular" (050) follows the ticks in Story too.
 
 ## 056 — One skip key in the uncle's evening: X (2026-11-09)
 

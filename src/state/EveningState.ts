@@ -298,7 +298,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (this.tutorial?.step === 'sale') return; // the uncle's sale (PO)
     const id = person.resident.id;
     this.visits[id] = (this.visits[id] ?? 0) + 1;
-    if (this.visits[id] !== 2 || Residents.kind(person.resident.likelihood) !== 'regular') return;
+    if (this.visits[id] !== 2 || this.residents.kindOf(person.resident) !== 'regular') return;
     this.secondVisits.push(id);
     if (this.rotaryHintGiven || this.secondVisits.length !== 2) return;
     this.rotaryHintGiven = true;

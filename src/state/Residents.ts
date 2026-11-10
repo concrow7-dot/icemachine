@@ -61,6 +61,25 @@ export interface Resident {
   orderSize?: number;
   /** SCREAM-103 (PO): the sheet's "Hinted": other customers sometimes point the player to this big regular. */
   hinted?: boolean;
+  /**
+   * SCREAM-221 (PO, decision 057): the sheet's Mon to Sun ticks, as the days they're home
+   * (0 = Monday ... 6 = Sunday). In Story these replace Likelihood's buyer kind; Quick play
+   * ignores them. Left out when the sheet has no day columns (Story then uses Likelihood).
+   */
+  days?: number[];
+}
+
+/** SCREAM-221: the days of the week, Monday first (Story's Day 1 is a Monday). */
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+
+/** SCREAM-221: which day of the week a Story day is (0 = Monday): Day 1 is Monday, Day 8 Monday again. */
+export function weekdayOf(day: number): number {
+  return (((day - 1) % 7) + 7) % 7;
+}
+
+/** SCREAM-221: a Story day's name, e.g. "Monday" for Day 1. */
+export function weekdayName(day: number): string {
+  return WEEKDAYS[weekdayOf(day)]!;
 }
 
 /**
@@ -74,6 +93,17 @@ export type BuyerKind = 'regular' | 'sometimes' | 'never';
 export function buyerKind(likelihood: number): BuyerKind {
   if (likelihood <= 0) return 'never';
   return likelihood >= BUYER_REGULAR_FROM ? 'regular' : 'sometimes';
+}
+
+/**
+ * SCREAM-221 (decision 057): in Story, someone with ticks is a regular if ticked all seven
+ * days (reliable at the window, 034), never a buyer if ticked on none, and otherwise buys on
+ * their ticked days. Without ticks, or in Quick play (no `story`), Likelihood decides as before.
+ */
+export function kindFor(resident: Resident, story?: { day: number; seed: number }): BuyerKind {
+  if (!story || !resident.days) return buyerKind(resident.likelihood);
+  if (resident.days.length >= 7) return 'regular';
+  return resident.days.length === 0 ? 'never' : 'sometimes';
 }
 
 /**
@@ -96,9 +126,11 @@ export function buysTonight(
   rnd: () => number,
   story?: { day: number; seed: number },
 ): boolean {
-  const kind = buyerKind(resident.likelihood);
+  const kind = kindFor(resident, story);
   if (kind !== 'sometimes') return kind === 'regular';
   if (!story) return rnd() < 1 / BUYER_SOMETIMES_DAYS;
+  // SCREAM-221: home on their ticked days, every week.
+  if (resident.days) return resident.days.includes(weekdayOf(story.day));
   return (story.day - 1) % BUYER_SOMETIMES_DAYS === sometimesDay(resident.id, story.seed);
 }
 
@@ -196,12 +228,12 @@ export function customerChance(heard: number, likelihood: number, indoors: boole
 }
 
 /** SCREAM-148 / 152 (PO, November 3): sometimes buyers and regulars are outside about 3/4 of the time; never buyers as before. */
-function routineFor(resident: Resident): {
+function routineFor(resident: Resident, story?: { day: number; seed: number }): {
   startOutside: number;
   outside: readonly [number, number];
   inside: readonly [number, number];
 } {
-  return buyerKind(resident.likelihood) !== 'never'
+  return kindFor(resident, story) !== 'never'
     ? { startOutside: BUYERS_START_OUTSIDE_CHANCE, outside: BUYERS_OUTSIDE_SECONDS, inside: BUYERS_INSIDE_SECONDS }
     : { startOutside: RESIDENT_START_OUTSIDE_CHANCE, outside: RESIDENT_OUTSIDE_SECONDS, inside: RESIDENT_INSIDE_SECONDS };
 }
@@ -216,6 +248,15 @@ export class Residents {
   /** SCREAM-148: the buyer kinds, for the browser tests. */
   static readonly kind = buyerKind;
   static readonly buysTonight = buysTonight;
+  /** SCREAM-221: the buyer kind in Story (ticks) or Quick play (Likelihood), for the browser tests. */
+  static readonly kindFor = kindFor;
+  /** SCREAM-221: Story's day and run seed (undefined in Quick play). */
+  private readonly story?: { day: number; seed: number };
+  /** SCREAM-221: what kind of buyer this resident is tonight (Story: their ticks; Quick play: Likelihood). */
+  kindOf(resident: Resident): BuyerKind {
+    return kindFor(resident, this.story);
+  }
+
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
@@ -240,8 +281,9 @@ export class Residents {
   ) {
     this.rnd = rnd;
     this.curbs = curbs;
+    this.story = story;
     this.people = list.map((resident) => {
-      const times = routineFor(resident);
+      const times = routineFor(resident, story);
       const outside = rnd() < times.startOutside;
       const spot = outside ? this.yardSpot(resident) : resident.door;
       const person: Running = {
@@ -351,7 +393,7 @@ export class Residents {
       // Seconds heard are counted in a row, so someone who hears the truck again later gets a fresh first-second chance.
       p.heard = inRing ? p.heard + 1 : 0;
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
-      const regular = buyerKind(p.resident.likelihood) === 'regular';
+      const regular = this.kindOf(p.resident) === 'regular';
       if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors, regular)) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
