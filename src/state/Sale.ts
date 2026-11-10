@@ -301,6 +301,19 @@ export class Sale {
     this.say(`${this.line} ${hint}`);
   }
 
+  /** SCREAM-247: this customer said something about their own week. */
+  saidSchedule = false;
+
+  /**
+   * SCREAM-247 (PO, November 10): after a paid sale the customer sometimes mentions their own
+   * schedule ("See you Thursday!"), after their thanks.
+   */
+  addScheduleLine(text: string): void {
+    if (this.outcome?.kind !== 'paid') return;
+    this.saidSchedule = true;
+    this.say(`${this.line} ${text}`);
+  }
+
   /** SCREAM-145: this customer told the player the trick at the roundabout. */
   toldAboutRotary = false;
 

@@ -2,6 +2,29 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 064 — Customers mention their own schedule at the window, in many different wordings (2026-11-10)
+
+**Decision (Jira SCREAM-247, under SCREAM-11, PO, November 10):** now and then, in Story, a customer leaving the window says something true about their own week, such as "See you Thursday!". There are many ways of saying it, so the dialogue doesn't repeat. The PO's examples: "I have soccer until Thursday", "I work every day except...", "The best days to visit are...", "Nobody is home on...". The lines live in a new **Schedule lines** tab of the Residents sheet ("sync schedule lines"), for the PO to add to and rewrite.
+
+**Also decided the same day (for later tickets):**
+
+- **Order of work:** a few of the customer tickets, then playtest round 3, then power-ups.
+- **The memorable few (SCREAM-246):** about 35% of residents get memorable traits. They lean towards likely customers, "however we do want to have interesting unlikely people".
+- **Hard-to-find customers (SCREAM-250, called "recluses" in 063):** a few have the same window every day ("like 6 - 6:05 every day"), others one moment in the week ("Friday after 7"). "Reclusive isn't the right word": they could be busy all week and then have a party on Friday at 7. "More of a hard to find customer than reclusive, although that could be an excuse for one of those customers."
+
+**Options considered:** one wording ("See you Thursday!") or many (chosen); lines fixed in the code or in the sheet (chosen, like the hint lines).
+
+**Why (product owner's rationale, November 10):** "I don't want the dialog to get very repetitive."
+
+**Engineering's calls (proposals):**
+
+- A line uses one tag and the game fills it in from the person's Mon to Sun ticks, so every line is true: `[Next]` the next day they're home; `[Back]` the same, used only when they're away tomorrow ("until Thursday"); `[Home]` the days they're home; `[Away]` the days they're out; no tag for people home all seven days. Lists stop at three days (someone home five days says which two they're out). `[Next]` and `[Back]` only name a day still to come in this run, so the player can act on it; on the last day people give their list of days.
+- Each person keeps the same few lines for a whole run, one of each kind (so a kid's excuse is always soccer, not soccer on Monday and swimming on Wednesday), picked from the run's seed: that follows 063 (traits don't change in a playthrough). Different people get different lines. Kid, Adult or Any, like the hint lines.
+- When: after any paid sale, with or without a tip (it's about themselves, not a reward like the hints of 048); a 30% chance; 4 a night at most; never on top of a hint or the rotary hint; not in the uncle's evening (his lines only). Both maps' people. Numbers in `tuning.ts` (`SCHEDULE_LINE_CHANCE`, `SCHEDULE_LINES_MAX_PER_EVENING`).
+- People with no ticked days say nothing. Quick play has none (063).
+- 16 of the 21 starting lines are engineering's drafts, marked so in the sheet.
+- Debug: Shift+7 makes the next paid sale end with the customer's line.
+
 ## 063 — Customers get fixed personal traits, in Story only, each with a tell (2026-11-10)
 
 **Decision (under SCREAM-11, PO, November 10; from a brainstorm on making customers more dynamic and interesting):**

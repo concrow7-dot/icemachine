@@ -1,0 +1,139 @@
+import { WEEKDAYS, weekdayOf } from './Residents';
+import type { Resident } from './Residents';
+
+/**
+ * SCREAM-247 (PO, November 10; decision 064): now and then a customer leaving the window says
+ * something true about their own week ("See you Thursday!"), so the weekly schedules (057) are
+ * easier to notice. The lines are in the "Schedule lines" tab of the Residents sheet
+ * (src/config/scheduleLines.ts). Story only.
+ */
+export interface ScheduleLine {
+  id: string;
+  /** Who the line suits: anyone, adults only, or kids only. */
+  who: 'any' | 'adult' | 'kid';
+  /** The line, with at most one kind of tag: [Next], [Back], [Home] or [Away]. */
+  text: string;
+}
+
+/**
+ * What a line says, from its tag:
+ * - next: [Next] is the next day they're home ("See you [Next]!")
+ * - back: [Back] is the same day, but the line only fits when they're away tomorrow ("I have soccer until [Back].")
+ * - home: [Home] lists the days they're home ("The best days to visit are [Home].")
+ * - away: [Away] lists the days they're out ("Nobody is home on [Away].")
+ * - every: no tag; for people home all seven days
+ */
+export type ScheduleKind = 'next' | 'back' | 'home' | 'away' | 'every';
+
+export const SCHEDULE_TAGS: Record<Exclude<ScheduleKind, 'every'>, string> = {
+  next: '[Next]',
+  back: '[Back]',
+  home: '[Home]',
+  away: '[Away]',
+};
+
+/** A list of days is only said out loud when it's this short (longer ones are said the other way round). */
+export const SCHEDULE_LIST_MAX = 3;
+
+export function kindOfLine(text: string): ScheduleKind {
+  for (const kind of ['next', 'back', 'home', 'away'] as const) if (text.includes(SCHEDULE_TAGS[kind])) return kind;
+  return 'every';
+}
+
+/** "Monday", "Monday and Thursday", "Monday, Wednesday and Friday" (in the week's order). */
+export function dayList(days: readonly number[]): string {
+  const names = [...days].sort((a, b) => a - b).map((d) => WEEKDAYS[d]!);
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** How many days from this Story day until they're next home (1 = tomorrow, up to 7), or null with no ticks. */
+export function daysUntilHome(days: readonly number[], day: number): number | null {
+  const today = weekdayOf(day);
+  for (let n = 1; n <= 7; n++) if (days.includes((today + n) % 7)) return n;
+  return null;
+}
+
+/**
+ * Whether a kind of line is true, and useful, for this resident on this Story day. Engineering's
+ * calls: [Next] and [Back] only name a day that's still to come in this run (`lastDay`), so the
+ * player can act on it; lists stop at three days.
+ */
+export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days'>, day: number, lastDay: number): boolean {
+  const days = resident.days;
+  if (!days || days.length === 0) return false;
+  if (kind === 'every') return days.length >= 7;
+  if (days.length >= 7) return false;
+  if (kind === 'home') return days.length <= SCHEDULE_LIST_MAX;
+  if (kind === 'away') return 7 - days.length <= SCHEDULE_LIST_MAX;
+  const wait = daysUntilHome(days, day)!;
+  if (day + wait > lastDay) return false;
+  return kind === 'next' || wait >= 2;
+}
+
+/** The line with the days put in. */
+export function fillSchedule(text: string, resident: Pick<Resident, 'days'>, day: number): string {
+  const days = resident.days ?? [];
+  const wait = daysUntilHome(days, day);
+  const next = wait === null ? '' : WEEKDAYS[(weekdayOf(day) + wait) % 7]!;
+  const away = [0, 1, 2, 3, 4, 5, 6].filter((d) => !days.includes(d));
+  return text
+    .split(SCHEDULE_TAGS.next).join(next)
+    .split(SCHEDULE_TAGS.back).join(next)
+    .split(SCHEDULE_TAGS.home).join(dayList(days))
+    .split(SCHEDULE_TAGS.away).join(dayList(away));
+}
+
+/** A small seeded random number generator (mulberry32): the same seed gives the same numbers. */
+function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/**
+ * PO (decision 063): a person's traits don't change during a playthrough, and (064) the lines
+ * shouldn't get repetitive. So each resident gets their own few lines for the whole run, one
+ * per kind (their one excuse: always soccer, never soccer one day and swimming the next), picked
+ * from the run's seed and their id; different people get different lines. Returns resident id →
+ * their lines. People with no ticks get none.
+ */
+export function assignScheduleLines(residents: readonly Resident[], lines: readonly ScheduleLine[], seed: number): Map<string, ScheduleLine[]> {
+  const out = new Map<string, ScheduleLine[]>();
+  for (const r of residents) {
+    if (!r.days || r.days.length === 0) continue;
+    const rnd = seeded(seed ^ hash(r.id));
+    const own: ScheduleLine[] = [];
+    for (const kind of ['next', 'back', 'home', 'away', 'every'] as const) {
+      const fits = lines.filter((l) => kindOfLine(l.text) === kind && (l.who === 'any' || (l.who === 'kid') === r.kid));
+      const pick = fits.length > 0 ? fits[Math.floor(rnd() * fits.length)] : undefined; // always roll, so one kind's lines don't shift another's
+      if (pick) own.push(pick);
+    }
+    if (own.length > 0) out.set(r.id, own);
+  }
+  return out;
+}
+
+/** One of the resident's own lines that fits today, filled in; null when none fits. */
+export function scheduleLineToday(
+  own: readonly ScheduleLine[] | undefined,
+  resident: Pick<Resident, 'days'>,
+  day: number,
+  lastDay: number,
+  rnd: () => number = Math.random,
+): string | null {
+  const fits = (own ?? []).filter((l) => kindFits(kindOfLine(l.text), resident, day, lastDay));
+  if (fits.length === 0) return null;
+  return fillSchedule(fits[Math.floor(rnd() * fits.length)]!.text, resident, day);
+}

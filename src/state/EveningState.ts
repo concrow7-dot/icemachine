@@ -10,6 +10,8 @@ import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { assignHints } from './Hints';
 import { HINT_LINES } from '../config/hintLines';
+import { assignScheduleLines, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
+import { SCHEDULE_LINES } from '../config/scheduleLines';
 import { TutorialEvents, TutorialRun } from './Tutorial';
 import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
@@ -20,6 +22,9 @@ import {
   HINT_FIRST_AFTER_SALES,
   HINT_GAP_SALES,
   HINT_MAX_PER_EVENING,
+  SCHEDULE_LINE_CHANCE,
+  SCHEDULE_LINES_MAX_PER_EVENING,
+  STORY_DAYS,
   CRATE_SIDE,
   EVENING_END_HOUR,
   EVENING_LENGTH_SECONDS,
@@ -176,6 +181,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
   readonly hintFor: Map<string, string>;
   /** Debug (Shift+6): the next tipped sale gives a hint, whatever the count and the chance (still at most 2 a night). */
   forceHint = false;
+  /** SCREAM-247: the chance a paid sale ends with the customer's own schedule line (tests set 0 or 1). */
+  scheduleLineChance = SCHEDULE_LINE_CHANCE;
+  /** SCREAM-247: each resident's own few schedule lines for this run (resident id → lines), from the run's seed. Empty outside Story. */
+  readonly scheduleLinesFor: Map<string, ScheduleLine[]>;
+  /** SCREAM-247: how many customers have mentioned their schedule tonight. */
+  scheduleLinesSaid = 0;
+  /** Debug (Shift+7): the next paid sale ends with the customer's schedule line, if they have one that fits today. */
+  forceScheduleLine = false;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. SCREAM-145: the current map's. */
   get residents(): Residents {
@@ -246,6 +259,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     // is one evening: not enough time for the neighbourhood's story). SCREAM-145: the lines come from the
     // home map's (Elm Park's) residents.
     this.hintFor = carry?.story ? assignHints(map.residents, HINT_LINES, carry.story.seed) : new Map();
+    // SCREAM-247 (PO, decision 063: traits are Story only and fixed for a run): both maps' people.
+    this.scheduleLinesFor = carry?.story
+      ? assignScheduleLines(Object.values(MAPS).flatMap((m) => m.residents), SCHEDULE_LINES, carry.story.seed)
+      : new Map();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
     // line at the cooler. It still counts as the starting $50, so the night's profit is the same.
@@ -709,6 +726,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145
       if (sale.outcome.tipCents > 0 && !sale.toldAboutRotary) this.maybeHint(sale);
+      if (!sale.toldAboutRotary && !sale.hintAbout) this.maybeScheduleLine(sale); // SCREAM-247: one extra line at most
       this.tutorial?.signal('salePaid');
       count('first-sale', this.tutorial ? 'tutorial' : this.mapId); // SCREAM-201: once a visit
     }
@@ -737,6 +755,25 @@ export class EveningState extends Phaser.Events.EventEmitter {
     sale.addHint(pick.id, this.hintFor.get(pick.id)!);
     this.hintsGiven.push(pick.id);
     this.lastHintAtSale = this.paidSales;
+  }
+
+  /**
+   * SCREAM-247 (PO, November 10; decision 064): after a paid sale, sometimes the customer says
+   * something true about their own week ("See you Thursday!"). Story only. Engineering's calls:
+   * not during the uncle's evening (his lines only); never on top of a hint; a tip isn't needed
+   * (unlike hints, this is about themselves); at most a few an evening.
+   */
+  private maybeScheduleLine(sale: Sale): void {
+    if (this.tutorial || !this.story) return;
+    const me = this.servingNow?.resident;
+    if (!me) return;
+    const forced = this.forceScheduleLine;
+    if (!forced && this.scheduleLinesSaid >= SCHEDULE_LINES_MAX_PER_EVENING) return;
+    const line = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS);
+    if (!line || (!forced && Math.random() >= this.scheduleLineChance)) return;
+    this.forceScheduleLine = false;
+    sale.addScheduleLine(line);
+    this.scheduleLinesSaid += 1;
   }
 
   /** B on the sales screen: drive off without serving (a lost sale). */

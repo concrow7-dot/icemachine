@@ -140,7 +140,7 @@ const { chromium } = require('playwright');
     const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
     s.phase = 'ordering'; s.order = [{ slot: 0, flavour: 'eclair', count: 1 }];
     e.servingNow = e.residents.all.find(p => p.resident.id === id);
-    e.saleNow = s; e.hintChance = 0;
+    e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = 0; // SCREAM-247: no schedule lines in these checks
     s.charge = () => { s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 0, tipCents: tip, tipPercent: 0 }; s.line = 'Thanks!'; return 'paid'; }; // $0, so the wallet checks below hold
     e.chargeForSale(0);
     e.saleNow = null; e.servingNow = null;
@@ -158,6 +158,43 @@ const { chromium } = require('playwright');
   check('...once per run: a third regular served twice says nothing', (await serve(r3)) && (await serve(r3)).split('|')[0], 'quiet');
   check('...and no big-regular hint on top of it in the same breath', /Here's a hint/.test(told), false);
   check('...marked as given', (await ev('e.rotaryHintGiven')) + ' ' + (await ev('e.secondVisits.join(",")')), 'true ' + r1 + ',' + r2 + ',' + r3);
+
+  // ---- SCREAM-247: customers mention their own schedule after a paid sale (stand-in sales; Story's Day 1 is a Monday) ----
+  const sched = (id, chance = 1, opts = {}) => page.evaluate(async ([id, chance, opts]) => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const L = await import('/src/state/ScheduleLines.js');
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
+    s.phase = 'ordering'; s.order = [{ slot: 0, flavour: 'eclair', count: 1 }];
+    const p = e.residents.all.find(p => p.resident.id === id);
+    e.servingNow = p; e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = chance;
+    if (opts.said !== undefined) e.scheduleLinesSaid = opts.said;
+    if (opts.force) e.forceScheduleLine = true;
+    s.charge = () => { s.phase = 'over'; s.outcome = { kind: 'paid', priceCents: 0, tipCents: 0, tipPercent: 0 }; s.line = 'Thanks!'; return 'paid'; };
+    const before = { visits: JSON.stringify(e.visits), second: e.secondVisits.length, paid: e.paidSales }; // leave the SCREAM-145 counts as they were
+    e.chargeForSale(0);
+    e.saleNow = null; e.servingNow = null;
+    for (const k of Object.keys(e.visits)) delete e.visits[k];
+    Object.assign(e.visits, JSON.parse(before.visits)); e.secondVisits.length = before.second; e.paidSales = before.paid;
+    const own = (e.scheduleLinesFor.get(id) || []).map(l => 'Thanks! ' + L.fillSchedule(l.text, p.resident, 1));
+    return { said: s.saidSchedule, line: s.line, own: own.includes(s.line), force: e.forceScheduleLine, count: e.scheduleLinesSaid };
+  }, [id, chance, opts]);
+  const monThuOnly = await ev("(e.residents.all.find(p => p.resident.days && p.resident.days.length >= 2 && p.resident.days.length <= 3 && p.resident.days.includes(3) && !p.resident.days.includes(1) && !p.resident.days.includes(2)) || { resident: { id: '' } }).resident.id");
+  const allWeek = await ev("e.residents.all.find(p => p.resident.days && p.resident.days.length === 7).resident.id");
+  check('Schedule lines: everyone with ticked days has their own lines this run', await ev("e.residents.all.filter(p => p.resident.days && p.resident.days.length > 0).every(p => (e.scheduleLinesFor.get(p.resident.id) || []).length > 0)"), true);
+  const day1Sched = await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");
+  check('...none when the dice say no', (await sched(allWeek, 0, { said: 0 })).said, false);
+  const s1 = await sched(allWeek, 1, { said: 0 });
+  check("...a paid sale (no tip needed) can end with one, after the thanks, from the customer's own lines", s1.said + ' ' + s1.own + ' ' + /^Thanks! .+/.test(s1.line), 'true true true');
+  check('...someone home every day names no day', /day\b/.test(s1.line.replace(/every day|Any day|Every\. Single\. Day/g, '')), false);
+  if (monThuOnly) {
+    const s2 = await sched(monThuOnly, 1, { said: 0 });
+    check('...on Monday, someone away until Thursday says so truthfully (names Thursday, never Tuesday or Wednesday as home)', s2.said + ' ' + s2.own + ' ' + /Thursday/.test(s2.line), 'true true true');
+  }
+  check('...no more than 4 a night', (await sched(allWeek, 1, { said: 4 })).said, false);
+  const forced = await sched(allWeek, 0, { said: 4, force: true });
+  check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
+  await ev('(e.scheduleLinesSaid = 0, e.scheduleLineChance = 0, 0)');
 
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');
@@ -184,6 +221,7 @@ const { chromium } = require('playwright');
   check('Day 2 (Tuesday): people ticked for Tuesday are the likelier ones', await ev(`(() => { const R = e.residents.constructor; return e.residents.all.every(p => (R.scheduleFactor(p.resident, { day: 2, seed: 1 }) > 1) === p.resident.days.includes(1)); })()`), true);
   check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '2 true true 4');
   check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
+  check('Schedule lines (063): everyone keeps the same lines on day 2 as on day 1', await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Sched);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
@@ -402,6 +440,7 @@ const { chromium } = require('playwright');
   check('Quick play: $50, no Story run', (await ev('e.moneyCents')) + ' ' + (await story('r')), '5000 null');
   check('Quick play: HUD shows no day', /Day/.test(await hudClock()), false);
   check('Quick play: no hints (PO: Story only)', await ev('e.hintFor.size'), 0);
+  check('Quick play: no schedule lines (PO: Story only)', await ev('e.scheduleLinesFor.size'), 0);
   await shift(3); await wait(300);
   check('Quick play ends on the results screen', await scenes(), 'Results');
 

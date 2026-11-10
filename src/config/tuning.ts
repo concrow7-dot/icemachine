@@ -393,6 +393,14 @@ export const HINT_GAP_SALES = 4;
 /** At most this many hints in an evening. */
 export const HINT_MAX_PER_EVENING = 2;
 
+// ---- Customers mention their own schedule (SCREAM-247) ----
+// PO, November 10 (decision 064): now and then a customer leaving the window says something
+// true about their own week ("See you Thursday!"). Story only. The numbers are engineering's.
+/** The chance that a paid sale ends with the customer's schedule line, when one fits today. */
+export const SCHEDULE_LINE_CHANCE = 0.3;
+/** At most this many schedule lines in an evening, so they stay a treat and not noise. */
+export const SCHEDULE_LINES_MAX_PER_EVENING = 4;
+
 // ---- SCREAM-145: the roundabouts between the maps ----
 /** PO (November 8): laps of a roundabout that take the truck to the other map. */
 export const RING_LAPS = 3;
