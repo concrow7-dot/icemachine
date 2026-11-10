@@ -2,6 +2,31 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 067 — Hard-to-find customers: a 30-second window, 10 ice creams, a 4x tip (2026-11-10)
+
+**Decision (Jira SCREAM-250, under SCREAM-11, PO, November 10):** in Story a few customers are nearly impossible to catch. Each has a short window; catch them in it and they buy big.
+
+- **The order is 10 ice creams, memorised like any other, and the tip is 4 times the usual** ("Lets make it 10 items, they have to memorize but the tip is 4x"). It was "like 15 say" in the brainstorm (063).
+- **The window is 30 seconds of play**, which is 18 minutes on the game's clock. He first said 20 seconds ("Lets say 20 second window"), then, before testing: "Lets move it to a 30 second window." _His reason for the change: to ask._
+- **"While these people should be nearly impossible to find at other times, they should be 100% in the window given though."**
+- **"I want these hints to be a little less common than the others."**
+- Engineering proposes who they are ("Go ahead and suggest some").
+- They aren't "recluses" (064): some have the same window every day, others one moment a week, and the reason differs per person.
+
+**Options considered:** an order of 15 or 10 (chosen), memorised (chosen) or shown as a list; a window of "6 to 6:05" (about 8 seconds), 20 seconds, or 30 seconds (chosen); outside the window never, or nearly never (chosen).
+
+**Why (product owner's rationale, from 063):** "I want to have some challenging aspects to the game, and if the player puts in the effort, I want the player to be rewarded. If a player gets used to the neighborhood, they should start to wonder why particular houses are impossible to get. The payoff of finally getting a house should be important."
+
+**Engineering's calls (proposals):**
+
+- A **Hard to find** column (Yes) on both map tabs of the Residents sheet. It needs From and Until (the window) and at least one ticked day; the 10 comes from Order size.
+- **Caught** means the truck's music reaches their house inside the window on a ticked day: they come out for certain, and are served as normal even if the window closes while they walk.
+- **Nearly impossible otherwise:** outside the window (or on an unticked day) they get one roll an evening at their Likelihood from the sheet, set to 2%. They're home all evening and may be seen in the yard, so the player can wonder about the house.
+- **Hints:** their own line and their street's line give the window ("Nobody ever catches [Name]. Try between [From] and [Until]."), using `[From]` and `[Until]` together. They're never described as "home every day". When a hard-to-find neighbour comes up as the one to talk about, they're passed over half the time (`HARD_TO_FIND_HINT_SKIP`), so their hints are rarer. 8 new draft lines.
+- **Starting three, Elm Park** (people who almost never bought before): Pizza Joe (Westland Street) every day 6:00 to 6:18; Zombie Poplicks (Lee Street) every day 7:30 to 7:48; Ruth Butter Ginsburg (Germain Street) Fridays only, 7:00 to 7:18. Foley Stadium has the column, all blank.
+- Not in the uncle's evening. Quick play ignores the column.
+- `HARD_TO_FIND_TIP_FACTOR` = 4 in `tuning.ts`. The order is shown for the usual time before it must be remembered; nothing was changed for 10 items.
+
 ## 066 — Some customers are only home at certain hours of the evening (2026-11-10)
 
 **Decision (Jira SCREAM-249, under SCREAM-11, PO, November 10):** in Story, a resident can have hours as well as days: home only from a certain time ("home every day but only after 7") or only until one. Outside their hours they stay indoors and don't come to the truck. They and their neighbours can say so. The PO picked it as the next customer ticket, with SCREAM-250 (hard-to-find customers) to follow, since 250 needs it.

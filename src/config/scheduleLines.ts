@@ -233,5 +233,25 @@ export const SCHEDULE_LINES: ScheduleLine[] = [
   "id": "S046",
   "who": "any",
   "text": "After [Until] you won't find me."
+ },
+ {
+  "id": "S047",
+  "who": "any",
+  "text": "You caught me! I'm only ever free between [From] and [Until]."
+ },
+ {
+  "id": "S048",
+  "who": "any",
+  "text": "Between [From] and [Until]. That's the only time I answer the door."
+ },
+ {
+  "id": "S049",
+  "who": "adult",
+  "text": "I get one break a day: [From] to [Until]. You're it."
+ },
+ {
+  "id": "S050",
+  "who": "kid",
+  "text": "I'm only allowed out from [From] to [Until]."
  }
 ];

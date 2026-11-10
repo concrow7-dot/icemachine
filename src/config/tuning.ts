@@ -406,6 +406,13 @@ export const SCHEDULE_LINE_CHANCE_SOME_DAYS = 0.6;
 /** At most this many schedule lines in an evening, so they stay a treat and not noise. */
 export const SCHEDULE_LINES_MAX_PER_EVENING = 4;
 
+// ---- Hard-to-find customers (SCREAM-250) ----
+// PO, November 10 (decision 067): a few people are only there in a short window (30 seconds
+// of play, which is 18 minutes on the clock), order 10 ice creams to memorise, and tip
+// 4 times as much.
+/** How many times bigger a hard-to-find customer's tip is. */
+export const HARD_TO_FIND_TIP_FACTOR = 4;
+
 // ---- Neighbours hint about each other's days (SCREAM-248) ----
 // PO, November 10 (decision 065): the community knows itself. When a customer has something to
 // say about the week (the chances above), it's sometimes about a neighbour on their street

@@ -24,10 +24,11 @@ export interface ScheduleLine {
  * - every: no tag; for people home all seven days
  * - from: [From] is the time they get home (SCREAM-249; "I'm never home before [From].")
  * - until: [Until] is the time they stop coming out ("I have to be in bed by [Until].")
+ * - window: both [From] and [Until], for people with both (SCREAM-250's hard-to-find customers)
  */
-export type ScheduleKind = 'next' | 'back' | 'home' | 'away' | 'every' | 'from' | 'until';
+export type ScheduleKind = 'next' | 'back' | 'home' | 'away' | 'every' | 'from' | 'until' | 'window';
 
-export const SCHEDULE_TAGS: Record<Exclude<ScheduleKind, 'every'>, string> = {
+export const SCHEDULE_TAGS: Record<Exclude<ScheduleKind, 'every' | 'window'>, string> = {
   next: '[Next]',
   back: '[Back]',
   home: '[Home]',
@@ -47,6 +48,7 @@ export const EVERY_DAY_LINES_EACH = 3;
 export const SCHEDULE_LIST_MAX = 3;
 
 export function kindOfLine(text: string): ScheduleKind {
+  if (text.includes(SCHEDULE_TAGS.from) && text.includes(SCHEDULE_TAGS.until)) return 'window';
   for (const kind of ['next', 'back', 'home', 'away', 'from', 'until'] as const) if (text.includes(SCHEDULE_TAGS[kind])) return kind;
   return 'every';
 }
@@ -70,12 +72,18 @@ export function daysUntilHome(days: readonly number[], day: number): number | nu
  * calls: [Next] and [Back] only name a day that's still to come in this run (`lastDay`), so the
  * player can act on it; lists stop at three days.
  */
-export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days' | 'hours'>, day: number, lastDay: number): boolean {
+export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days' | 'hours' | 'hardToFind'>, day: number, lastDay: number): boolean {
   const days = resident.days;
   if (!days || days.length === 0) return false;
   // SCREAM-249: a time of the evening, for the few people who have one (true on any day).
-  if (kind === 'from') return resident.hours?.[0] != null;
-  if (kind === 'until') return resident.hours?.[1] != null;
+  const from = resident.hours?.[0] != null;
+  const until = resident.hours?.[1] != null;
+  if (kind === 'window') return from && until;
+  if (kind === 'from') return from && !until;
+  if (kind === 'until') return until && !from;
+  // SCREAM-250: a hard-to-find customer is described by their window, and by their days when
+  // those are few. "Home every day" or "see you Thursday" would send the player on a wild chase.
+  if (resident.hardToFind && kind !== 'home' && kind !== 'away') return false;
   if (kind === 'every') return days.length >= 7;
   if (days.length >= 7) return false;
   if (kind === 'home') return days.length <= SCHEDULE_LIST_MAX;
@@ -143,15 +151,18 @@ export function assignScheduleLines(
     if (!r.days || r.days.length === 0) continue;
     const rnd = seeded(seed ^ hash(r.id));
     const own: ScheduleLine[] = [];
-    for (const kind of ['next', 'back', 'home', 'away', 'every', 'from', 'until'] as const) {
+    for (const kind of ['next', 'back', 'home', 'away', 'every', 'from', 'until', 'window'] as const) {
       const fits = lines.filter((l) => kindOfLine(l.text) === kind && (l.who === 'any' || (l.who === 'kid') === r.kid));
       const roll = rnd(); // always roll, so one kind's lines don't shift another's
       if (fits.length === 0) continue;
-      if (kind === 'from' || kind === 'until') {
-        // SCREAM-249: only people with that hour; regulars too.
-        if (r.hours?.[kind === 'from' ? 0 : 1] != null) own.push(fits[Math.floor(roll * fits.length)]!);
+      if (kind === 'from' || kind === 'until' || kind === 'window') {
+        // SCREAM-249: only people with that hour; regulars too. SCREAM-250: both hours = a window.
+        const has = [r.hours?.[0] != null, r.hours?.[1] != null];
+        const wanted = kind === 'window' ? has[0] && has[1] : kind === 'from' ? has[0] && !has[1] : has[1] && !has[0];
+        if (wanted) own.push(fits[Math.floor(roll * fits.length)]!);
         continue;
       }
+      if (r.hardToFind && kind !== 'home' && kind !== 'away') continue; // SCREAM-250: their window and their days only
       if (kind !== 'every') {
         if (r.days.length < 7) own.push(fits[Math.floor(roll * fits.length)]!);
         continue;
@@ -171,7 +182,7 @@ export function assignScheduleLines(
  */
 export function scheduleLineToday(
   own: readonly ScheduleLine[] | undefined,
-  resident: Pick<Resident, 'days' | 'hours'>,
+  resident: Pick<Resident, 'days' | 'hours' | 'hardToFind'>,
   day: number,
   lastDay: number,
   rnd: () => number = Math.random,
@@ -187,6 +198,13 @@ export function scheduleLineToday(
 
 /** Salt for the neighbours' lines, so they aren't picked by the same dice as people's own lines. */
 const NEIGHBOUR_SALT = 0x5ca1ab1e;
+
+/**
+ * SCREAM-250 (PO, November 10: "I want these hints to be a little less common than the others"):
+ * when a hard-to-find neighbour comes up as the one to talk about, they're passed over this
+ * often and the customer talks about someone else (or about themselves).
+ */
+export const HARD_TO_FIND_HINT_SKIP = 0.5;
 
 /** Whether other customers can talk about this resident: they have ticked days and do buy. */
 export function canBeToldAbout(resident: Pick<Resident, 'days' | 'likelihood'>): boolean {
@@ -222,10 +240,12 @@ export function neighbourLineToday(
   rnd: () => number = Math.random,
   heard: readonly string[] = [],
   toldAbout: readonly string[] = [],
+  hardToFindSkip = HARD_TO_FIND_HINT_SKIP,
 ): { about: string; id: string; text: string } | null {
   const neighbours = people.filter((r) => r.id !== speaker.id && r.street === speaker.street && canBeToldAbout(r) && !toldAbout.includes(r.id));
   while (neighbours.length > 0) {
     const about = neighbours.splice(Math.floor(rnd() * neighbours.length), 1)[0]!;
+    if (about.hardToFind && rnd() < hardToFindSkip) continue; // SCREAM-250: their hints are rarer
     const fits = (linesFor.get(about.id) ?? []).filter((l) => !heard.includes(l.id) && kindFits(kindOfLine(l.text), about, day, lastDay));
     if (fits.length === 0) continue;
     const line = fits[Math.floor(rnd() * fits.length)]!;
