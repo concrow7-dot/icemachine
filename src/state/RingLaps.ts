@@ -49,6 +49,11 @@ export class LapCounter {
     return (this.travelled % 360) / 360;
   }
 
+  /** SCREAM-229: laps so far as a fraction (1.5 = halfway round the second lap). */
+  get turns(): number {
+    return this.travelled / 360;
+  }
+
   get onRing(): boolean {
     return this.lastAngle !== null;
   }
@@ -89,6 +94,17 @@ export class LapCounter {
     this.lastAngle = null;
     this.direction = 0;
   }
+}
+
+/**
+ * SCREAM-229 (PO, November 9): how strong the portal in the middle of the roundabout is, 0 to 1,
+ * from the laps driven so far (`LapCounter.turns`). Nothing on the first lap; it appears at the
+ * start of the second and grows steadily until the last lap is done (1). With 3 laps: 1.5 laps
+ * is 0.25, 2 laps is 0.5.
+ */
+export function portalStrength(turns: number, lapsNeeded: number): number {
+  if (lapsNeeded <= 1) return Math.min(Math.max(turns, 0), 1);
+  return Math.min(Math.max((turns - 1) / (lapsNeeded - 1), 0), 1);
 }
 
 /**

@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 059 — A portal opens in the roundabout on the way between the maps (2026-11-09)
+
+**Decision (Jira SCREAM-229, under SCREAM-10, PO, November 9):** driving round a roundabout (050) opens a portal in its middle. Nothing on the first lap; on the second a faint portal appears in the middle and grows; on the third it grows over the ring road; when the last lap is done it swallows the whole screen, and on the other map it starts over the screen and closes back into that map's roundabout. It has a sound (PO: "I'd love to add a noise"). The look follows the PO's two references (a photo of a portal picture and his own sketch, both in Personal Notes): a dark middle, blue turning violet towards a soft edge, and lines swirling inward. Leaving the roundabout partway: the portal fades and there's no trip. Arriving: the player can drive off straight away while it closes (no skip needed). Story only, like the laps. Drawn in code, and each part (the swallow, the close) takes about a second: both engineering's proposals, agreed by the PO. It replaces SCREAM-145's half-second fade to black.
+
+**Options considered:** for leaving partway, fade away (chosen) or stay; for arriving, a skip or speed-up, or drive off at once (chosen); Story only (chosen) or Quick play too; drawn in code (chosen) or new art.
+
+**Why (product owner's rationale, November 9):** _to ask the PO (why a portal, and why a sound)._
+
+**Engineering's calls (proposals):** the sound is made in code with the browser's sound (like the music): a rushing wind that wobbles as the portal swirls, with a low hum, rising to a whoosh as it swallows the screen and falling away as it closes; M mutes it with the music, and it goes quiet while paused. Its loudest is 0.1 (the music plays at 0.07). Sizes: the size of the grass island (80 px) by the end of lap 2, over the ring road (175 px, under the truck) by the end of lap 3. It's faint on lap 2 (up to 60% strength) and full on lap 3. The swallow ends on the portal's dark middle, which also covers the moment the other map loads. The animation moves on with the game's frames rather than a timer, so a slow frame (the other map loading) slows it down rather than skipping it. The numbers are in `tuning.ts` (`PORTAL_*`).
+
 ## 058 — Both maps' residents in one Residents sheet, in a new Customers folder (2026-11-09)
 
 **Decision (PO, November 9):** sheets 15 (Foley Stadium's residents) and 23 (Elm Park's) are one Google Sheet, **Residents**, with a tab per map (Elm Park, Foley Stadium) plus Hint lines, Rotary hint and Old likelihoods. It lives in a new **Customers** folder in IceMachine, next to Product Management Decisions. It keeps sheet 15's link. Product Management Decisions is renumbered to close the gaps: 16 → 15, 17 → 16, 18 → 17, 19 → 18, 20 → 19, 21 → 20, 22 → 21, 24 → 22 (the PO renames it: the Drive connector can't find it), 25 → 23; the next number is 24. Both maps' tabs now have an Order size column (Elm Park's had lost it; Big Kev is 7 again).

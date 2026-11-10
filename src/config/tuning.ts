@@ -387,6 +387,26 @@ export const HINT_MAX_PER_EVENING = 2;
 // ---- SCREAM-145: the roundabouts between the maps ----
 /** PO (November 8): laps of a roundabout that take the truck to the other map. */
 export const RING_LAPS = 3;
+
+// ---- SCREAM-229: the portal in the roundabout ----
+// PO (November 9): a portal opens in the middle of the roundabout on the second lap, grows on the
+// third, swallows the screen when the last lap is done, and closes on the other map. His
+// references: dark centre, blue to violet towards a soft edge, lines swirling inward. The sizes and
+// timings are engineering's; the PO agreed each part should take about a second.
+/** How long the portal takes to swallow the screen (ms). */
+export const PORTAL_SWALLOW_MS = 1000;
+/** How long it takes to close on the other map (ms); the player can drive meanwhile. */
+export const PORTAL_CLOSE_MS = 1000;
+/** Its radius (px) at the end of the second lap: about the grass island in the middle. */
+export const PORTAL_ISLAND_RADIUS = 80;
+/** Its radius (px) when the last lap is done: over the ring road, under the truck. */
+export const PORTAL_FULL_RADIUS = 175;
+/** Its strongest look by the end of the second lap (0 to 1); the third lap takes it to 1. */
+export const PORTAL_HALFWAY_ALPHA = 0.6;
+/** How fast the portal catches up with the laps (per second): it fades rather than pops. */
+export const PORTAL_EASE_PER_SECOND = 3;
+/** The portal's sound at its loudest (0 to 1); the music plays at 0.07. */
+export const PORTAL_VOLUME = 0.1;
 /**
  * PO (November 9): the hint comes from a regular on their second visit: the second regular in
  * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
