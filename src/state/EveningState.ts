@@ -10,8 +10,9 @@ import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { assignHints } from './Hints';
 import { HINT_LINES } from '../config/hintLines';
-import { assignScheduleLines, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
+import { assignNeighbourLines, assignScheduleLines, neighbourLineToday, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
 import { SCHEDULE_LINES } from '../config/scheduleLines';
+import { NEIGHBOUR_LINES } from '../config/neighbourLines';
 import { TutorialEvents, TutorialRun } from './Tutorial';
 import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
@@ -24,6 +25,8 @@ import {
   HINT_MAX_PER_EVENING,
   SCHEDULE_LINE_CHANCE,
   SCHEDULE_LINE_CHANCE_SOME_DAYS,
+  NEIGHBOUR_LINE_SHARE_EVERY_DAY,
+  NEIGHBOUR_LINE_SHARE_SOME_DAYS,
   SCHEDULE_LINES_MAX_PER_EVENING,
   STORY_DAYS,
   CRATE_SIDE,
@@ -192,6 +195,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
   scheduleLinesSaid = 0;
   /** Debug (Shift+7): the next paid sale ends with the customer's schedule line, if they have one that fits today. */
   forceScheduleLine = false;
+  /** SCREAM-248: what the street says about each resident this run (id of the resident talked about → lines). Empty outside Story. */
+  readonly neighbourLinesFor: Map<string, ScheduleLine[]>;
+  /** SCREAM-248: who customers have told the player about tonight (resident ids), most recent last. */
+  readonly neighboursToldAbout: string[] = [];
+  /** SCREAM-248: how often a schedule line is about a neighbour (tests set 0 or 1); null = the tuning values. */
+  neighbourLineShare: number | null = null;
+  /** Debug (Shift+8): the next paid sale ends with a line about a neighbour, if the customer has one to talk about today. */
+  forceNeighbourLine = false;
 
   /** The neighbourhood's people (SCREAM-59, SCREAM-73), going in and out of their houses all evening. SCREAM-145: the current map's. */
   get residents(): Residents {
@@ -265,6 +276,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     // SCREAM-247 (PO, decision 063: traits are Story only and fixed for a run): both maps' people.
     this.scheduleLinesFor = carry?.story
       ? assignScheduleLines(Object.values(MAPS).flatMap((m) => m.residents), SCHEDULE_LINES, carry.story.seed)
+      : new Map();
+    // SCREAM-248: and what their neighbours say about them.
+    this.neighbourLinesFor = carry?.story
+      ? assignNeighbourLines(Object.values(MAPS).flatMap((m) => m.residents), NEIGHBOUR_LINES, carry.story.seed)
       : new Map();
     this.startCashCents = carry?.cashCents ?? STARTING_CASH_CENTS;
     // SCREAM-191 (PO, November 6): with the uncle, the cash starts empty; his $50 comes with his
@@ -764,20 +779,43 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * SCREAM-247 (PO, November 10; decision 064): after a paid sale, sometimes the customer says
    * something true about their own week ("See you Thursday!"). Story only. Engineering's calls:
    * not during the uncle's evening (his lines only); never on top of a hint; a tip isn't needed
-   * (unlike hints, this is about themselves); at most a few an evening.
+   * (unlike hints, this is about themselves); at most a few an evening. SCREAM-248: the line is
+   * sometimes about a neighbour instead; both kinds share the evening's limit.
    */
   private maybeScheduleLine(sale: Sale): void {
     if (this.tutorial || !this.story) return;
     const me = this.servingNow?.resident;
     if (!me) return;
-    const forced = this.forceScheduleLine;
+    const forced = this.forceScheduleLine || this.forceNeighbourLine;
     if (!forced && this.scheduleLinesSaid >= SCHEDULE_LINES_MAX_PER_EVENING) return;
-    const line = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard);
-    const chance = this.scheduleLineChance ?? ((me.days?.length ?? 0) >= 7 ? SCHEDULE_LINE_CHANCE : SCHEDULE_LINE_CHANCE_SOME_DAYS);
-    if (!line || (!forced && Math.random() >= chance)) return;
+    const everyDay = (me.days?.length ?? 0) >= 7;
+    const own = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard);
+    // SCREAM-248 (decision 065): or something about a neighbour on their street.
+    const neighbour = neighbourLineToday(
+      me,
+      this.residents.all.map((p) => p.resident),
+      this.neighbourLinesFor,
+      this.story.day,
+      STORY_DAYS,
+      Math.random,
+      this.scheduleLinesHeard,
+      this.neighboursToldAbout,
+    );
+    if (!own && !neighbour) return;
+    const chance = this.scheduleLineChance ?? (everyDay ? SCHEDULE_LINE_CHANCE : SCHEDULE_LINE_CHANCE_SOME_DAYS);
+    if (!forced && Math.random() >= chance) return;
+    const share = this.neighbourLineShare ?? (everyDay ? NEIGHBOUR_LINE_SHARE_EVERY_DAY : NEIGHBOUR_LINE_SHARE_SOME_DAYS);
+    const aboutNeighbour = !!neighbour && (!own || (this.forceNeighbourLine ? true : this.forceScheduleLine ? false : Math.random() < share));
     this.forceScheduleLine = false;
-    sale.addScheduleLine(line.text);
-    this.scheduleLinesHeard.push(line.id);
+    this.forceNeighbourLine = false;
+    if (aboutNeighbour) {
+      sale.addNeighbourLine(neighbour!.about, neighbour!.text);
+      this.neighboursToldAbout.push(neighbour!.about);
+      this.scheduleLinesHeard.push(neighbour!.id);
+    } else {
+      sale.addScheduleLine(own!.text);
+      this.scheduleLinesHeard.push(own!.id);
+    }
     this.scheduleLinesSaid += 1;
   }
 

@@ -156,7 +156,7 @@ export class HudScene extends Phaser.Scene {
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
    * of the clock and day, and since SCREAM-220 only with ?debug in the address. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
-   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247) and Shift+4 (serve now) still work for testing, but aren't shown.
+   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247), Shift+8 (...with a line about a neighbour, SCREAM-248) and Shift+4 (serve now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
     // SCREAM-220 (PO, November 9): players don't see the debug hint; add ?debug to the address to show it.
@@ -193,6 +193,7 @@ export class HudScene extends Phaser.Scene {
       if (event.code === 'Digit5') this.previewLoading();
       if (event.code === 'Digit6') this.evening.forceHint = true; // SCREAM-103: the next tipped sale gives a hint
       if (event.code === 'Digit7') this.evening.forceScheduleLine = true; // SCREAM-247: the next paid sale ends with the customer's schedule line
+      if (event.code === 'Digit8') this.evening.forceNeighbourLine = true; // SCREAM-248: the next paid sale ends with a line about a neighbour
     });
   }
 

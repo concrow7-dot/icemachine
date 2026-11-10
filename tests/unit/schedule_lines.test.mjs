@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { kindOfLine, dayList, daysUntilHome, kindFits, fillSchedule, assignScheduleLines, scheduleLineToday } = await game('state/ScheduleLines');
+const { kindOfLine, dayList, daysUntilHome, kindFits, fillSchedule, assignScheduleLines, scheduleLineToday, assignNeighbourLines, neighbourLineToday, fillNeighbour, canBeToldAbout } = await game('state/ScheduleLines');
+const { NEIGHBOUR_LINES } = await game('config/neighbourLines');
 const { SCHEDULE_LINES } = await game('config/scheduleLines');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { RESIDENTS } = await game('config/residents');
@@ -145,4 +146,73 @@ test('PO (testing): across Elm Park\'s regulars at least 8 different "every day"
     const used = new Set(regs.flatMap((r) => m.get(r.id).map((l) => l.id)));
     assert.ok(used.size >= 8, `seed ${seed}: ${used.size}`);
   }
+});
+
+// ---- SCREAM-248 (PO, November 10; decision 065): neighbours know each other's days ----
+const joe = { ...base, id: 'N1', name: 'Joe Sullivan ', street: 'Lee Street', days: [0, 4] };
+const ann = { ...base, id: 'N2', name: 'Ann Lee', street: 'Lee Street', kid: true, days: [0, 1, 2, 3, 4, 5, 6] };
+const bob = { ...base, id: 'N3', name: 'Bob Far', street: 'Other Road', days: [1, 2] };
+const never = { ...base, id: 'N4', name: 'Never Buys', street: 'Lee Street', likelihood: 0, days: [0, 1] };
+const noTicks = { ...base, id: 'N5', name: 'No Ticks', street: 'Lee Street', days: [] };
+const street = [joe, ann, bob, never, noTicks];
+
+test('SCREAM-248: a neighbour line gets the name, the street and the days', () => {
+  assert.equal(fillNeighbour('[Name] on [Street] is only home on [Home].', joe, 1), 'Joe Sullivan on Lee Street is only home on Monday and Friday.');
+  assert.equal(fillNeighbour("You won't see [Name] until [Back].", joe, 1), "You won't see Joe Sullivan until Friday.");
+});
+
+test('SCREAM-248: only people who buy and have ticked days are talked about; one line per kind, the same all run', () => {
+  assert.deepEqual(street.map(canBeToldAbout), [true, true, true, false, false]);
+  const a = assignNeighbourLines(street, NEIGHBOUR_LINES, 77);
+  const b = assignNeighbourLines([...street].reverse(), NEIGHBOUR_LINES, 77);
+  assert.deepEqual([...a.keys()].sort(), ['N1', 'N2', 'N3']);
+  for (const [id, own] of a) {
+    assert.deepEqual(own.map((l) => l.id), b.get(id).map((l) => l.id));
+    const kinds = own.map((l) => kindOfLine(l.text));
+    assert.equal(new Set(kinds).size, kinds.length, `${id}: one line per kind`);
+  }
+  assert.deepEqual(a.get('N2').map((l) => kindOfLine(l.text)), ['every']);
+});
+
+test('SCREAM-248: a customer talks about someone else on their own street, truthfully', () => {
+  const m = assignNeighbourLines(street, NEIGHBOUR_LINES, 77);
+  for (let i = 0; i < 100; i++) {
+    const said = neighbourLineToday(ann, street, m, 1, 5);
+    assert.equal(said.about, 'N1'); // not herself, not Bob (another street), not the two who can't be talked about
+    assert.ok(m.get('N1').some((l) => fillNeighbour(l.text, joe, 1) === said.text), said.text);
+    assert.match(said.text, /Joe Sullivan/);
+    assert.equal(/\[/.test(said.text), false);
+  }
+  assert.equal(neighbourLineToday(bob, street, m, 1, 5), null); // nobody else on Other Road
+});
+
+test('SCREAM-248: never the same neighbour or the same wording twice in an evening', () => {
+  const m = assignNeighbourLines(street, NEIGHBOUR_LINES, 77);
+  const first = neighbourLineToday(joe, street, m, 1, 5);
+  assert.equal(first.about, 'N2');
+  assert.equal(neighbourLineToday(joe, street, m, 1, 5, Math.random, [], ['N2']), null);
+  assert.equal(neighbourLineToday(joe, street, m, 1, 5, Math.random, [first.id], []), null);
+});
+
+test('SCREAM-248: every real neighbour line is true-to-the-ticks text that fits the bubble (120 characters with "Thanks! ")', () => {
+  for (const list of [TUTORIAL_RESIDENTS, RESIDENTS]) {
+    const m = assignNeighbourLines(list, NEIGHBOUR_LINES, 99);
+    for (const r of list) {
+      assert.equal(m.has(r.id), canBeToldAbout(r), r.name);
+      for (const l of m.get(r.id) ?? []) {
+        for (let day = 1; day <= STORY_DAYS; day++) {
+          if (!kindFits(kindOfLine(l.text), r, day, STORY_DAYS)) continue;
+          const said = 'Thanks! ' + fillNeighbour(l.text, r, day);
+          assert.ok(said.length <= 120, `${l.id} about ${r.name}: ${said.length}`);
+          assert.equal(/\[|\]|  /.test(said), false, said);
+        }
+      }
+    }
+  }
+});
+
+test('SCREAM-248: many different neighbour wordings are in use across Elm Park', () => {
+  const m = assignNeighbourLines(TUTORIAL_RESIDENTS, NEIGHBOUR_LINES, 7);
+  const used = new Set([...m.values()].flat().map((l) => l.id));
+  assert.ok(used.size >= 15, `only ${used.size}`);
 });

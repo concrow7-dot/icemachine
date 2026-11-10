@@ -167,7 +167,9 @@ const { chromium } = require('playwright');
     const s = new Sale([{ slot: 0, flavour: 'eclair', count: 1 }], 4, 0, false);
     s.phase = 'ordering'; s.order = [{ slot: 0, flavour: 'eclair', count: 1 }];
     const p = e.residents.all.find(p => p.resident.id === id);
-    e.servingNow = p; e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = chance;
+    e.servingNow = p; e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = chance; e.neighbourLineShare = opts.share ?? 0;
+    if (opts.told === 'clear') e.neighboursToldAbout.length = 0;
+    if (opts.forceNeighbour) e.forceNeighbourLine = true;
     if (opts.said !== undefined) e.scheduleLinesSaid = opts.said;
     if (opts.heard === 'clear') e.scheduleLinesHeard.length = 0;
     if (opts.force) e.forceScheduleLine = true;
@@ -178,7 +180,10 @@ const { chromium } = require('playwright');
     for (const k of Object.keys(e.visits)) delete e.visits[k];
     Object.assign(e.visits, JSON.parse(before.visits)); e.secondVisits.length = before.second; e.paidSales = before.paid;
     const own = (e.scheduleLinesFor.get(id) || []).map(l => 'Thanks! ' + L.fillSchedule(l.text, p.resident, 1));
-    return { said: s.saidSchedule, line: s.line, own: own.includes(s.line), force: e.forceScheduleLine, count: e.scheduleLinesSaid };
+    const about = s.neighbourAbout ? e.residents.all.find(q => q.resident.id === s.neighbourAbout).resident : null;
+    const theirs = about ? (e.neighbourLinesFor.get(about.id) || []).map(l => 'Thanks! ' + L.fillNeighbour(l.text, about, 1)) : [];
+    return { said: s.saidSchedule, line: s.line, own: own.includes(s.line), force: e.forceScheduleLine, count: e.scheduleLinesSaid,
+      about: about ? about.id : '', neighbour: !!about && about.id !== id && about.street === p.resident.street && s.line.includes(about.name.trim()) && theirs.includes(s.line), forceN: e.forceNeighbourLine };
   }, [id, chance, opts]);
   const monThuOnly = await ev("(e.residents.all.find(p => p.resident.days && p.resident.days.length >= 2 && p.resident.days.length <= 3 && p.resident.days.includes(3) && !p.resident.days.includes(1) && !p.resident.days.includes(2)) || { resident: { id: '' } }).resident.id");
   const allWeek = await ev("e.residents.all.find(p => p.resident.days && p.resident.days.length === 7).resident.id");
@@ -189,8 +194,9 @@ const { chromium } = require('playwright');
   check("...a paid sale (no tip needed) can end with one, after the thanks, from the customer's own lines", s1.said + ' ' + s1.own + ' ' + /^Thanks! .+/.test(s1.line), 'true true true');
   check('...someone home every day names no weekday', /Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/.test(s1.line), false);
   const s1b = await sched(allWeek, 1, { said: 0 }), s1c = await sched(allWeek, 1, { said: 0 }), s1d = await sched(allWeek, 1, { said: 0 });
-  check('...(PO, testing) the same regular says three different things, then nothing new is left tonight', new Set([s1.line, s1b.line, s1c.line]).size + ' ' + s1d.said, '3 false');
-  await sched(allWeek, 0, { heard: 'clear' });
+  check('...(PO, testing) the same regular says three different things, then has nothing new of their own tonight', new Set([s1.line, s1b.line, s1c.line]).size + ' ' + s1d.said, '3 false');
+  check('...and talks about a neighbour instead (SCREAM-248)', s1d.neighbour, true);
+  await sched(allWeek, 0, { heard: 'clear', told: 'clear' });
   if (monThuOnly) {
     const s2 = await sched(monThuOnly, 1, { said: 0 });
     check('...on Monday, someone away until Thursday says so truthfully (names Thursday, never Tuesday or Wednesday as home)', s2.said + ' ' + s2.own + ' ' + /Thursday/.test(s2.line), 'true true true');
@@ -198,7 +204,18 @@ const { chromium } = require('playwright');
   check('...no more than 4 a night', (await sched(allWeek, 1, { said: 4 })).said, false);
   const forced = await sched(allWeek, 0, { said: 4, force: true, heard: 'clear' });
   check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
-  await ev('(e.scheduleLinesSaid = 0, e.scheduleLinesHeard.length = 0, e.scheduleLineChance = 0, 0)');
+  // ---- SCREAM-248: neighbours know each other's days (same stand-in sales) ----
+  check('Neighbour lines: everyone here with ticked days who buys can be talked about, and nobody else', await ev("e.residents.all.every(p => e.neighbourLinesFor.has(p.resident.id) === (p.resident.likelihood > 0 && !!p.resident.days && p.resident.days.length > 0))"), true);
+  const day1Neighbours = await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");
+  const n1 = await sched(allWeek, 1, { said: 0, share: 1, heard: 'clear', told: 'clear' });
+  check("...a customer can say when someone else on their street is home: true, by name, from that neighbour's lines", n1.neighbour + ' ' + n1.said, 'true false');
+  const n2 = await sched(allWeek, 1, { said: 0, share: 1 });
+  check('...never about the same neighbour twice in an evening', n2.neighbour + ' ' + (n2.about !== n1.about) + ' ' + (n2.line !== n1.line), 'true true true');
+  check('...none when the share says no (their own line instead)', (await sched(allWeek, 1, { said: 0, share: 0, heard: 'clear', told: 'clear' })).said, true);
+  check('...they count towards the same 4 a night', (await sched(allWeek, 1, { said: 4, share: 1, heard: 'clear', told: 'clear' })).about, '');
+  const forcedN = await sched(allWeek, 0, { said: 4, share: 0, forceNeighbour: true, heard: 'clear', told: 'clear' });
+  check('...Shift+8 (debug) forces one on the next paid sale, once', forcedN.neighbour + ' ' + forcedN.forceN, 'true false');
+  await ev('(e.scheduleLinesSaid = 0, e.scheduleLinesHeard.length = 0, e.neighboursToldAbout.length = 0, e.scheduleLineChance = 0, 0)');
 
   await press('+', 3); await press('Enter'); await wait(300);
   check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');
@@ -226,6 +243,7 @@ const { chromium } = require('playwright');
   check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '2 true true 4');
   check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
   check('Schedule lines (063): everyone keeps the same lines on day 2 as on day 1', await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Sched);
+  check('Neighbour lines: the street says the same about everyone on day 2 as on day 1', await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Neighbours);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
@@ -445,6 +463,7 @@ const { chromium } = require('playwright');
   check('Quick play: HUD shows no day', /Day/.test(await hudClock()), false);
   check('Quick play: no hints (PO: Story only)', await ev('e.hintFor.size'), 0);
   check('Quick play: no schedule lines (PO: Story only)', await ev('e.scheduleLinesFor.size'), 0);
+  check('Quick play: no neighbour lines (PO: Story only)', await ev('e.neighbourLinesFor.size'), 0);
   await shift(3); await wait(300);
   check('Quick play ends on the results screen', await scenes(), 'Results');
 

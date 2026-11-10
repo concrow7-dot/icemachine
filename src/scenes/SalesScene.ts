@@ -370,7 +370,7 @@ export class SalesScene extends Phaser.Scene {
       this.bubbleText.setText(sale.line);
       // SCREAM-103 (PO, November 8): a long hint makes the bubble taller (downwards), not the text smaller.
       // SCREAM-247: the same for a customer's schedule line.
-      const long = !!sale.hintAbout || sale.saidSchedule;
+      const long = !!sale.hintAbout || sale.saidSchedule || !!sale.neighbourAbout; // SCREAM-248: and a line about a neighbour
       const h = long ? Math.max(BUBBLE_H, Math.ceil(this.bubbleText.height) + BUBBLE_NAME_SPACE + 2 * BUBBLE_PAD) : BUBBLE_H;
       this.sizeBubble(h);
       this.bubbleText.setY(long ? BUBBLE_Y + BUBBLE_NAME_SPACE + (h - BUBBLE_NAME_SPACE) / 2 : 212);

@@ -406,6 +406,15 @@ export const SCHEDULE_LINE_CHANCE_SOME_DAYS = 0.6;
 /** At most this many schedule lines in an evening, so they stay a treat and not noise. */
 export const SCHEDULE_LINES_MAX_PER_EVENING = 4;
 
+// ---- Neighbours hint about each other's days (SCREAM-248) ----
+// PO, November 10 (decision 065): the community knows itself. When a customer has something to
+// say about the week (the chances above), it's sometimes about a neighbour on their street
+// instead of themselves. The numbers are engineering's.
+/** How often that line is about a neighbour, for people home every day (their own line says little). */
+export const NEIGHBOUR_LINE_SHARE_EVERY_DAY = 0.7;
+/** The same for everyone else (their own days are the better tip). */
+export const NEIGHBOUR_LINE_SHARE_SOME_DAYS = 0.3;
+
 // ---- SCREAM-145: the roundabouts between the maps ----
 /** PO (November 8): laps of a roundabout that take the truck to the other map. */
 export const RING_LAPS = 3;
