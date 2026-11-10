@@ -36,6 +36,11 @@ export class RoadNetwork {
   /** SCREAM-159: each road's half width (60 px per lane each way), by index. */
   private readonly halves: number[];
   private readonly grid = new Map<string, number[]>();
+  /**
+   * SCREAM-234: the map's roundabouts (roads with a `ring`), with the width of their road, so
+   * nothing that belongs at a curb (customers, pink squares) is placed on or inside one.
+   */
+  readonly rings: { x: number; y: number; r: number; half: number }[];
 
   /**
    * With a mask (SCREAM-10, rounded corners), "on the road" is read from it:
@@ -45,10 +50,16 @@ export class RoadNetwork {
    */
   private readonly mask?: RoadMask;
 
+  /** SCREAM-234: true if (x, y) is on a roundabout's ring road or its island (within `margin` px past its outer curb). */
+  inRoundabout(x: number, y: number, margin = 0): boolean {
+    return this.rings.some((g) => Math.hypot(x - g.x, y - g.y) < g.r + g.half + margin);
+  }
+
   constructor(roads: readonly MapRoad[], mask?: RoadMask) {
     this.mask = mask;
     this.names = roads.map((r) => r.name);
     this.halves = roads.map((r) => LANE_WIDTH * (r.lanes ?? 1));
+    this.rings = roads.flatMap((r, i) => (r.ring ? [{ x: r.ring.x, y: r.ring.y, r: r.ring.r, half: this.halves[i]! }] : []));
     roads.forEach((road, i) => {
       const p = road.points;
       for (let k = 0; k + 3 < p.length; k += 2) {

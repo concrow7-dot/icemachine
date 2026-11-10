@@ -82,6 +82,7 @@ export class CurbFinder {
       const cy = ay + vy * u;
       const sx = cx + nx * LANE_OFFSET;
       const sy = cy + ny * LANE_OFFSET;
+      if (this.roads.inRoundabout(sx, sy, STAND_PAST_CURB)) continue; // SCREAM-234: never at a roundabout
       if (!this.squareFits(sx, sy, road)) continue;
       if (taken.some(([qx, qy]) => Math.hypot(qx - sx, qy - sy) < gap)) continue;
       const stand: [number, number] = [cx + nx * STAND_OFFSET, cy + ny * STAND_OFFSET];
@@ -124,6 +125,7 @@ export class CurbFinder {
           if (around && Math.hypot(stand[0] - around[0], stand[1] - around[1]) > around[2]) continue;
           const sx = cx + nx * LANE_OFFSET;
           const sy = cy + ny * LANE_OFFSET;
+          if (this.roads.inRoundabout(sx, sy, STAND_PAST_CURB)) continue; // SCREAM-234: never at a roundabout
           if (!this.squareFits(sx, sy, s.road)) continue;
           if (taken.some(([qx, qy]) => Math.hypot(qx - sx, qy - sy) < gap)) continue;
           if (!this.standClear(stand[0], stand[1])) continue;
