@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 062 — Riding with the uncle skips the New Bike screen; the credits' scroll sets up the bike (2026-11-10)
+
+**Decision (Jira SCREAM-235, SCREAM-236, PO, November 10):** a new Story With Uncle goes from the title straight into the uncle's evening (the credits' scroll, then him in the truck), with no New Bike screen. On My Own keeps the New Bike screen as it was ("on my own screen, the bike info stays"). So the bike stays the goal, the scroll now ends with it: "There's a new bike in the shop window: $600.00. Sell enough ice cream to buy it." (engineering's draft wording, waiting on the PO's).
+
+**Options considered:** drop the screen With Uncle and move the bike into the scroll (chosen); drop the screen for both; keep it for both.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the bike lines come after the PO's text, so they're the last thing on screen when the scroll cuts to the truck; the price comes from `BIKE_PRICE_CENTS`, so it follows the tuning. The scroll runs about 3.5 seconds longer (four more lines); `CUT_EARLY_MS` can take that back if it drags.
+
 ## 061 — Foley Stadium's new likelihoods are on purpose; the tests follow the sheet (2026-11-10)
 
 **Decision (Jira SCREAM-231, PO, November 9):** the likelihoods synced in SCREAM-228 stay: most Foley Stadium customers who were 0% ("never") now have 1-16%, so in Quick play the mix is 40 regulars, 117 one-day-in-3 buyers and 3 never-buyers (it was 40 / 80 / 40, the 25% / 50% / 25% split of SCREAM-148). The residents tests now work out the expected mix from the sheet, so a later sync doesn't turn them red.
