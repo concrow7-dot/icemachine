@@ -137,6 +137,12 @@ export const HINT_LINES: HintLine[] = [
   "text": "[Name] on [Street] tells everyone they're on a diet. A diet of ice cream."
  },
  {
+  "id": "H045",
+  "tone": "funny",
+  "who": "adult",
+  "text": "[Name] on [Street] says they have a fever, a fever for more ice cream."
+ },
+ {
   "id": "H024",
   "tone": "dark",
   "who": "any",
@@ -243,5 +249,11 @@ export const HINT_LINES: HintLine[] = [
   "tone": "absurd",
   "who": "any",
   "text": "[Name] on [Street] is writing a review of your ice cream. They're doing lots of research."
+ },
+ {
+  "id": "H044",
+  "tone": "absurd",
+  "who": "any",
+  "text": "[Name] on [Street] is having a holla-a-hooping competition. It is heating up."
  }
 ];
