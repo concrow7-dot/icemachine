@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 060 — The residents build leaves roundabouts out of streets and curbs; each resident's yard has its own seed (2026-11-09)
+
+**Decision (Jira SCREAM-230, under SCREAM-202; engineering, November 9):** when the build works out a resident's street, which way their house faces, and their curb, it uses the ordinary streets only: a roundabout (a road with a `ring`, 050) is never anyone's street or curb. The ring still counts as road, so nobody stands on it and no pink square is nearer to it than to its own street. Each resident's yard spots now come from their own random seed (their ID) instead of one shared sequence, so one person's change no longer shifts everyone listed after them. A `check` command lists who a build would move, without the art; `build --no-art` rewrites only the residents file.
+
+**Options considered:** for streets, leave rings out (chosen) or keep them and fix the two people by hand in the sheet; for yards, keep the shared sequence (every change ripples on) or one seed per resident (chosen; everyone's yard spots move once now, then stay put).
+
+**Why:** engineering's call (code health, not a product decision): without it, a full rebuild (needed for the Foley Stadium Tiled import) would give Amy Polar the street "Newton Square" and Tomas Thanks "Elm Park Rotary", which hints say out loud, and move 63 people's yard spots.
+
+**Engineering's calls (proposals):** both residents files rebuilt with the fix in the same PR. Amy Polar's curb moves a few pixels along June Street, and Tomas Thanks's door moves 20 px along his house front: both come from the map changes for the rings, not from the rings themselves. Yard spots are only where people wander outside, so moving them once is safe.
+
 ## 059 — A portal opens in the roundabout on the way between the maps (2026-11-09)
 
 **Decision (Jira SCREAM-229, under SCREAM-10, PO, November 9):** driving round a roundabout (050) opens a portal in its middle. Nothing on the first lap; on the second a faint portal appears in the middle and grows; on the third it grows over the ring road; when the last lap is done it swallows the whole screen, and on the other map it starts over the screen and closes back into that map's roundabout. It has a sound (PO: "I'd love to add a noise"). The look follows the PO's two references (a photo of a portal picture and his own sketch, both in Personal Notes): a dark middle, blue turning violet towards a soft edge, and lines swirling inward. Leaving the roundabout partway: the portal fades and there's no trip. Arriving: the player can drive off straight away while it closes (no skip needed). Story only, like the laps. Drawn in code, and each part (the swallow, the close) takes about a second: both engineering's proposals, agreed by the PO. It replaces SCREAM-145's half-second fade to black.

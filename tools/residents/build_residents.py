@@ -5,6 +5,14 @@ Usage (run from the repo root):
     python3 tools/residents/build_residents.py build <folder>  # csv + map + art -> src/config/residents.ts + sprites
     python3 tools/residents/build_residents.py seed tutorial            # the tutorial map's 40 residents (SCREAM-146)
     python3 tools/residents/build_residents.py build <folder> tutorial  # -> src/config/tutorialResidents.ts + sprites
+    python3 tools/residents/build_residents.py check [tutorial]  # no art needed, writes nothing: who would move?
+
+check places everyone as build would and lists each resident whose street, door, yard or
+curb would differ from the residents file in the repo (SCREAM-230). Run it before a build.
+
+Roundabouts (a road with a "ring", SCREAM-145) are never anyone's street or curb: a
+resident's street and curb come from the ordinary streets only. The ring is still road,
+so nobody stands on it and no pink square is nearer to it than to its own street.
 
 The tutorial map has its own residents sheet (doc 23, "Tutorial residents"), copied to
 tools/tutorial/residents.csv ("sync tutorial residents"), with the same columns.
@@ -100,8 +108,11 @@ def seg_dist(px, py, ax, ay, bx, by):
     return math.hypot(px - cx, py - cy), (cx, cy)
 
 
-def segments(m):
+def segments(m, rings=True):
+    """Every road's segments as (name, ax, ay, bx, by); rings=False leaves out roundabouts."""
     for r in m['roads']:
+        if not rings and r.get('ring'):
+            continue
         p = r['points']
         for i in range(0, len(p) - 2, 2):
             yield r['name'], p[i], p[i + 1], p[i + 2], p[i + 3]
@@ -144,7 +155,7 @@ def seed():
     if os.path.exists(CSV_PATH):
         sys.exit(f'{CSV_PATH} already exists: it is the PO\'s sheet now. Delete it first to start over.')
     m = load_map()
-    segs = list(segments(m))
+    segs = list(segments(m, rings=False))
     rnd = random.Random(59)
     used = set()
     rows = []
@@ -245,10 +256,12 @@ def compose(folder, parts):
 
 
 def yard(m, segs, house, others, rnd):
-    """Where a resident walks: a door on the side facing the street, and spots around the house."""
+    """Where a resident walks: a door on the side facing the street, and spots around the house.
+    segs is every road (rings too: nobody stands on one); the house faces its own street."""
     x, y, w, h = house['x'], house['y'], house['w'], house['h']
     cx, cy = x, y - h / 2
-    _, _, (rx, ry) = nearest_road(segs, cx, cy)
+    rings = {r['name'] for r in m['roads'] if r.get('ring')}
+    _, _, (rx, ry) = nearest_road([sg for sg in segs if sg[0] not in rings], cx, cy)
     nx, ny = rx - cx, ry - cy
     L = math.hypot(nx, ny) or 1
     nx, ny = nx / L, ny / L
@@ -366,6 +379,8 @@ def curb(m, segs, door, blocks):
 
     options = []
     for ri, ax, ay, bx, by in near_segs:
+        if m['roads'][ri].get('ring'):
+            continue  # SCREAM-230: nobody's curb is on a roundabout
         L = math.hypot(bx - ax, by - ay)
         if L < 1:
             continue
@@ -411,31 +426,23 @@ def curb(m, segs, door, blocks):
     sys.exit(f'No curb spot found near the door at {door}')
 
 
-def build(folder):
-    from PIL import Image
-    m = load_map()
-    segs = list(segments(m))
-    houses = houses_of(m)
-    people = read_csv()
-    rnd = random.Random(73)
-    # Everything people must not walk through: the residents' houses and the player's home.
+def blocks_of(m, houses):
+    """Everything people must not walk through: the residents' houses and the player's home."""
     sizes = {sp['key']: sp for sp in m['sprites']}
     blocks = houses + ([{'x': m['home']['x'], 'y': m['home']['y'], 'w': sizes[m['home']['key']]['w'],
                          'h': sizes[m['home']['key']]['h']}] if m['home'] else [])
     # SCREAM-52 (tutorial map): shops, fences, the basketball court and the playground are walked round too.
     blocks += [{'x': o['x'], 'y': o['y'], 'w': sizes[o['key']]['w'], 'h': sizes[o['key']]['h']}
                for o in m['objects'] if o['key'].startswith(('shop_', 'fence_', 'court_', 'play_'))]
-    # One image of every look in use.
-    looks = sorted({(p['look'], p['kid']) for p in people})
-    index = {k: i for i, k in enumerate(looks)}
-    rows = math.ceil(len(looks) / LOOKS_ACROSS)
-    sheet = Image.new('RGBA', (LOOKS_ACROSS * FRAMES_PER_ROW * FRAME_W, rows * 2 * FRAME_H))
-    for (look, kid), i in index.items():
-        sheet.alpha_composite(compose(folder, recipe(folder, look, kid)),
-                              ((i % LOOKS_ACROSS) * FRAMES_PER_ROW * FRAME_W, (i // LOOKS_ACROSS) * 2 * FRAME_H))
-    os.makedirs(os.path.dirname(OUT_PNG), exist_ok=True)
-    sheet.save(OUT_PNG, optimize=True)
+    return blocks
 
+
+def place(m, people, index):
+    """Everyone's street, door, yard and curb (no art needed)."""
+    segs = list(segments(m))                   # every road: nobody stands on one
+    streets = list(segments(m, rings=False))   # SCREAM-230: a street is never a roundabout
+    houses = houses_of(m)
+    blocks = blocks_of(m, houses)
     # SCREAM-158: a hand-made map (Tiled) keeps each house's own number, gaps and all.
     numbers = m.get('houseNumbers') or list(range(1, len(houses) + 1))
     by_number = dict(zip(numbers, houses))
@@ -444,13 +451,44 @@ def build(folder):
         if p['house'] not in by_number:
             sys.exit(f'{p["id"]}: there is no house {p["house"]} on the map')
         h = by_number[p['house']]
-        door, pts = yard(m, segs, h, blocks, rnd)
+        # SCREAM-230: each resident has their own random spots (seeded by their ID), so a
+        # change to one person's yard no longer shifts everyone listed after them.
+        door, pts = yard(m, segs, h, blocks, random.Random(f'73-{p["id"]}'))
         spot = curb(m, segs, door, blocks)
-        out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(segs, h),
+        out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(streets, h),
                     'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
                     'door': door, 'yard': pts, 'curb': spot,
                     **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
                     **({'hinted': True} if p.get('hinted') else {})})
+    return out
+
+
+def look_index(people):
+    looks = sorted({(p['look'], p['kid']) for p in people})
+    return looks, {k: i for i, k in enumerate(looks)}
+
+
+def draw_looks(folder, looks, index):
+    """One image of every look in use: public/assets/limezu/residents(-tutorial).png."""
+    from PIL import Image
+    rows = math.ceil(len(looks) / LOOKS_ACROSS)
+    sheet = Image.new('RGBA', (LOOKS_ACROSS * FRAMES_PER_ROW * FRAME_W, rows * 2 * FRAME_H))
+    for (look, kid), i in index.items():
+        sheet.alpha_composite(compose(folder, recipe(folder, look, kid)),
+                              ((i % LOOKS_ACROSS) * FRAMES_PER_ROW * FRAME_W, (i // LOOKS_ACROSS) * 2 * FRAME_H))
+    os.makedirs(os.path.dirname(OUT_PNG), exist_ok=True)
+    sheet.save(OUT_PNG, optimize=True)
+    return f'{OUT_PNG} ({sheet.width}x{sheet.height})'
+
+
+def build(folder):
+    """folder is the Character_Generator folder, or --no-art to rewrite only the .ts file
+    (fine when no Look or Age changed: residents.png stays as it is)."""
+    m = load_map()
+    people = read_csv()
+    looks, index = look_index(people)
+    png = 'no art drawn' if folder == '--no-art' else draw_looks(folder, looks, index)
+    out = place(m, people, index)
     ts = ['// GENERATED by tools/residents/build_residents.py from ' + os.path.relpath(CSV_PATH, ROOT).replace(os.sep, '/'),
           ('// (a copy of the PO\'s Tutorial residents sheet, doc 23): edit the sheet, not this file.' if TUTORIAL else
            '// (a copy of the PO\'s residents sheet, doc 38): edit the sheet, not this file.'),
@@ -466,8 +504,30 @@ def build(folder):
           f'export const {EXPORT}: Resident[] = {json.dumps(out, separators=(",", ":"))};', '']
     open(OUT_TS, 'w').write('\n'.join(ts))
     few = [o['id'] for o in out if len(o['yard']) < 4]
-    print(f'{len(out)} residents, {len(looks)} looks -> {OUT_TS}, {OUT_PNG} ({sheet.width}x{sheet.height}); '
+    print(f'{len(out)} residents, {len(looks)} looks -> {OUT_TS}, {png}; '
           f'{len(few)} with under 2 yard spots: {few[:10]}')
+
+
+def check():
+    """SCREAM-230: who would move if build ran now? Compares with the residents file in the repo."""
+    m = load_map()
+    people = read_csv()
+    _, index = look_index(people)
+    s = open(OUT_TS).read()
+    s = s[s.index(f'{EXPORT}: Resident[] = ') + len(f'{EXPORT}: Resident[] = '):]
+    now = {r['id']: r for r in json.loads(s[:s.rindex(';')])}
+    moved = 0
+    for r in place(m, people, index):
+        old = now.get(r['id'])
+        if old is None:
+            print(f'{r["id"]} {r["name"]}: new'); moved += 1
+            continue
+        diffs = [k for k in ('street', 'door', 'yard', 'curb') if old.get(k) != r[k]]
+        if diffs:
+            moved += 1
+            what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)
+            print(f'{r["id"]} {r["name"]}: {what}')
+    print(f'{moved} of {len(people)} residents would change ({os.path.relpath(OUT_TS, ROOT)})')
 
 
 def use_tutorial():
@@ -486,7 +546,7 @@ def seed_tutorial():
     if os.path.exists(CSV_PATH):
         sys.exit(f'{CSV_PATH} already exists: it is the PO\'s sheet now. Delete it first to start over.')
     m = load_map()
-    segs = list(segments(m))
+    segs = list(segments(m, rings=False))
     houses = houses_of(m)
     rnd = random.Random(146)
     with open(os.path.join(HERE, 'residents.csv'), newline='') as f:
@@ -519,5 +579,7 @@ if __name__ == '__main__':
         seed_tutorial() if TUTORIAL else seed()
     elif sys.argv[1:2] == ['build'] and len(sys.argv) >= 3:
         build(sys.argv[2])
+    elif sys.argv[1:2] == ['check']:
+        check()
     else:
         sys.exit(__doc__)
