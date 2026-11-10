@@ -185,7 +185,7 @@ const { chromium } = require('playwright');
   await wait(6000);
   check('...then the story scrolls away in yellow', await sc('TutorialCrawl', 's.lines.filter(t => t.visible).length > 2 && s.lines[0].scale < 1'), true);
   // SCREAM-236: the scroll sets up the bike instead.
-  check('...ending with the $600 bike', /new bike in the shop window: \$600\.00/.test(await sc('TutorialCrawl', 's.lines.map(t => t.text).join(" ")')), true);
+  check('...ending with the $600 bike', /new bike in the shop window the other day for \$600\.00\. Better get to work/.test(await sc('TutorialCrawl', 's.lines.map(t => t.text).join(" ")')), true);
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
   // SCREAM-217 (PO, November 9): X is the one skip key in the uncle's evening (PO changed it from S the same day); Enter and S no longer skip the credits.
   check('The credits say X skips them (SCREAM-217)', await sc('TutorialCrawl', "s.children.list.filter(o => o.type === 'Text').some(t => t.text === 'X: Skip')"), true);

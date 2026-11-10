@@ -4,13 +4,13 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 062 — Riding with the uncle skips the New Bike screen; the credits' scroll sets up the bike (2026-11-10)
 
-**Decision (Jira SCREAM-235, SCREAM-236, PO, November 10):** a new Story With Uncle goes from the title straight into the uncle's evening (the credits' scroll, then him in the truck), with no New Bike screen. On My Own keeps the New Bike screen as it was ("on my own screen, the bike info stays"). So the bike stays the goal, the scroll now ends with it: "There's a new bike in the shop window: $600.00. Sell enough ice cream to buy it." (engineering's draft wording, waiting on the PO's).
+**Decision (Jira SCREAM-235, SCREAM-236, PO, November 10):** a new Story With Uncle goes from the title straight into the uncle's evening (the credits' scroll, then him in the truck), with no New Bike screen. On My Own keeps the New Bike screen as it was ("on my own screen, the bike info stays"). So the bike stays the goal, the scroll now ends with it, in the PO's words: "You saw a new bike in the shop window the other day for $600.00. Better get to work, that's a lot of Ice Cream..." (the PO also dropped "You agree, since you could use a little more money before school starts in the fall...").
 
 **Options considered:** drop the screen With Uncle and move the bike into the scroll (chosen); drop the screen for both; keep it for both.
 
 **Why (product owner's rationale, November 10):** "It felt like two different intro screens saying almost the same thing."
 
-**Engineering's calls (proposals):** the bike lines come after the PO's text, so they're the last thing on screen when the scroll cuts to the truck; the price comes from `BIKE_PRICE_CENTS`, so it follows the tuning. The scroll runs about 3.5 seconds longer (four more lines); `CUT_EARLY_MS` can take that back if it drags.
+**Engineering's calls (proposals):** the bike lines come after the PO's text, so they're the last thing on screen when the scroll cuts to the truck; the price comes from `BIKE_PRICE_CENTS`, so it follows the tuning. The scroll is about the same length as before (one line longer); `CUT_EARLY_MS` can shorten it.
 
 ## 061 — Foley Stadium's new likelihoods are on purpose; the tests follow the sheet (2026-11-10)
 

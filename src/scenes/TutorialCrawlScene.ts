@@ -22,16 +22,14 @@ const CREDITS_TUNE_VOLUME = 0.7;
  */
 const STILL_LINE = 'In an ice cream truck, not that far away...';
 /**
- * SCREAM-236 (PO, November 10): the bike, the Story's goal, now that riding with the uncle skips the
- * New Bike screen (SCREAM-235). Engineering's DRAFT wording, waiting on the PO's.
+ * The PO's words (spelling tidied). SCREAM-236 (PO, November 10): the bike, the Story's goal, joins the
+ * scroll now that riding with the uncle skips the New Bike screen (SCREAM-235). The price follows the tuning.
  */
-const BIKE_LINES = `There's a new bike in the shop window: ${formatMoney(BIKE_PRICE_CENTS)}. Sell enough ice cream to buy it.`;
-/** The PO's words (spelling tidied), then the bike. */
 const STORY =
   'Your uncle, who owns an ice cream truck, dropped a pallet of Chaco Tacos on his foot. ' +
   'Out of commission, he has asked for your help. ' +
-  'You agree, since you could use a little more money before school starts in the fall... ' +
-  BIKE_LINES;
+  `You saw a new bike in the shop window the other day for ${formatMoney(BIKE_PRICE_CENTS)}. ` +
+  "Better get to work, that's a lot of Ice Cream...";
 const BLUE = '#4bd5ee';
 const YELLOW = '#ffe81f';
 /** How many characters fit on one line of the scroll, before it shrinks into the distance. */
