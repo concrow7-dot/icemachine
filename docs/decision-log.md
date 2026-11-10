@@ -2,6 +2,32 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 063 — Customers get fixed personal traits, in Story only, each with a tell (2026-11-10)
+
+**Decision (under SCREAM-11, PO, November 10; from a brainstorm on making customers more dynamic and interesting):**
+
+- **Traits are fixed per person** and don't change during a playthrough. If a trait matters to the player, the game hints at it through dialogue or something visible.
+- **Everyone gets traits; a memorable few get a lot.** Everyone else is mildly different (for example, occasional hints about their own schedule). The neighbourhood knows itself: customers can tell you about each other ("they know someone who is home every day but only after 7").
+- **Story only.** Quick play has no traits.
+- **Home tells are both cars and lights, with variety:** "some people park, some don't have a car so the lights on, some are both."
+- **Remembering is the point for now.** The game doesn't keep notes for the player. A power-up, "The Handy Notebook" (SCREAM-245), tracks the tips customers give.
+- **Recluses:** some people are hinted to be reclusive, and catching them at just the right time brings a huge order ("like 15 say").
+
+The tickets: High, schedules and where people are: SCREAM-246 (the sheet's trait columns and the memorable few), 247 ("See you Thursday!"), 248 (neighbours' hints), 249 (hours of the evening), 250 (recluses), 251 (lit windows), 252 (cars), 253 (weekday routines), 254 (friends and siblings), 255 (a dog in the yard), 224 (at the park), 212 (parties). Medium, temperament, the window and memory: SCREAM-256 (slow to leave, or right away or not at all), 257 (walking speed by age), 258 (tipping), 259 (awkward payers), 260 (chatterboxes), 261 (indecisive), 262 (grudges), 263 (word of mouth); already there: 168 (chasing, now per person), 222, 84, 166, 102.
+
+**Options considered:** for the home tell, cars, lit windows, or both with variety (chosen); a notebook the game keeps for everyone, or the player remembers and a power-up helps (chosen); traits in both modes or Story only (chosen); traits for everyone, for a memorable handful only, or everyone a little and a few a lot (chosen).
+
+**Why (product owner's rationale, November 10):**
+
+- Fixed traits: "I want the neighborhood and people to become memorable, learnable. I want players to build routes around the regulars and other events and schedules that they pick up on."
+- Cars and lights, with variety: "I want it to be a little subtle and different."
+- Remembering, with the notebook as a power-up: "I want the beginning of the game to be difficult. I want players to weigh spending money vs convenience."
+- Story only: "You can't get to know a weekly schedule over 1 night. I want the story to be more about the neighborhood and the people. The quick mode being a scramble to get customers."
+- Everyone gets traits: "I want the map to be interesting, so you can always find out another detail."
+- Recluses: "I want to have some challenging aspects to the game, and if the player puts in the effort, I want the player to be rewarded. If a player gets used to the neighborhood, they should start to wonder why particular houses are impossible to get. The payoff of finally getting a house should be important."
+
+**Engineering's calls (proposals):** one column per trait in the Residents sheet, blank meaning "ordinary", added as each trait is built; a "Home tell" column (car, lights, both); "From" and "Until" columns for hours, which recluses and time hints build on; neighbours' hints reuse the hint lines (048) and are checked against the sheet so they're always true. Most of the ideas in the Medium tickets, and the dog, routines and word of mouth, are engineering's ideas that the PO asked to have ticketed: each still needs his answers to its "to discuss" questions. Still open: how many memorable few per map; whether a recluse's window is the same every day. SCREAM-168 stays High (it was already).
+
 ## 062 — Riding with the uncle skips the New Bike screen; the credits' scroll sets up the bike (2026-11-10)
 
 **Decision (Jira SCREAM-235, SCREAM-236, PO, November 10):** a new Story With Uncle goes from the title straight into the uncle's evening (the credits' scroll, then him in the truck), with no New Bike screen. On My Own keeps the New Bike screen as it was ("on my own screen, the bike info stays"). So the bike stays the goal, the scroll now ends with it, in the PO's words: "You saw a new bike in the shop window the other day for $600.00. Better get to work, that's a lot of Ice Cream..." (the PO also dropped "You agree, since you could use a little more money before school starts in the fall...").
