@@ -358,11 +358,11 @@ test('SCREAM-250 (PO): hints about them are less common than hints about other n
   assert.ok(aboutPizza > 200 && aboutPizza < aboutOther * 0.6, `${aboutPizza} against ${aboutOther}`);
 });
 
-test('SCREAM-250: Elm Park has three hard-to-find customers, each with a 20-second window (12 minutes on the clock), 10 ice creams and a tiny Likelihood', () => {
+test('SCREAM-250: Elm Park has three hard-to-find customers, each with a 30-second window (18 minutes on the clock), 10 ice creams and a tiny Likelihood', () => {
   const hard = TUTORIAL_RESIDENTS.filter((r) => r.hardToFind);
   assert.deepEqual(hard.map((r) => r.name.trim()), ['Pizza Joe', 'Zombie Poplicks', 'Ruth Butter Ginsburg']);
   for (const r of hard) {
-    assert.equal(r.hours[1] - r.hours[0], 12, r.name);
+    assert.equal(r.hours[1] - r.hours[0], 18, r.name);
     assert.equal(r.orderSize, 10, r.name);
     assert.ok(r.likelihood > 0 && r.likelihood <= 0.02, r.name);
     assert.ok(!r.hinted);
