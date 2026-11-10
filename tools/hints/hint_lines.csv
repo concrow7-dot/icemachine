@@ -1,7 +1,7 @@
 ID,Tone,Who,Line,Notes
-H001,Average,Any,"Hey, I know [Name] on [Street] loves ice cream.",PO's line
+H001,Average,Any,"Hey, I know [Name] on [Street] loves ice cream.","PO's line (""love"" → ""loves"")"
 H002,Average,Any,My friend [Name] on [Street] has a big family and is always buying ice cream.,PO's line
-H003,Average,Any,[Name] buys ice cream almost every day. They're usually babysitting. They're on [Street].,PO's line
+H003,Average,Any,[Name] buys ice cream almost every day. They're usually babysitting. They're on [Street].,PO's line (lightly tidied)
 H004,Average,Adult,[Name] on [Street] works from home and takes an ice cream break every evening.,
 H005,Average,Adult,[Name] on [Street] coaches a kids' soccer team and buys for everyone after practice.,
 H006,Average,Any,[Name] on [Street] always has friends over in the summer. They'll want a lot.,
@@ -15,13 +15,12 @@ H013,Funny,Any,[Name] on [Street] says ice cream counts as a vegetable if you ea
 H014,Funny,Adult,"[Name] on [Street] told the doctor they'd eat more greens. Mint chip counts, apparently.",
 H015,Funny,Adult,[Name] on [Street] is hiding from the in-laws. Your truck is their excuse to go out.,
 H016,Funny,Any,[Name] on [Street] lost a bet and has to buy ice cream for the whole street all summer.,
-H017,Funny,Any,"[Name] on [Street] dances every time they hear your music. Then they buy, like, six.",
+H017,Funny,Any,"[Name] on [Street] dances every time they hear your music. Dances to the piggy bank.",
 H018,Funny,Adult,[Name] on [Street] bought a second freezer just for ice cream. It's always empty.,
 H019,Funny,Kid,[Name] on [Street] sells your ice cream at the pool for double. Smart kid.,
 H020,Funny,Kid,[Name] on [Street] just found their birthday money. All of it.,
 H021,Funny,Any,"[Name] on [Street] calls your truck's song ""the dinner bell.""",
-H022,Funny,Adult,[Name] on [Street] tells everyone they're on a diet. They are not on a diet.,
-H023,Dark,Adult,[Name] on [Street] hasn't left the house since the divorce. Except for ice cream.,
+H022,Funny,Adult,[Name] on [Street] tells everyone they're on a diet. A diet of ice cream.,
 H024,Dark,Any,"Don't tell anyone, but [Name] on [Street] is eating their feelings. Lots of feelings.",
 H025,Dark,Adult,[Name] on [Street] lost their job. Now they sit on the porch eating ice cream all night.,
 H026,Dark,Any,"[Name] on [Street] lost their cat. They put ice cream on the porch every night, hoping.",
@@ -29,7 +28,6 @@ H027,Dark,Adult,The doctor told [Name] on [Street] to cut back. They didn't.,
 H028,Dark,Any,[Name] on [Street] thinks the world ends soon. They want all the ice cream first.,
 H029,Dark,Adult,[Name] on [Street] stress-eats ice cream. Their landlord has been knocking a lot lately.,
 H030,Dark,Kid,[Name] on [Street] failed every class this year. Ice cream is the only thing going right.,
-H031,Dark,Any,[Name] on [Street] has a goldfish funeral every day. A different goldfish every day.,
 H032,Dark,Adult,"[Name] on [Street] says ice cream is cheaper than therapy. Not as good, but cheaper.",
 H033,Dark,Kid,[Name] on [Street] got dumped at recess. They're coping the only way they know how.,
 H034,Absurd,Any,[Name] on [Street] is building a statue of you out of popsicle sticks. Needs more sticks.,
@@ -38,7 +36,6 @@ H036,Absurd,Any,[Name] on [Street] feeds a raccoon called The Mayor. The Mayor o
 H037,Absurd,Any,[Name] on [Street] is filling a swimming pool with ice cream. It's going slowly.,
 H038,Absurd,Any,[Name] on [Street] says they'll melt if they stop eating ice cream. I don't ask.,
 H039,Absurd,Any,[Name] on [Street] is training an army of squirrels. They pay them in ice cream.,
-H040,Absurd,Any,[Name] on [Street] collects wrappers. They're two away from a world record.,
+H040,Absurd,Any,[Name] on [Street] collects wrappers. They say they are close to a world record.,
 H041,Absurd,Any,[Name] on [Street] thinks your music has secret messages. They buy more to hear the rest.,
-H042,Absurd,Adult,"[Name] on [Street] leaves ice cream in the mailbox ""for the mail carrier."" It's not.",
-H043,Absurd,Any,[Name] on [Street] is writing a 900-page review of your ice cream. They're on page 12.,
+H043,Absurd,Any,[Name] on [Street] is writing a review of your ice cream. They're doing lots of research.,

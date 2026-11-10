@@ -104,7 +104,7 @@ export const HINT_LINES: HintLine[] = [
   "id": "H017",
   "tone": "funny",
   "who": "any",
-  "text": "[Name] on [Street] dances every time they hear your music. Then they buy, like, six."
+  "text": "[Name] on [Street] dances every time they hear your music. Dances to the piggy bank."
  },
  {
   "id": "H018",
@@ -134,13 +134,7 @@ export const HINT_LINES: HintLine[] = [
   "id": "H022",
   "tone": "funny",
   "who": "adult",
-  "text": "[Name] on [Street] tells everyone they're on a diet. They are not on a diet."
- },
- {
-  "id": "H023",
-  "tone": "dark",
-  "who": "adult",
-  "text": "[Name] on [Street] hasn't left the house since the divorce. Except for ice cream."
+  "text": "[Name] on [Street] tells everyone they're on a diet. A diet of ice cream."
  },
  {
   "id": "H024",
@@ -183,12 +177,6 @@ export const HINT_LINES: HintLine[] = [
   "tone": "dark",
   "who": "kid",
   "text": "[Name] on [Street] failed every class this year. Ice cream is the only thing going right."
- },
- {
-  "id": "H031",
-  "tone": "dark",
-  "who": "any",
-  "text": "[Name] on [Street] has a goldfish funeral every day. A different goldfish every day."
  },
  {
   "id": "H032",
@@ -242,7 +230,7 @@ export const HINT_LINES: HintLine[] = [
   "id": "H040",
   "tone": "absurd",
   "who": "any",
-  "text": "[Name] on [Street] collects wrappers. They're two away from a world record."
+  "text": "[Name] on [Street] collects wrappers. They say they are close to a world record."
  },
  {
   "id": "H041",
@@ -251,15 +239,9 @@ export const HINT_LINES: HintLine[] = [
   "text": "[Name] on [Street] thinks your music has secret messages. They buy more to hear the rest."
  },
  {
-  "id": "H042",
-  "tone": "absurd",
-  "who": "adult",
-  "text": "[Name] on [Street] leaves ice cream in the mailbox \"for the mail carrier.\" It's not."
- },
- {
   "id": "H043",
   "tone": "absurd",
   "who": "any",
-  "text": "[Name] on [Street] is writing a 900-page review of your ice cream. They're on page 12."
+  "text": "[Name] on [Street] is writing a review of your ice cream. They're doing lots of research."
  }
 ];
