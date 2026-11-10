@@ -67,6 +67,17 @@ const { chromium } = require('playwright');
     return [stand, square, cars].join(); })()`);
   check('All 160: stand on the sidewalk, square on the road, clear of parked cars', curbs, '160,160,160');
   // SCREAM-143: every resident's own pink square passes the game's own room rule (cars, bays, home, right street).
+  // SCREAM-234 (PO, November 10: a customer waited on Elm Park's ring, by the portal): customers who walk
+  // to the truck never wait at a roundabout, wherever the truck is around it.
+  const ringSpots = await ev(`(() => { const R = e.residents.curbs.roads; const g = R.rings[0]; if (!g) return 'no ring';
+    let tried = 0, found = 0, bad = 0;
+    for (let a = 0; a < 360; a += 15) for (const d of [0, 60, 120, 180, 240]) {
+      const x = g.x + d * Math.cos(a * Math.PI / 180), y = g.y + d * Math.sin(a * Math.PI / 180); tried++;
+      const spot = e.residents.curbs.near(x, y, [], 0); if (!spot) continue; found++;
+      if ([spot.stand, spot.square].some(([px, py]) => Math.hypot(px - g.x, py - g.y) < g.r + g.half)) bad++;
+    }
+    return [found > tried / 2, bad].join(); })()`);
+  check('SCREAM-234: around Newton Square, curb spots are found, none on the roundabout or its island', ringSpots, 'true,0');
   check('SCREAM-150: all 160 own curb spots are on the sidewalk', await ev('e.residents.all.filter(p => e.residents.curbs.standClear(p.resident.curb[0], p.resident.curb[1])).length'), 160);
   check("SCREAM-143: all 160 own pink squares have room for the truck", await ev(`(() => { const f = e.residents.curbs; const roads = f.roads;
     return e.residents.all.filter(p => { const c = p.resident.curb; const g = roads.nearestSegment(c[2], c[3]); return g && f.squareFits(c[2], c[3], g.road); }).length; })()`), 160);
