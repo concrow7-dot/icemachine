@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { kindOfLine, dayList, daysUntilHome, kindFits, fillSchedule, assignScheduleLines, scheduleLineToday, assignNeighbourLines, neighbourLineToday, fillNeighbour, canBeToldAbout } = await game('state/ScheduleLines');
+const { kindOfLine, dayList, daysUntilHome, kindFits, fillSchedule, assignScheduleLines, scheduleLineToday, assignNeighbourLines, neighbourLineToday, fillNeighbour, canBeToldAbout, timeText } = await game('state/ScheduleLines');
+const { Residents, homeAt } = await game('state/Residents');
 const { NEIGHBOUR_LINES } = await game('config/neighbourLines');
 const { SCHEDULE_LINES } = await game('config/scheduleLines');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
@@ -215,4 +216,58 @@ test('SCREAM-248: many different neighbour wordings are in use across Elm Park',
   const m = assignNeighbourLines(TUTORIAL_RESIDENTS, NEIGHBOUR_LINES, 7);
   const used = new Set([...m.values()].flat().map((l) => l.id));
   assert.ok(used.size >= 15, `only ${used.size}`);
+});
+
+// ---- SCREAM-249 (PO, November 10; decision 066): hours of the evening ----
+const after7 = { ...base, id: 'H1', name: 'Drake Maye', street: 'Institute Road', likelihood: 1, days: [0, 1, 2, 3, 4, 5, 6], hours: [1140, null] };
+const bedtime = { ...base, id: 'H2', name: 'Lucy Dulce', street: 'Institute Road', kid: true, days: [0, 1, 2, 3, 4, 5, 6], hours: [null, 1110] };
+
+test('SCREAM-249: home only inside their hours; no hours = always home', () => {
+  assert.deepEqual([1020, 1139, 1140, 1199].map((m) => homeAt(after7, m)), [false, false, true, true]);
+  assert.deepEqual([1020, 1109, 1110, 1199].map((m) => homeAt(bedtime, m)), [true, true, false, false]);
+  assert.equal(homeAt(monThu, 1020), true);
+});
+
+test('SCREAM-249: times are said the way people say them', () => {
+  assert.deepEqual([1140, 1110, 1080, 1020, 1200].map(timeText), ['7', '6:30', '6', '5', '8']);
+  assert.equal(fillSchedule("I'm never home before [From].", after7, 1), "I'm never home before 7.");
+  assert.equal(fillSchedule('I have to be in bed by [Until].', bedtime, 1), 'I have to be in bed by 6:30.');
+  assert.equal(fillNeighbour('[Name] on [Street] never gets home before [From].', after7, 1), 'Drake Maye on Institute Road never gets home before 7.');
+});
+
+test('SCREAM-249: only people with that hour get a time line; they keep their other lines', () => {
+  assert.equal(kindFits('from', after7, 1, 5), true);
+  assert.equal(kindFits('until', after7, 1, 5), false);
+  assert.equal(kindFits('until', bedtime, 1, 5), true);
+  assert.equal(kindFits('from', monThu, 1, 5), false);
+  const own = assignScheduleLines([after7, bedtime, monThu], SCHEDULE_LINES, 3);
+  assert.deepEqual(own.get('H1').map((l) => kindOfLine(l.text)), ['every', 'every', 'every', 'from']);
+  assert.deepEqual(own.get('H2').map((l) => kindOfLine(l.text)), ['every', 'every', 'every', 'until']);
+  assert.ok(own.get('X1').every((l) => !['from', 'until'].includes(kindOfLine(l.text))));
+  const said = assignNeighbourLines([after7, bedtime], NEIGHBOUR_LINES, 3);
+  assert.deepEqual(said.get('H1').map((l) => kindOfLine(l.text)), ['every', 'from']);
+});
+
+test('SCREAM-249: in Story, someone not home yet does not come to the truck, and does once they are; Quick play ignores hours', () => {
+  const ring = { x: 0, y: 0, radius: 500, open: true };
+  const story = new Residents([after7], () => 0, undefined, { day: 1, seed: 1 });
+  let clock = 1030;
+  story.nowMinutes = () => clock;
+  for (let i = 0; i < 40; i++) story.update(1, ring);
+  assert.equal(story.all[0].customer, 'none');
+  assert.equal(story.all[0].outside, false);
+  clock = 1150;
+  for (let i = 0; i < 5; i++) story.update(1, ring);
+  assert.notEqual(story.all[0].customer, 'none');
+  const quick = new Residents([after7], () => 0);
+  quick.nowMinutes = () => 1030;
+  for (let i = 0; i < 5; i++) quick.update(1, ring);
+  assert.notEqual(quick.all[0].customer, 'none');
+});
+
+test('SCREAM-249: Elm Park has a few people with hours, and none of the uncle\'s or hinted regulars', () => {
+  const withHours = TUTORIAL_RESIDENTS.filter((r) => r.hours);
+  assert.ok(withHours.length >= 3 && withHours.length <= 8, `${withHours.length}`);
+  assert.ok(withHours.every((r) => !r.hinted && r.id !== 'T008'));
+  assert.equal(TUTORIAL_RESIDENTS.filter((r) => r.name.trim() === 'Big Kev').length, 1); // PO: only one Big Kev
 });

@@ -22,14 +22,18 @@ export interface ScheduleLine {
  * - home: [Home] lists the days they're home ("The best days to visit are [Home].")
  * - away: [Away] lists the days they're out ("Nobody is home on [Away].")
  * - every: no tag; for people home all seven days
+ * - from: [From] is the time they get home (SCREAM-249; "I'm never home before [From].")
+ * - until: [Until] is the time they stop coming out ("I have to be in bed by [Until].")
  */
-export type ScheduleKind = 'next' | 'back' | 'home' | 'away' | 'every';
+export type ScheduleKind = 'next' | 'back' | 'home' | 'away' | 'every' | 'from' | 'until';
 
 export const SCHEDULE_TAGS: Record<Exclude<ScheduleKind, 'every'>, string> = {
   next: '[Next]',
   back: '[Back]',
   home: '[Home]',
   away: '[Away]',
+  from: '[From]',
+  until: '[Until]',
 };
 
 /**
@@ -43,7 +47,7 @@ export const EVERY_DAY_LINES_EACH = 3;
 export const SCHEDULE_LIST_MAX = 3;
 
 export function kindOfLine(text: string): ScheduleKind {
-  for (const kind of ['next', 'back', 'home', 'away'] as const) if (text.includes(SCHEDULE_TAGS[kind])) return kind;
+  for (const kind of ['next', 'back', 'home', 'away', 'from', 'until'] as const) if (text.includes(SCHEDULE_TAGS[kind])) return kind;
   return 'every';
 }
 
@@ -66,9 +70,12 @@ export function daysUntilHome(days: readonly number[], day: number): number | nu
  * calls: [Next] and [Back] only name a day that's still to come in this run (`lastDay`), so the
  * player can act on it; lists stop at three days.
  */
-export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days'>, day: number, lastDay: number): boolean {
+export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days' | 'hours'>, day: number, lastDay: number): boolean {
   const days = resident.days;
   if (!days || days.length === 0) return false;
+  // SCREAM-249: a time of the evening, for the few people who have one (true on any day).
+  if (kind === 'from') return resident.hours?.[0] != null;
+  if (kind === 'until') return resident.hours?.[1] != null;
   if (kind === 'every') return days.length >= 7;
   if (days.length >= 7) return false;
   if (kind === 'home') return days.length <= SCHEDULE_LIST_MAX;
@@ -78,8 +85,15 @@ export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days'>, d
   return kind === 'next' || wait >= 2;
 }
 
-/** The line with the days put in. */
-export function fillSchedule(text: string, resident: Pick<Resident, 'days'>, day: number): string {
+/** SCREAM-249: a time as people say it: 1140 → "7", 1110 → "6:30". */
+export function timeText(minutes: number): string {
+  const hour = Math.floor(minutes / 60) % 12 || 12;
+  const rest = Math.round(minutes % 60);
+  return rest === 0 ? `${hour}` : `${hour}:${String(rest).padStart(2, '0')}`;
+}
+
+/** The line with the days (and times) put in. */
+export function fillSchedule(text: string, resident: Pick<Resident, 'days' | 'hours'>, day: number): string {
   const days = resident.days ?? [];
   const wait = daysUntilHome(days, day);
   const next = wait === null ? '' : WEEKDAYS[(weekdayOf(day) + wait) % 7]!;
@@ -88,7 +102,9 @@ export function fillSchedule(text: string, resident: Pick<Resident, 'days'>, day
     .split(SCHEDULE_TAGS.next).join(next)
     .split(SCHEDULE_TAGS.back).join(next)
     .split(SCHEDULE_TAGS.home).join(dayList(days))
-    .split(SCHEDULE_TAGS.away).join(dayList(away));
+    .split(SCHEDULE_TAGS.away).join(dayList(away))
+    .split(SCHEDULE_TAGS.from).join(resident.hours?.[0] != null ? timeText(resident.hours[0]) : '')
+    .split(SCHEDULE_TAGS.until).join(resident.hours?.[1] != null ? timeText(resident.hours[1]) : '');
 }
 
 /** A small seeded random number generator (mulberry32): the same seed gives the same numbers. */
@@ -127,10 +143,15 @@ export function assignScheduleLines(
     if (!r.days || r.days.length === 0) continue;
     const rnd = seeded(seed ^ hash(r.id));
     const own: ScheduleLine[] = [];
-    for (const kind of ['next', 'back', 'home', 'away', 'every'] as const) {
+    for (const kind of ['next', 'back', 'home', 'away', 'every', 'from', 'until'] as const) {
       const fits = lines.filter((l) => kindOfLine(l.text) === kind && (l.who === 'any' || (l.who === 'kid') === r.kid));
       const roll = rnd(); // always roll, so one kind's lines don't shift another's
       if (fits.length === 0) continue;
+      if (kind === 'from' || kind === 'until') {
+        // SCREAM-249: only people with that hour; regulars too.
+        if (r.hours?.[kind === 'from' ? 0 : 1] != null) own.push(fits[Math.floor(roll * fits.length)]!);
+        continue;
+      }
       if (kind !== 'every') {
         if (r.days.length < 7) own.push(fits[Math.floor(roll * fits.length)]!);
         continue;
@@ -150,7 +171,7 @@ export function assignScheduleLines(
  */
 export function scheduleLineToday(
   own: readonly ScheduleLine[] | undefined,
-  resident: Pick<Resident, 'days'>,
+  resident: Pick<Resident, 'days' | 'hours'>,
   day: number,
   lastDay: number,
   rnd: () => number = Math.random,
@@ -183,7 +204,7 @@ export function assignNeighbourLines(residents: readonly Resident[], lines: read
 }
 
 /** A neighbour's line with their name, street and days put in. */
-export function fillNeighbour(text: string, about: Pick<Resident, 'name' | 'street' | 'days'>, day: number): string {
+export function fillNeighbour(text: string, about: Pick<Resident, 'name' | 'street' | 'days' | 'hours'>, day: number): string {
   return fillSchedule(text, about, day).split('[Name]').join(about.name.trim()).split('[Street]').join(about.street);
 }
 

@@ -123,5 +123,35 @@ export const NEIGHBOUR_LINES: ScheduleLine[] = [
   "id": "N024",
   "who": "adult",
   "text": "[Name] only gets home in time on [Home]."
+ },
+ {
+  "id": "N025",
+  "who": "any",
+  "text": "[Name] on [Street] never gets home before [From]."
+ },
+ {
+  "id": "N026",
+  "who": "any",
+  "text": "Don't try [Name]'s house before [From]."
+ },
+ {
+  "id": "N027",
+  "who": "any",
+  "text": "[Name] is only around after [From]."
+ },
+ {
+  "id": "N028",
+  "who": "any",
+  "text": "[Name] on [Street] is gone by [Until]."
+ },
+ {
+  "id": "N029",
+  "who": "any",
+  "text": "You have to catch [Name] before [Until]."
+ },
+ {
+  "id": "N030",
+  "who": "any",
+  "text": "[Name] won't come out after [Until]."
  }
 ];

@@ -24,7 +24,8 @@ residents.csv is a copy of the PO's residents sheet (doc 38, "Product Management
 Decisions" folder). The sheet is the source of truth: edit the sheet, then copy it here
 ("sync residents") and run build. Columns:
     ID, Name, Age (Adult or Kid), Street, House, Likelihood (%), Look, Notes
-and optionally Order size, Hinted, and Mon to Sun (TRUE or FALSE: home that day, in Story).
+and optionally Order size, Hinted, Mon to Sun (TRUE or FALSE: home that day, in Story), and
+From and Until (SCREAM-249: the hours of the evening they're home, in Story; blank = all evening).
 Street is for reading only: it comes from the house. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
@@ -42,7 +43,7 @@ PO decisions (November 2, 2026; Jira SCREAM-59, SCREAM-67, SCREAM-73; doc 37):
 - The PO edits names and likelihoods in a sheet.
 - Art: LimeZu Modern Interiors' character generator.
 """
-import csv, json, math, os, random, sys
+import csv, json, math, os, random, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
@@ -69,6 +70,21 @@ EXPORT = 'RESIDENTS'
 TUTORIAL = False
 HEADER = ['ID', 'Name', 'Age', 'Street', 'House', 'Likelihood (%)', 'Look', 'Notes']
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']   # SCREAM-221: optional columns
+EVENING = (17 * 60, 20 * 60)   # SCREAM-249: the evening runs from 5 PM to 8 PM (tuning.ts)
+
+
+def clock_minutes(text):
+    """SCREAM-249: "7", "7:00", "7:00 PM", "19:00" or the sheet's "7:00:00 PM" -> minutes since
+    midnight. The game only has evenings, so an hour before 12 means PM. None if it isn't a time."""
+    m = re.fullmatch(r'(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([AaPp]\.?[Mm]\.?)?', text.strip())
+    if not m:
+        return None
+    hour, minute = int(m.group(1)), int(m.group(2) or 0)
+    if hour > 23 or minute > 59:
+        return None
+    if hour < 12:
+        hour += 12
+    return hour * 60 + minute
 
 # ---- Look recipes ----
 # Left out: outfits 8, 22 and 33 look like work uniforms; 9, 23, 27 and 28 are costume
@@ -227,6 +243,19 @@ def read_csv():
                 print(f'Warning: {rid} is ticked on some days but has 0%: in Story they will never come out.')
         elif any(d in r for d in DAYS):
             bad('has some of the Mon to Sun columns but not all seven')
+        # SCREAM-249 (PO, November 10): optional From and Until columns: the hours of the evening
+        # they're home, in Story ("home every day but only after 7"). Blank = no limit.
+        hours = []
+        for col in ('From', 'Until'):
+            text = (r.get(col) or '').strip()
+            minutes = clock_minutes(text) if text else None
+            if text and (minutes is None or not EVENING[0] <= minutes <= EVENING[1]):
+                bad(f'{col} must be blank or a time from 5:00 PM to 8:00 PM, like 7:00 PM')
+            hours.append(minutes)
+        if hours[0] is not None and hours[1] is not None and hours[0] >= hours[1]:
+            bad('From must be earlier than Until')
+        if hours != [None, None]:
+            person['hours'] = hours
         out.append(person)
     return out
 
@@ -473,7 +502,8 @@ def place(m, people, index):
                     'door': door, 'yard': pts, 'curb': spot,
                     **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
                     **({'hinted': True} if p.get('hinted') else {}),
-                    **({'days': p['days']} if 'days' in p else {})})
+                    **({'days': p['days']} if 'days' in p else {}),
+                    **({'hours': p['hours']} if 'hours' in p else {})})
     return out
 
 
@@ -536,7 +566,7 @@ def check():
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1
             continue
-        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days') if old.get(k) != r.get(k)]
+        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours') if old.get(k) != r.get(k)]
         if diffs:
             moved += 1
             what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)

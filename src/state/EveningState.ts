@@ -308,6 +308,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       const map = MAPS[id];
       const roads = roadsOf(id, map.data);
       people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), this.story);
+      people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.walls = wallsOf(map.data);
       this.residentsByMap.set(id, people);
     }
