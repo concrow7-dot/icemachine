@@ -1,0 +1,39 @@
+ID,Who,Line,Notes
+S001,Any,See you [Next]!,"The ticket's line (PO: ""Sure"")"
+S002,Kid,I have soccer until [Back].,PO's line
+S003,Adult,I work every day except [Home].,PO's line
+S004,Any,The best days to visit are [Home].,PO's line
+S005,Any,Nobody is home on [Away].,PO's line
+S006,Any,Come back [Next]. I'll be here!,Engineering's draft
+S007,Any,Same time [Next]?,Engineering's draft
+S008,Kid,I'm at my grandma's until [Back].,Engineering's draft
+S009,Kid,I have swim practice until [Back]. Save me one!,Engineering's draft
+S010,Adult,I'm on the late shift until [Back].,Engineering's draft
+S011,Adult,I'm out of town until [Back]. Don't sell out!,Engineering's draft
+S012,Any,You'll only catch me on [Home].,Engineering's draft
+S013,Kid,Mom only lets me have ice cream on [Home].,Engineering's draft
+S014,Adult,I only get home in time on [Home].,Engineering's draft
+S015,Any,Don't bother ringing on [Away]. We're out.,Engineering's draft
+S016,Kid,I have piano on [Away]. I hate piano.,Engineering's draft
+S017,Adult,I work late on [Away].,Engineering's draft
+S018,Any,I'm out here every day. Don't forget me!,Engineering's draft (home all 7 days)
+S019,Kid,I'm home every day. Every. Single. Day.,Engineering's draft (home all 7 days)
+S020,Adult,I'm home every evening. You know where to find me.,Engineering's draft (home all 7 days)
+S021,Any,Any day works for me. I'm always around.,Engineering's draft (home all 7 days)
+S022,Any,See you tomorrow!,Engineering's draft (home all 7 days)
+S023,Any,Same time tomorrow?,Engineering's draft (home all 7 days)
+S024,Any,"Rain or shine, I'll be out here tomorrow too.",Engineering's draft (home all 7 days)
+S025,Any,I never miss the truck. Ever.,Engineering's draft (home all 7 days)
+S026,Any,"Tomorrow, same spot. I'll be waiting.",Engineering's draft (home all 7 days)
+S027,Any,You can count on me every evening.,Engineering's draft (home all 7 days)
+S028,Kid,I listen for your music every single night.,Engineering's draft (home all 7 days)
+S029,Kid,My allowance is all yours. Every day.,Engineering's draft (home all 7 days)
+S030,Kid,I'll be right here tomorrow. And the day after.,Engineering's draft (home all 7 days)
+S031,Adult,"This is my treat after work, every day.",Engineering's draft (home all 7 days)
+S032,Adult,"Seven days a week, this is dinner. Don't judge.",Engineering's draft (home all 7 days)
+S033,Adult,I haven't missed an evening yet. See you tomorrow.,Engineering's draft (home all 7 days)
+S034,Any,Catch me again [Next].,Engineering's draft
+S035,Kid,I'm not allowed out again until [Back].,Engineering's draft
+S036,Adult,I won't be around until [Back].,Engineering's draft
+S037,Any,[Home]. That's when you'll find me.,Engineering's draft
+S038,Any,Skip our house on [Away].,Engineering's draft
