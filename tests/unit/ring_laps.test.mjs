@@ -62,3 +62,25 @@ test('arrivalSpot: on the ring, opposite the street in, facing clockwise', () =>
   assert.equal(s.angle, -90); // heading up (clockwise on screen, going round the west side)
   assert.equal(arrivalSpot([{ name: 'x', points: [0, 0, 1, 1] }]), null);
 });
+
+// ---- SCREAM-229: the portal's strength follows the laps ----
+const { portalStrength } = await game('state/RingLaps');
+
+test('the portal: nothing on the first lap, then it grows until the last lap is done', () => {
+  assert.equal(portalStrength(0, 3), 0);
+  assert.equal(portalStrength(0.99, 3), 0);
+  assert.equal(portalStrength(1, 3), 0);
+  assert.equal(portalStrength(1.5, 3), 0.25);
+  assert.equal(portalStrength(2, 3), 0.5);
+  assert.equal(portalStrength(3, 3), 1);
+  assert.equal(portalStrength(5, 3), 1);
+});
+
+test('the portal follows the counter: turns grows lap by lap and drops back when the truck leaves', () => {
+  const c = new LapCounter(ring, 3);
+  drive(c, 0, 540);
+  assert.ok(Math.abs(c.turns - 1.5) < 0.01);
+  assert.ok(portalStrength(c.turns, 3) > 0.24);
+  c.update(ring.x + 600, ring.y);
+  assert.equal(portalStrength(c.turns, 3), 0);
+});

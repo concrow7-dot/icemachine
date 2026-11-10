@@ -4,7 +4,9 @@ import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
 import { currentMap, versioned, type GameMap } from '../config/maps';
-import { LapCounter, ringOf } from '../state/RingLaps';
+import { LapCounter, portalStrength, ringOf } from '../state/RingLaps';
+import { RingPortal } from '../ui/ringPortal';
+import { PortalSound } from '../audio/PortalSound';
 import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
@@ -207,6 +209,10 @@ export class DriveScene extends Phaser.Scene {
   lapLabel!: Phaser.GameObjects.Text;
   /** SCREAM-145: fading out on the way to the other map. */
   private switchingMap = false;
+  /** SCREAM-229: the portal in the roundabout (Story only, like the laps); test hook. */
+  portal: RingPortal | null = null;
+  /** SCREAM-229: its sound; test hook. */
+  portalSound: PortalSound | null = null;
   /** SCREAM-54 (Tom Cobb, round 2): an arrow toward home, shown only when sold out. */
   private homeArrow!: Phaser.GameObjects.Container;
   /** Lane lines: yellow down the middle; SCREAM-159: white between two lanes going the same way. */
@@ -327,6 +333,11 @@ export class DriveScene extends Phaser.Scene {
     const ring = ringOf(this.map.roads);
     this.laps = ring && this.evening.mapsJoined ? new LapCounter(ring, RING_LAPS) : null;
     this.switchingMap = false;
+    // SCREAM-229: the portal goes with the laps. Arriving through a roundabout, it starts over the
+    // whole screen and closes (see create's end, once the camera is set up).
+    this.portalSound?.stop();
+    this.portalSound = this.laps ? new PortalSound((this.sound as Phaser.Sound.BaseSoundManager & { context?: AudioContext }).context, () => this.music.muted) : null;
+    this.portal = this.laps && this.portalSound ? new RingPortal(this, this.laps.ring, this.portalSound) : null;
     this.lapLabel = this.add
       .text(0, 0, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff', backgroundColor: '#0d3b66', padding: { x: 6, y: 2 } })
       .setOrigin(0.5)
@@ -438,7 +449,11 @@ export class DriveScene extends Phaser.Scene {
     // The music stops while paused and when leaving the road; the song carries on next time.
     this.events.on(Phaser.Scenes.Events.PAUSE, () => this.music.stop());
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.music.start());
+    // SCREAM-229: the portal's sound is quiet while the game is paused or the window is open.
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.portalSound?.silence());
+    this.events.on(Phaser.Scenes.Events.SLEEP, () => this.portalSound?.silence());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.portalSound?.stop();
       this.music.stop();
       this.music.onSong = undefined;
       this.game.events.off(Phaser.Core.Events.BLUR, this.releaseKeys, this);
@@ -447,6 +462,13 @@ export class DriveScene extends Phaser.Scene {
     });
     // SCREAM-114: keep the on-screen labels where they belong despite the camera's zoom.
     for (const o of this.children.list) if (o instanceof Phaser.GameObjects.Text && o.getData('pin')) this.pin(o);
+    // SCREAM-229: came through a roundabout: the portal closes behind the truck (it can drive off at once).
+    // Phaser keeps a scene's start data until a start with new data, so the flag is used up here.
+    const startData = this.scene.settings.data as { viaPortal?: boolean } | undefined;
+    if (startData?.viaPortal) {
+      startData.viaPortal = false;
+      this.portal?.close();
+    }
 
   }
 
@@ -458,6 +480,7 @@ export class DriveScene extends Phaser.Scene {
 
   update(time: number, deltaMs: number): void {
     this.refreshVisibleMap();
+    this.portal?.tick(deltaMs); // SCREAM-229: its swallow runs while the truck is held still
     if (this.leaving) return;
     this.music.tick();
     this.ring.setPosition(this.truck.x, this.truck.y);
@@ -510,29 +533,36 @@ export class DriveScene extends Phaser.Scene {
     const laps = this.laps;
     if (!laps || this.switchingMap || this.uncleLeg) return;
     const done = laps.update(this.truck.x, this.truck.y);
+    // SCREAM-229: the portal follows the laps (and fades if the truck leaves partway).
+    this.portal?.update(portalStrength(laps.turns, laps.lapsNeeded), Math.min(this.game.loop.delta, 100) / 1000);
     // The count is kept (hidden) for the tests; the player gets no hint on screen (PO).
     this.lapLabel.setText(laps.onRing ? `${Math.min(laps.laps, RING_LAPS)} / ${RING_LAPS} laps` : '');
     if (!done) return;
     this.goToOtherMap();
   }
 
-  /** SCREAM-145: fades out, moves the evening to the other map and starts this screen again there. */
+  /**
+   * SCREAM-145: moves the evening to the other map and starts this screen again there.
+   * SCREAM-229: the portal swallows the screen first (it replaced SCREAM-145's fade to black).
+   */
   private goToOtherMap(): void {
     this.switchingMap = true;
     this.leaving = true;
     this.speed = 0;
     this.releaseKeys();
-    this.cameras.main.fadeOut(500, 0, 0, 0);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+    const portal = this.portal;
+    const go = () => {
       if (!this.evening.switchMap()) {
         this.switchingMap = false;
         this.leaving = false;
-        this.cameras.main.fadeIn(300);
+        portal?.cancelSwallow();
         return;
       }
       // Restarting runs preload again, which loads the other map's pictures (useMap).
-      this.scene.restart();
-    });
+      this.scene.restart({ viaPortal: true });
+    };
+    if (portal) portal.swallow(go);
+    else go();
   }
 
   /** Test hook (SCREAM-145): how many laps the truck has done of this map's roundabout. */

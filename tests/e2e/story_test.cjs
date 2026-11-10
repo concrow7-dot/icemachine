@@ -200,13 +200,41 @@ const { chromium } = require('playwright');
     }
     return true;
   }, [laps, step]);
-  await lapRing(2); await wait(100);
+  // SCREAM-229: the portal in the roundabout; waits for the evening to reach the other map.
+  const portalArrived = (mapId) => page.waitForFunction((mapId) => {
+    const s = window.__game.scene.getScene('Drive');
+    return window.__game.registry.get('evening').mapId === mapId && s.sys.isActive() && s.portal && s.portal.state === 'closing';
+  }, mapId, { timeout: 15000 }).then(() => true, () => false);
+  check('Portal (SCREAM-229): none before the laps', await sc('Drive', 's.portal.visible + " " + s.portal.state'), 'false lapping');
+  // lapRing goes a little over (30 degrees), and each call carries on the count from 0 degrees.
+  await lapRing(0.9); await wait(300);
+  check('...one lap: still nothing (PO: it appears on the second)', await sc('Drive', 's.lapsDone + " " + s.portal.visible + " " + s.portal.shown'), '0 false 0');
+  await lapRing(0.8); await wait(600);
+  check('...on the second lap: a faint portal in the middle of the roundabout, under the truck, with its sound', await sc('Drive', "s.portal.visible + ' ' + (s.portal.shown > 0.2 && s.portal.shown <= 0.5) + ' ' + (s.portal.glow.alpha < 0.6) + ' ' + (s.portal.radius <= 80) + ' ' + (s.portal.glow.depth < s.truckLook.depth) + ' ' + (s.portal.glow.x === s.laps.ring.x && s.portal.glow.y === s.laps.ring.y) + ' ' + s.portalSound.lastEvent"), 'true true true true true true hum');
+  await lapRing(0.4); await wait(100);
   check('...two laps: still in Elm Park, 2 of 3 counted, nothing shown on screen (PO)', (await ev('e.mapId')) + ' ' + (await sc('Drive', 's.lapsDone + " " + s.lapLabel.visible + " " + s.lapLabel.text')), 'tutorial 2 false 2 / 3 laps');
   await sc('Drive', "(s.truck.setPosition(s.laps.ring.x + 600, s.laps.ring.y), true)"); await wait(100);
   check('...driving off the roundabout starts the count again', await sc('Drive', 's.lapsDone + " " + s.lapLabel.text'), '0 ');
+  await wait(1500);
+  check('...and the portal fades away; no trip (PO)', await sc('Drive', "s.portal.visible + ' ' + s.portal.shown + ' ' + s.portalSound.level"), 'false 0 0');
   const clockBefore = await ev('e.nowMs');
   const cashBefore = await ev('e.moneyCents');
-  await lapRing(3); await wait(1500);
+  await lapRing(2.6); await wait(500);
+  check('...late in the third lap: bigger and stronger, over the ring road', await sc('Drive', "(s.portal.shown > 0.65) + ' ' + (s.portal.radius > 120) + ' ' + (s.portal.glow.alpha > 0.7)"), 'true true true');
+  await sc('Drive', "(s.truck.setPosition(s.laps.ring.x + 600, s.laps.ring.y), true)"); await wait(1500);
+  await lapRing(3, 15); await wait(250);
+  check('...three laps: the portal swallows the screen, over everything, with a whoosh', await sc('Drive', "s.portal.state + ' ' + (s.portal.glow.depth > 100) + ' ' + s.portalSound.lastEvent + ' ' + s.portal.visible"), 'swallowing true swallow true');
+  check('...it takes about a second: still in Elm Park a quarter of a second in', await ev('e.mapId'), 'tutorial');
+  check('...arriving: the portal covers the screen and closes', await portalArrived('worcester'), true);
+  check('...the portal is centred on Newton Square, over everything, still big', await sc('Drive', "(s.portal.glow.x === s.laps.ring.x) + ' ' + (s.portal.glow.depth > 100) + ' ' + s.portal.visible + ' ' + (s.portal.radius > 300)"), 'true true true true');
+  // Waits rather than a fixed time: the portal moves on with the game's frames, slower on a busy machine.
+  const portalWait = (fn) => page.waitForFunction(`(() => { const s = window.__game.scene.getScene('Drive'); return ${fn}; })()`, null, { timeout: 8000 }).then(() => true, () => false);
+  const bigRadius = await sc('Drive', 's.portal.radius');
+  check('...shrinking, its sound falling away', (await portalWait(`s.portal.radius < ${bigRadius} * 0.8`)) + ' ' + (await sc('Drive', 's.portalSound.lastEvent')), 'true close');
+  check('...the player can drive meanwhile (PO)', await sc('Drive', 's.leaving + " " + s.switchingMap'), 'false false');
+  const closeStart = Date.now();
+  check('...then it has closed', (await portalWait("s.portal.state === 'lapping'")) + ' ' + (await sc('Drive', 's.portal.visible')), 'true false');
+  check('...in about a second (well under 4 even on a busy machine)', Date.now() - closeStart < 4000, true);
   check('Three laps: the truck is in Foley Stadium', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')), 'worcester 1');
   check('...the top bar names the neighbourhood', /Day 2\/5  Foley Stadium/.test(await hudClock()), true);
   check('...on the road there, on Newton Square (the roundabout)', (await scenes()) + ' ' + (await sc('Drive', "(() => { const r = s.laps.ring; return Math.round(Math.hypot(s.truck.x - r.x, s.truck.y - r.y)) === r.r; })()")), 'Drive,Hud true');
@@ -218,7 +246,9 @@ const { chromium } = require('playwright');
   await ev('(e.coolerSlots.forEach(sl => sl.quantity = 0), e.syncCells(), true)'); await wait(200);
   check('...sold out: the HOME arrow points at Newton Square, not at Foley\'s driveway', await sc('Drive', "(() => { const r = s.laps.ring; const a = s.homeArrow; const v = s.cameras.main.worldView; return a.visible && Math.hypot(a.x - r.x, a.y - (r.y - 70)) < 40 || !Phaser.Geom.Rectangle.Contains(v, r.x, r.y); })()"), true);
   await ev('(e.coolerSlots[0].quantity = 4, e.syncCells(), true)');
-  await lapRing(3); await wait(1500);
+  await lapRing(3);
+  check('Three laps of Newton Square: the portal opens back to Elm Park', await portalArrived('tutorial'), true);
+  await wait(1300);
   check('Three laps of Newton Square: back home in Elm Park', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')) + ' ' + (await ev('e.awayFromHome')), 'tutorial 2 false');
   check('...on Elm Park\'s roundabout, Elm Park\'s people as they were', await ev("e.residents.all.every(p => p.resident.id.startsWith('T'))"), true);
   check('...the driveway works again', await sc('Drive', 's.homeBay.visible'), true);
