@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 065 — Neighbours tell the player about each other's days (2026-11-10)
+
+**Decision (Jira SCREAM-248, under SCREAM-11, PO, November 10):** in Story, customers sometimes say when someone else is home: the community knows itself ("I want to be thinking about the community aspect too. They know someone who is home every day but only after 7."). The PO picked this as the next customer ticket after 247 ("Go ahead with the next item"). This PR does days; times of the evening wait for SCREAM-249.
+
+**Options considered:** anyone can talk about anyone, or only people who know each other (chosen: for now, people on the same street).
+
+**Why (product owner's rationale):** the community aspect, as quoted above; 063's reasons apply too ("I want the neighborhood and people to become memorable, learnable").
+
+**Engineering's calls (proposals):**
+
+- **Who knows whom:** people on the same street of the same map. A "Friend of" column (SCREAM-254) can widen it later.
+- **Who gets talked about:** anyone with ticked days who buys (not 0%). The lines are a new **Neighbour lines** tab in the Residents sheet ("sync neighbour lines"), with the same tags as the schedule lines plus `[Name]` and `[Street]`; all 24 are engineering's drafts.
+- **One way of describing each person per run:** each resident gets one neighbour line of each kind for the run, so everyone on the street says the same thing about them (the PO's rule for hints, November 8: never hinted at in two different ways in the same story).
+- **No reasons in neighbour lines** ("has soccer"): the person gives their own reason in their own line (064), and the two could disagree.
+- **When:** it shares the moment and the limits of 064 (after a paid sale, no tip needed, 4 a night in all, never with a hint, not in the uncle's evening). When a customer has something to say, it's about a neighbour 70% of the time for people home every day (their own line says little) and 30% for everyone else (`NEIGHBOUR_LINE_SHARE_*` in `tuning.ts`). Never the same neighbour or the same wording twice in an evening. A regular who has used up their own lines tonight talks about a neighbour instead.
+- Unlike the hints of 048, the neighbour may already have been served tonight: the days are still worth knowing.
+- Debug: Shift+8 makes the next paid sale end with a line about a neighbour.
+
 ## 064 — Customers mention their own schedule at the window, in many different wordings (2026-11-10)
 
 **Decision (Jira SCREAM-247, under SCREAM-11, PO, November 10):** now and then, in Story, a customer leaving the window says something true about their own week, such as "See you Thursday!". There are many ways of saying it, so the dialogue doesn't repeat. The PO's examples: "I have soccer until Thursday", "I work every day except...", "The best days to visit are...", "Nobody is home on...". The lines live in a new **Schedule lines** tab of the Residents sheet ("sync schedule lines"), for the PO to add to and rewrite.

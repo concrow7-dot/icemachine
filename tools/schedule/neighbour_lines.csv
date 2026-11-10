@@ -1,0 +1,25 @@
+ID,Who,Line,Notes
+N001,Any,[Name] on [Street] will be home [Next].,Engineering's draft
+N002,Any,Try [Name]'s house [Next].,Engineering's draft
+N003,Any,[Name] was asking about the truck. Stop by [Next].,Engineering's draft
+N004,Any,Psst. [Name] on [Street] is home [Next].,Engineering's draft
+N005,Any,You won't see [Name] until [Back].,Engineering's draft
+N006,Any,[Name] on [Street] is away until [Back].,Engineering's draft
+N007,Any,Don't wait for [Name]. Not home until [Back].,Engineering's draft
+N008,Any,[Name]'s house is dark until [Back].,Engineering's draft
+N009,Any,[Name] on [Street] is only home on [Home].,Engineering's draft
+N010,Any,"If you want [Name]'s business, come on [Home].",Engineering's draft
+N011,Any,I only ever see [Name] on [Home].,Engineering's draft
+N012,Any,[Home]. That's when [Name] is around.,Engineering's draft
+N013,Any,My neighbour [Name] is only around on [Home].,Engineering's draft
+N014,Any,[Name] is never home on [Away].,Engineering's draft
+N015,Any,No use stopping at [Name]'s on [Away].,Engineering's draft
+N016,Any,[Name] on [Street] is out on [Away].,Engineering's draft
+N017,Any,Skip [Name]'s house on [Away]. Nobody's in.,Engineering's draft
+N018,Any,My neighbour [Name] is gone on [Away].,Engineering's draft
+N019,Any,[Name] on [Street] is home every single day.,Engineering's draft (home all 7 days)
+N020,Any,[Name] never misses an evening. Try [Street].,Engineering's draft (home all 7 days)
+N021,Any,You can always count on [Name] on [Street].,Engineering's draft (home all 7 days)
+N022,Any,[Name] would buy ice cream every day if you came by.,Engineering's draft (home all 7 days)
+N023,Kid,[Name] is only allowed out on [Home].,Engineering's draft
+N024,Adult,[Name] only gets home in time on [Home].,Engineering's draft

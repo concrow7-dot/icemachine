@@ -314,6 +314,19 @@ export class Sale {
     this.say(`${this.line} ${text}`);
   }
 
+  /** SCREAM-248: the neighbour this customer told the player about (resident id), or null. */
+  neighbourAbout: string | null = null;
+
+  /**
+   * SCREAM-248 (PO, November 10): after a paid sale the customer sometimes says when a neighbour
+   * is home, after their thanks.
+   */
+  addNeighbourLine(residentId: string, text: string): void {
+    if (this.outcome?.kind !== 'paid') return;
+    this.neighbourAbout = residentId;
+    this.say(`${this.line} ${text}`);
+  }
+
   /** SCREAM-145: this customer told the player the trick at the roundabout. */
   toldAboutRotary = false;
 

@@ -116,7 +116,12 @@ function hash(text: string): number {
  * from the run's seed and their id; different people get different lines. Returns resident id →
  * their lines. People with no ticks get none.
  */
-export function assignScheduleLines(residents: readonly Resident[], lines: readonly ScheduleLine[], seed: number): Map<string, ScheduleLine[]> {
+export function assignScheduleLines(
+  residents: readonly Resident[],
+  lines: readonly ScheduleLine[],
+  seed: number,
+  everyEach = EVERY_DAY_LINES_EACH,
+): Map<string, ScheduleLine[]> {
   const out = new Map<string, ScheduleLine[]>();
   for (const r of residents) {
     if (!r.days || r.days.length === 0) continue;
@@ -131,7 +136,7 @@ export function assignScheduleLines(residents: readonly Resident[], lines: reado
         continue;
       }
       if (r.days.length < 7) continue;
-      for (let n = 0; n < EVERY_DAY_LINES_EACH && fits.length > 0; n++) own.push(fits.splice(Math.floor(rnd() * fits.length), 1)[0]!);
+      for (let n = 0; n < everyEach && fits.length > 0; n++) own.push(fits.splice(Math.floor(rnd() * fits.length), 1)[0]!);
     }
     if (own.length > 0) out.set(r.id, own);
   }
@@ -155,4 +160,55 @@ export function scheduleLineToday(
   if (fits.length === 0) return null;
   const line = fits[Math.floor(rnd() * fits.length)]!;
   return { id: line.id, text: fillSchedule(line.text, resident, day) };
+}
+
+// ---- SCREAM-248 (PO, November 10; decision 065): neighbours know each other's days ----
+
+/** Salt for the neighbours' lines, so they aren't picked by the same dice as people's own lines. */
+const NEIGHBOUR_SALT = 0x5ca1ab1e;
+
+/** Whether other customers can talk about this resident: they have ticked days and do buy. */
+export function canBeToldAbout(resident: Pick<Resident, 'days' | 'likelihood'>): boolean {
+  return !!resident.days && resident.days.length > 0 && resident.likelihood > 0;
+}
+
+/**
+ * What the street says about each resident, for the whole run: one line per kind (the same PO
+ * rule as hints, November 8: nobody is described in two different ways in the same story).
+ * The lines are the "Neighbour lines" tab of the Residents sheet; Who is the neighbour's age.
+ * Returns the id of the resident talked about → their lines.
+ */
+export function assignNeighbourLines(residents: readonly Resident[], lines: readonly ScheduleLine[], seed: number): Map<string, ScheduleLine[]> {
+  return assignScheduleLines(residents.filter(canBeToldAbout), lines, (seed ^ NEIGHBOUR_SALT) >>> 0, 1);
+}
+
+/** A neighbour's line with their name, street and days put in. */
+export function fillNeighbour(text: string, about: Pick<Resident, 'name' | 'street' | 'days'>, day: number): string {
+  return fillSchedule(text, about, day).split('[Name]').join(about.name.trim()).split('[Street]').join(about.street);
+}
+
+/**
+ * What this customer can say today about someone else on their street, or null. Engineering's
+ * calls: neighbours are the people on the same street (and the same map); never about someone
+ * already talked about tonight (`toldAbout`), and never a wording already heard tonight (`heard`).
+ */
+export function neighbourLineToday(
+  speaker: Pick<Resident, 'id' | 'street'>,
+  people: readonly Resident[],
+  linesFor: ReadonlyMap<string, readonly ScheduleLine[]>,
+  day: number,
+  lastDay: number,
+  rnd: () => number = Math.random,
+  heard: readonly string[] = [],
+  toldAbout: readonly string[] = [],
+): { about: string; id: string; text: string } | null {
+  const neighbours = people.filter((r) => r.id !== speaker.id && r.street === speaker.street && canBeToldAbout(r) && !toldAbout.includes(r.id));
+  while (neighbours.length > 0) {
+    const about = neighbours.splice(Math.floor(rnd() * neighbours.length), 1)[0]!;
+    const fits = (linesFor.get(about.id) ?? []).filter((l) => !heard.includes(l.id) && kindFits(kindOfLine(l.text), about, day, lastDay));
+    if (fits.length === 0) continue;
+    const line = fits[Math.floor(rnd() * fits.length)]!;
+    return { about: about.id, id: line.id, text: fillNeighbour(line.text, about, day) };
+  }
+  return null;
 }
