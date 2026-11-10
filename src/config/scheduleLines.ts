@@ -193,5 +193,45 @@ export const SCHEDULE_LINES: ScheduleLine[] = [
   "id": "S038",
   "who": "any",
   "text": "Skip our house on [Away]."
+ },
+ {
+  "id": "S039",
+  "who": "any",
+  "text": "I'm never home before [From]."
+ },
+ {
+  "id": "S040",
+  "who": "adult",
+  "text": "I don't get in from work until [From]."
+ },
+ {
+  "id": "S041",
+  "who": "kid",
+  "text": "I have practice until [From] every night."
+ },
+ {
+  "id": "S042",
+  "who": "any",
+  "text": "Come by after [From]. I'm never here earlier."
+ },
+ {
+  "id": "S043",
+  "who": "kid",
+  "text": "I have to be in bed by [Until]."
+ },
+ {
+  "id": "S044",
+  "who": "any",
+  "text": "Catch me before [Until], or not at all."
+ },
+ {
+  "id": "S045",
+  "who": "adult",
+  "text": "I leave for the night shift at [Until]."
+ },
+ {
+  "id": "S046",
+  "who": "any",
+  "text": "After [Until] you won't find me."
  }
 ];

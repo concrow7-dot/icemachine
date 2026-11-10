@@ -23,3 +23,9 @@ N021,Any,You can always count on [Name] on [Street].,Engineering's draft (home a
 N022,Any,[Name] would buy ice cream every day if you came by.,Engineering's draft (home all 7 days)
 N023,Kid,[Name] is only allowed out on [Home].,Engineering's draft
 N024,Adult,[Name] only gets home in time on [Home].,Engineering's draft
+N025,Any,[Name] on [Street] never gets home before [From].,Engineering's draft (people with hours)
+N026,Any,Don't try [Name]'s house before [From].,Engineering's draft (people with hours)
+N027,Any,[Name] is only around after [From].,Engineering's draft (people with hours)
+N028,Any,[Name] on [Street] is gone by [Until].,Engineering's draft (people with hours)
+N029,Any,You have to catch [Name] before [Until].,Engineering's draft (people with hours)
+N030,Any,[Name] won't come out after [Until].,Engineering's draft (people with hours)

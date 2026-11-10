@@ -2,6 +2,27 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 066 — Some customers are only home at certain hours of the evening (2026-11-10)
+
+**Decision (Jira SCREAM-249, under SCREAM-11, PO, November 10):** in Story, a resident can have hours as well as days: home only from a certain time ("home every day but only after 7") or only until one. Outside their hours they stay indoors and don't come to the truck. They and their neighbours can say so. The PO picked it as the next customer ticket, with SCREAM-250 (hard-to-find customers) to follow, since 250 needs it.
+
+**Also decided (PO, November 10):**
+
+- **The time hints move here from SCREAM-248**, so 248 can be Done. "I don't want this to be the only change made to these dialogs, we will continue to add more."
+- **Only one Big Kev:** "Big Kev should be the regular that the uncle suggests" (the kid on Institute Road, T034). The other one (T028, an adult on Haviland Street) is renamed; "Sherbert Hoover" is engineering's stand-in name for the PO to change.
+
+**Options considered:** hours as two sheet columns, From and Until (chosen), or a single text column; people out of their hours simply don't buy, or also stay indoors (chosen, so what the player sees agrees with what they're told).
+
+**Why (product owner's rationale):** from the brainstorm (063): the neighbourhood should be "memorable, learnable", and "I want the map to be interesting, so you can always find out another detail." _To ask the PO if he wants to add a reason specific to hours._
+
+**Engineering's calls (proposals):**
+
+- Two columns on both map tabs of the Residents sheet, **From** and **Until**: a time from 5:00 PM to 8:00 PM (the evening), blank for no limit. Story only; Quick play ignores them.
+- Starting values, Elm Park only, five people: Drake Maye from 7:00 (a regular: the PO's "every day but only after 7"), Lucy Dulce until 6:30 (a kid regular with a bedtime), Joe Sullivan from 6:00, Kathleen Scoopley from 6:30, Mrs. O'Hoolahan until 7:00. Not the uncle's regular (Chloe Hogan), Big Kev, or the Hinted regulars, whose lines say "every evening". Foley Stadium has the columns, all blank.
+- Someone who isn't home yet starts the evening indoors and doesn't hear the truck; when their time comes they get a fresh first chance. Someone whose time is up goes indoors; anyone already on their way to the truck or waiting at the curb still gets served.
+- New tags `[From]` and `[Until]` on the Schedule lines and Neighbour lines tabs ("I'm never home before [From]." / "[Name] on [Street] is gone by [Until]."); times are said as "7" or "6:30". 14 new lines, all engineering's drafts. A person with hours keeps their other lines too.
+- No visible tell yet beyond staying indoors: lit windows and cars (SCREAM-251, 252) will show it.
+
 ## 065 — Neighbours tell the player about each other's days (2026-11-10)
 
 **Decision (Jira SCREAM-248, under SCREAM-11, PO, November 10):** in Story, customers sometimes say when someone else is home: the community knows itself ("I want to be thinking about the community aspect too. They know someone who is home every day but only after 7."). The PO picked this as the next customer ticket after 247 ("Go ahead with the next item"). This PR does days; times of the evening wait for SCREAM-249.

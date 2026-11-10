@@ -13,6 +13,8 @@ A line says something true about the customer's own week, with at most one kind 
     [Home]  the days they're home (3 at most)      "The best days to visit are [Home]."
     [Away]  the days they're out (3 at most)       "Nobody is home on [Away]."
     no tag  for people who are home all seven days "I'm out here every day."
+    [From]  the time they get home (SCREAM-249)    "I'm never home before [From]."
+    [Until] the time they stop coming out          "I have to be in bed by [Until]."
 
 neighbour_lines.csv is a copy of the "Neighbour lines" tab ("sync neighbour lines"): what a
 customer says about someone else on their street. Same columns and tags, but the tags are
@@ -27,7 +29,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 WHO = {'any', 'adult', 'kid'}
 # The longest each tag can become, to check the line still fits the speech bubble.
 LONGEST = {'[Next]': 'Wednesday', '[Back]': 'Wednesday', '[Home]': 'Wednesday, Thursday and Saturday',
-           '[Away]': 'Wednesday, Thursday and Saturday'}
+           '[Away]': 'Wednesday, Thursday and Saturday', '[From]': '6:30', '[Until]': '6:30'}
 MAX_CHARS = 90
 
 

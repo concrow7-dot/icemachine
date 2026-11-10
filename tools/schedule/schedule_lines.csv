@@ -37,3 +37,11 @@ S035,Kid,I'm not allowed out again until [Back].,Engineering's draft
 S036,Adult,I won't be around until [Back].,Engineering's draft
 S037,Any,[Home]. That's when you'll find me.,Engineering's draft
 S038,Any,Skip our house on [Away].,Engineering's draft
+S039,Any,I'm never home before [From].,Engineering's draft (people with hours)
+S040,Adult,I don't get in from work until [From].,Engineering's draft (people with hours)
+S041,Kid,I have practice until [From] every night.,Engineering's draft (people with hours)
+S042,Any,Come by after [From]. I'm never here earlier.,Engineering's draft (people with hours)
+S043,Kid,I have to be in bed by [Until].,Engineering's draft (people with hours)
+S044,Any,"Catch me before [Until], or not at all.",Engineering's draft (people with hours)
+S045,Adult,I leave for the night shift at [Until].,Engineering's draft (people with hours)
+S046,Any,After [Until] you won't find me.,Engineering's draft (people with hours)

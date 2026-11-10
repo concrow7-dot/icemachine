@@ -204,6 +204,10 @@ const { chromium } = require('playwright');
   check('...no more than 4 a night', (await sched(allWeek, 1, { said: 4 })).said, false);
   const forced = await sched(allWeek, 0, { said: 4, force: true, heard: 'clear' });
   check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
+  // ---- SCREAM-249: hours of the evening (Drake Maye, T036, is only home after 7) ----
+  check('Hours: at the start of the evening (5 PM) Drake Maye is not home; at 7 he is', await ev("(() => { const r = e.residents, d = r.all.find(p => p.resident.id === 'T036').resident; const now = r.homeNow(d); const real = r.nowMinutes; r.nowMinutes = () => 1141; const later = r.homeNow(d); r.nowMinutes = real; return Math.round(real()) + ' ' + now + ' ' + later; })()"), '1020 false true');
+  check('...everyone without hours is home all evening', await ev("e.residents.all.filter(p => !p.resident.hours).every(p => e.residents.homeNow(p.resident))"), true);
+  check('...he has a line about the time, and so does his street', await ev("[...e.scheduleLinesFor.get('T036'), ...e.neighbourLinesFor.get('T036')].filter(l => l.text.includes('[From]')).length"), 2);
   // ---- SCREAM-248: neighbours know each other's days (same stand-in sales) ----
   check('Neighbour lines: everyone here with ticked days who buys can be talked about, and nobody else', await ev("e.residents.all.every(p => e.neighbourLinesFor.has(p.resident.id) === (p.resident.likelihood > 0 && !!p.resident.days && p.resident.days.length > 0))"), true);
   const day1Neighbours = await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");

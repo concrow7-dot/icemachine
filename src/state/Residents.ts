@@ -69,6 +69,18 @@ export interface Resident {
    * ignores them. Left out when the sheet has no day columns (Story then uses Likelihood).
    */
   days?: number[];
+  /**
+   * SCREAM-249 (PO, decision 066): the sheet's From and Until, as minutes since midnight
+   * (7 PM = 1140), either one null for "no limit": the hours of the evening they're home, in
+   * Story. Outside them they stay indoors and don't come to the truck. Left out for most people.
+   */
+  hours?: [number | null, number | null];
+}
+
+/** SCREAM-249: whether a resident with hours is home at this time (minutes since midnight). No hours = always. */
+export function homeAt(resident: Pick<Resident, 'hours'>, minutes: number): boolean {
+  const [from, until] = resident.hours ?? [null, null];
+  return (from === null || minutes >= from) && (until === null || minutes < until);
 }
 
 /** SCREAM-221: the days of the week, Monday first (Story's Day 1 is a Monday). */
@@ -272,6 +284,14 @@ export class Residents {
 
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
+  /** SCREAM-249: the evening's clock, in minutes since midnight (EveningState sets it; without it everyone is always home). */
+  nowMinutes: (() => number) | null = null;
+
+  /** SCREAM-249 (PO): in Story, people with hours are only home inside them. Quick play ignores hours. */
+  homeNow(resident: Resident): boolean {
+    if (!this.story || !this.nowMinutes || !resident.hours) return true;
+    return homeAt(resident, this.nowMinutes());
+  }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
   private readonly curbs?: CurbFinder;
   /** Where the truck was last seen (the ring's centre). */
@@ -297,7 +317,8 @@ export class Residents {
     this.story = story;
     this.people = list.map((resident) => {
       const times = routineFor(resident, story);
-      const outside = rnd() < times.startOutside;
+      // SCREAM-249: in Story, someone who only gets home later in the evening starts indoors.
+      const outside = rnd() < times.startOutside && !(story && resident.hours && resident.hours[0] !== null);
       const spot = outside ? this.yardSpot(resident) : resident.door;
       const person: Running = {
         resident,
@@ -405,6 +426,11 @@ export class Residents {
       const inRing = !!ring && Math.hypot(x - ring.x, y - ring.y) <= ring.radius;
       // Seconds heard are counted in a row, so someone who hears the truck again later gets a fresh first-second chance.
       p.heard = inRing ? p.heard + 1 : 0;
+      // SCREAM-249: not home at this hour: they don't hear it, and get a fresh chance once they are.
+      if (!this.homeNow(p.resident)) {
+        p.heard = 0;
+        continue;
+      }
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
       const regular = this.kindOf(p.resident) === 'regular';
       const likelihood = Math.min(1, p.resident.likelihood * scheduleFactor(p.resident, this.story));
@@ -591,6 +617,7 @@ export class Residents {
     if (plan.kind === 'follow') return this.stepFollow(p, dt);
     if (plan.kind === 'inside') {
       if (this.now < plan.until) return;
+      if (!this.homeNow(p.resident)) return; // SCREAM-249: not home yet (or any more): nobody comes out
       // Out of the front door, then off into the yard.
       p.outside = true;
       p.x = p.resident.door[0];
@@ -601,7 +628,7 @@ export class Residents {
     }
     if (plan.kind === 'idle') {
       if (this.now < plan.until) return;
-      if (this.now >= p.goInsideAt) this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside');
+      if (this.now >= p.goInsideAt || !this.homeNow(p.resident)) this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside'); // SCREAM-249: in at their Until
       else this.walkTo(p, [this.yardSpot(p.resident)], RESIDENT_WALK_SPEED, 'idle');
       return;
     }
