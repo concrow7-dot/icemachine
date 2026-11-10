@@ -25,7 +25,9 @@ Decisions" folder). The sheet is the source of truth: edit the sheet, then copy 
 ("sync residents") and run build. Columns:
     ID, Name, Age (Adult or Kid), Street, House, Likelihood (%), Look, Notes
 and optionally Order size, Hinted, Mon to Sun (TRUE or FALSE: home that day, in Story), and
-From and Until (SCREAM-249: the hours of the evening they're home, in Story; blank = all evening).
+From and Until (SCREAM-249: the hours of the evening they're home, in Story; blank = all evening),
+and Hard to find (SCREAM-250: Yes = they always come out in their short From-Until window, tip 4
+times as much, and at other times go by their Likelihood, which should be tiny; needs From and Until).
 Street is for reading only: it comes from the house. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
@@ -256,6 +258,17 @@ def read_csv():
             bad('From must be earlier than Until')
         if hours != [None, None]:
             person['hours'] = hours
+        # SCREAM-250 (PO, November 10): an optional "Hard to find" column: Yes = only there in
+        # their short window (From to Until), on their ticked days, and then they always come out.
+        hard = (r.get('Hard to find') or '').strip().lower()
+        if hard not in ('', 'yes', 'no'):
+            bad('Hard to find must be Yes or blank')
+        if hard == 'yes':
+            if None in hours:
+                bad('Hard to find needs both From and Until (their window)')
+            if not person.get('days'):
+                bad('Hard to find needs at least one ticked day')
+            person['hardToFind'] = True
         out.append(person)
     return out
 
@@ -503,7 +516,8 @@ def place(m, people, index):
                     **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
                     **({'hinted': True} if p.get('hinted') else {}),
                     **({'days': p['days']} if 'days' in p else {}),
-                    **({'hours': p['hours']} if 'hours' in p else {})})
+                    **({'hours': p['hours']} if 'hours' in p else {}),
+                    **({'hardToFind': True} if p.get('hardToFind') else {})})
     return out
 
 
@@ -566,7 +580,7 @@ def check():
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1
             continue
-        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours') if old.get(k) != r.get(k)]
+        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours', 'hardToFind', 'orderSize') if old.get(k) != r.get(k)]
         if diffs:
             moved += 1
             what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)

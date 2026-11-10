@@ -29,3 +29,7 @@ N027,Any,[Name] is only around after [From].,Engineering's draft (people with ho
 N028,Any,[Name] on [Street] is gone by [Until].,Engineering's draft (people with hours)
 N029,Any,You have to catch [Name] before [Until].,Engineering's draft (people with hours)
 N030,Any,[Name] won't come out after [Until].,Engineering's draft (people with hours)
+N031,Any,Nobody ever catches [Name]. Try between [From] and [Until].,Engineering's draft (hard-to-find customers)
+N032,Any,[Name] on [Street] only comes out between [From] and [Until].,Engineering's draft (hard-to-find customers)
+N033,Any,I've seen [Name] exactly once: between [From] and [Until].,Engineering's draft (hard-to-find customers)
+N034,Any,[Name]'s door opens from [From] to [Until]. Blink and you'll miss it.,Engineering's draft (hard-to-find customers)

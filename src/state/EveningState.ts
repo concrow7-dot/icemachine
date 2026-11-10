@@ -24,6 +24,7 @@ import {
   HINT_GAP_SALES,
   HINT_MAX_PER_EVENING,
   SCHEDULE_LINE_CHANCE,
+  HARD_TO_FIND_TIP_FACTOR,
   SCHEDULE_LINE_CHANCE_SOME_DAYS,
   NEIGHBOUR_LINE_SHARE_EVERY_DAY,
   NEIGHBOUR_LINE_SHARE_SOME_DAYS,
@@ -309,6 +310,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       const roads = roadsOf(id, map.data);
       people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), this.story);
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
+      people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
       people.walls = wallsOf(map.data);
       this.residentsByMap.set(id, people);
     }
@@ -669,6 +671,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.setCustomerWaiting(true);
     // SCREAM-218: an empty cooler (the HUD's SOLD OUT) is "sold out", not "too expensive".
     this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
+    // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
+    if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

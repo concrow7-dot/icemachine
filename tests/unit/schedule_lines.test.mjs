@@ -7,6 +7,7 @@ import { game } from './game.mjs';
 const { kindOfLine, dayList, daysUntilHome, kindFits, fillSchedule, assignScheduleLines, scheduleLineToday, assignNeighbourLines, neighbourLineToday, fillNeighbour, canBeToldAbout, timeText } = await game('state/ScheduleLines');
 const { Residents, homeAt } = await game('state/Residents');
 const { NEIGHBOUR_LINES } = await game('config/neighbourLines');
+const { Sale } = await game('state/Sale');
 const { SCHEDULE_LINES } = await game('config/scheduleLines');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { RESIDENTS } = await game('config/residents');
@@ -270,4 +271,101 @@ test('SCREAM-249: Elm Park has a few people with hours, and none of the uncle\'s
   assert.ok(withHours.length >= 3 && withHours.length <= 8, `${withHours.length}`);
   assert.ok(withHours.every((r) => !r.hinted && r.id !== 'T008'));
   assert.equal(TUTORIAL_RESIDENTS.filter((r) => r.name.trim() === 'Big Kev').length, 1); // PO: only one Big Kev
+});
+
+// ---- SCREAM-250 (PO, November 10; decision 067): hard-to-find customers ----
+const pizza = { ...base, id: 'F1', name: 'Pizza Joe', street: 'Lee Street', likelihood: 0.02, days: [0, 1, 2, 3, 4, 5, 6], hours: [1080, 1092], hardToFind: true, orderSize: 10 };
+const friday = { ...base, id: 'F2', name: 'Ruth', street: 'Lee Street', likelihood: 0.02, days: [4], hours: [1140, 1152], hardToFind: true, orderSize: 10 };
+const ringAt = { x: 0, y: 0, radius: 500, open: true };
+const runEvening = (resident, story, minutes, seconds, rnd = () => 0.999) => {
+  const r = new Residents([resident], rnd, undefined, story);
+  r.nowMinutes = () => minutes;
+  for (let i = 0; i < seconds; i++) r.update(1, ringAt);
+  return r.all[0].customer;
+};
+
+test('SCREAM-250 (PO): "100% in the window": music inside the window on a ticked day always brings them out', () => {
+  // rnd 0.999 = the worst luck there is, and they still come.
+  assert.notEqual(runEvening(pizza, { day: 1, seed: 1 }, 1085, 2), 'none');
+  assert.notEqual(runEvening(friday, { day: 5, seed: 1 }, 1145, 2), 'none');
+});
+
+test('SCREAM-250 (PO): "nearly impossible" at other times: outside the window, or on another day, only their tiny Likelihood', () => {
+  assert.equal(runEvening(pizza, { day: 1, seed: 1 }, 1030, 40), 'none'); // before the window, bad luck
+  assert.equal(runEvening(pizza, { day: 1, seed: 1 }, 1100, 40), 'none'); // after it
+  assert.equal(runEvening(friday, { day: 1, seed: 1 }, 1145, 40), 'none'); // the right time on a Monday
+  // Not locked out altogether: across many evenings outside the window a few do come, about 1 in 50.
+  let came = 0;
+  let seed = 12345;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  for (let n = 0; n < 400; n++) if (runEvening(pizza, { day: 1, seed: 1 }, 1030, 35, rnd) !== 'none') came++;
+  assert.ok(came > 0 && came < 24, `${came} of 400`);
+});
+
+test('SCREAM-250: not in the uncle\'s evening, and Quick play treats them as anyone with 2%', () => {
+  const r = new Residents([pizza], () => 0.999, undefined, { day: 1, seed: 1 });
+  r.nowMinutes = () => 1085;
+  r.hardToFindOn = false;
+  for (let i = 0; i < 5; i++) r.update(1, ringAt);
+  assert.equal(r.all[0].customer, 'none');
+  const quick = new Residents([pizza], () => 0.999);
+  quick.nowMinutes = () => 1085;
+  for (let i = 0; i < 5; i++) quick.update(1, ringAt);
+  assert.equal(quick.all[0].customer, 'none');
+});
+
+test('SCREAM-250 (PO): the tip is 4 times as big', () => {
+  const tip = (factor) => {
+    const s = new Sale([{ slot: 0, flavour: 'eclair', count: 2 }], 4, 0, false);
+    s.tipFactor = factor;
+    s.phase = 'pricing';
+    s.bag[0] = 2; // the bag matches the order
+    s.tipPercent = () => 20; // a quick sale: the full tip
+    s.charge(400, 400, 0);
+    assert.equal(s.outcome.kind, 'paid');
+    return s.outcome.tipCents;
+  };
+  assert.ok(tip(1) > 0);
+  assert.equal(tip(4), tip(1) * 4);
+});
+
+test('SCREAM-250: they are described by their window (and their days when few), never as "home every day"', () => {
+  for (const kind of ['every', 'next', 'back', 'from', 'until']) assert.equal(kindFits(kind, pizza, 1, 5), false, kind);
+  assert.equal(kindFits('window', pizza, 1, 5), true);
+  assert.equal(kindFits('home', friday, 1, 5), true);
+  assert.equal(kindFits('window', after7, 1, 5), false);
+  assert.equal(kindFits('from', after7, 1, 5), true);
+  assert.equal(fillNeighbour('Nobody ever catches [Name]. Try between [From] and [Until].', pizza, 1), 'Nobody ever catches Pizza Joe. Try between 6 and 6:12.');
+  const own = assignScheduleLines([pizza, friday], SCHEDULE_LINES, 9);
+  assert.deepEqual(own.get('F1').map((l) => kindOfLine(l.text)), ['window']);
+  assert.deepEqual(own.get('F2').map((l) => kindOfLine(l.text)).sort(), ['away', 'home', 'window']);
+  const said = assignNeighbourLines([pizza], NEIGHBOUR_LINES, 9);
+  assert.deepEqual(said.get('F1').map((l) => kindOfLine(l.text)), ['window']);
+});
+
+test('SCREAM-250 (PO): hints about them are less common than hints about other neighbours', () => {
+  const other = { ...base, id: 'F3', name: 'Ann', street: 'Lee Street', days: [0, 3] };
+  const speaker = { ...base, id: 'F4', name: 'Sue', street: 'Lee Street', days: [0, 1] };
+  const people = [pizza, other, speaker];
+  const m = assignNeighbourLines(people, NEIGHBOUR_LINES, 9);
+  let aboutPizza = 0;
+  let aboutOther = 0;
+  for (let i = 0; i < 2000; i++) {
+    const said = neighbourLineToday(speaker, people, m, 1, 5);
+    if (said?.about === 'F1') aboutPizza++;
+    if (said?.about === 'F3') aboutOther++;
+  }
+  assert.ok(aboutPizza > 200 && aboutPizza < aboutOther * 0.6, `${aboutPizza} against ${aboutOther}`);
+});
+
+test('SCREAM-250: Elm Park has three hard-to-find customers, each with a 20-second window (12 minutes on the clock), 10 ice creams and a tiny Likelihood', () => {
+  const hard = TUTORIAL_RESIDENTS.filter((r) => r.hardToFind);
+  assert.deepEqual(hard.map((r) => r.name.trim()), ['Pizza Joe', 'Zombie Poplicks', 'Ruth Butter Ginsburg']);
+  for (const r of hard) {
+    assert.equal(r.hours[1] - r.hours[0], 12, r.name);
+    assert.equal(r.orderSize, 10, r.name);
+    assert.ok(r.likelihood > 0 && r.likelihood <= 0.02, r.name);
+    assert.ok(!r.hinted);
+  }
+  assert.equal(RESIDENTS.filter((r) => r.hardToFind).length, 0);
 });

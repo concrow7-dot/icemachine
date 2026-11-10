@@ -75,6 +75,13 @@ export interface Resident {
    * Story. Outside them they stay indoors and don't come to the truck. Left out for most people.
    */
   hours?: [number | null, number | null];
+  /**
+   * SCREAM-250 (PO, decision 067): the sheet's "Hard to find". In Story, if the music reaches
+   * them inside their short window (`hours`) on a ticked day, they always come out; at any other
+   * time they're nearly impossible (their tiny Likelihood). Their order is big (Order size) and
+   * their tip is 4 times the usual.
+   */
+  hardToFind?: boolean;
 }
 
 /** SCREAM-249: whether a resident with hours is home at this time (minutes since midnight). No hours = always. */
@@ -286,10 +293,15 @@ export class Residents {
   hearingOff = false;
   /** SCREAM-249: the evening's clock, in minutes since midnight (EveningState sets it; without it everyone is always home). */
   nowMinutes: (() => number) | null = null;
+  /** SCREAM-250: false in the uncle's evening, when the hard-to-find customers stay in (engineering's call). */
+  hardToFindOn = true;
 
-  /** SCREAM-249 (PO): in Story, people with hours are only home inside them. Quick play ignores hours. */
+  /**
+   * SCREAM-249 (PO): in Story, people with hours are only home inside them. Quick play ignores hours.
+   * SCREAM-250: a hard-to-find customer is always home; their hours are the window when they answer.
+   */
   homeNow(resident: Resident): boolean {
-    if (!this.story || !this.nowMinutes || !resident.hours) return true;
+    if (!this.story || !this.nowMinutes || !resident.hours || resident.hardToFind) return true;
     return homeAt(resident, this.nowMinutes());
   }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
@@ -429,6 +441,24 @@ export class Residents {
       // SCREAM-249: not home at this hour: they don't hear it, and get a fresh chance once they are.
       if (!this.homeNow(p.resident)) {
         p.heard = 0;
+        continue;
+      }
+      // SCREAM-250 (PO, November 10): a hard-to-find customer comes out for certain ("100% in the
+      // window") when the music reaches them inside their window on a ticked day. At any other
+      // time they're "nearly impossible": the usual roll with their tiny Likelihood from the sheet.
+      if (this.story && p.resident.hardToFind) {
+        if (!this.hardToFindOn) continue; // the uncle's evening
+        const today = p.resident.days?.includes(weekdayOf(this.story.day)) ?? false;
+        const inWindow = today && !!this.nowMinutes && homeAt(p.resident, this.nowMinutes());
+        if (inWindow && inRing && ring?.open && !this.hearingOff) {
+          this.wantIceCream(p);
+          continue;
+        }
+        // Outside the window: one roll per evening at their Likelihood, not one a second.
+        if (inRing && ring?.open && !this.hearingOff && !p.decided) {
+          if (this.rnd() < p.resident.likelihood * scheduleFactor(p.resident, this.story)) this.wantIceCream(p);
+          else p.decided = true;
+        }
         continue;
       }
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;

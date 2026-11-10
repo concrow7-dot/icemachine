@@ -264,7 +264,7 @@ export class Sale {
 
     // An undercharge is simply accepted (Q18); the tip is a share of what was charged (Q29).
     const tipPercent = this.tipPercent(nowMs);
-    const tipCents = Math.round((priceCents * tipPercent) / 100);
+    const tipCents = Math.round(((priceCents * tipPercent) / 100) * this.tipFactor);
     this.finish({ kind: 'paid', priceCents, tipCents, tipPercent }, 'Thanks!');
     return 'over';
   }
@@ -313,6 +313,9 @@ export class Sale {
     this.saidSchedule = true;
     this.say(`${this.line} ${text}`);
   }
+
+  /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
+  tipFactor = 1;
 
   /** SCREAM-248: the neighbour this customer told the player about (resident id), or null. */
   neighbourAbout: string | null = null;

@@ -15,6 +15,7 @@ A line says something true about the customer's own week, with at most one kind 
     no tag  for people who are home all seven days "I'm out here every day."
     [From]  the time they get home (SCREAM-249)    "I'm never home before [From]."
     [Until] the time they stop coming out          "I have to be in bed by [Until]."
+    [From] and [Until] together: for people with both (SCREAM-250's hard-to-find customers)
 
 neighbour_lines.csv is a copy of the "Neighbour lines" tab ("sync neighbour lines"): what a
 customer says about someone else on their street. Same columns and tags, but the tags are
@@ -56,8 +57,8 @@ def build(csv_name, out_name, const, type_name, neighbours):
         tags = set(re.findall(r'\[[^\]]*\]', line))
         if tags - allowed:
             bad('only ' + ', '.join(sorted(allowed)) + ' can go in square brackets')
-        if len(tags & set(LONGEST)) > 1:
-            bad('a line can use only one kind of day tag')
+        if len(tags & set(LONGEST)) > 1 and tags & set(LONGEST) != {'[From]', '[Until]'}:
+            bad('a line can use only one kind of day tag ([From] and [Until] together are fine)')
         if neighbours and '[Name]' not in line:
             bad('the line must say [Name]')
         longest = line
