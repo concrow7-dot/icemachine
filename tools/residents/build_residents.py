@@ -24,6 +24,7 @@ residents.csv is a copy of the PO's residents sheet (doc 38, "Product Management
 Decisions" folder). The sheet is the source of truth: edit the sheet, then copy it here
 ("sync residents") and run build. Columns:
     ID, Name, Age (Adult or Kid), Street, House, Likelihood (%), Look, Notes
+and optionally Order size, Hinted, and Mon to Sun (TRUE or FALSE: home that day, in Story).
 Street is for reading only: it comes from the house. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
@@ -67,6 +68,7 @@ YARD_POINTS = 6
 EXPORT = 'RESIDENTS'
 TUTORIAL = False
 HEADER = ['ID', 'Name', 'Age', 'Street', 'House', 'Likelihood (%)', 'Look', 'Notes']
+DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']   # SCREAM-221: optional columns
 
 # ---- Look recipes ----
 # Left out: outfits 8, 22 and 33 look like work uniforms; 9, 23, 27 and 28 are costume
@@ -214,6 +216,17 @@ def read_csv():
             bad('Hinted must be Yes or blank')
         if hinted == 'yes':
             person['hinted'] = True
+        # SCREAM-221 (PO, decision 057): optional Mon to Sun columns, the sheet's checkboxes
+        # (TRUE or FALSE; blank counts as FALSE): the days of the week they're home, in Story.
+        if all(d in r for d in DAYS):
+            ticks = [(r[d] or '').strip().upper() for d in DAYS]
+            if any(t not in ('TRUE', 'FALSE', '') for t in ticks):
+                bad('Mon to Sun must be TRUE or FALSE (the sheet\'s checkboxes)')
+            person['days'] = [i for i, t in enumerate(ticks) if t == 'TRUE']
+            if person['days'] and likely == 0:
+                print(f'Warning: {rid} is ticked on some days but has 0%: in Story they will never come out.')
+        elif any(d in r for d in DAYS):
+            bad('has some of the Mon to Sun columns but not all seven')
         out.append(person)
     return out
 
@@ -459,7 +472,8 @@ def place(m, people, index):
                     'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
                     'door': door, 'yard': pts, 'curb': spot,
                     **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
-                    **({'hinted': True} if p.get('hinted') else {})})
+                    **({'hinted': True} if p.get('hinted') else {}),
+                    **({'days': p['days']} if 'days' in p else {})})
     return out
 
 
@@ -522,7 +536,7 @@ def check():
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1
             continue
-        diffs = [k for k in ('street', 'door', 'yard', 'curb') if old.get(k) != r[k]]
+        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days') if old.get(k) != r.get(k)]
         if diffs:
             moved += 1
             what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)

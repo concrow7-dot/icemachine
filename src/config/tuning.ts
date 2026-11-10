@@ -195,6 +195,15 @@ export const RESIDENT_START_OUTSIDE_CHANCE = 0.5;
 export const BUYER_REGULAR_FROM = 0.5;
 /** PO: a "sometimes" buyer buys on 1 day in this many. Story picks the day; Quick play rolls 1 in this many. */
 export const BUYER_SOMETIMES_DAYS = 3;
+
+// ---- SCREAM-232 (PO, November 10): in Story, the weekly ticks (SCREAM-221) make people more or less likely ----
+// "On the days ticked the person is a bit more likely to be a customer. On days not ticked they
+// become much more likely to not be a customer." Quick play ignores the ticks.
+
+/** Story, a day they're ticked: their Likelihood times this (capped at 100%). Engineering's starting value. */
+export const SCHEDULE_TICKED_FACTOR = 1.25;
+/** Story, a day they're not ticked: their Likelihood times this. Engineering's starting value. */
+export const SCHEDULE_UNTICKED_FACTOR = 0.2;
 /**
  * PO: sometimes buyers are outside more, about 3/4 of the time; SCREAM-152: regulars too, so
  * players get to know them. Never buyers keep the old routine. Engineering's numbers.
