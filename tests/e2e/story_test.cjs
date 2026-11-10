@@ -75,10 +75,11 @@ const { chromium } = require('playwright');
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
   check('Story starts with $50', await ev('e.moneyCents'), 5000);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
-  check('HUD shows the day beside the clock', /Day 1\/5/.test(await hudClock()), true);
-  // SCREAM-221 (decision 057): Story starts on a Monday, and the sheet's ticks decide who buys tonight.
-  check('...with its weekday: Monday, Day 1/5', /Monday, Day 1\/5/.test(await hudClock()), true);
-  check('Day 1 (Monday): exactly the people ticked for Monday can buy', await ev('e.residents.all.every(p => p.buys === p.resident.days.includes(0))'), true);
+  // SCREAM-221 / SCREAM-232 (PO): Story starts on a Monday; the HUD shows just the weekday.
+  check('HUD shows the weekday beside the clock: Monday', /Monday/.test(await hudClock()) && !/Day 1/.test(await hudClock()), true);
+  // SCREAM-232: ticked today a bit likelier, not ticked much less likely; anyone but 0% may come.
+  check('Day 1 (Monday): everyone but 0% may come out tonight', await ev('e.residents.all.every(p => p.buys === (p.resident.likelihood > 0))'), true);
+  check('...people ticked for Monday are likelier, the rest much less likely', await ev(`(() => { const R = e.residents.constructor; const st = { day: 1, seed: 1 }; return e.residents.all.every(p => (R.scheduleFactor(p.resident, st) > 1) === p.resident.days.includes(0) && R.scheduleFactor(p.resident, st) !== 1); })()`), true);
   check('...the ones ticked every day are the regulars tonight', await ev(`e.residents.all.every(p => (e.residents.kindOf(p.resident) === 'regular') === (p.resident.days.length === 7))`), true);
   check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
   // SCREAM-220: players see no debug hint (it shows only with ?debug; checked at the end).
@@ -163,9 +164,9 @@ const { chromium } = require('playwright');
   await shift(3); await wait(300);
   check('Day 1 over: end-of-day screen, not the results screen', await scenes(), 'DayEnd');
   const day1 = await texts('DayEnd');
-  check('...it says END OF DAY 1 and shows the wallet', /END OF DAY 1/.test(day1) && /WALLET/.test(day1) && /\$47\.00/.test(day1), true);
+  check('...it says END OF MONDAY and shows the wallet', /END OF MONDAY/.test(day1) && /WALLET/.test(day1) && /\$47\.00/.test(day1), true);
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
-  check('...and Enter starts day 2 (SCREAM-221: Tuesday)', /Enter: Start Tuesday, Day 2/.test(day1), true);
+  check('...and Enter starts day 2 (SCREAM-232: "Start Tuesday")', /Enter: Start Tuesday(?!,)/.test(day1) && /END OF MONDAY/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
@@ -179,8 +180,8 @@ const { chromium } = require('playwright');
   check('Cash carried over ($47)', await ev('e.moneyCents'), 4700);
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
-  check('HUD says Tuesday, Day 2/5', /Tuesday, Day 2\/5/.test(await hudClock()), true);
-  check('Day 2 (Tuesday): the people ticked for Tuesday can buy', await ev('e.residents.all.every(p => p.buys === p.resident.days.includes(1))'), true);
+  check('HUD says Tuesday', /Tuesday/.test(await hudClock()), true);
+  check('Day 2 (Tuesday): people ticked for Tuesday are the likelier ones', await ev(`(() => { const R = e.residents.constructor; return e.residents.all.every(p => (R.scheduleFactor(p.resident, { day: 2, seed: 1 }) > 1) === p.resident.days.includes(1)); })()`), true);
   check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '2 true true 4');
   check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
@@ -241,7 +242,7 @@ const { chromium } = require('playwright');
   check('...then it has closed', (await portalWait("s.portal.state === 'lapping'")) + ' ' + (await sc('Drive', 's.portal.visible')), 'true false');
   check('...in about a second (well under 4 even on a busy machine)', Date.now() - closeStart < 4000, true);
   check('Three laps: the truck is in Foley Stadium', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')), 'worcester 1');
-  check('...the top bar names the neighbourhood', /Day 2\/5  Foley Stadium/.test(await hudClock()), true);
+  check('...the top bar names the neighbourhood', /Tuesday  Foley Stadium/.test(await hudClock()), true);
   check('...on the road there, on Newton Square (the roundabout)', (await scenes()) + ' ' + (await sc('Drive', "(() => { const r = s.laps.ring; return Math.round(Math.hypot(s.truck.x - r.x, s.truck.y - r.y)) === r.r; })()")), 'Drive,Hud true');
   check('...Newton Square is at the top of the map', await sc('Drive', 's.laps.ring.y < 600'), true);
   check('...Foley Stadium\'s own people are out (sheet 15), with their state kept apart from Elm Park\'s', await ev("e.residents.all.length > 100 && e.residents.all.every(p => !p.resident.id.startsWith('T'))"), true);
@@ -279,7 +280,7 @@ const { chromium } = require('playwright');
   check('Day 3 starts', await story('r.day'), 3);
   await shift(3); await press('Enter'); await wait(300);
   await shift(3); await press('Enter'); await wait(300);
-  check('Day 5 starts, the last', (await story('r.day')) + ' ' + /Day 5\/5/.test(await hudClock()), '5 true');
+  check('Day 5 starts, the last', (await story('r.day')) + ' ' + /Friday/.test(await hudClock()), '5 true');
   await shift(3); await wait(300);
   const last = await texts('DayEnd');
   check('After day 5: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
@@ -331,7 +332,7 @@ const { chromium } = require('playwright');
   await press('+', 2); await press('Enter'); await wait(300);
   await ev('(e.cashCents = 50, true)');
   await shift(3); await wait(300);
-  check('$0.50 with 2 bars left: carries on to day 2', /END OF DAY 1/.test(await texts('DayEnd')), true);
+  check('$0.50 with 2 bars left: carries on to day 2', /END OF MONDAY/.test(await texts('DayEnd')), true);
 
   // ---- Quitting a Story run from the pause menu ----
   await press('Enter'); await wait(300); await press('Enter'); await wait(300);
@@ -343,14 +344,14 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-17: Continue ----
   const withSave = await texts('Title');
-  check('Title offers Continue story (Tuesday, Day 2, $0.50) and New story', /Continue Story: Tuesday, Day 2, \$0\.50/.test(withSave) && /New Story/.test(withSave), true);
+  check('Title offers Continue story (Tuesday, $0.50) and New story', /Continue Story: Tuesday, \$0\.50/.test(withSave) && /New Story/.test(withSave), true);
   await page.screenshot({ path: outDir + '/story_title_continue.png' });
   await press('ArrowDown'); await press('Enter'); await wait(300);
   check('Continue skips the intro: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
-  check('Continue: HUD says Tuesday, Day 2/5', /Tuesday, Day 2\/5/.test(await hudClock()), true);
+  check('Continue: HUD says Tuesday', /Tuesday/.test(await hudClock()), true);
   // A reload (closing the browser) keeps the save too.
   await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
-  check('After reloading the page the save is still there', /Continue Story: Tuesday, Day 2/.test(await texts('Title')), true);
+  check('After reloading the page the save is still there', /Continue Story: Tuesday/.test(await texts('Title')), true);
 
   // ---- SCREAM-17: New story asks first ----
   await press('ArrowDown', 2); await press('Enter'); await wait(200); // New Story

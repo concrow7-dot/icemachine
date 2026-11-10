@@ -62,8 +62,8 @@ export class HudScene extends Phaser.Scene {
     this.evening = getEvening(this);
     const story = getStory(this);
     // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
-    // SCREAM-221 (decision 057): the weekday by the day number; Story starts on a Monday.
-    this.dayLabel = story ? `   ${weekdayName(story.day)}, Day ${story.day}/${story.days}` : '';
+    // SCREAM-221 / SCREAM-232 (PO, November 10): just the weekday ("leave it at the day of the week"); Story starts on a Monday.
+    this.dayLabel = story ? `   ${weekdayName(story.day)}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);

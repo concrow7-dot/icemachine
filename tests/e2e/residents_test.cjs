@@ -54,13 +54,14 @@ const { chromium } = require('playwright');
   check('...and the sheet has some of each kind', byRule.split(',').every(n => +n > 0), true);
   check('Kinds by likelihood: 0% never, 35% sometimes, 50% and 80% regular', await ev('[0, 0.35, 0.5, 0.8].map(e.residents.constructor.kind).join()'), 'never,sometimes,regular,regular');
   check('Tonight: never buyers never buy, regulars always can', await ev(`e.residents.all.every(p => { const k = e.residents.constructor.kind(p.resident.likelihood); return k === 'sometimes' || p.buys === (k === 'regular'); })`), true);
-  // SCREAM-221 (decision 057): in Story the sheet's Mon to Sun ticks decide (Day 1 is Monday); Likelihood is for Quick play.
+  // SCREAM-221 / SCREAM-232 (PO): in Story the Mon to Sun ticks (Day 1 is Monday) make people likelier on their ticked days, much less likely on the others.
   const story = await ev(`(() => { const R = e.residents.constructor; const st = (day) => ({ day, seed: 12345 });
-    const some = e.residents.all.map(p => p.resident).filter(r => R.kindFor(r, st(1)) === 'sometimes');
-    const onTicks = some.every(r => [1, 2, 3, 4, 5].every(d => R.buysTonight(r, Math.random, st(d)) === r.days.includes(d - 1)));
-    const perDay = [1, 2, 3, 4, 5].map(d => some.filter(r => R.buysTonight(r, Math.random, st(d))).length);
-    return [some.length > 0, onTicks, perDay.every(n => n >= 20)].join(); })()`);
-  check('Story: part-week buyers buy on their ticked weekdays only; every weekday has plenty', story, 'true,true,true');
+    const people = e.residents.all.map(p => p.resident);
+    const onTicks = people.every(r => [1, 2, 3, 4, 5].every(d => (R.scheduleFactor(r, st(d)) > 1) === r.days.includes(d - 1)));
+    const anyEvening = people.every(r => [1, 2, 3, 4, 5].every(d => R.buysTonight(r, Math.random, st(d)) === (r.likelihood > 0)));
+    const perDay = [1, 2, 3, 4, 5].map(d => people.filter(r => R.scheduleFactor(r, st(d)) > 1 && R.kindFor(r, st(d)) === 'sometimes').length);
+    return [onTicks, anyEvening, perDay.every(n => n >= 20)].join(); })()`);
+  check('Story: likelier on ticked weekdays, anyone but 0% may come; every weekday favours plenty', story, 'true,true,true');
   const quick = await ev(`(() => { const R = e.residents.constructor; const r = e.residents.all.find(p => R.kind(p.resident.likelihood) === 'sometimes').resident; let n = 0; for (let i = 0; i < 3000; i++) if (R.buysTonight(r, Math.random)) n++; return n; })()`);
   check('Quick play: a sometimes buyer buys on about 1 evening in 3', quick > 850 && quick < 1150, true);
   const nobuy = await ev(`(() => { const R = e.residents.constructor; const r = new R(e.residents.all.map(p => p.resident), Math.random, undefined, { day: 1, seed: 7 });

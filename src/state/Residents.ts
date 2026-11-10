@@ -13,6 +13,8 @@
 import {
   BUYER_REGULAR_FROM,
   BUYER_SOMETIMES_DAYS,
+  SCHEDULE_TICKED_FACTOR,
+  SCHEDULE_UNTICKED_FACTOR,
   CUSTOMER_CHANCE_FIRST,
   CUSTOMER_CHANCE_FLOOR,
   CUSTOMER_CHANCE_SETTLE_SECONDS,
@@ -96,14 +98,24 @@ export function buyerKind(likelihood: number): BuyerKind {
 }
 
 /**
- * SCREAM-221 (decision 057): in Story, someone with ticks is a regular if ticked all seven
- * days (reliable at the window, 034), never a buyer if ticked on none, and otherwise buys on
- * their ticked days. Without ticks, or in Quick play (no `story`), Likelihood decides as before.
+ * SCREAM-221 (decision 057) and SCREAM-232 (PO, November 10): in Story, someone with ticks is a
+ * regular if ticked all seven days (reliable at the window, 034), never a buyer only at 0%, and
+ * otherwise may come out any evening, likelier on their ticked days (see `scheduleFactor`).
+ * Without ticks, or in Quick play (no `story`), Likelihood decides as before.
  */
 export function kindFor(resident: Resident, story?: { day: number; seed: number }): BuyerKind {
   if (!story || !resident.days) return buyerKind(resident.likelihood);
-  if (resident.days.length >= 7) return 'regular';
-  return resident.days.length === 0 ? 'never' : 'sometimes';
+  if (resident.likelihood <= 0) return 'never';
+  return resident.days.length >= 7 ? 'regular' : 'sometimes';
+}
+
+/**
+ * SCREAM-232 (PO, November 10): in Story, how much likelier (ticked today) or less likely (not
+ * ticked) someone is to want ice cream tonight: multiplies their Likelihood. 1 in Quick play.
+ */
+export function scheduleFactor(resident: Resident, story?: { day: number; seed: number }): number {
+  if (!story || !resident.days) return 1;
+  return resident.days.includes(weekdayOf(story.day)) ? SCHEDULE_TICKED_FACTOR : SCHEDULE_UNTICKED_FACTOR;
 }
 
 /**
@@ -129,8 +141,8 @@ export function buysTonight(
   const kind = kindFor(resident, story);
   if (kind !== 'sometimes') return kind === 'regular';
   if (!story) return rnd() < 1 / BUYER_SOMETIMES_DAYS;
-  // SCREAM-221: home on their ticked days, every week.
-  if (resident.days) return resident.days.includes(weekdayOf(story.day));
+  // SCREAM-232: with ticks, anyone (but 0%) may come out any evening; the ticks change how likely (scheduleFactor).
+  if (resident.days) return true;
   return (story.day - 1) % BUYER_SOMETIMES_DAYS === sometimesDay(resident.id, story.seed);
 }
 
@@ -250,6 +262,7 @@ export class Residents {
   static readonly buysTonight = buysTonight;
   /** SCREAM-221: the buyer kind in Story (ticks) or Quick play (Likelihood), for the browser tests. */
   static readonly kindFor = kindFor;
+  static readonly scheduleFactor = scheduleFactor;
   /** SCREAM-221: Story's day and run seed (undefined in Quick play). */
   private readonly story?: { day: number; seed: number };
   /** SCREAM-221: what kind of buyer this resident is tonight (Story: their ticks; Quick play: Likelihood). */
@@ -394,7 +407,8 @@ export class Residents {
       p.heard = inRing ? p.heard + 1 : 0;
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
       const regular = this.kindOf(p.resident) === 'regular';
-      if (this.rnd() < customerChance(p.heard, p.resident.likelihood, indoors, regular)) this.wantIceCream(p);
+      const likelihood = Math.min(1, p.resident.likelihood * scheduleFactor(p.resident, this.story));
+      if (this.rnd() < customerChance(p.heard, likelihood, indoors, regular)) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
   }
