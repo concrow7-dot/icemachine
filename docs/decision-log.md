@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 071 — Filling an order: a BACK TO THE WINDOW button (2026-11-11)
+
+**Decision (Jira SCREAM-240, under SCREAM-154, PO, November 10):** the cooler screen where an order is filled gets a button that goes back to the sales window, the same as the B key. The PO's note: "Moved the center of the serving area."
+
+**Options considered:** a button (chosen); the B key alone, as before.
+
+**Why (product owner's rationale):** *placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):** the PO was asked where the button should sit and didn't answer, so the placement is engineering's reading of his note: the middle of the serving area (the "In the bag" panel), on the same row as SERVE, below the ice creams in the bag so a full bag of 10 doesn't touch it. It is blue like BACK ON THE ROAD, so SERVE stays the one green button.
+
 ## 070 — At the window, "Next Customer" when someone is waiting; driving off instead is a key (2026-11-11)
 
 **Decision (Jira SCREAM-241, under SCREAM-154, PO, November 10 and 11):** when a sale is over and another customer is waiting at the truck, the button under the window says NEXT CUSTOMER instead of BACK ON THE ROAD and brings that customer straight to the window. The player can still drive off instead, with a key: "Have drive off be a keyboard button" (PO, November 11).
