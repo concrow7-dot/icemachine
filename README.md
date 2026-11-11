@@ -17,7 +17,7 @@ Built in the open as a product management case study. The product owner (Conor C
 - **Tickets** live in Jira (project SCREAM). Stories are features that need discussion; tasks are small, clear items. Each sits under an epic.
 - **Decisions** are recorded in [`docs/decision-log.md`](docs/decision-log.md), newest first: what was decided, the options considered, the product owner's reason, and engineering's own calls (labelled as proposals, never as the PO's reasons).
 - **Every change** is a branch (`feature/SCREAM-NN-short-name`), a pull request, and a test plan the product owner runs by hand before merging. Pull requests are type-checked and built automatically.
-- **Every merge to `main`** builds and publishes the game to GitHub Pages within a few minutes.
+- **Publishing:** work merges to `main`; the public site is built from the `release` branch. Merging `main` into `release` publishes the game to GitHub Pages within a few minutes, so players and playtesters only get a new version on purpose.
 - **Playtests** run in rounds with a feedback form; the results feed the backlog.
 - **Devlogs** tell the story milestone by milestone, in the product owner's voice.
 

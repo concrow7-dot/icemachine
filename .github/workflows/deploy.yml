@@ -1,9 +1,11 @@
 name: Deploy to GitHub Pages
 
-# Every merge to main builds the game and publishes it.
+# The public site is built from the release branch only (SCREAM-266, decision 068).
+# Merging to main no longer publishes anything. To publish: open a pull request from
+# main into release and merge it with "Create a merge commit".
 on:
   push:
-    branches: [main]
+    branches: [release]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +19,8 @@ concurrency:
 
 jobs:
   build:
+    # A manual run ("Run workflow") started from any other branch does nothing.
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
