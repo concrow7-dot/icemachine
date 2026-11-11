@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** a button (chosen); the B key alone, as before.
 
-**Why (product owner's rationale):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 11):** "If I forget a customer's order, I want an easy way to go back. The user might not know the button to use."
 
 **Engineering's calls (proposals):** the PO was asked where the button should sit and didn't answer, so the placement is engineering's reading of his note: the middle of the serving area (the "In the bag" panel), on the same row as SERVE, below the ice creams in the bag so a full bag of 10 doesn't touch it. It is blue like BACK ON THE ROAD, so SERVE stays the one green button.
 
