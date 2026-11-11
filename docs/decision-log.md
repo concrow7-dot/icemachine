@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 069 — The gas gauge is bigger and sits at the bottom left (2026-11-11)
+
+**Decision (Jira SCREAM-238, under SCREAM-7, PO, November 10):** the gas gauge is bigger and moves from the top right (055) to the bottom left of the screen, while driving and at the pump. This replaces 055.
+
+**Options considered:** bottom left, bigger (chosen); leave it by the money (055).
+
+**Why (product owner's rationale):** *placeholder, to ask the PO.*
+
+**Engineering's calls (proposals):**
+
+- About one and a half times the size (the dial's radius goes from 46 to 72 px).
+- On the road it sits just above the controls hint; the park brake sign and the short yellow notices start to its right instead of under it.
+- At the pump it sits in the corner itself, below the pump's picture.
+- SOLD OUT and the customer's 5-second "!" go back to sitting just left of the money.
+- The uncle's line said "the gauge up top", which is no longer true. It now reads "Keep an eye on the gas gauge. Run dry and the night's over." This wording is engineering's draft for the PO to change.
+
 ## 068 — The public site is published from a release branch, not from every merge to main (2026-11-10)
 
 **Decision (Jira SCREAM-266, under SCREAM-202, PO, November 10):** the public site is built only from a branch called `release`. Work still merges to main, but that no longer changes what players see. To publish, engineering opens a pull request from main into `release` and the PO merges it.
@@ -208,6 +224,8 @@ The tickets: High, schedules and where people are: SCREAM-246 (the sheet's trait
 **Engineering's calls (proposals):** on the credits, X skips the credits only (then the uncle, who can be skipped with X again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held X (the keyboard repeating it) counts once, so holding X on the credits doesn't skip the uncle too.
 
 ## 055 — The gas gauge sits at the top right, left of the money (2026-11-09)
+
+*Replaced by 069 (the gauge is bigger, at the bottom left).*
 
 **Decision (Jira SCREAM-219, under SCREAM-7, PO, November 9):** the gas gauge moves from the middle of the top bar to the top right, just left of the money ("Cash $..."), while driving and at the pump.
 

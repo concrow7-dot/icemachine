@@ -75,6 +75,8 @@ const CAR_COLOURS = [0xc0392b, 0x2e86c1, 0x7d3c98, 0x27ae60, 0xd68910, 0x566573]
 const POTHOLE_REACH = 22;
 
 const HUD_HEIGHT = 44;
+/** SCREAM-238: the park brake label and short notices start right of the gas gauge (bottom left; its right edge is at about x 148). */
+const BOTTOM_NOTE_X = 160;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
 /**
  * The truck's collision shape: a rectangle the size of the drawn truck (46 x 28),
@@ -400,7 +402,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.parkLabel = this.add
-      .text(16, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas Or Q To Release', {
+      .text(BOTTOM_NOTE_X, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas Or Q To Release', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -895,7 +897,7 @@ export class DriveScene extends Phaser.Scene {
   private flashNotice(message: string): void {
     this.notice?.destroy();
     const notice = this.add
-      .text(16, this.scale.height - HUD_HEIGHT - 66, message, {
+      .text(BOTTOM_NOTE_X, this.scale.height - HUD_HEIGHT - 66, message, {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#1b1b1b',
