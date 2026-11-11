@@ -3,6 +3,7 @@ import { drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { getFlavour } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
+import type { ResidentNow } from '../state/Residents';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
 import { Calculator, type CalculatorKey } from '../ui/Calculator';
@@ -77,6 +78,8 @@ export class SalesScene extends Phaser.Scene {
   /** SCREAM-172: redraws the uncle's outline round "R: Ask Again" when the hint line changes. */
   private redrawPointer?: () => void;
   private roadButton!: Phaser.GameObjects.Text;
+  /** SCREAM-241: true while the finished sale's button reads NEXT CUSTOMER (someone is waiting at the truck). */
+  offeringNext = false;
   private coolerButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
   private typed = '';
@@ -174,7 +177,7 @@ export class SalesScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
-    this.roadButton.on('pointerdown', () => this.leave());
+    this.roadButton.on('pointerdown', () => this.nextOrLeave());
 
     this.coolerButton = this.add
       .text(BUTTON_X, BUTTON_Y, 'GO TO THE COOLER', {
@@ -209,6 +212,8 @@ export class SalesScene extends Phaser.Scene {
 
   update(): void {
     this.tipBar.update(this.evening);
+    // SCREAM-241: someone can walk up, or give up, while the finished sale is still on screen.
+    if (this.evening.sale?.phase === 'over' && !!this.nextCustomer() !== this.offeringNext) this.refresh();
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -217,7 +222,12 @@ export class SalesScene extends Phaser.Scene {
     const key = event.key;
 
     if (sale.phase === 'over') {
-      if (key === 'Enter' || key === ' ') this.leave();
+      if (key === 'Enter' || key === ' ') this.nextOrLeave();
+      // SCREAM-241 (PO, November 11): with someone waiting, driving off instead is a key.
+      else if ((key === 'b' || key === 'B') && this.nextCustomer()) {
+        this.evening.windowShutUntilMoved = true;
+        this.leave();
+      }
       return;
     }
 
@@ -314,6 +324,25 @@ export class SalesScene extends Phaser.Scene {
   private driveOff(): void {
     this.evening.driveOffFromSale();
     this.leave();
+  }
+
+  /**
+   * SCREAM-241 (PO, November 10): who is waiting at the truck behind this customer, if anyone.
+   * Not during the uncle's evening (his steps expect the road between sales).
+   */
+  private nextCustomer(): ResidentNow | undefined {
+    if (this.evening.tutorial) return undefined;
+    return this.evening.nextAtTruck?.();
+  }
+
+  /** The button under the window once a sale is over: the next customer if one is waiting, else the road. */
+  private nextOrLeave(): void {
+    const next = this.nextCustomer();
+    if (!next) return this.leave();
+    this.evening.closeSale();
+    if (this.evening.isOver) return; // the HUD is taking us to the results screen
+    this.evening.startSale(next);
+    this.scene.restart();
   }
 
   /** Back on the road; the next customer appears (or the evening ends if it's past 8 PM). */
@@ -434,7 +463,8 @@ export class SalesScene extends Phaser.Scene {
     this.calculator.setVisible(pricing);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
-    this.roadButton.setVisible(sale.phase === 'over');
+    this.offeringNext = sale.phase === 'over' && !!this.nextCustomer();
+    this.roadButton.setText(this.offeringNext ? 'NEXT CUSTOMER' : 'BACK ON THE ROAD').setVisible(sale.phase === 'over');
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
 
     let hint = '';
@@ -446,7 +476,10 @@ export class SalesScene extends Phaser.Scene {
     if (pricing) {
       hint = 'Type the price (7.25) or click the keys.    Enter: Charge    Backspace: Undo    B: Drive Off';
     }
-    if (sale.phase === 'over') hint = freebie ? "Enter: Say Sorry, It's On The House" : 'Enter: Back On The Road';
+    if (sale.phase === 'over') {
+      hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';
+      if (this.offeringNext) hint += '    B: Drive Off';
+    }
     this.hint.setText(hint);
     this.redrawPointer?.();
   }

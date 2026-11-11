@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 070 — At the window, "Next Customer" when someone is waiting; driving off instead is a key (2026-11-11)
+
+**Decision (Jira SCREAM-241, under SCREAM-154, PO, November 10 and 11):** when a sale is over and another customer is waiting at the truck, the button under the window says NEXT CUSTOMER instead of BACK ON THE ROAD and brings that customer straight to the window. The player can still drive off instead, with a key: "Have drive off be a keyboard button" (PO, November 11).
+
+**Options considered (for driving off with people waiting):** a key (chosen, the PO's own answer); a second, smaller Drive Off button beside Next Customer; no way to drive off until everyone is served.
+
+**Why (product owner's rationale, November 11):** "I don't think Drive Off will be used much, the customer is there, so you'll want the business."
+
+**Engineering's calls (proposals):**
+
+- The key is **B**, the same key that drives off during a sale. The hint line reads "Enter: Next Customer    B: Drive Off".
+- "Waiting" means standing at the parked truck right now (their pink square under it). The button changes back if they give up while the finished sale is still on screen, and changes to NEXT CUSTOMER if someone walks up.
+- After B, the people left behind keep waiting, and nobody is served until the truck has moved (otherwise the road would open the window for them at once).
+- Not during the uncle's evening: his steps expect the road between sales.
+
 ## 069 — The gas gauge is bigger and sits at the bottom left (2026-11-11)
 
 **Decision (Jira SCREAM-238, under SCREAM-7, PO, November 10):** the gas gauge is bigger and moves from the top right (055) to the bottom left of the screen, while driving and at the pump. This replaces 055.

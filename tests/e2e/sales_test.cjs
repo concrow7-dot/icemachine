@@ -221,6 +221,40 @@ const { chromium } = require('playwright');
   await press('b'); await wait(300);
   check('B: drive off, a lost sale, back on the road', (await scenes()) + ' ' + ((await cash()) - c6), 'Drive,Hud 0');
 
+  // ---- SCREAM-241: someone else is waiting at the truck: NEXT CUSTOMER, and B to drive off ----
+  await serveNow(); await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('SCREAM-241: nobody else waiting: the button says BACK ON THE ROAD', (await sc('Sales', 's.roadButton.visible')) + ' ' + (await sc('Sales', 's.roadButton.text')), 'true BACK ON THE ROAD');
+  const callNext = (n) => ev(`(() => { const p = e.residents.all.filter(q => q.customer === 'none' && q !== e.customer)[${n}]; e.residents.callNow(p); window.__next = p; e.nextAtTruck = () => (window.__next.customer === 'waiting' ? window.__next : undefined); return p.resident.name; })()`);
+  const firstNext = await callNext(0); await wait(200);
+  check('...someone walks up while the finished sale is on screen: it changes to NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  check('...and the hint offers both keys', await sc('Sales', 's.hint.text'), 'Enter: Next Customer    B: Drive Off');
+  await press('Enter'); await wait(400);
+  check('Enter: the next customer is at the window, without going back to the road', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ordering ' + firstNext);
+  check('...they are the one being served now', await ev('window.__next.customer'), 'window');
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('...and with nobody behind them the button is BACK ON THE ROAD again', await sc('Sales', 's.roadButton.text') + ' | ' + await sc('Sales', 's.hint.text'), 'BACK ON THE ROAD | Enter: Back On The Road');
+  await callNext(1); await wait(200);
+  check('Someone waiting again: NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  await press('b'); await wait(400);
+  check('B: drive off instead, back on the road; they are left waiting', (await scenes()) + ' ' + (await ev('window.__next.customer')) + ' ' + (await ev('e.windowShutUntilMoved')), 'Drive,Hud waiting true');
+  // The road's side: two people standing at the parked truck.
+  const pair = await ev(`(() => { const s = window.__game.scene.getScene('Drive'); s.speed = 0; const two = e.residents.all.filter(q => q.customer === 'none').slice(0, 2);
+    two.forEach((p, i) => { e.residents.callNow(p); p.pickup = [s.truck.x + i, s.truck.y, s.heading]; }); window.__two = two; return two.map(p => p.resident.name).join('|'); })()`);
+  await wait(500);
+  check('...parked beside them, nobody is served until the truck has moved', await scenes(), 'Drive,Hud');
+  await ev('(e.windowShutUntilMoved = false, true)'); await wait(500);
+  check('Once it has moved (flag cleared), the first of them is served', (await scenes()) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ' + pair.split('|')[0]);
+  check('...and the road has told the window who is next at the truck', await ev('e.nextAtTruck().resident.name'), pair.split('|')[1]);
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('...so the button says NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  await page.screenshot({ path: outDir + '/sales_next_customer.png' });
+  await page.mouse.click(480, 478); await wait(400);
+  check('Clicking it brings the second one to the window', (await scenes()) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ' + pair.split('|')[1]);
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  await ev('(window.__next.customer = "done", e.nextAtTruck = null, true)');
+  await press('Enter'); await wait(400);
+  check('...then Enter goes back on the road', await scenes(), 'Drive,Hud');
+
   // ---- Too expensive ----
   await ev('(e.coolerSlots.forEach(s => s.priceCents = 450), true)');
   await serveNow();
