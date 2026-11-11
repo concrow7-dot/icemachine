@@ -8,6 +8,7 @@ import { showLoadingWhileLoading } from './LoadingScene';
 // menu is open. Restart and Quit ask "Are you sure?" first, and an evening
 // that's quit or restarted doesn't go on the high score table (it never
 // reaches the results screen).
+// SCREAM-181: the high score screen opens it as well while it is asking for initials.
 
 type Choice = 'resume' | 'restart' | 'quit';
 
@@ -17,7 +18,15 @@ const CHOICES: { id: Choice; label: string }[] = [
   { id: 'quit', label: 'Quit To Title' },
 ];
 
+/**
+ * SCREAM-181 (PO, November 6): Esc on the high score screen (while it asks for initials) opens
+ * this menu too, with a warning. The evening is over there, so there is nothing to restart.
+ */
+const RESULTS_CHOICES = CHOICES.filter((c) => c.id !== 'restart');
+export const HIGH_SCORE_WARNING = "Quitting won't save your high score.";
+
 const INK = '#ffffff';
+const WARNING = '#ff9c9c';
 const HIGHLIGHT = '#ffe066';
 const QUIET = '#b7c2d6';
 
@@ -33,6 +42,10 @@ export class PauseScene extends Phaser.Scene {
   private items: Phaser.GameObjects.Text[] = [];
   private prompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
+  /** SCREAM-181: opened from the high score screen, with initials still to enter. */
+  private fromResults = false;
+  private choices = CHOICES;
+  private warning: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super(SceneKeys.Pause);
@@ -43,8 +56,11 @@ export class PauseScene extends Phaser.Scene {
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
-  create(data: { paused?: string[] }): void {
+  create(data: { paused?: string[]; fromResults?: boolean }): void {
     this.paused = data.paused ?? [];
+    this.fromResults = !!data.fromResults;
+    this.choices = this.fromResults ? RESULTS_CHOICES : CHOICES;
+    this.warning = null;
     this.selected = 0;
     this.confirming = null;
     this.answer = 1;
@@ -55,7 +71,7 @@ export class PauseScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, 420, 300, 0x1f2a44).setStrokeStyle(3, 0x8a9bb3);
     this.add.text(width / 2, height / 2 - 110, 'PAUSED', { fontFamily: 'monospace', fontSize: '34px', color: '#ffe8a3' }).setOrigin(0.5);
 
-    this.items = CHOICES.map((c, i) =>
+    this.items = this.choices.map((c, i) =>
       this.add
         .text(width / 2, height / 2 - 40 + i * 48, c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
         .setOrigin(0.5)
@@ -102,6 +118,12 @@ export class PauseScene extends Phaser.Scene {
           }
         }),
     );
+    if (this.fromResults) {
+      this.warning = this.add
+        .text(width / 2, height / 2 + 70, HIGH_SCORE_WARNING, { fontFamily: 'monospace', fontSize: '16px', color: WARNING })
+        .setOrigin(0.5)
+        .setName('high-score-warning');
+    }
     this.hint = this.add
       .text(width / 2, height / 2 + 120, '', { fontFamily: 'monospace', fontSize: '14px', color: QUIET })
       .setOrigin(0.5);
@@ -128,12 +150,12 @@ export class PauseScene extends Phaser.Scene {
   }
 
   private move(step: number): void {
-    this.selected = (this.selected + step + CHOICES.length) % CHOICES.length;
+    this.selected = (this.selected + step + this.choices.length) % this.choices.length;
     this.refresh();
   }
 
   private choose(): void {
-    const choice = CHOICES[this.selected]?.id ?? 'resume';
+    const choice = this.choices[this.selected]?.id ?? 'resume';
     if (choice === 'resume') this.resume();
     else {
       this.confirming = choice;
@@ -158,13 +180,17 @@ export class PauseScene extends Phaser.Scene {
     this.items.forEach((t, i) => {
       t.setVisible(!asking);
       t.setColor(i === this.selected ? HIGHLIGHT : INK);
-      t.setText(`${i === this.selected ? '> ' : '  '}${CHOICES[i]?.label ?? ''}${i === this.selected ? ' <' : '  '}`);
+      t.setText(`${i === this.selected ? '> ' : '  '}${this.choices[i]?.label ?? ''}${i === this.selected ? ' <' : '  '}`);
     });
+    // SCREAM-181: the question says it instead while "Are you sure?" is up.
+    this.warning?.setVisible(!asking);
     this.prompt.setVisible(asking);
     if (this.confirming === 'restart') {
       this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash, stock and gas go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
     }
-    if (this.confirming === 'quit') {
+    if (this.confirming === 'quit' && this.fromResults) {
+      this.prompt.setText("Quit to the title screen?\nYour high score won't be saved.");
+    } else if (this.confirming === 'quit') {
       this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at\nthe start of this evening.' : "Quit to the title screen?\nThis evening won't count.");
     }
     this.answers.forEach((t, i) => {
@@ -196,5 +222,7 @@ export class PauseScene extends Phaser.Scene {
 
   private stopEvening(): void {
     for (const key of EVENING_SCENES) this.scene.stop(key);
+    // SCREAM-181: the high score screen frozen behind the menu goes too.
+    if (this.fromResults) this.scene.stop(SceneKeys.Results);
   }
 }
