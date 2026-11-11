@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
+import { clearStory, getEvening, getStory, pauseResults, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
 import { largestSaleLine, largestSaleRecord, offerLargestSale } from '../state/Records';
@@ -211,6 +211,8 @@ export class ResultsScene extends Phaser.Scene {
       return;
     }
     const key = event.key;
+    // SCREAM-181: Esc while asking for initials opens the pause menu (Resume, or quit without saving).
+    if (key === 'Escape') return pauseResults(this);
     if (key === 'ArrowUp') this.changeLetter(1);
     else if (key === 'ArrowDown') this.changeLetter(-1);
     else if (key === 'ArrowLeft') this.cursor = Math.max(0, this.cursor - 1);
@@ -247,7 +249,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     add(
       this.add
-        .text(700, 330, '↑ ↓ Change   ← → Move\nOr Type Letters   Enter: Save', {
+        .text(700, 330, '↑ ↓ Change   ← → Move\nOr Type Letters   Enter: Save\nEsc: Menu', {
           fontFamily: MONO,
           fontSize: '16px',
           color: '#8a9bb3',

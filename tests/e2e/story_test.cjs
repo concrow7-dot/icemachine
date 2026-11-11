@@ -365,6 +365,11 @@ const { chromium } = require('playwright');
   check('...and no victory truck', await sc('Results', "!s.children.getByName('victory-truck')"), true);
   await page.screenshot({ path: outDir + '/story_results_f.png' });
   check('...first Story score: asks for initials', await sc('Results', 's.entering'), true);
+  // SCREAM-181: Esc here opens the pause menu with the warning; Resume comes back to the initials.
+  await press('Escape'); await wait(300);
+  check('...Esc: the pause menu with the high score warning', /Quitting won't save your high score\./.test(await texts('Pause')) && !/Restart/.test(await texts('Pause')), true);
+  await press('Escape'); await wait(300);
+  check('...Esc again: back to the initials', (await scenes()) + ' ' + (await sc('Results', 's.entering')), 'Results true');
   await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
   check('...saved to the Story table, not the Quick play one',
     await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v2') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON4700 null');

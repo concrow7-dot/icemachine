@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 072 — Esc on the high score screen opens the pause menu, with a warning (2026-11-11)
+
+**Decision (Jira SCREAM-181, under SCREAM-8, PO, November 6):** while the high score screen is asking for initials, Esc opens the pause menu with the line "Quitting won't save your high score." Resume goes back to the screen as it was, with any letters already typed. Quit To Title asks "Are you sure?" and, on Yes, leaves without saving the score.
+
+**Options considered:** the pause menu with a warning (chosen, the PO's design in the ticket); Esc going straight to the title; Esc doing nothing, as before.
+
+**Why (from the ticket, November 6):** Esc did nothing on this screen, and the PO presses it there wanting to go back and change game mode.
+
+**Engineering's calls (proposals):**
+
+- The menu opened from here has no Restart Evening: the evening is over, and in Story restarting would replay the last day of a finished run. It shows Resume and Quit To Title.
+- Only while initials are being asked for. Once the table is showing there is nothing to lose, so Esc goes to the title as before.
+- The hint under the initials gains a third line, "Esc: Menu", so the way out is on screen.
+- The Tutorial table in the ticket's checks can't be reached any more (decision 045), so it isn't tested.
+
 ## 071 — Filling an order: a BACK TO THE WINDOW button (2026-11-11)
 
 **Decision (Jira SCREAM-240, under SCREAM-154, PO, November 10):** the cooler screen where an order is filled gets a button that goes back to the sales window, the same as the B key. The PO's note: "Moved the center of the serving area."

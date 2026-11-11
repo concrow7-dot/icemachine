@@ -124,6 +124,17 @@ export function pauseEvening(from: Phaser.Scene): void {
   from.scene.bringToTop(SceneKeys.Pause);
 }
 
+/**
+ * SCREAM-181: Esc on the high score screen while it asks for initials. The screen freezes as it
+ * is (letters typed so far stay) and the pause menu opens with a warning and no Restart.
+ */
+export function pauseResults(from: Phaser.Scene): void {
+  if (from.scene.isActive(SceneKeys.Pause)) return;
+  from.scene.pause(SceneKeys.Results);
+  from.scene.launch(SceneKeys.Pause, { paused: [SceneKeys.Results], fromResults: true });
+  from.scene.bringToTop(SceneKeys.Pause);
+}
+
 /** The current evening. Only valid between startEvening and the next title screen. */
 export function getEvening(scene: Phaser.Scene): EveningState {
   const state = scene.registry.get(STATE_KEY) as EveningState | undefined;
