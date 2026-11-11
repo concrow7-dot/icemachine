@@ -18,7 +18,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered (for driving off with people waiting):** a key (chosen, the PO's own answer); a second, smaller Drive Off button beside Next Customer; no way to drive off until everyone is served.
 
-**Why (product owner's rationale):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 11):** "I don't think Drive Off will be used much, the customer is there, so you'll want the business."
 
 **Engineering's calls (proposals):**
 
@@ -33,7 +33,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** bottom left, bigger (chosen); leave it by the money (055).
 
-**Why (product owner's rationale):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 11):** "I was finding it difficult to notice when I was getting low on gas."
 
 **Engineering's calls (proposals):**
 
