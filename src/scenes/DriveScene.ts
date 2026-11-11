@@ -1303,7 +1303,12 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private checkCustomer(): void {
-    if (this.speed !== 0) return;
+    // SCREAM-241: after B (drive off) with people still waiting, nobody is served until the truck has moved.
+    if (this.speed !== 0) {
+      this.evening.windowShutUntilMoved = false;
+      return;
+    }
+    if (this.evening.windowShutUntilMoved) return;
     // SCREAM-172: the window opens once the uncle's line as he pulls up has been read.
     if (this.evening.tutorial?.holdsWindow) return;
     const people = this.evening.residents.all;
@@ -1318,6 +1323,17 @@ export class DriveScene extends Phaser.Scene {
 
   private serve(customer: ResidentNow): void {
     this.leaving = true;
+    // SCREAM-241: the window can ask who else is standing at the truck (it stays parked right here).
+    const truck = { x: this.truck.x, y: this.truck.y, heading: this.heading };
+    const roads = this.roads;
+    const evening = this.evening;
+    evening.nextAtTruck = () =>
+      evening.residents.all.find(
+        (p) =>
+          p.customer === 'waiting' &&
+          !roads.onRoad(p.x, p.y) &&
+          squareOverlap(truck, { x: p.pickup[0], y: p.pickup[1], width: PICKUP_ZONE_LENGTH, height: PICKUP_ZONE_WIDTH, rotation: Phaser.Math.DegToRad(p.pickup[2]) }) >= PICKUP_MIN_OVERLAP,
+      );
     this.evening.startSale(customer);
     this.scene.start(SceneKeys.Sales);
   }
@@ -1325,7 +1341,17 @@ export class DriveScene extends Phaser.Scene {
   /** How much of the truck's hitbox (0 to 1) is inside a pickup square, sampled on a grid. */
   pickupOverlap(zone: Phaser.GameObjects.Rectangle | undefined = this.pickupZone): number {
     if (!zone) return 0;
-    const rad = Phaser.Math.DegToRad(this.heading);
+    return squareOverlap({ x: this.truck.x, y: this.truck.y, heading: this.heading }, zone);
+  }
+}
+
+/** A pickup square: its middle, its real size along and across the road, and its turn in radians. */
+type PickupSquare = { x: number; y: number; width: number; height: number; rotation: number };
+
+/** How much of the truck's hitbox (0 to 1) is inside a pickup square, sampled on a grid. No scene needed (SCREAM-241). */
+function squareOverlap(truck: { x: number; y: number; heading: number }, zone: PickupSquare): number {
+  {
+    const rad = Phaser.Math.DegToRad(truck.heading);
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     // Its real size along and across the road (not the pulse).
@@ -1341,8 +1367,8 @@ export class DriveScene extends Phaser.Scene {
       for (let j = 0; j <= steps; j++) {
         const lx = (i / steps - 0.5) * 2 * TRUCK_HALF_LENGTH;
         const ly = (j / steps - 0.5) * 2 * TRUCK_HALF_WIDTH;
-        const x = this.truck.x + lx * cos - ly * sin;
-        const y = this.truck.y + lx * sin + ly * cos;
+        const x = truck.x + lx * cos - ly * sin;
+        const y = truck.y + lx * sin + ly * cos;
         total++;
         // In the pickup square's own frame (it's turned to the road).
         const ox = x - zone.x;

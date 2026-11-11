@@ -614,6 +614,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   // ---- Customers (#7, set for real by #12) ----
 
+  /**
+   * SCREAM-241: who else is waiting at the parked truck right now (set by the road when a sale starts);
+   * the window uses it to offer "Next Customer". Null before the first sale.
+   */
+  nextAtTruck: (() => ResidentNow | undefined) | null = null;
+  /** SCREAM-241: the player drove off (B) with people still waiting: the road serves nobody until the truck moves. */
+  windowShutUntilMoved = false;
+
   /** True while a customer is waiting at the window (issue #7: window only usable during a sale). */
   get customerWaiting(): boolean {
     return this.customerAtWindow;
