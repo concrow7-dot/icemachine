@@ -53,6 +53,15 @@ How the code is laid out and the things you need to know before changing it. Kep
 - Since SCREAM-205 the uncle's evening is Story's Day 1 (`startStory(from, withUncle)`); Tutorial is no longer on the menu, though `startEvening(from, 'tutorial', guided)` still works. Quick Play stays on Worcester.
 - `TitleScene.modesUnlocked()`: tutorial done, a saved Story, or any high score. Every e2e suite except tutorial sets `icemachine.tutorial.done.v1` with `page.addInitScript` so they start unlocked. The tutorial suite's SCREAM-169 section clears it.
 
+## Publishing (the release branch)
+
+- The public site (https://concrow7-dot.github.io/icemachine/) is built from the `release` branch only (`.github/workflows/deploy.yml`; SCREAM-266, decision 068). A merge to `main` publishes nothing.
+- **To publish:** open a pull request with base `release` and head `main` (`gh api repos/concrow7-dot/icemachine/pulls -f title="Release: ..." -f head=main -f base=release -F body=@file`), listing the tickets it ships. The PO merges it with **Create a merge commit** (not squash: a squash makes the next release pull request show old changes again and can conflict). The site updates a few minutes later.
+- **An urgent fix while main has unreleased work:** branch from `release` (`feature/SCREAM-NN-name`), pull request into `release`; once merged, open a second pull request from `release` into `main` so main gets the fix too.
+- **What's live:** compare the two branches (`gh api repos/concrow7-dot/icemachine/compare/release...main --jq '.ahead_by'` is how many commits main is ahead). The build's commit (`VITE_COMMIT`) is the release branch's commit, not main's.
+- GitHub's `github-pages` environment only lets listed branches deploy (Settings, Environments, github-pages, Deployment branches and tags): `release` must be on that list or the deploy job is refused.
+- "Run workflow" on the Actions page only publishes when started from `release`.
+
 ## Debug keys (temporary)
 
 Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen, Shift+6 the next tipped sale ends with a hint (SCREAM-103). Shift+7 the next paid sale ends with the customer's schedule line (SCREAM-247; Story, a real customer at the window). Shift+8 the same with a line about a neighbour (SCREAM-248). They are live on the public site too.

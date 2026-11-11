@@ -2,6 +2,27 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 068 — The public site is published from a release branch, not from every merge to main (2026-11-10)
+
+**Decision (Jira SCREAM-266, under SCREAM-202, PO, November 10):** the public site is built only from a branch called `release`. Work still merges to main, but that no longer changes what players see. To publish, engineering opens a pull request from main into `release` and the PO merges it.
+
+**Why (product owner's rationale):** "I do want to keep making edits to the game, without changing the game that testers see." Playtest round 3 was about to start. _Why the release branch over the other options: to ask._
+
+**Options considered (engineering laid them out and proposed the first; the PO: "Yes go ahead"):**
+
+- A release branch (chosen): main and the public site are separated, and an urgent fix during a playtest can go to `release` alone.
+- Merge nothing until the round ends: no setup, but pull requests pile up and start depending on each other (the trouble behind PR #117).
+- A deploy button pressed by hand: the smallest change, but an urgent fix would publish everything else on main with it.
+- A second, frozen copy of the game at its own link for testers: more to build, and two live versions to keep track of.
+
+**Engineering's calls (proposals):**
+
+- Release pull requests are merged with "Create a merge commit", so the next one shows only what's new.
+- Pull requests into `release` run the same automatic checks as pull requests into main.
+- A manual "Run workflow" only publishes when started from `release`.
+- An urgent fix made on `release` is then merged back into main by a second pull request, so it isn't lost at the next release.
+- How to publish is written up in `docs/engineering.md` ("Publishing").
+
 ## 067 — Hard-to-find customers: a 30-second window, 10 ice creams, a 4x tip (2026-11-10)
 
 **Decision (Jira SCREAM-250, under SCREAM-11, PO, November 10):** in Story a few customers are nearly impossible to catch. Each has a short window; catch them in it and they buy big.

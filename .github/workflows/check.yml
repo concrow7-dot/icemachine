@@ -1,11 +1,11 @@
 name: Check pull request
 
-# Runs on every pull request: the type check and build, the unit tests, and the browser
+# Runs on every pull request (into main, or into release when publishing): the type check and build, the unit tests, and the browser
 # test suites in headless Chromium, so problems show up as a red X before anyone tests by
 # hand. Known flaky checks (tests/e2e/flaky.json) don't turn it red.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, release]
 
 jobs:
   check:
