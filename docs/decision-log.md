@@ -6,7 +6,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-266, under SCREAM-202, PO, November 10):** the public site is built only from a branch called `release`. Work still merges to main, but that no longer changes what players see. To publish, engineering opens a pull request from main into `release` and the PO merges it.
 
-**Why (product owner's rationale):** "I do want to keep making edits to the game, without changing the game that testers see." Playtest round 3 was about to start. _Why the release branch over the other options: to ask._
+**Why (product owner's rationale):** "I do want to keep making edits to the game, without changing the game that testers see." Playtest round 3 was about to start. On choosing a release branch over the other options (PO, November 10): "It was engineering teams suggestion, I've used different branches in the past so I think it makes sense to do this in general, just a matter of how best to do it within GitHub."
 
 **Options considered (engineering laid them out and proposed the first; the PO: "Yes go ahead"):**
 
