@@ -113,7 +113,7 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     id: 'pump',
     // SCREAM-173 (PO, November 6): on the way, the gauge (outlined); at the pump, he pays.
     lines: [
-      { text: "Keep an eye on the gauge up top. Run dry and the night's over.", until: 'atPump', point: 'gauge' },
+      { text: "Keep an eye on the gas gauge. Run dry and the night's over.", until: 'atPump', point: 'gauge' },
       "I have twenty bucks on me, add that and I'll pay this time.",
     ],
     doneWhen: 'gasBought',
