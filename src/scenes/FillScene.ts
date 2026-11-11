@@ -37,6 +37,8 @@ export class FillScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private serveButton!: Phaser.GameObjects.Text;
+  /** SCREAM-240: BACK TO THE WINDOW, the same as B. */
+  windowButton!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
   private bagIcons: Phaser.GameObjects.Image[] = [];
@@ -103,6 +105,19 @@ export class FillScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     this.serveButton.on('pointerdown', () => this.serve());
+
+    // SCREAM-240 (PO, November 10): a button for B, in the middle of the serving area, on SERVE's row.
+    this.windowButton = this.add
+      .text(600, 470, 'BACK TO THE WINDOW', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 14, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    this.windowButton.on('pointerdown', () => this.scene.start(SceneKeys.Sales));
 
     this.add
       .text(width / 2, height - 9, '1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve   B: Back To The Window', {

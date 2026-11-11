@@ -162,7 +162,11 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300);
   check('C during the order: straight to the cooler, order hidden', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
   check('...tip countdown starts then (20%)', await sc('Fill', 's.tipBar.label.text'), '20%');
-  await press('b'); await wait(300); await press('b'); await wait(300);
+  check('SCREAM-240: a BACK TO THE WINDOW button in the middle of the serving area', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true BACK TO THE WINDOW 600 true');
+  await page.screenshot({ path: outDir + '/fill_window_button.png' });
+  await page.mouse.click(600, 470); await wait(300);
+  check('...clicking it goes back to the window, like B', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud deciding');
+  await press('b'); await wait(300);
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
