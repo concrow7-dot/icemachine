@@ -23,7 +23,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** bottom left, bigger (chosen); leave it by the money (055).
 
-**Why (product owner's rationale):** *placeholder, to ask the PO.*
+**Why (product owner's rationale, November 11):** "I was finding it difficult to notice when I was getting low on gas."
 
 **Engineering's calls (proposals):**
 
