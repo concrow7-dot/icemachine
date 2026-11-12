@@ -27,7 +27,9 @@ const { chromium } = require('playwright');
 
   await page.click('canvas'); await press('Enter'); await wait(200);
   check('The evening opens at the cooler (#66)', await scenes(), 'Cooler,Hud');
-  check('Button reads BUY STOCK $0.00', await coolerText('buyButton'), 'BUY STOCK  $0.00');
+  check('SCREAM-277: nothing picked yet: the button reads DONE, no price', (await coolerText('buyButton')) + ' | ' + (await coolerText('keysLine')).includes('Enter: Done'), 'DONE | true');
+  await press('Enter'); await wait(150);
+  check('...but an empty cooler still can\'t be left with it (#66)', (await scenes()) + ' ' + (await coolerText('note')), 'Cooler,Hud Add at least one ice cream before you leave the cooler.');
 
   // SCREAM-129: the clipboard (rows: eclair, SpongePop, Explorer, cookie), 3 crates of 4 x 4, Today's Menu.
   const cooler = (fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('Cooler'); return ${fn}; })()`);
@@ -49,7 +51,7 @@ const { chromium } = require('playwright');
   check('...but the cooler is untouched', await owned(0), 'eclair:0:200');
   check('...and no money is taken yet', await cash(), 5000);
   check('Totals preview the order', await coolerText('totals'), 'This order: $4.00\nCash: $50.00 → $46.00');
-  check('Button shows the order cost', await coolerText('buyButton'), 'BUY STOCK  $4.00');
+  check('Button shows the order cost', (await coolerText('buyButton')) + ' | ' + (await coolerText('keysLine')).includes('Enter: Buy Stock'), 'BUY STOCK  $4.00 | true');
   check('Title counts the squares', await coolerText('title'), 'THE COOLER  –  PREP     4 / 48');
   // SCREAM-204: Quick play keeps the full-strength truck: 3 crates, nothing locked.
   check('Quick play: the full-strength truck, nothing covered (SCREAM-204, SCREAM-269)', (await page.evaluate(() => { const e = window.__game.registry.get('evening'); return e.spec.weak + ' ' + e.spec.coolerCapacity; })) + ' ' + (await page.evaluate(() => window.__game.scene.getScene('Cooler').coveredHalves.length)), 'false 48 0');
@@ -106,6 +108,13 @@ const { chromium } = require('playwright');
   // --- Re-entry: paid stock stays, more can be added ---
   await openCooler(); await wait(200);
   check('Reopen: bought stock is paid for (no *), each in its own square', await cells(5), 'eclair,-,eclair,spongepop,spongepop');
+  check('SCREAM-277: reopened with nothing new picked: DONE again', await coolerText('buyButton'), 'DONE');
+  await press('+'); const withOne = await coolerText('buyButton'); await press('-');
+  check('...BUY STOCK with its price once something is picked, DONE when it is taken out again', withOne + ' | ' + (await coolerText('buyButton')), 'BUY STOCK  $1.00 | DONE');
+  await clickAt('[s.buyButton.x, s.buyButton.y]'); await wait(100);
+  await page.waitForFunction(() => window.__game.scene.isActive('Truck') && !window.__game.scene.isActive('Loading'), null, { timeout: 10000 }).catch(() => {});
+  check('...clicking DONE leaves the cooler and charges nothing', (await scenes()) + ' ' + (await cash()) + ' ' + (await owned(0)), 'Truck,Hud 4500 eclair:2:200');
+  await openCooler(); await wait(200);
   await press('-', 2);
   check("Minus can't take out paid stock", await draft(0), 'eclair:2:200');
   await clickAt('[s.cellIcons[0].x, s.cellIcons[0].y]');

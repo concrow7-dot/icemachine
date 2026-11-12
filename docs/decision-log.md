@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 078 — Cooler: the button says DONE, with no price, when nothing new is picked (2026-11-12)
+
+**Decision (Jira SCREAM-277, under SCREAM-154, PO, November 12):** "When in cooler and no new inventory is selected, change button from 'buy stock' to 'Done' (no price)." As soon as something is picked it reads BUY STOCK with its price again.
+
+**Options considered:** DONE with no price when there is nothing to buy (chosen); BUY STOCK $0.00 as before.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- Written DONE, in capitals like the screen's other buttons; same place, same green, same key (Enter). The line of keys along the bottom says "Enter: Done" or "Enter: Buy Stock" to match.
+- Everywhere the cooler is used for stocking: before setting off, restock stops at home, the uncle's evening, and both modes (one shared screen; the button's wording is not a balance change, so 076 is not stretched far).
+- DONE charges nothing and leaves the cooler. A price changed on Today's Menu is still kept, as it was with BUY STOCK $0.00.
+- An empty cooler still can't be left with DONE: the "Add at least one ice cream" line shows, as before.
+- The uncle still says 'hit "Buy Stock"': by then the player has to pick something, so the button reads BUY STOCK.
+
 ## 077 — Fill screen: BACK TO THE WINDOW moves left under the tip jar, SERVE to the middle (2026-11-12)
 
 **Decision (Jira SCREAM-273, under SCREAM-154, PO, November 12, with a screenshot):** "Move 'Back to the window' to the left side under tips. Move Serve to where back to window is now." This changes where 071 (SCREAM-240) put the two buttons.
