@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 083 — Window: the tip cup has the same countdown bar as the cooler, at the jar's size (2026-11-12)
+
+**Decision (Jira SCREAM-284, under SCREAM-154, PO, November 12):** "The tip should continue the same countdown at the sales window, just smaller, the size of the tip jar". Follows 080 (the tall bar at the cooler).
+
+**Options considered:** the same bar, as tall as the jar (chosen); the short stub of bills, as before; the cooler's full-height bar at the window too.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- "The size of the tip jar" is read as a bar as tall as the cup (70 px), standing above it; the cooler's is 190 px.
+- Same colours as the cooler's bar (green, lighter green, amber, grey with no tip) and the same lines where the tip steps down. The small 20% / 15% / 10% / 5% labels down the side are left off: there is no room at that size. The tip on offer is still written above the bar.
+- While the order is still showing, before the countdown starts, the bar is full and green.
+
 ## 082 — Window: a RETURN TO COOLER button at "How much?" (2026-11-12)
 
 **Decision (Jira SCREAM-283, under SCREAM-154, PO, November 12, with two screenshots):** "on this screen, add a 'Return to Cooler' button in the bottom left." Where: "Under the tip jar bottom left (of the whole screen) not that section where the paper bag is", then circled on a screenshot: the left end of the strip under the counter.
