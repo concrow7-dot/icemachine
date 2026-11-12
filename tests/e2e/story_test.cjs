@@ -59,20 +59,26 @@ const { chromium } = require('playwright');
   // ---- SCREAM-205: tutorial done, so a new Story asks about the uncle ----
   await press('Enter'); await wait(300);
   check('Story: asks With Uncle / On My Own', (await sc('Title', 's.confirming && s.asking')) + ' ' + /With Uncle \(U\)/.test(await texts('Title')) + ' ' + /On My Own \(O\)/.test(await texts('Title')), 'uncle true true');
+  check('SCREAM-270: With Uncle is marked, with a line saying Enter or a click picks', (await sc('Title', 's.answers[s.answerSelected].label')) + ' ' + /> With Uncle \(U\) </.test(await texts('Title')) + ' ' + /Enter Or Click To Pick/.test(await texts('Title')), 'With Uncle (U) true true');
   await page.screenshot({ path: outDir + '/story_uncle_choice.png' });
   await press('Escape');
   check('...Esc closes it, still on the title', (await sc('Title', 's.confirming')) + ' ' + (await scenes()), 'false Title');
 
   // ---- SCREAM-18: the intro ----
-  await press('Enter'); await wait(200); await press('o'); await wait(300);
+  await press('Enter'); await wait(200); await press('ArrowRight');
+  check('SCREAM-270: → marks On My Own', /> On My Own \(O\) </.test(await texts('Title')), true);
+  await press('Enter'); await wait(300);
   const intro = await texts('StoryIntro');
   check('A new story opens with the intro screen', await scenes(), 'StoryIntro');
   check('...about the $600 bike and school in 5 days, marked as a placeholder', /\$600\.00/.test(intro) && /School starts in 5 days/.test(intro) && /Placeholder/.test(intro), true);
   await page.screenshot({ path: outDir + '/story_intro.png' });
 
   // ---- Day 1 ----
-  await press('Enter'); await wait(300);
-  check('Enter: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
+  check('SCREAM-270: the hint says Click Or Enter', /Click Or Enter: Start Monday/.test(intro), true);
+  await page.mouse.click(480, 270, { button: 'right' }); await wait(300);
+  check('...a right click does not begin', await scenes(), 'StoryIntro');
+  await page.mouse.click(480, 270); await wait(300);
+  check('...a left click: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
   check('Story starts with $50', await ev('e.moneyCents'), 5000);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
@@ -458,7 +464,13 @@ const { chromium } = require('playwright');
   check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0');
   // SCREAM-90: the question's No can be clicked too.
   await press('Enter'); await wait(200);
-  const noAt = await sc('Title', "(() => { const t = s.confirmGroup.find(o => o.text === 'No (N)'); return [Math.round(t.x), Math.round(t.y)]; })()");
+  check('SCREAM-270: Start a new story? has No marked', await sc('Title', 's.answers[s.answerSelected].label'), 'No (N)');
+  await press('Enter'); await wait(200);
+  check('...so Enter closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0');
+  await press('Enter'); await wait(200); await press('ArrowLeft'); await press('Enter'); await wait(300);
+  check('...← then Enter: Yes, on to the uncle question', await sc('Title', 's.confirming && s.asking'), 'uncle');
+  await press('Escape'); await wait(200); await press('Enter'); await wait(200);
+  const noAt = await sc('Title', "(() => { const t = s.answers[1].text; return [Math.round(t.x), Math.round(t.y)]; })()");
   await page.mouse.click(noAt[0], noAt[1]); await wait(200);
   check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0');
   await press('Enter'); await wait(200); await press('y'); await wait(300);

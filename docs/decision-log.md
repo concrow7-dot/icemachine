@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 079 — New Story: a left click or Enter begins, on every screen before the first evening (2026-11-12)
+
+**Decision (Jira SCREAM-270, under SCREAM-9, PO, November 12):** "On new story mode. Be able to click left mouse (and enter) to be begin."
+
+**Options considered:** a left click and Enter both work on every screen between choosing New Story and the first evening (chosen, engineering's reading of the PO's line); only on the New Bike screen; leaving the two questions on their letter keys.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- The New Bike screen (shown when starting On My Own) began on Enter only: a left click anywhere now begins too, and its hint reads "Click Or Enter: Start Monday".
+- The two questions ("Bring your uncle along again?" and "Start a new story? Your saved story will be lost.") could already be clicked, but Enter did nothing. Now one answer is marked like the title menu's choices (> ... <), ← and → move the mark, Enter picks it, and a line under the answers says so. The letter keys (U, O, Y, N) and Esc still work.
+- "Bring your uncle along again?" starts with With Uncle marked (the first answer). "Start a new story?" starts with No marked, so pressing Enter twice can't wipe a saved story by accident.
+- Only the left mouse button counts on these screens, and a key held down from the screen before doesn't.
+- With Uncle still has no New Bike screen (062), so there is nothing to click there: his evening starts straight away.
+
 ## 078 — Cooler: the button says DONE, with no price, when nothing new is picked (2026-11-12)
 
 **Decision (Jira SCREAM-277, under SCREAM-154, PO, November 12):** "When in cooler and no new inventory is selected, change button from 'buy stock' to 'Done' (no price)." As soon as something is picked it reads BUY STOCK with its price again.
