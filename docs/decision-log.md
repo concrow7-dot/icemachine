@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 094 — Story's crates are three rows tall: no grey strip where the bottom row was (2026-11-12)
+
+**Decision (Jira SCREAM-293, a subtask of SCREAM-291, PO, November 12, testing PR #199 with a marked screenshot):** "completely remove the row highlighted in red." Changes how 092 draws the missing row.
+
+**Options considered:** the crates drawn a row shorter (chosen); a grey strip over the bottom row (092 as built).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The crates keep their tops and end a row sooner, at the cooler and the Fill screen. The pictures have four rows drawn in, so the bottom one is painted over in the freezer's dark blue and the crate gets a new cardboard edge.
+- The doors (the open half's lid at the Fill screen and the plain right half) and the yellow outline round the chosen crate are a row shorter to match. Quick play is unchanged.
+
 ## 093 — M mutes the credits tune too (2026-11-12)
 
 **Decision (Jira SCREAM-186, under SCREAM-6, PO, November 6):** the music can be muted and unmuted on every screen that plays music, not only while driving, with one setting for the whole game.

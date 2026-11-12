@@ -92,7 +92,7 @@ const { chromium } = require('playwright');
   // SCREAM-269 (PO, November 12: "24 to start"): half of every crate is covered by a plain panel.
   check('...the cooler holds 18: half of every crate covered and no bottom row (SCREAM-269, SCREAM-291)', spec.coolerHalfCovered + ' ' + spec.coolerCapacity + ' ' + (await ev('e.cells.length')), 'true 18 48');
   check('...the cooler screen counts out of 18', /\/ 18$/.test(await sc('Cooler', 's.title.text')), true);
-  check('SCREAM-291: a plain strip over the bottom row of each crate\'s open half', await sc('Cooler', "s.coveredRows.length + ' ' + s.coveredRows.every(c => c.list.every(o => o.type !== 'Text'))"), '3 true');
+  check('SCREAM-293: the crates are three rows tall (the bottom row painted out, the panels a row shorter)', await sc('Cooler', "s.coveredRows.length + ' ' + s.coveredHalves.every(c => Math.round(c.list[0].displayHeight || 0) >= 0)"), '3 true');
   check('...with a plain panel over the right half of each of the 3 crates, no words on it', await sc('Cooler', "s.coveredHalves.length + ' ' + s.coveredHalves.every(c => c.list.every(o => o.type !== 'Text'))"), '3 true');
   check('...each panel covers exactly the right half of its crate', await sc('Cooler', "s.coveredHalves.map(c => Math.round(c.x)).join()"), [319, 519, 719].map(x => x + 80).join());
   await page.keyboard.press('3'); await wait(150);

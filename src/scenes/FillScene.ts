@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
-import { addCoveredHalf } from '../ui/coveredHalf';
+import { addCoveredHalf, cutBottomRow } from '../ui/coveredHalf';
 import { openRows } from '../state/TruckSpec';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -25,6 +25,8 @@ const CRATE_TOP = 96;
 const CELL = 38;
 const CELL_PAD = 4;
 const CRATE_PX = CRATE_SIDE * CELL + 2 * CELL_PAD;
+/** SCREAM-293: Story's crates are a row shorter. */
+const SHORT_CRATE_PX = (CRATE_SIDE - 1) * CELL + 2 * CELL_PAD;
 const CRATE_CELLS = CRATE_SIDE * CRATE_SIDE;
 /** SCREAM-138 (PO, November 2): a lid opens quickly, and the one that was open takes about half a second to close. */
 const LID_OPEN_MS = 200;
@@ -50,7 +52,7 @@ export class FillScene extends Phaser.Scene {
   /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
   coveredHalves: Phaser.GameObjects.Container[] = [];
   /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
-  coveredRows: Phaser.GameObjects.Container[] = [];
+  coveredRows: Phaser.GameObjects.Graphics[] = [];
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -103,11 +105,11 @@ export class FillScene extends Phaser.Scene {
     this.coveredRows = [];
     const half = this.evening.spec.coolerHalfCovered;
     CRATE_LEFTS.forEach((left, crate) => {
-      this.lids.push(this.makeLid(left, crate, half ? CRATE_PX / 2 : CRATE_PX));
-      if (half) this.coveredHalves.push(addCoveredHalf(this, left + CRATE_PX / 2, CRATE_TOP, CRATE_PX / 2, CRATE_PX, true));
-      // SCREAM-291: and the bottom row of the open half is gone (a plain strip, no handle).
-      const rowTop = CRATE_TOP + CELL_PAD + (CRATE_SIDE - 1) * CELL;
-      if (half) this.coveredRows.push(addCoveredHalf(this, left, rowTop, CRATE_PX / 2, CRATE_TOP + CRATE_PX - rowTop).setName('covered-row'));
+      const h = half ? SHORT_CRATE_PX : CRATE_PX;
+      this.lids.push(this.makeLid(left, crate, half ? CRATE_PX / 2 : CRATE_PX, h));
+      if (half) this.coveredHalves.push(addCoveredHalf(this, left + CRATE_PX / 2, CRATE_TOP, CRATE_PX / 2, h, true));
+      // SCREAM-291, SCREAM-293: and the bottom row is gone altogether.
+      if (half) this.coveredRows.push(cutBottomRow(this, left, CRATE_PX, CRATE_TOP + SHORT_CRATE_PX, CRATE_TOP + CRATE_PX));
     });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
@@ -184,25 +186,25 @@ export class FillScene extends Phaser.Scene {
   }
 
   /** A crate's lid: frosted, solid (no peeking), with its number on it. Clicking the crate opens it. */
-  private makeLid(left: number, crate: number, w: number = CRATE_PX): Phaser.GameObjects.Container {
+  private makeLid(left: number, crate: number, w: number = CRATE_PX, h: number = CRATE_PX): Phaser.GameObjects.Container {
     const g = this.add.graphics();
-    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, w, CRATE_PX);
+    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, w, h);
     g.fillStyle(0xffffff, 0.7);
-    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % (w - 12)) + 6, ((k * 37) % CRATE_PX) + 6, 2 + (k % 3));
-    g.lineStyle(10, 0xffffff, 0.6).lineBetween(w * 0.15, CRATE_PX, w * 0.45, 0);
-    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, w - 4, CRATE_PX - 4);
+    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % (w - 12)) + 6, ((k * 37) % h) + 6, 2 + (k % 3));
+    g.lineStyle(10, 0xffffff, 0.6).lineBetween(w * 0.15, h, w * 0.45, 0);
+    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, w - 4, h - 4);
     // The handle (narrower on a half door).
     const handle = w < CRATE_PX ? 28 : 44;
-    g.fillStyle(0xffffff, 1).fillRect(w / 2 - handle / 2, CRATE_PX - 22, handle, 10);
-    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - handle / 2, CRATE_PX - 22, handle, 10);
+    g.fillStyle(0xffffff, 1).fillRect(w / 2 - handle / 2, h - 22, handle, 10);
+    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - handle / 2, h - 22, handle, 10);
     const number = this.add
-      .text(w / 2, CRATE_PX / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
+      .text(w / 2, h / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
       .setOrigin(0.5);
     const lid = this.add.container(left, CRATE_TOP, [g, number]).setDepth(10);
     // PO (November 2): click on the cooler to open it. A plain click zone over the whole crate,
     // under the ice creams (once the crate is open, clicking an ice cream takes it instead).
     this.add
-      .zone(left, CRATE_TOP, w, CRATE_PX)
+      .zone(left, CRATE_TOP, w, h)
       .setOrigin(0, 0)
       .setDepth(-1)
       .setInteractive({ useHandCursor: true })

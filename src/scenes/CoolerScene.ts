@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
-import { addCoveredHalf } from '../ui/coveredHalf';
+import { addCoveredHalf, cutBottomRow } from '../ui/coveredHalf';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -81,7 +81,7 @@ export class CoolerScene extends Phaser.Scene {
   /** SCREAM-269: the plain panels over the covered half of each crate in Story (test hook). */
   coveredHalves: Phaser.GameObjects.Container[] = [];
   /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
-  coveredRows: Phaser.GameObjects.Container[] = [];
+  coveredRows: Phaser.GameObjects.Graphics[] = [];
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -245,12 +245,14 @@ export class CoolerScene extends Phaser.Scene {
   private makeCells(): void {
     const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
     const crateSize = CRATE_SIDE * cell + 2 * cellPad;
+    // SCREAM-293: Story's crates are a row shorter.
+    const crateH = this.evening.spec.coolerHalfCovered ? (CRATE_SIDE - 1) * cell + 2 * cellPad : crateSize;
     // SCREAM-131 (PO, November 2): picks go into the chosen crate. Click a crate (or press 1, 2, 3) to choose it.
     this.crateMark = this.add.graphics();
     if (!this.locked) {
       crateLefts.forEach((left, crate) => {
         this.add
-          .rectangle(left, crateTop, crateSize, crateSize, 0xffffff, 0.001)
+          .rectangle(left, crateTop, crateSize, crateH, 0xffffff, 0.001)
           .setOrigin(0, 0)
           .setInteractive({ useHandCursor: true })
           .on('pointerdown', () => {
@@ -263,10 +265,9 @@ export class CoolerScene extends Phaser.Scene {
     this.coveredHalves = [];
     this.coveredRows = [];
     if (this.evening.spec.coolerHalfCovered) {
-      crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + crateSize / 2, crateTop, crateSize / 2, crateSize)));
-      // SCREAM-291: the bottom row of the open half is gone too.
-      const rowTop = crateTop + cellPad + (CRATE_SIDE - 1) * cell;
-      crateLefts.forEach((left) => this.coveredRows.push(addCoveredHalf(this, left, rowTop, crateSize / 2, crateTop + crateSize - rowTop).setName('covered-row')));
+      crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + crateSize / 2, crateTop, crateSize / 2, crateH)));
+      // SCREAM-291, SCREAM-293: the bottom row is gone altogether.
+      crateLefts.forEach((left) => this.coveredRows.push(cutBottomRow(this, left, crateSize, crateTop + crateH, crateTop + crateSize)));
     }
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = this.cellCentre(i);
@@ -620,7 +621,8 @@ export class CoolerScene extends Phaser.Scene {
     if (!this.locked) {
       const { crateLefts, crateTop, cellPad } = COOLER_LAYOUT;
       const size = CRATE_SIDE * cell + 2 * cellPad;
-      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, size + 6);
+      const h = this.evening.spec.coolerHalfCovered ? size - cell : size; // SCREAM-293
+      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, h + 6);
     }
     this.unpaidMarks.clear();
     cells.forEach((c, i) => {
