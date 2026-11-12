@@ -34,6 +34,11 @@ export class TipBar {
   readonly fullHeight: number = BILLS_H;
   /** SCREAM-281: the tall bar's zone labels, top tip first (test hook). */
   readonly zoneLabels: Phaser.GameObjects.Text[] = [];
+  /** SCREAM-287: the bar's track and side labels, hidden with the green once there is no tip (test hook). */
+  readonly barParts: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text)[] = [];
+  /** Where the label sits above the full bar, and just above the cup when the bar is away. */
+  private labelY = 0;
+  private labelLowY = 0;
 
   /**
    * A bar across the top (the cooler), or with `jar`, a tip jar standing on the counter with
@@ -65,6 +70,7 @@ export class TipBar {
           extras.push(label);
         });
         extras.unshift(track);
+        this.barParts.push(track, ...this.zoneLabels);
       }
       // The green cup from the PO's drawing, with TIP written on it (as in his first sketch).
       // Dollar bills stick out of the top and sink into the cup as the tip shrinks.
@@ -82,6 +88,8 @@ export class TipBar {
         .setOrigin(0.5);
       // The track goes behind the green; the zone labels beside it.
       const [track, ...labels] = extras;
+      this.labelY = this.label.y;
+      this.labelLowY = -JAR_H - 14;
       this.container = scene.add.container(x, y, [...(track ? [track] : []), this.fill, ...labels, cup, word, this.label]).setDepth(20);
       return;
     }
@@ -96,6 +104,14 @@ export class TipBar {
     this.container = scene.add.container(x, y, [title, track, this.fill, this.label]).setDepth(20);
   }
 
+  /** SCREAM-287: shows the countdown bar, or puts it away and drops the label to just above the cup. */
+  private showBar(on: boolean): void {
+    if (!this.tall) return;
+    this.fill.setVisible(on);
+    this.barParts.forEach((part) => part.setVisible(on));
+    this.label.setY(on ? this.labelY : this.labelLowY - (this.label.text.includes('\n') ? 8 : 0));
+  }
+
   /** Redraws from the sale's clock. Hidden until the order is first hidden. */
   update(evening: EveningState): void {
     const sale = evening.sale;
@@ -104,6 +120,7 @@ export class TipBar {
     // visit: full while the order shows, then emptying; when the sale ends it keeps its last look.
     if (this.jar && sale && sale.phase !== 'over' && seconds === null) {
       this.container.setVisible(true);
+      this.showBar(true);
       this.fill.setDisplaySize(JAR_W - 12, this.fullHeight).setFillStyle(this.tall ? 0x2e7d32 : 0x9ad48c);
       this.label.setText('');
       return;
@@ -131,5 +148,7 @@ export class TipBar {
     const text = percent > 0 ? `${percent}%` : sale.askedAgain || sale.retryUsed || sale.repriceUsed ? 'No tip' : 'Took too long';
     // The jar is narrow: "Took too long" goes on two lines there.
     this.label.setText(this.jar && text === 'Took too long' ? 'Took too\nlong' : text);
+    // SCREAM-287 (PO, November 12): with no tip left the countdown is over: no bar, just the words.
+    this.showBar(percent > 0);
   }
 }
