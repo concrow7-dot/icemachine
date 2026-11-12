@@ -124,6 +124,9 @@ export class Sale {
   /** While the current line shows the order: any words before it ('' for the order alone); otherwise null. */
   private orderPrefix: string | null = null;
 
+  /** SCREAM-285: the order is being repeated at "How much?"; when it hides, the price is asked again. */
+  private backToPricing = false;
+
   private startedMs: number;
   private orderHiddenMs: number | null = null;
   private showUntilMs: number;
@@ -172,11 +175,19 @@ export class Sale {
    * showing, without waiting out the 5 seconds. Hides the order now.
    */
   skipToCooler(nowMs: number): boolean {
+    this.backToPricing = false; // SCREAM-285: going to the cooler instead of hearing "How much?" again
     if (this.phase === 'ordering') this.hideOrder(nowMs);
     return this.phase === 'deciding';
   }
 
   private hideOrder(nowMs: number): void {
+    if (this.backToPricing) {
+      // SCREAM-285: the order was asked for again at "How much?": back to the price.
+      this.backToPricing = false;
+      this.phase = 'pricing';
+      this.say('How much?');
+      return;
+    }
     this.phase = 'deciding';
     this.say('…');
     // The tip countdown starts the first time the order is hidden (Q23).
@@ -211,7 +222,10 @@ export class Sale {
    * that, and after a corrected mistake, since there is nothing more to lose.
    */
   askAgain(nowMs: number): boolean {
-    if (this.phase !== 'deciding') return false;
+    // SCREAM-285 (PO, November 12): also after the bag is served, at "How much?". The customer
+    // says the order, then asks the price again (unless the player heads for the cooler).
+    if (this.phase !== 'deciding' && this.phase !== 'pricing') return false;
+    this.backToPricing = this.phase === 'pricing';
     this.askedAgain = true;
     this.showOrder(nowMs, describeOrder(this.order), '');
     return true;
