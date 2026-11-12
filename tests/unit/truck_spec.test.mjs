@@ -12,6 +12,7 @@ test("Quick play's truck is exactly the tuning values", () => {
   assert.equal(full.topSpeed, t.TRUCK_SPEED);
   assert.equal(full.accelerationSeconds, t.TRUCK_ACCELERATION_SECONDS);
   assert.equal(full.brakingSeconds, t.TRUCK_BRAKING_SECONDS);
+  assert.equal(full.creepSpeed, t.TRUCK_CREEP_SPEED);
   assert.equal(full.maxTurnDegrees, t.TRUCK_MAX_TURN_DEGREES_PER_SECOND);
   assert.equal(full.musicRadius, t.MUSIC_RING_RADIUS);
   assert.equal(full.coolerCrates, t.COOLER_CRATES);
@@ -26,6 +27,12 @@ test("Story's truck is worse at everything the PO listed", () => {
   assert.ok(weak.topSpeed < full.topSpeed, 'slower');
   assert.ok(weak.accelerationSeconds > full.accelerationSeconds, 'slower to speed up');
   assert.ok(weak.brakingSeconds > full.brakingSeconds, 'slower to stop');
+  assert.ok(weak.creepSpeed < full.creepSpeed, 'rolls more slowly');
+  // PO, November 12: braking 4 times as long, acceleration twice as long, roll speed down 75%, music at 85%.
+  assert.equal(weak.brakingSeconds, full.brakingSeconds * 4);
+  assert.equal(weak.accelerationSeconds, full.accelerationSeconds * 2);
+  assert.equal(weak.creepSpeed, full.creepSpeed * 0.25);
+  assert.equal(weak.musicRadius, full.musicRadius * 0.85);
   assert.ok(weak.maxTurnDegrees < full.maxTurnDegrees, 'turns less sharply at speed');
   assert.ok(weak.musicRadius < full.musicRadius, 'music reaches less far');
   assert.ok(weak.coolerCrates < full.coolerCrates, 'fewer crates');
