@@ -15,6 +15,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - The crates keep their tops and end a row sooner, at the cooler and the Fill screen. The pictures have four rows drawn in, so the bottom one is painted over in the freezer's dark blue and the crate gets a new cardboard edge.
 - The doors (the open half's lid at the Fill screen and the plain right half) and the yellow outline round the chosen crate are a row shorter to match. Quick play is unchanged.
 
+**Then (PO, November 12, testing #201, with a marked screenshot):** "I want to move the cooler down so it is vertically aligned", and: "I do want to eventually reveal the other sections of the cooler, so don't completely remove what is already built." Engineering: the crates are centred top to bottom in the freezer. Nothing is removed: the pictures keep all four rows and both halves, and Quick play uses them. The open part of each crate is one setting (`STORY_COOLER_COLUMNS` 2, `STORY_COOLER_ROWS` 3 in `tuning.ts`; `spec.coolerColumns` / `coolerRows`), and the squares, the crates' height and place, the grey panel, the doors, the outline and the arrow keys all follow it, so an upgrade (SCREAM-25) only has to change those numbers.
+
 ## 093 — M mutes the credits tune too (2026-11-12)
 
 **Decision (Jira SCREAM-186, under SCREAM-6, PO, November 6):** the music can be muted and unmuted on every screen that plays music, not only while driving, with one setting for the whole game.
