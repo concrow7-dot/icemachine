@@ -44,12 +44,20 @@ export class StoryIntroScene extends Phaser.Scene {
         color: '#6b7a93',
       })
       .setOrigin(0.5);
-    this.add.text(width / 2, height - 36, 'Enter: Start Monday', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
+    this.add.text(width / 2, height - 36, 'Click Or Enter: Start Monday', { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5).setName('begin-hint');
 
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (event.key !== 'Enter' || this.leaving) return;
+    // SCREAM-270 (PO, November 12): a left click begins, as well as Enter.
+    const begin = () => {
+      if (this.leaving) return;
       this.leaving = true;
       startStoryEvening(this);
+    };
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0) begin();
+    });
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      // A held key (Enter still down from the title screen) doesn't count.
+      if (event.key === 'Enter' && !event.repeat) begin();
     });
   }
 }

@@ -62,6 +62,9 @@ export class TitleScene extends Phaser.Scene {
   /** SCREAM-169: which question the box is asking. */
   private asking: 'story' | 'uncle' = 'story';
   private confirmGroup: Phaser.GameObjects.GameObject[] = [];
+  /** SCREAM-270: the open question's answers and which one is marked (test hooks). */
+  answers: { label: string; pick: () => void; text: Phaser.GameObjects.Text }[] = [];
+  answerSelected = 0;
 
   constructor() {
     super(SceneKeys.Title);
@@ -89,6 +92,7 @@ export class TitleScene extends Phaser.Scene {
     this.confirming = false;
     this.asking = 'story';
     this.confirmGroup = [];
+    this.answers = [];
     const save = loadStory();
     this.options = save
       ? [
@@ -154,13 +158,23 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (this.starting) return;
       const key = event.key;
-      if (this.confirming && this.asking === 'uncle') {
-        if (key === 'u' || key === 'U') this.startNewStory(true);
-        else if (key === 'o' || key === 'O') this.startNewStory(false);
-        else if (key === 'Escape') this.closeConfirm();
-        return;
-      }
       if (this.confirming) {
+        // SCREAM-270: ← → move between a question's two answers and Enter picks the marked one.
+        // A held Enter (still down from choosing New Story) doesn't count.
+        if (key === 'ArrowLeft' || key === 'ArrowRight') {
+          this.answerSelected = (this.answerSelected + 1) % this.answers.length;
+          return this.refreshAnswers();
+        }
+        if (key === 'Enter') {
+          if (!event.repeat) this.answers[this.answerSelected]?.pick();
+          return;
+        }
+        if (this.asking === 'uncle') {
+          if (key === 'u' || key === 'U') this.startNewStory(true);
+          else if (key === 'o' || key === 'O') this.startNewStory(false);
+          else if (key === 'Escape') this.closeConfirm();
+          return;
+        }
         if (key === 'y' || key === 'Y') this.newStory();
         else if (key === 'n' || key === 'N' || key === 'Escape') this.closeConfirm();
         return;
@@ -218,12 +232,6 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.confirming = true;
     this.asking = 'uncle';
-    const option = (x: number, label: string, guided: boolean) =>
-      this.add
-        .text(x, height / 2 + 50, label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.startNewStory(guided));
     this.confirmGroup = [
       this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
       this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),
@@ -235,8 +243,13 @@ export class TitleScene extends Phaser.Scene {
           align: 'center',
         })
         .setOrigin(0.5),
-      option(width / 2 - 120, 'With Uncle (U)', true),
-      option(width / 2 + 120, 'On My Own (O)', false),
+      ...this.addAnswers(
+        [
+          { x: width / 2 - 120, label: 'With Uncle (U)', pick: () => this.startNewStory(true) },
+          { x: width / 2 + 120, label: 'On My Own (O)', pick: () => this.startNewStory(false) },
+        ],
+        0,
+      ),
     ];
   }
 
@@ -256,22 +269,58 @@ export class TitleScene extends Phaser.Scene {
           lineSpacing: 8,
         })
         .setOrigin(0.5),
-      // SCREAM-90: click Yes or No, or press Y or N.
-      this.add
-        .text(width / 2 - 110, height / 2 + 50, 'Yes, Start Over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.newStory()),
-      this.add
-        .text(width / 2 + 140, height / 2 + 50, 'No (N)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.closeConfirm()),
+      // SCREAM-90: click Yes or No, or press Y or N. SCREAM-270: Enter picks the marked one,
+      // which starts on No so a second Enter can't wipe a saved story by accident.
+      ...this.addAnswers(
+        [
+          { x: width / 2 - 110, label: 'Yes, Start Over (Y)', pick: () => this.newStory() },
+          { x: width / 2 + 140, label: 'No (N)', pick: () => this.closeConfirm() },
+        ],
+        1,
+      ),
     ];
+  }
+
+  /**
+   * SCREAM-270: a question's answers, in a row. A left click picks the one under the mouse;
+   * ← → move the mark and Enter picks the marked one. Returns what was drawn, for the group.
+   */
+  private addAnswers(list: { x: number; label: string; pick: () => void }[], marked: number): Phaser.GameObjects.Text[] {
+    const { width, height } = this.scale;
+    this.answerSelected = marked;
+    this.answers = list.map((a, i) => ({
+      label: a.label,
+      pick: a.pick,
+      text: this.add
+        .text(a.x, height / 2 + 44, a.label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => {
+          this.answerSelected = i;
+          this.refreshAnswers();
+        })
+        .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button === 0) a.pick();
+        }),
+    }));
+    this.refreshAnswers();
+    const hint = this.add
+      .text(width / 2, height / 2 + 78, '← → Choose    Enter Or Click To Pick', { fontFamily: 'monospace', fontSize: '13px', color: '#8a9bb3' })
+      .setOrigin(0.5)
+      .setName('answer-hint');
+    return [...this.answers.map((a) => a.text), hint];
+  }
+
+  private refreshAnswers(): void {
+    this.answers.forEach((a, i) => {
+      const on = i === this.answerSelected;
+      a.text.setText(on ? `> ${a.label} <` : a.label).setColor(on ? '#ffe066' : '#8a9bb3');
+    });
   }
 
   private closeConfirm(): void {
     this.confirming = false;
+    this.answers = [];
     this.confirmGroup.forEach((o) => o.destroy());
     this.confirmGroup = [];
   }
