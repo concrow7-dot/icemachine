@@ -67,6 +67,8 @@ export class CoolerScene extends Phaser.Scene {
   /** SCREAM-54: at the cooler after pulling into Home's driveway; leaving goes back to the road. */
   private restocking = false;
   private buyButton?: Phaser.GameObjects.Text;
+  /** SCREAM-277: the keys along the bottom (test hook). */
+  keysLine?: Phaser.GameObjects.Text;
   private focus: Focus = { area: 'clipboard', row: 0 };
   private rowHighlight!: Phaser.GameObjects.Rectangle;
   private rowCounts: Phaser.GameObjects.Text[] = [];
@@ -142,17 +144,8 @@ export class CoolerScene extends Phaser.Scene {
         { fontFamily: 'monospace', fontSize: '12px', color: !this.locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
       )
       .setOrigin(0.5);
-    this.add
-      .text(
-        width / 2,
-        height - 9,
-        this.locked
-          ? 'B Or Backspace: Back To The Truck'
-          : this.restocking
-            ? '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Back On The Road'
-            : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
-        { fontFamily: 'monospace', fontSize: '13px', color: INK },
-      )
+    this.keysLine = this.add
+      .text(width / 2, height - 9, this.keysText(), { fontFamily: 'monospace', fontSize: '13px', color: INK })
       .setOrigin(0.5);
     this.noteText = this.note.text;
     this.noteColor = this.note.style.color as string;
@@ -527,7 +520,19 @@ export class CoolerScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Pays for the draft order and heads back to the truck. */
+  /** SCREAM-277: nothing new has been picked, so the button would charge nothing. */
+  private get nothingNew(): boolean {
+    return this.order.costCents === 0;
+  }
+
+  /** The line of keys along the bottom; Enter is named after what the button says (SCREAM-277). */
+  private keysText(): string {
+    if (this.locked) return 'B Or Backspace: Back To The Truck';
+    const enter = this.nothingNew ? 'Enter: Done' : 'Enter: Buy Stock';
+    return `↑↓←→ Move   + / − Change   ${enter}   ${this.restocking ? 'B: Back On The Road' : 'B: Cancel And Go Back'}`;
+  }
+
+  /** Pays for the draft order (nothing, when the button says DONE) and heads back to the truck. */
   private buy(): void {
     // An order that leaves the cooler empty doesn't count (#66 feedback).
     if (this.order.total === 0) {
@@ -650,7 +655,10 @@ export class CoolerScene extends Phaser.Scene {
           // SCREAM-191: before the uncle hands over his $50, it's what the player is spending.
           `${this.evening.uncleGiftComing ? "Uncle's" : 'Cash:'} ${formatMoney(this.evening.stockBudgetCents)} → ${formatMoney(this.order.cashAfterCents)}`,
       );
-      this.buyButton?.setText(`BUY STOCK  ${formatMoney(this.order.costCents)}`);
+      // SCREAM-277 (PO, November 12): with nothing new picked there is nothing to buy, so the
+      // button says DONE with no price. It goes back to BUY STOCK as soon as something is picked.
+      this.buyButton?.setText(this.nothingNew ? 'DONE' : `BUY STOCK  ${formatMoney(this.order.costCents)}`);
+      this.keysLine?.setText(this.keysText());
     }
   }
 }
