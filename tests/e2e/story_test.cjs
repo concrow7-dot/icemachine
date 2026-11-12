@@ -362,14 +362,14 @@ const { chromium } = require('playwright');
   check('...the driveway works again', await sc('Drive', 's.homeBay.visible'), true);
   check('...the top bar says Elm Park again', /Elm Park/.test(await hudClock()), true);
   await page.screenshot({ path: outDir + '/story_roundabout.png' });
-  await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150);
+  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
   await press('y'); await wait(400);
   check('Restart evening: back at the cooler', (await scenes()).startsWith('Cooler'), true);
 
   // ---- Restart evening goes back to how tonight started ----
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4600 4');
-  await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150);
+  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
   check('Restart prompt explains Story restarts', /Cash, stock and gas go back/.test(await texts('Pause')), true);
   // SCREAM-89: the question stays inside the pause box (420 px wide, centred).
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
@@ -443,7 +443,7 @@ const { chromium } = require('playwright');
 
   // ---- Quitting a Story run from the pause menu ----
   await press('Enter'); await wait(300); await press('Enter'); await wait(300);
-  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
+  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150);
   check('Quit prompt says Continue picks up at the start of this evening', /Continue picks up at\s+the start of this evening/.test(await texts('Pause')), true);
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
   await press('y'); await wait(300);
@@ -484,7 +484,7 @@ const { chromium } = require('playwright');
   await press('o'); await wait(300);
   await press('Enter'); await wait(300); // past the intro
   check('...O: a new run at day 1 with $50, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 5000 none');
-  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(300);
+  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150); await press('y'); await wait(300);
 
   // ---- SCREAM-94: reaching the bike's price gets a victory lap ----
   await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300);

@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 091 — End Evening on the pause menu (2026-11-12)
+
+**Decision (Jira SCREAM-290, under SCREAM-9, PO, November 12):** "A player to be able to end the night as it stands." "This is just like the shift + 3 command is all." Where: the pause menu with a Yes / No check, in Story and Quick play (the PO picked engineering's recommendation).
+
+**Options considered:** an End Evening item on the Esc menu (chosen); a key of its own; a button on the truck screens.
+
+**Why (product owner's rationale):** "If its 7:30 and I am out of stock. I may just want to end the evening." (the ticket)
+
+**Engineering's calls (proposals):**
+
+- The menu reads Resume, End Evening, Restart Evening, Quit To Title. Yes / No starts on No, like the others.
+- It does what Shift+3 does: the clock runs out now. A sale under way finishes first (as at 8 PM), and the question says so ("It ends once this sale is done.").
+- Story says "You keep what you made."; Quick play says "It still counts for high scores."
+- Not on the menu while the uncle is running his evening; once he is skipped or done, it's there.
+- Not on the high score screen's menu (the evening is already over).
+
 ## 090 — Story: the gas dial inside the truck and on the end-of-day screen (2026-11-12)
 
 **Decision (Jira SCREAM-276, under SCREAM-7, PO, November 12):** "Add gas level to end of day screen and inside truck screen (not cooler)". How it looks: "Same as the roads dial. Except it doesn't wobble under 1/4 full like on the road. Similar spot in the bottom left corner."

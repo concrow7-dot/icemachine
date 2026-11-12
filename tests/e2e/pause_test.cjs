@@ -67,8 +67,10 @@ const { chromium } = require('playwright');
   check('Clicking Resume works too', (await status('Pause')) + ' ' + (await status('Sales')), 'off running');
 
   // ---- Restart, with "Are you sure?" ----
-  await press('Escape'); await press('ArrowDown');
-  check('↓ highlights Restart evening', await sc('Pause', 's.selected'), 1);
+  await press('Escape');
+  check('SCREAM-290: the menu reads Resume, End Evening, Restart Evening, Quit To Title', await sc('Pause', "s.items.map(t => t.text.replace(/[<>]/g, '').trim()).join(', ')"), 'Resume, End Evening, Restart Evening, Quit To Title');
+  await press('ArrowDown', 2);
+  check('↓ ↓ highlights Restart evening', await sc('Pause', 's.selected'), 2);
   await press('Enter');
   check('Restart asks "Are you sure?"', /Restart this evening\?/.test(await sc('Pause', 's.prompt.visible && s.prompt.text')), true);
   await page.screenshot({ path: outDir + '/pause_confirm.png' });
@@ -84,20 +86,25 @@ const { chromium } = require('playwright');
   const b2 = await (await page.$('canvas')).boundingBox();
   await page.mouse.click(b2.x + yesAt[0], b2.y + yesAt[1]); await wait(400);
   check('Clicking Yes restarts', (await scenes()) + ' ' + Math.floor(await ev('e.clockMinutes')), 'Cooler,Hud 1020');
-  await wait(300); await press('+'); await press('Enter'); await wait(300); await press('Escape'); await press('ArrowDown');
+  await wait(300); await press('+'); await press('Enter'); await wait(300); await press('Escape'); await press('ArrowDown', 2);
   await press('Enter'); await press('y'); await wait(400);
   check('Y (shortcut): a brand-new evening (cooler, 5:00 PM, $50, menu gone)', [await scenes(), Math.floor(await ev('e.clockMinutes')), await ev('e.moneyCents')].join(' '), 'Cooler,Hud 1020 5000');
   check('...and the restarted evening saved no high score', await scoresSaved(), 0);
 
   // ---- Quit ----
-  await wait(500); await press('Escape'); await press('ArrowDown', 2); await press('Enter');
+  await wait(500); await press('Escape'); await press('ArrowDown', 3); await press('Enter');
   check('Quit asks "Are you sure?"', /Quit to the title screen\?/.test(await sc('Pause', 's.prompt.text')), true);
   await press('y'); await wait(400);
   check('Y: title screen, every evening screen stopped', await scenes(), 'Title');
   check('...no high score from the quit evening', await scoresSaved(), 0);
 
   // ---- Results keep Esc for the title ----
-  await press('Enter'); await wait(300); await shift(3); await wait(300);
+  // SCREAM-290: End Evening, from the cooler, does what Shift+3 does.
+  await press('Enter'); await wait(300); await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter');
+  check('SCREAM-290: End Evening asks first', /End this evening now\?/.test(await sc('Pause', 's.prompt.visible && s.prompt.text')) + ' ' + (await sc('Pause', 's.answer')), 'true 1');
+  await page.screenshot({ path: outDir + '/pause_end_evening.png' });
+  await press('y'); await wait(500);
+  check('...Y: the evening ends (results screen)', (await scenes()).includes('Results'), true);
   await page.evaluate(() => { const s = window.__game.scene.getScene('Results'); if (s.entering) s.save(); }); await wait(150);
   await press('Escape'); await wait(300);
   check('Results screen: Esc still goes to the title (no pause menu)', await scenes(), 'Title');

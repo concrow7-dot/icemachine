@@ -125,7 +125,7 @@ const { chromium } = require('playwright');
   // ---- Esc goes to the title ----
   await page.click('canvas'); await press('Enter'); await wait(200);
   await press('Escape'); await wait(300);
-  check('Pause menu during an evening: no warning, and Restart is there (SCREAM-181)', (await pz("!s.children.getByName('high-score-warning')")) + ' ' + (await pz('s.items.length')), 'true 3');
+  check('Pause menu during an evening: no warning, and Restart is there (SCREAM-181)', (await pz("!s.children.getByName('high-score-warning')")) + ' ' + (await pz('s.items.length')), 'true 4'); // SCREAM-290: End Evening too
   await press('Escape'); await wait(300);
   await eveningWithProfit(-5000);
   await press('Escape'); await wait(200);

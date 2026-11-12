@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { clearStory, EVENING_SCENES, getStory, restartEvening, SceneKeys } from '../flow';
+import { clearStory, EVENING_SCENES, getEvening, getStory, restartEvening, SceneKeys } from '../flow';
 import { addTruckBackdrop, loadTruckInterior, PAUSE_SHADE } from '../ui/truckInterior';
 import { showLoadingWhileLoading } from './LoadingScene';
 
@@ -10,10 +10,12 @@ import { showLoadingWhileLoading } from './LoadingScene';
 // reaches the results screen).
 // SCREAM-181: the high score screen opens it as well while it is asking for initials.
 
-type Choice = 'resume' | 'restart' | 'quit';
+type Choice = 'resume' | 'end' | 'restart' | 'quit';
 
 const CHOICES: { id: Choice; label: string }[] = [
   { id: 'resume', label: 'Resume' },
+  // SCREAM-290 (PO, November 12): "If its 7:30 and I am out of stock. I may just want to end the evening."
+  { id: 'end', label: 'End Evening' },
   { id: 'restart', label: 'Restart Evening' },
   { id: 'quit', label: 'Quit To Title' },
 ];
@@ -22,7 +24,9 @@ const CHOICES: { id: Choice; label: string }[] = [
  * SCREAM-181 (PO, November 6): Esc on the high score screen (while it asks for initials) opens
  * this menu too, with a warning. The evening is over there, so there is nothing to restart.
  */
-const RESULTS_CHOICES = CHOICES.filter((c) => c.id !== 'restart');
+const RESULTS_CHOICES = CHOICES.filter((c) => c.id !== 'restart' && c.id !== 'end');
+/** SCREAM-290: not while the uncle is running his evening (skipping him first gives it back). */
+const UNCLE_CHOICES = CHOICES.filter((c) => c.id !== 'end');
 export const HIGH_SCORE_WARNING = "Quitting won't save your high score.";
 
 const INK = '#ffffff';
@@ -59,7 +63,15 @@ export class PauseScene extends Phaser.Scene {
   create(data: { paused?: string[]; fromResults?: boolean }): void {
     this.paused = data.paused ?? [];
     this.fromResults = !!data.fromResults;
-    this.choices = this.fromResults ? RESULTS_CHOICES : CHOICES;
+    const uncle = !this.fromResults && (() => {
+      try {
+        const run = getEvening(this).tutorial;
+        return !!run && !run.skipped && run.step !== 'done';
+      } catch {
+        return false;
+      }
+    })();
+    this.choices = this.fromResults ? RESULTS_CHOICES : uncle ? UNCLE_CHOICES : CHOICES;
     this.warning = null;
     this.selected = 0;
     this.confirming = null;
@@ -73,7 +85,7 @@ export class PauseScene extends Phaser.Scene {
 
     this.items = this.choices.map((c, i) =>
       this.add
-        .text(width / 2, height / 2 - 40 + i * 48, c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
+        .text(width / 2, height / 2 - 40 + i * (this.choices.length > 3 ? 38 : 48), c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -188,6 +200,17 @@ export class PauseScene extends Phaser.Scene {
     if (this.confirming === 'restart') {
       this.prompt.setText(getStory(this) ? 'Restart this evening?\nCash, stock and gas go back\nto how they were.' : "Restart this evening?\nIt won't count for high scores.");
     }
+    if (this.confirming === 'end') {
+      const saleOn = (() => {
+        try {
+          return !!getEvening(this).sale;
+        } catch {
+          return false;
+        }
+      })();
+      const after = saleOn ? '\nIt ends once this sale is done.' : '';
+      this.prompt.setText((getStory(this) ? 'End this evening now?\nYou keep what you made.' : 'End this evening now?\nIt still counts for high scores.') + after);
+    }
     if (this.confirming === 'quit' && this.fromResults) {
       this.prompt.setText("Quit to the title screen?\nYour high score won't be saved.");
     } else if (this.confirming === 'quit') {
@@ -204,7 +227,11 @@ export class PauseScene extends Phaser.Scene {
   private confirm(): void {
     const choice = this.confirming;
     this.confirming = null;
-    if (choice === 'restart') {
+    if (choice === 'end') {
+      // SCREAM-290: the same as the Shift+3 debug key: the clock runs out now (a sale under way finishes first).
+      this.resume();
+      getEvening(this).endNow();
+    } else if (choice === 'restart') {
       this.stopEvening();
       restartEvening(this);
     } else if (choice === 'quit') {
