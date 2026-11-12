@@ -150,7 +150,9 @@ export class PumpScene extends Phaser.Scene {
         : max === 0
           ? 'Not enough cash for gas.'
           : this.amount < max || fills
-            ? ''
+            ? this.evening.uncleLeftGas
+              ? 'Your uncle left $20 for you to use.'
+              : ''
             : uncle
               ? "That's the uncle's $20."
               : "That's all the cash allows.",

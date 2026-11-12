@@ -26,6 +26,8 @@ export type StorySave = {
   /** SCREAM-145: paid sales per resident so far, and whether a regular has told the roundabout's trick. */
   visits?: Record<string, number>;
   rotaryHintGiven?: boolean;
+  /** SCREAM-268: the uncle's $20 of gas has been used (at his pump, or at the first pump on your own). */
+  uncleGasUsed?: boolean;
 };
 
 /**
@@ -74,6 +76,7 @@ export function loadStory(): StorySave | null {
           ? Object.fromEntries(Object.entries(data.visits as Record<string, unknown>).filter(([, v]) => Number.isInteger(v) && (v as number) > 0) as [string, number][])
           : undefined,
       rotaryHintGiven: data.rotaryHintGiven === true,
+      uncleGasUsed: data.uncleGasUsed === true,
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),

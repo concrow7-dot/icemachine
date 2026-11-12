@@ -58,6 +58,11 @@ export class StoryRun {
   /** SCREAM-145: paid sales per resident so far this run, and whether a regular has told the roundabout's trick. */
   visits: Record<string, number> = {};
   rotaryHintGiven = false;
+  /**
+   * SCREAM-268 (PO, November 12): the uncle's $20 for gas. Used at his pump on his evening; a player
+   * who goes On My Own or skips him first gets it at their first pump instead.
+   */
+  uncleGasUsed = false;
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
@@ -78,6 +83,7 @@ export class StoryRun {
       this.totals = { ...save.totals };
       this.visits = { ...(save.visits ?? {}) };
       this.rotaryHintGiven = save.rotaryHintGiven ?? false;
+      this.uncleGasUsed = save.uncleGasUsed ?? false;
       if (save.seed !== undefined) this.seed = save.seed;
     }
   }
@@ -93,6 +99,7 @@ export class StoryRun {
         story: { day: this.day, seed: this.seed },
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
+        uncleGas: !this.uncleGasUsed,
       },
       STORY_MAP,
       this.withUncle && this.day === 1,
@@ -114,6 +121,7 @@ export class StoryRun {
     this.fuel = evening.endedOutOfGas ? FUEL_STORY_OUT_OF_GAS_START : Math.max(evening.fuel, FUEL_STORY_MIN_START);
     this.visits = { ...evening.visits }; // SCREAM-145
     this.rotaryHintGiven = evening.rotaryHintGiven;
+    if (evening.uncleGasUsed) this.uncleGasUsed = true;
     const b = evening.breakdown;
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,
@@ -136,6 +144,7 @@ export class StoryRun {
         seed: this.seed,
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
+        uncleGasUsed: this.uncleGasUsed,
       });
     } else {
       this.outcome = result;

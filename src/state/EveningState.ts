@@ -245,6 +245,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     /** SCREAM-145: paid sales per resident over the run so far, and whether the roundabout's secret is out. */
     visits?: Readonly<Record<string, number>>;
     rotaryHintGiven?: boolean;
+    /** SCREAM-268: Story only: the uncle's $20 for gas hasn't been used yet this run. */
+    uncleGas?: boolean;
   }, mapId: MapId = 'worcester', guided = false) {
     super();
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
@@ -268,6 +270,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
+    this.uncleGasLeft = carry?.uncleGas ?? false;
     this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
     const map = currentMap();
@@ -610,8 +613,22 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * the $20 he has on him.
    */
   get unclePaysGas(): boolean {
-    return this.tutorial?.step === 'pump';
+    return this.tutorial?.step === 'pump' || this.uncleLeftGas;
   }
+
+  /**
+   * SCREAM-268 (PO, November 12): in Story, a player who didn't get the uncle's gas at his pump
+   * (On My Own, or he was skipped first) finds his $20 waiting at their first pump:
+   * "Your uncle left $20 for you to use." It is used up only when gas is bought with it.
+   */
+  get uncleLeftGas(): boolean {
+    return this.uncleGasLeft && (!this.tutorial || this.tutorial.skipped);
+  }
+
+  /** SCREAM-268: the uncle's $20 is still to come in this Story run. */
+  private uncleGasLeft: boolean;
+  /** SCREAM-268: the uncle's $20 was used tonight (StoryRun carries it on). */
+  uncleGasUsed = false;
 
   /**
    * The most gas the player can buy now, in cents: up to a full tank (SCREAM-184), and no more
@@ -630,6 +647,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!this.unclePaysGas) {
       this.gasSpentCents += cents;
       this.changeMoney(-cents, 'Gas');
+    } else {
+      this.uncleGasLeft = false;
+      this.uncleGasUsed = true;
     }
     this.tutorial?.signal('gasBought');
     return true;

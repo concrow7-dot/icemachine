@@ -54,7 +54,7 @@ const { chromium } = require('playwright');
   check('On the road with stock: people may want ice cream', await ev('e.acceptingCustomers'), true);
   check('The music ring is round the truck, 300 px', await drive('[s.ring.visible, Math.round(s.ring.radius), Math.round(s.ring.x) === Math.round(s.truck.x)].join()'), 'true,300,true');
   check('No pointer arrow (SCREAM-68)', await drive('s.pointer'), undefined);
-  check('Hint line explains the ring and the music keys', await drive("s.children.list.some(o => o.type === 'Text' && /ring/.test(o.text) && /M Mute/.test(o.text))"), true);
+  check('Hint line names the music keys, not the ring (SCREAM-286)', await drive("s.children.list.some(o => o.type === 'Text' && !/ring/.test(o.text) && /M Mute/.test(o.text))"), true);
 
   // ---- Curb spots: every resident has one ----
   const curbs = await drive(`(() => { let stand = 0, square = 0, cars = 0;

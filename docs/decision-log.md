@@ -2,13 +2,31 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 088 — Story: the uncle's $20 for gas waits at the first pump for a player who goes without him (2026-11-12)
+
+**Decision (Jira SCREAM-268, under SCREAM-5, PO, November 12):** "Player should get uncle benefits even if they decide not to use him (gas)". How: "When the player goes to the gas station for the first time, lets have the station say 'Your uncle left $20 for you to use.'" The $20 is "Just at the gas station", not added to the cash.
+
+**Before:** only the uncle's evening had his $20 at the pump (SCREAM-173). On My Own, or skipping him before the pump, the player paid for their first gas.
+
+**Options considered:** the $20 at the first pump (chosen); $20 added to the cash; a fuller tank at the start.
+
+**Why (product owner's rationale):** "Player should get uncle benefits even if they decide not to use him (gas)" (the ticket).
+
+**Engineering's calls (proposals):**
+
+- Once per Story run, at the first pump where gas is bought: the pump says "Your uncle left $20 for you to use.", the button reads UNCLE PAYS, up to $20 (more than $20 is not allowed at that visit, as at his pump). Any of the $20 not used that visit is lost.
+- Driving off without buying doesn't use it up: it waits for the next pump.
+- Used at the uncle's own pump on his evening, so a With Uncle run that reaches his pump gets no second $20. Skipped before his pump, it waits like On My Own.
+- Kept in the Story save. Saves from before this have it unused, so a run already under way gets the $20 at its next pump.
+- Story only (076). Gas bought with it doesn't count as gas spent on the end-of-day screen.
+
 ## 087 — Fewer hint lines: the PO's Keep / Remove marks on every screen (2026-11-12)
 
 **Decision (Jira SCREAM-286, PO, November 12):** every screen's hint lines went into a sheet ("SCREAM-286 - Hint lines (Keep or Remove)", Product Management Decisions) with a screenshot each; the PO marked them: "If nothing Keep. If remove, remove." Removed: the title's line of keys, the title's HOW TO DRIVE box, the line under the answers to "Bring your uncle along again?" and "Start a new story?", "X: Skip The Uncle" in the uncle's box, all of the cooler's line but Enter ("Leave Enter: Done"), "People in your ring may want ice cream (!)" on the drive line, and "Backspace: Undo" at "How much?". Everything else stays.
 
 **Options considered:** the PO's marks, line by line (chosen); removing every hint line (the ticket's first wording).
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+**Why (product owner's rationale, November 12):** "Some of the tips weren't that helpful. Others felt in the way."
 
 **Engineering's calls (proposals):**
 
