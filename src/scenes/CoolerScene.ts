@@ -80,6 +80,8 @@ export class CoolerScene extends Phaser.Scene {
   private crateMark!: Phaser.GameObjects.Graphics;
   /** SCREAM-269: the plain panels over the covered half of each crate in Story (test hook). */
   coveredHalves: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
+  coveredRows: Phaser.GameObjects.Container[] = [];
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -259,8 +261,12 @@ export class CoolerScene extends Phaser.Scene {
     }
     // SCREAM-269: in Story the right half of every crate is under a plain panel.
     this.coveredHalves = [];
+    this.coveredRows = [];
     if (this.evening.spec.coolerHalfCovered) {
       crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + crateSize / 2, crateTop, crateSize / 2, crateSize)));
+      // SCREAM-291: the bottom row of the open half is gone too.
+      const rowTop = crateTop + cellPad + (CRATE_SIDE - 1) * cell;
+      crateLefts.forEach((left) => this.coveredRows.push(addCoveredHalf(this, left, rowTop, crateSize / 2, crateTop + crateSize - rowTop).setName('covered-row')));
     }
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = this.cellCentre(i);

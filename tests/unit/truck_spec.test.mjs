@@ -50,7 +50,7 @@ test("Story's truck is worse at everything the PO listed", () => {
   assert.ok(weak.musicRadius < full.musicRadius, 'music reaches less far');
   // SCREAM-269 (PO: "24 to start"): half of every crate is covered.
   assert.equal(weak.coolerHalfCovered, true);
-  assert.equal(weak.coolerCapacity, 24);
+  assert.equal(weak.coolerCapacity, 18); // SCREAM-291: and the bottom row is gone
   assert.ok(weak.fuelTankPx < full.fuelTankPx, 'a tank goes less far');
 });
 
@@ -65,13 +65,14 @@ test('the weaker truck can still reach a gas station from where a Story day can 
   assert.ok(t.FUEL_STORY_OUT_OF_GAS_START > t.FUEL_STORY_MIN_START);
 });
 
-test('SCREAM-269: with the halves covered, the left two columns of each crate are open: 24 squares', () => {
+test('SCREAM-269, SCREAM-291: with the halves covered, the left two columns of the top three rows are open: 18 squares', () => {
   const all = Array.from({ length: t.COOLER_CAPACITY }, (_, i) => i);
   assert.equal(all.filter((i) => coolerCellOpen(false, i)).length, 48);
   const open = all.filter((i) => coolerCellOpen(true, i));
-  assert.equal(open.length, 24);
-  assert.deepEqual(open.slice(0, 8), [0, 1, 4, 5, 8, 9, 12, 13], 'crate 1: columns 1 and 2 of each row');
-  for (const crate of [0, 1, 2]) assert.equal(open.filter((i) => Math.floor(i / 16) === crate).length, 8, 'eight in every crate');
+  assert.equal(open.length, 18);
+  assert.deepEqual(open.slice(0, 6), [0, 1, 4, 5, 8, 9], 'crate 1: columns 1 and 2 of rows 1 to 3');
+  for (const crate of [0, 1, 2]) assert.equal(open.filter((i) => Math.floor(i / 16) === crate).length, 6, 'six in every crate');
+  assert.equal(coolerCellOpen(true, 12), false, 'the bottom row is gone');
   assert.equal(coolerCellOpen(true, -1), false);
   assert.equal(coolerCellOpen(false, 48), false);
 });

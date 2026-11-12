@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
 import { addCoveredHalf } from '../ui/coveredHalf';
+import { openRows } from '../state/TruckSpec';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -48,6 +49,8 @@ export class FillScene extends Phaser.Scene {
   private lids: Phaser.GameObjects.Container[] = [];
   /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
   coveredHalves: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
+  coveredRows: Phaser.GameObjects.Container[] = [];
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -97,10 +100,14 @@ export class FillScene extends Phaser.Scene {
     // each. The left one opens (swinging up); the right one is a plain panel that stays shut.
     // Quick play keeps one lid per crate.
     this.coveredHalves = [];
+    this.coveredRows = [];
     const half = this.evening.spec.coolerHalfCovered;
     CRATE_LEFTS.forEach((left, crate) => {
       this.lids.push(this.makeLid(left, crate, half ? CRATE_PX / 2 : CRATE_PX));
       if (half) this.coveredHalves.push(addCoveredHalf(this, left + CRATE_PX / 2, CRATE_TOP, CRATE_PX / 2, CRATE_PX, true));
+      // SCREAM-291: and the bottom row of the open half is gone (a plain strip, no handle).
+      const rowTop = CRATE_TOP + CELL_PAD + (CRATE_SIDE - 1) * CELL;
+      if (half) this.coveredRows.push(addCoveredHalf(this, left, rowTop, CRATE_PX / 2, CRATE_TOP + CRATE_PX - rowTop).setName('covered-row'));
     });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
@@ -256,7 +263,8 @@ export class FillScene extends Phaser.Scene {
     // SCREAM-269: with the right half covered, the keyboard stays in the open columns.
     const cols = this.evening.spec.coolerHalfCovered ? CRATE_SIDE / 2 : CRATE_SIDE;
     const col = (this.focus % CRATE_SIDE + dx + cols) % cols;
-    const row = (Math.floor(this.focus / CRATE_SIDE) + dy + CRATE_SIDE) % CRATE_SIDE;
+    const rows = openRows(this.evening.spec.coolerHalfCovered); // SCREAM-291: not into the missing bottom row
+    const row = (Math.floor(this.focus / CRATE_SIDE) + dy + rows) % rows;
     this.focus = row * CRATE_SIDE + col;
     this.refresh();
   }
