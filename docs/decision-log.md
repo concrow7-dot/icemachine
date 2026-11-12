@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 081 — Fill screen: BACK TO THE WINDOW becomes FORGOT ORDER, and the customer says the order again (2026-11-12)
+
+**Decision (Jira SCREAM-282, under SCREAM-154, PO, November 12):** "changing the text on the 'Back to the window' button to 'Forgot Order' and it brings you straight to the customer redoing the order". One step where there were two (back to the window, then R to ask again).
+
+**Options considered:** the button asks again in one step and says so (chosen); going back to the window and asking there with R, as before.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- It costs the tip, like asking again at the window (Q9): engineering asked the PO and built the existing rule while waiting. If he wants FORGOT ORDER to keep the tip, it is one line.
+- Asking again is no longer once only. The first time still loses the tip and the second chance after a wrong order; after that (and after a corrected mistake) the player can ask as often as they like, since there is nothing more to lose. Otherwise FORGOT ORDER would sometimes do nothing.
+- B does the same as the button, and the keys along the bottom read "B: Forgot Order". There is no longer a way back to the window without asking again.
+- What is in the bag stays in the bag.
+- Both modes and the uncle's evening (one shared screen).
+
 ## 080 — Fill screen: a tall green tip bar above the cup that shrinks as the tip counts down (2026-11-12)
 
 **Decision (Jira SCREAM-281, under SCREAM-154, PO, November 12):** "Lets also add the tip countdown on the left side of that screen. [...] On the left side where the tip cup is. Lets extend the green bar to show the tip amount at 20%. As the time ticks away, show the tip decrease."
