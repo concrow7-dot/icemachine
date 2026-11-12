@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 090 — Story: the gas dial inside the truck and on the end-of-day screen (2026-11-12)
+
+**Decision (Jira SCREAM-276, under SCREAM-7, PO, November 12):** "Add gas level to end of day screen and inside truck screen (not cooler)". How it looks: "Same as the roads dial. Except it doesn't wobble under 1/4 full like on the road. Similar spot in the bottom left corner."
+
+**Options considered:** the road's dial, steady, bottom left (chosen); a line of text ("Gas: 1/4 tank"); a smaller dial.
+
+**Why (product owner's rationale):** "so player can know to get gas soon or buy a temporary gas tank." (the ticket)
+
+**Engineering's calls (proposals):**
+
+- Story only (076), in both places. Quick play's hub has no dial yet; it is one line if wanted.
+- The same size as on the road, at the pump's spot (pivot 80, 530), so in the hub it sits over the cooler's bottom-left corner.
+- E turns red below 15%, as on the road; no wobble in the truck or on the end-of-day screen.
+- The end-of-day screen shows tomorrow's tank (after a near-empty night the 1/6, after running out the 1/3), and only when there is a tomorrow (not on GAME OVER or STORY COMPLETE).
+- The dial's drawing moved from HudScene into `src/ui/fuelDial.ts`, shared by both screens.
+
 ## 089 — Schedule and neighbour lines: only about special customers, at most one a night (2026-11-12)
 
 **Decision (Jira SCREAM-275, under SCREAM-11, PO, November 12):** "I want to remove the lines about customers' schedule. Unless it's a customer that has special levels of tip or order number. It should surface less." Who is special: "People like Pizza Joe and Big Kev who will give you better business." How often: at most one a night ("Yes"). Changes 064 and 065.
