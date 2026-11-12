@@ -526,18 +526,19 @@ export class SalesScene extends Phaser.Scene {
     this.returnButton.setVisible(pricing);
     // "(NO TIP)" until the tip has been given up (asked already, or a mistake).
     const tipGone = sale.askedAgain || sale.retryUsed || sale.repriceUsed;
-    this.askButton.setText(tipGone ? 'ASK AGAIN' : 'ASK AGAIN (NO TIP)').setVisible(sale.phase === 'deciding' || pricing);
+    // SCREAM-288: gone once this customer has been asked twice.
+    this.askButton.setText(tipGone ? 'ASK AGAIN' : 'ASK AGAIN (NO TIP)').setVisible(sale.canAskAgain);
 
     let hint = '';
     if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
     if (sale.phase === 'deciding') {
       // SCREAM-282: asking again is always there; "(No Tip)" only while there is a tip to lose.
       const tipLeft = !(sale.askedAgain || sale.retryUsed || sale.repriceUsed);
-      hint = `C Or Enter: Go To The Cooler    R: Ask Again${tipLeft ? ' (No Tip)' : ''}    B: Drive Off`;
+      hint = `C Or Enter: Go To The Cooler    ${sale.canAskAgain ? `R: Ask Again${tipLeft ? ' (No Tip)' : ''}    ` : ''}B: Drive Off`;
     }
     if (pricing) {
       // Shortened to make room for C (the line was as wide as the screen).
-      hint = 'Type The Price   Enter: Charge   Backspace: Undo   C: Return To Cooler   R: Ask Again   B: Drive Off';
+      hint = `Type The Price   Enter: Charge   Backspace: Undo   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
     }
     if (sale.phase === 'over') {
       hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';

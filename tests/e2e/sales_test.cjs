@@ -186,6 +186,7 @@ const { chromium } = require('playwright');
   check('...the Fill screen\'s keys say B: Forgot Order', /B: Forgot Order/.test(await page.evaluate(() => window.__game.scene.getScene('Fill').children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | '))), true);
   await press('b'); await wait(300);
   check('...B does the same, a second time too', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud ordering');
+  check('SCREAM-288: that was the second and last time for this customer', (await ev('e.sale.asksLeft')) + ' ' + (await ev('e.sale.askAgain(e.nowMs)')), '0 false');
   await press('b'); await wait(300);
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
@@ -250,8 +251,11 @@ const { chromium } = require('playwright');
   check('...then "How much?" again, the bag still served, the typed price cleared, the button now plain ASK AGAIN', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.line')) + ' ' + (await ev('e.sale.bagCount')) + ' ' + JSON.stringify(await sc('Sales', 's.typed')) + ' ' + (await sc('Sales', 's.askButton.text')), 'pricing How much? 1 "" ASK AGAIN');
   await press('r'); await wait(200);
   check('...R does the same; and going to the cooler while they repeat it works', await (async () => { const p = await ev('e.sale.phase'); await press('c'); await wait(300); return p + ' ' + (await scenes()) + ' ' + (await ev('e.sale.phase')); })(), 'ordering Fill,Hud deciding');
+  check('SCREAM-288: asked twice, so FORGOT ORDER is gone at the cooler, B is off the keys line and does nothing', await (async () => { const v = await sc('Fill', 's.windowButton.visible + " " + /Forgot Order/.test(s.keysLine.text)'); await press('b'); await wait(300); return v + ' ' + (await scenes()) + ' ' + (await ev('e.sale.timesAsked')); })(), 'false false Fill,Hud 2');
   await press('Enter'); await wait(300);
   check('...SERVE again: "How much?"', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud pricing');
+  check('SCREAM-288: ...and ASK AGAIN is gone at the window; R does nothing and is off the keys line', await (async () => { const v = await sc('Sales', 's.askButton.visible + " " + /Ask Again/.test(s.hint.text)'); await press('r'); await wait(200); return v + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.timesAsked')); })(), 'false false pricing 2');
+  await page.screenshot({ path: outDir + '/sale_asked_twice.png' });
   await press('b'); await wait(300); await press('Enter'); await wait(300);
   check('...(driving off puts the bag back)', await stock(), stock285);
 

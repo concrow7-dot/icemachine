@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 086 — Asking for the order again: at most twice per customer (2026-11-12)
+
+**Decision (Jira SCREAM-288, under SCREAM-154, PO, November 12):** "Only let the user click 'Ask Again' twice". This replaces "as often as the player likes" in 081 and 084, which was engineering's call and was on a branch for under an hour.
+
+**Options considered:** twice per customer (chosen); as often as the player likes (081, 084); once only (the rule before 081).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- The two are counted per customer and shared between the window (ASK AGAIN, R) and the cooler (FORGOT ORDER, B): they are the same action.
+- After the second, ASK AGAIN and FORGOT ORDER go away, R and B do nothing, and both are dropped from the keys along the bottom. At the cooler the player then has to SERVE what they have.
+- The customer correcting a wrong order ("That's not what I asked for. I wanted...") is not counted: the player didn't ask.
+- Nothing on screen counts them down; the window's button reads ASK AGAIN (NO TIP), then ASK AGAIN, then is gone.
+- The number is `ASK_AGAIN_LIMIT` in `tuning.ts`, so a power-up could raise it (the whiteboard's "Another order reminder").
+
 ## 085 — Tip bar: once there is no tip, the countdown goes away and the cup just says "No tip" (2026-11-12)
 
 **Decision (Jira SCREAM-287, under SCREAM-154, PO, November 12):** "when user gets no tip. The countdown over the tip can end. Just show no tip." Follows 080 and 083, where the bar turned grey and kept shrinking.
