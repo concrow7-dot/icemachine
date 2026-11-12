@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** twice per customer (chosen); as often as the player likes (081, 084); once only (the rule before 081).
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "I wanted it to be somewhat realistic. You can't keep asking a customer before they get annoyed."
 
 **Engineering's calls (proposals):**
 
@@ -40,7 +40,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** an ASK AGAIN button at the window, before and after the cooler (chosen, engineering's reading); the "..." bubble with dialog options (SCREAM-239, not built); leaving it to the R key alone.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "I think this will be possibly replaced by the '...'. For now I went with this and will rethink it." So SCREAM-239 (the "..." bubble) stays open and may replace this button later.
 
 **Engineering's calls (proposals):**
 
@@ -58,7 +58,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** the same bar, as tall as the jar (chosen); the short stub of bills, as before; the cooler's full-height bar at the window too.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "Want it to fit and I think it was a helpful mechanic."
 
 **Engineering's calls (proposals):**
 
@@ -72,7 +72,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** a button on the strip under the counter, bottom left (chosen, the PO's mark); on the counter beside the paper bag, under Today's Menu (engineering's first suggestion; the PO said no); no way back once the bag is served, as before.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "I want to build this to be mouse friendly and eventually phone friendly so having all the buttons should be helpful."
 
 **Agreed with the PO ("I agree with all the other suggestions"):** the sale stays on and the ice creams served are back in the bag to change; C does the same as the button; the tip keeps counting down; a price already typed is cleared.
 
@@ -88,7 +88,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** the button asks again in one step and says so (chosen); going back to the window and asking there with R, as before.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "Back to the window was long and made it almost seem like you were serving the ice cream to them. Changed the name to clarify."
 
 **Engineering's calls (proposals):**
 
@@ -136,7 +136,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** DONE with no price when there is nothing to buy (chosen); BUY STOCK $0.00 as before.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "Buy Stock, with zero stock didn't really make sense. Just cleaning that up a bit."
 
 **Engineering's calls (proposals):**
 
@@ -152,7 +152,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** BACK TO THE WINDOW on the left under the tip jar and SERVE in the middle of the counter (chosen); as 071 left them (BACK TO THE WINDOW in the middle, SERVE at the bottom right).
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "It's what felt more natural. The SERVE button is associated with the ice cream. Back to window is with the tip jar."
 
 **Engineering's calls (proposals):**
 
