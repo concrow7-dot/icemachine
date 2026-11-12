@@ -469,8 +469,11 @@ export const SCHEDULE_LINE_CHANCE = 0.3;
  * their line tells the player more, so they say it more often (PO, November 10: "I would like a variety").
  */
 export const SCHEDULE_LINE_CHANCE_SOME_DAYS = 0.6;
-/** At most this many schedule lines in an evening, so they stay a treat and not noise. */
-export const SCHEDULE_LINES_MAX_PER_EVENING = 4;
+/**
+ * At most this many schedule lines in an evening, so they stay a treat and not noise.
+ * SCREAM-275 (PO, November 12): one a night (was 4).
+ */
+export const SCHEDULE_LINES_MAX_PER_EVENING = 1;
 
 // ---- Hard-to-find customers (SCREAM-250) ----
 // PO, November 10 (decision 067): a few people are only there in a short window (30 seconds

@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 089 — Schedule and neighbour lines: only about special customers, at most one a night (2026-11-12)
+
+**Decision (Jira SCREAM-275, under SCREAM-11, PO, November 12):** "I want to remove the lines about customers' schedule. Unless it's a customer that has special levels of tip or order number. It should surface less." Who is special: "People like Pizza Joe and Big Kev who will give you better business." How often: at most one a night ("Yes"). Changes 064 and 065.
+
+**Options considered:** only special customers, one a night (chosen); as before (30% / 60% of paid sales, 4 a night, anyone); removing the lines altogether.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- Special = a set order size (042) or hard to find (067): today Pizza Joe, Zombie A Poplicks, Ruth Butter Ginsburg (10 ice creams, tip x4) and Big Kev (7), all on Elm Park. Foley Stadium has none, so no lines there for now.
+- Both kinds: a special customer can say something about their own week (064); anyone can say something about a special neighbour on their street (065), never an ordinary one. Hours lines are schedule lines, so the same rule.
+- The chances (30% / 60%, and the neighbour shares) are unchanged; the limit drops from 4 to 1 a night. Hard-to-find neighbours are still passed over most of the time (067), so lines about them stay rare.
+- The draft lines for ordinary customers stay in the Residents sheet's tabs and the code; they just aren't said. Hints about a big regular (048) are untouched.
+
 ## 088 — Story: the uncle's $20 for gas waits at the first pump for a player who goes without him (2026-11-12)
 
 **Decision (Jira SCREAM-268, under SCREAM-5, PO, November 12):** "Player should get uncle benefits even if they decide not to use him (gas)". How: "When the player goes to the gas station for the first time, lets have the station say 'Your uncle left $20 for you to use.'" The $20 is "Just at the gas station", not added to the cash.

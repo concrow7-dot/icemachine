@@ -213,7 +213,9 @@ const { chromium } = require('playwright');
       about: about ? about.id : '', neighbour: !!about && about.id !== id && about.street === p.resident.street && s.line.includes(about.name.trim()) && theirs.includes(s.line), forceN: e.forceNeighbourLine };
   }, [id, chance, opts]);
   const monThuOnly = await ev("(e.residents.all.find(p => p.resident.days && p.resident.days.length >= 2 && p.resident.days.length <= 3 && p.resident.days.includes(3) && !p.resident.days.includes(1) && !p.resident.days.includes(2)) || { resident: { id: '' } }).resident.id");
-  const allWeek = await ev("e.residents.all.find(p => p.resident.days && p.resident.days.length === 7).resident.id");
+  // SCREAM-275: only special customers (a set order size, or hard to find) have schedule lines said. Big Kev (T034) is one,
+  // every day on Institute Road; Francine Fudge (T003) is an ordinary neighbour of his there.
+  const allWeek = 'T034', ordinary = 'T003';
   check('Schedule lines: everyone with ticked days has their own lines this run', await ev("e.residents.all.filter(p => p.resident.days && p.resident.days.length > 0).every(p => (e.scheduleLinesFor.get(p.resident.id) || []).length > 0)"), true);
   const day1Sched = await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");
   check('...none when the dice say no', (await sched(allWeek, 0, { said: 0 })).said, false);
@@ -222,14 +224,18 @@ const { chromium } = require('playwright');
   check('...someone home every day names no weekday', /Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/.test(s1.line), false);
   const s1b = await sched(allWeek, 1, { said: 0 }), s1c = await sched(allWeek, 1, { said: 0 }), s1d = await sched(allWeek, 1, { said: 0 });
   check('...(PO, testing) the same regular says three different things, then has nothing new of their own tonight', new Set([s1.line, s1b.line, s1c.line]).size + ' ' + s1d.said, '3 false');
-  check('...and talks about a neighbour instead (SCREAM-248)', s1d.neighbour, true);
+  check('...and with no special neighbour on his street, says nothing more (SCREAM-275)', s1d.about, '');
   await sched(allWeek, 0, { heard: 'clear', told: 'clear' });
-  if (monThuOnly) {
-    const s2 = await sched(monThuOnly, 1, { said: 0 });
-    check('...on Monday, someone away until Thursday says so truthfully (names Thursday, never Tuesday or Wednesday as home)', s2.said + ' ' + s2.own + ' ' + /Thursday/.test(s2.line), 'true true true');
-  }
-  check('...no more than 4 a night', (await sched(allWeek, 1, { said: 4 })).said, false);
-  const forced = await sched(allWeek, 0, { said: 4, force: true, heard: 'clear' });
+  const o1 = await sched(ordinary, 1, { said: 0, share: 0, heard: 'clear', told: 'clear' });
+  check('SCREAM-275: an ordinary customer never says their own week', o1.said + ' ' + o1.own, 'false false');
+  check('...but can talk about a special neighbour (Big Kev)', o1.about + ' ' + o1.neighbour, 'T034 true');
+  const others = []; for (let i = 0; i < 6; i++) others.push((await sched('T005', 1, { said: 0, share: 1, heard: 'clear', told: 'clear' })).about);
+  check('...and never about an ordinary neighbour (Westland Street: only Pizza Joe, or nobody)', others.every(a => a === '' || a === 'T006'), true);
+  await sched(allWeek, 0, { heard: 'clear', told: 'clear' });
+  const s2 = await sched('T021', 1, { said: 0 });
+  check('...Ruth Butter Ginsburg (hard to find, Fridays only) has her own lines to say', s2.said + ' ' + s2.own, 'true true');
+  check('...no more than 1 a night (SCREAM-275; was 4)', (await sched(allWeek, 1, { said: 1, heard: 'clear' })).said, false);
+  const forced = await sched(allWeek, 0, { said: 1, force: true, heard: 'clear' });
   check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
   // ---- SCREAM-249: hours of the evening (Drake Maye, T036, is only home after 7) ----
   check('Hours: at the start of the evening (5 PM) Drake Maye is not home; at 7 he is', await ev("(() => { const r = e.residents, d = r.all.find(p => p.resident.id === 'T036').resident; const now = r.homeNow(d); const real = r.nowMinutes; r.nowMinutes = () => 1141; const later = r.homeNow(d); r.nowMinutes = real; return Math.round(real()) + ' ' + now + ' ' + later; })()"), '1020 false true');
@@ -243,13 +249,13 @@ const { chromium } = require('playwright');
   // ---- SCREAM-248: neighbours know each other's days (same stand-in sales) ----
   check('Neighbour lines: everyone here with ticked days who buys can be talked about, and nobody else', await ev("e.residents.all.every(p => e.neighbourLinesFor.has(p.resident.id) === (p.resident.likelihood > 0 && !!p.resident.days && p.resident.days.length > 0))"), true);
   const day1Neighbours = await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");
-  const n1 = await sched(allWeek, 1, { said: 0, share: 1, heard: 'clear', told: 'clear' });
+  const n1 = await sched(ordinary, 1, { said: 0, share: 1, heard: 'clear', told: 'clear' });
   check("...a customer can say when someone else on their street is home: true, by name, from that neighbour's lines", n1.neighbour + ' ' + n1.said, 'true false');
-  const n2 = await sched(allWeek, 1, { said: 0, share: 1 });
-  check('...never about the same neighbour twice in an evening', n2.neighbour + ' ' + (n2.about !== n1.about) + ' ' + (n2.line !== n1.line), 'true true true');
+  const n2 = await sched(ordinary, 1, { said: 0, share: 1 });
+  check('...never about the same neighbour twice in an evening', n2.about !== n1.about, true);
   check('...none when the share says no (their own line instead)', (await sched(allWeek, 1, { said: 0, share: 0, heard: 'clear', told: 'clear' })).said, true);
-  check('...they count towards the same 4 a night', (await sched(allWeek, 1, { said: 4, share: 1, heard: 'clear', told: 'clear' })).about, '');
-  const forcedN = await sched(allWeek, 0, { said: 4, share: 0, forceNeighbour: true, heard: 'clear', told: 'clear' });
+  check('...they count towards the same 1 a night', (await sched(ordinary, 1, { said: 1, share: 1, heard: 'clear', told: 'clear' })).about, '');
+  const forcedN = await sched(ordinary, 0, { said: 1, share: 0, forceNeighbour: true, heard: 'clear', told: 'clear' });
   check('...Shift+8 (debug) forces one on the next paid sale, once', forcedN.neighbour + ' ' + forcedN.forceN, 'true false');
   await ev('(e.scheduleLinesSaid = 0, e.scheduleLinesHeard.length = 0, e.neighboursToldAbout.length = 0, e.scheduleLineChance = 0, 0)');
 
