@@ -112,18 +112,7 @@ export class TitleScene extends Phaser.Scene {
     this.add
       .text(width / 2, 112, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
       .setOrigin(0.5);
-    // How to drive: the one set of controls.
-    this.add.rectangle(width / 2, 238, 520, 150, 0x1f2a44).setStrokeStyle(2, 0x4d5a70);
-    this.add.text(width / 2, 186, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '24px', color: '#ffe066' }).setOrigin(0.5);
-    this.add
-      .text(width / 2, 252, '↑ Gas      ↓ Brake / Reverse\n← → Steer      Q Park Brake\n\nPull up beside a customer and stop.', {
-        fontFamily: 'monospace',
-        fontSize: '17px',
-        color: '#d6deeb',
-        align: 'center',
-        lineSpacing: 4,
-      })
-      .setOrigin(0.5);
+    // SCREAM-286 (PO, November 12): no HOW TO DRIVE box; the drive screen's line names the keys.
 
     const spacing = this.options.length > 3 ? 26 : this.options.length > 2 ? 30 : 34;
     this.modeTexts = this.options.map((m, i) =>
@@ -148,9 +137,7 @@ export class TitleScene extends Phaser.Scene {
       .text(width / 2, 345 + this.options.length * spacing + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
       .setOrigin(0.5)
       .setName('lock-note');
-    this.add
-      .text(width / 2, height - 32, '↑ ↓ Or Mouse: Choose    Press Enter Or Click To Start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
-      .setOrigin(0.5);
+    // SCREAM-286: no line of keys along the bottom here.
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)   Map data © OpenStreetMap contributors   Tune: Travis Morgan (SoundEffectsFactory.com)' + (counterOn() ? '   Counts anonymous plays' : ''), { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
       .setOrigin(0.5);
@@ -304,11 +291,8 @@ export class TitleScene extends Phaser.Scene {
         }),
     }));
     this.refreshAnswers();
-    const hint = this.add
-      .text(width / 2, height / 2 + 78, '← → Choose    Enter Or Click To Pick', { fontFamily: 'monospace', fontSize: '13px', color: '#8a9bb3' })
-      .setOrigin(0.5)
-      .setName('answer-hint');
-    return [...this.answers.map((a) => a.text), hint];
+    // SCREAM-286: no "← → Choose    Enter Or Click To Pick" line under the answers.
+    return this.answers.map((a) => a.text);
   }
 
   private refreshAnswers(): void {

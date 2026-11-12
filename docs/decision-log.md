@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 087 — Fewer hint lines: the PO's Keep / Remove marks on every screen (2026-11-12)
+
+**Decision (Jira SCREAM-286, PO, November 12):** every screen's hint lines went into a sheet ("SCREAM-286 - Hint lines (Keep or Remove)", Product Management Decisions) with a screenshot each; the PO marked them: "If nothing Keep. If remove, remove." Removed: the title's line of keys, the title's HOW TO DRIVE box, the line under the answers to "Bring your uncle along again?" and "Start a new story?", "X: Skip The Uncle" in the uncle's box, all of the cooler's line but Enter ("Leave Enter: Done"), "People in your ring may want ice cream (!)" on the drive line, and "Backspace: Undo" at "How much?". Everything else stays.
+
+**Options considered:** the PO's marks, line by line (chosen); removing every hint line (the ticket's first wording).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- Row 7's note "Leave Enter: Done" (on the uncle's-box row, whose screenshot also outlined the cooler's line) is read with row 9 (the cooler's line, Remove): the cooler's line keeps only "Enter: Done" or "Enter: Buy Stock".
+- Removing "X: Skip The Uncle" from his box also removes clicking it to skip him. X still skips him, and the truck's line along the bottom still says "X: Skip The Uncle".
+- The cooler's locked line ("B Or Backspace: Back To The Truck") wasn't in the sheet and stays.
+- The title's menu stays where it was, so there is a gap where the HOW TO DRIVE box was.
+- Both modes: these are shared screens, and a hint missing in one mode only would be odd, so 076 is not stretched far.
+
 ## 086 — Asking for the order again: at most twice per customer (2026-11-12)
 
 **Decision (Jira SCREAM-288, under SCREAM-154, PO, November 12):** "Only let the user click 'Ask Again' twice". This replaces "as often as the player likes" in 081 and 084, which was engineering's call and was on a branch for under an hour.

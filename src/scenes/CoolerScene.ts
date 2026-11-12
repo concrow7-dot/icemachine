@@ -528,8 +528,8 @@ export class CoolerScene extends Phaser.Scene {
   /** The line of keys along the bottom; Enter is named after what the button says (SCREAM-277). */
   private keysText(): string {
     if (this.locked) return 'B Or Backspace: Back To The Truck';
-    const enter = this.nothingNew ? 'Enter: Done' : 'Enter: Buy Stock';
-    return `↑↓←→ Move   + / − Change   ${enter}   ${this.restocking ? 'B: Back On The Road' : 'B: Cancel And Go Back'}`;
+    // SCREAM-286 (PO, November 12): only Enter is left on the line.
+    return this.nothingNew ? 'Enter: Done' : 'Enter: Buy Stock';
   }
 
   /** Pays for the draft order (nothing, when the button says DONE) and heads back to the truck. */

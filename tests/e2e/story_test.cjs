@@ -59,7 +59,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-205: tutorial done, so a new Story asks about the uncle ----
   await press('Enter'); await wait(300);
   check('Story: asks With Uncle / On My Own', (await sc('Title', 's.confirming && s.asking')) + ' ' + /With Uncle \(U\)/.test(await texts('Title')) + ' ' + /On My Own \(O\)/.test(await texts('Title')), 'uncle true true');
-  check('SCREAM-270: With Uncle is marked, with a line saying Enter or a click picks', (await sc('Title', 's.answers[s.answerSelected].label')) + ' ' + /> With Uncle \(U\) </.test(await texts('Title')) + ' ' + /Enter Or Click To Pick/.test(await texts('Title')), 'With Uncle (U) true true');
+  check('SCREAM-270: With Uncle is marked, with no line of keys under it (SCREAM-286)', (await sc('Title', 's.answers[s.answerSelected].label')) + ' ' + /> With Uncle \(U\) </.test(await texts('Title')) + ' ' + /Enter Or Click To Pick/.test(await texts('Title')), 'With Uncle (U) true false');
   await page.screenshot({ path: outDir + '/story_uncle_choice.png' });
   await press('Escape');
   check('...Esc closes it, still on the title', (await sc('Title', 's.confirming')) + ' ' + (await scenes()), 'false Title');
