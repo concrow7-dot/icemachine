@@ -40,7 +40,7 @@ export class FillScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private serveButton!: Phaser.GameObjects.Text;
-  /** SCREAM-240: BACK TO THE WINDOW, the same as B. */
+  /** SCREAM-240: the button for B. SCREAM-282: it reads FORGOT ORDER. */
   windowButton!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
@@ -123,20 +123,21 @@ export class FillScene extends Phaser.Scene {
     // SCREAM-240 (PO, November 10): a button for B. SCREAM-273 (PO, November 12): it sits on the
     // left under the tip jar and its shelf, and SERVE takes its old place in the middle.
     this.windowButton = this.add
-      .text(WINDOW_BUTTON_X, 470, 'BACK TO THE WINDOW', {
+      // SCREAM-282 (PO, November 12): it reads FORGOT ORDER, and goes straight to the customer
+      // saying the order again (which costs the tip, like R at the window).
+      .text(WINDOW_BUTTON_X, 470, 'FORGOT ORDER', {
         fontFamily: 'monospace',
-        // 18px (was 20px in the middle) so it fits between the screen's edge and the counter.
-        fontSize: '18px',
+        fontSize: '20px',
         color: '#ffffff',
         backgroundColor: '#1d5c8c',
         padding: { x: 14, y: 7 },
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    this.windowButton.on('pointerdown', () => this.scene.start(SceneKeys.Sales));
+    this.windowButton.on('pointerdown', () => this.forgotOrder());
 
     this.add
-      .text(width / 2, height - 9, '1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve   B: Back To The Window', {
+      .text(width / 2, height - 9, '1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve   B: Forgot Order', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: INK,
@@ -155,7 +156,7 @@ export class FillScene extends Phaser.Scene {
       if ((key === '+' || key === '=') && this.openCrate !== null) this.take(this.openCrate * CRATE_CELLS + this.focus);
       if (key === '-' || key === '_') this.evening.putBack(this.evening.bagContents.length - 1);
       if (key === 'Enter' || key === ' ') this.serve();
-      if (key === 'b' || key === 'B' || key === 'Backspace') this.scene.start(SceneKeys.Sales);
+      if (key === 'b' || key === 'B' || key === 'Backspace') this.forgotOrder();
     });
 
     const onChange = () => this.onSaleChanged();
@@ -259,6 +260,13 @@ export class FillScene extends Phaser.Scene {
   }
 
   /** Hands the bag over at the window; the customer will ask "How much?". */
+  /** SCREAM-282: back to the window, where the customer says the order again (no tip after that). */
+  private forgotOrder(): void {
+    const sale = this.evening.sale;
+    if (sale?.askAgain(this.evening.nowMs)) this.evening.tutorial?.release(); // as R does at the window (SCREAM-172)
+    this.scene.start(SceneKeys.Sales);
+  }
+
   private serve(): void {
     if (this.evening.sale?.handOver()) this.scene.start(SceneKeys.Sales);
   }

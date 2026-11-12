@@ -268,7 +268,7 @@ export class SalesScene extends Phaser.Scene {
     const text = this.hint?.text ?? '';
     const at = text.indexOf('R: Ask Again');
     if (at < 0 || !this.hint.visible) return null;
-    const label = 'R: Ask Again (No Tip)';
+    const label = text.includes('R: Ask Again (No Tip)') ? 'R: Ask Again (No Tip)' : 'R: Ask Again';
     const b = this.hint.getBounds();
     const letter = b.width / text.length;
     return new Phaser.Geom.Rectangle(b.x + at * letter - 8, b.y - 5, label.length * letter + 16, b.height + 10);
@@ -470,8 +470,9 @@ export class SalesScene extends Phaser.Scene {
     let hint = '';
     if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
     if (sale.phase === 'deciding') {
-      const canAsk = !sale.askedAgain && !sale.retryUsed;
-      hint = `C Or Enter: Go To The Cooler    ${canAsk ? 'R: Ask Again (No Tip)    ' : ''}B: Drive Off`;
+      // SCREAM-282: asking again is always there; "(No Tip)" only while there is a tip to lose.
+      const tipLeft = sale.tipPercent(this.evening.nowMs) > 0;
+      hint = `C Or Enter: Go To The Cooler    R: Ask Again${tipLeft ? ' (No Tip)' : ''}    B: Drive Off`;
     }
     if (pricing) {
       hint = 'Type the price (7.25) or click the keys.    Enter: Charge    Backspace: Undo    B: Drive Off';

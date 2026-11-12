@@ -169,12 +169,16 @@ const { chromium } = require('playwright');
   await tick(12000);
   check('...12 s on: about 70% of its height, a lighter green, and 15%', await sc('Fill', '(f => (f.displayHeight > 120 && f.displayHeight < 140) + " " + (f.fillColor === 0x7cb342))(s.tipBar.fill) + " " + s.tipBar.label.text'), 'true true 15%');
   await page.screenshot({ path: outDir + '/fill_tip_bar.png' });
-  check('SCREAM-273: BACK TO THE WINDOW on the left under the tip jar, SERVE in the middle where it was', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + s.serveButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true BACK TO THE WINDOW 124 600 true');
+  check('SCREAM-273, SCREAM-282: FORGOT ORDER on the left under the tip jar, SERVE in the middle', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + s.serveButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true FORGOT ORDER 124 600 true');
   check('...under the tip jar, not over it or the counter with the bag', await sc('Fill', '(b => b.top > 386 && b.left >= 0 && b.right < 245)(s.windowButton.getBounds())'), true);
   check('...and SERVE is clear of a full row of 10 in the bag', await sc('Fill', '(b => b.top > 410 + 24)(s.serveButton.getBounds())'), true);
   await page.screenshot({ path: outDir + '/fill_window_button.png' });
   await page.mouse.click(124, 470); await wait(300);
-  check('...clicking it goes back to the window, like B', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud deciding');
+  check('SCREAM-282: clicking it goes to the window with the customer saying the order again, and the tip is gone', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')) + ' ' + (await ev('e.sale.tipPercent(e.nowMs)')), 'Sales,Hud ordering true 0');
+  await tick(5100); await press('c'); await wait(300);
+  check('...the Fill screen\'s keys say B: Forgot Order', /B: Forgot Order/.test(await page.evaluate(() => window.__game.scene.getScene('Fill').children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | '))), true);
+  await press('b'); await wait(300);
+  check('...B does the same, a second time too', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud ordering');
   await press('b'); await wait(300);
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
@@ -209,7 +213,8 @@ const { chromium } = require('playwright');
   await press('r');
   check('R: the order is shown again', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')), 'ordering true');
   await tick(5100);
-  check('R a second time does nothing', await ev('e.sale.askAgain(e.nowMs)'), false);
+  check('SCREAM-282: R can be asked again (nothing more to lose)', (await ev('e.sale.askAgain(e.nowMs)')) + ' ' + (await ev('e.sale.phase')), 'true ordering');
+  await tick(5100);
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('5'); await press('Enter');
   check('After R, a wrong order fails: "That\'s not what I asked for."', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.line')), "wrong-order That's not what I asked for.");

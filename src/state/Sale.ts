@@ -102,7 +102,7 @@ export class Sale {
   outcome: SaleOutcome | null = null;
   /** Ice creams picked at the cooler, per slot, not yet handed over. */
   readonly bag: number[];
-  /** True once the player has pressed R (ask again): no tip, no retry (PO, Q9 and Q28). */
+  /** True once the player has asked for the order again (R, or FORGOT ORDER): no tip, no retry (PO, Q9 and Q28). */
   askedAgain = false;
   /** True once a wrong order has been corrected (one retry only, Q27). */
   retryUsed = false;
@@ -205,9 +205,13 @@ export class Sale {
     return this.phase === 'ordering';
   }
 
-  /** R: the customer repeats the order. Once only, cancels the tip, and uses up the retry (Q9, Q28). */
+  /**
+   * R at the window, FORGOT ORDER at the cooler: the customer repeats the order. The first time
+   * cancels the tip and uses up the retry (Q9, Q28). SCREAM-282: it can be asked again after
+   * that, and after a corrected mistake, since there is nothing more to lose.
+   */
   askAgain(nowMs: number): boolean {
-    if (this.phase !== 'deciding' || this.askedAgain || this.retryUsed) return false;
+    if (this.phase !== 'deciding') return false;
     this.askedAgain = true;
     this.showOrder(nowMs, describeOrder(this.order), '');
     return true;
