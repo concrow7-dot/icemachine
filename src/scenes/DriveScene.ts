@@ -16,7 +16,6 @@ import {
   POTHOLE_SPIN_SECONDS,
   ROAD_EDGE_DAMAGE_CENTS,
   TRUCK_COAST_SECONDS,
-  TRUCK_CREEP_SPEED,
   TRUCK_MIN_TURN_RADIUS,
   TRUCK_REVERSE_ACCELERATION_SECONDS,
   TRUCK_REVERSE_DELAY_SECONDS,
@@ -637,11 +636,11 @@ export class DriveScene extends Phaser.Scene {
     } else {
       this.brakeHeldStill = 0;
       const roll = (top * dt) / TRUCK_COAST_SECONDS;
-      const creep = this.rolling * TRUCK_CREEP_SPEED;
+      const creep = this.rolling * this.evening.spec.creepSpeed;
       // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
       // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
-      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED)
-        this.speed = Math.sign(this.speed) * Math.max(TRUCK_CREEP_SPEED, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
+      if (Math.abs(this.speed) > this.evening.spec.creepSpeed)
+        this.speed = Math.sign(this.speed) * Math.max(this.evening.spec.creepSpeed, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
       else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
     if (this.speed !== 0) this.rolling = Math.sign(this.speed);
@@ -879,7 +878,7 @@ export class DriveScene extends Phaser.Scene {
   private toggleParkBrake(): void {
     if (this.parkBrake) {
       this.parkBrake = false;
-    } else if (this.speed <= TRUCK_CREEP_SPEED + 1) {
+    } else if (this.speed <= this.evening.spec.creepSpeed + 1) {
       // #64: works at a stop, while creeping, and in reverse (always slow), not
       // only at a dead stop, which the creeping truck almost never reaches.
       this.speed = 0;

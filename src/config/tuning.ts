@@ -347,14 +347,23 @@ export const FUEL_TUTORIAL_START = 0.25;
 
 /** Story's top speed: this share of TRUCK_SPEED. */
 export const STORY_TRUCK_SPEED_FACTOR = 0.8;
-/** Story takes this many times longer to reach top speed. */
-export const STORY_TRUCK_ACCELERATION_FACTOR = 1.4;
-/** Story takes this many times longer to brake to a stop. */
-export const STORY_TRUCK_BRAKING_FACTOR = 2;
+/** Story takes this many times longer to reach top speed. PO, November 12: "Acceleration should be worse by double." */
+export const STORY_TRUCK_ACCELERATION_FACTOR = 2;
+/**
+ * Story takes this many times longer to brake to a stop. PO, November 12: "the brake is way too good. If the
+ * person holds break it should take 400x longer to break." Read as 400%, 4 times as long (0.15 s to 0.6 s);
+ * 400 times would be a full minute.
+ */
+export const STORY_TRUCK_BRAKING_FACTOR = 4;
+/**
+ * PO, November 12: "roll speed should be reduced by 75%." Story's creep (the speed the truck rolls at with
+ * no key held, TRUCK_CREEP_SPEED) is this share of Quick play's: 72 to 18 px/s.
+ */
+export const STORY_TRUCK_CREEP_FACTOR = 0.25;
 /** Story's wheel turns the truck this share as fast at speed (the tightest turn when slow is unchanged). */
 export const STORY_TRUCK_TURN_FACTOR = 0.9;
-/** Story's music reaches this share of MUSIC_RING_RADIUS. */
-export const STORY_MUSIC_RADIUS_FACTOR = 0.75;
+/** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
+export const STORY_MUSIC_RADIUS_FACTOR = 0.85;
 /** Story's cooler has this many crates to use; the others are locked (SCREAM-25 brings one back). */
 export const STORY_COOLER_CRATES = 2;
 /** Story burns gas this many times as fast. */
