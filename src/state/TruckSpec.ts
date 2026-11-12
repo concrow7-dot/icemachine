@@ -1,17 +1,19 @@
 import {
-  COOLER_CRATES,
+  COOLER_CAPACITY,
   CRATE_SIDE,
   FUEL_TANK_PX,
   MUSIC_RING_RADIUS,
-  STORY_COOLER_CRATES,
+  STORY_COOLER_HALF_COVERED,
   STORY_FUEL_BURN_FACTOR,
   STORY_MUSIC_RADIUS_FACTOR,
   STORY_TRUCK_ACCELERATION_FACTOR,
   STORY_TRUCK_BRAKING_FACTOR,
+  STORY_TRUCK_CREEP_FACTOR,
   STORY_TRUCK_SPEED_FACTOR,
   STORY_TRUCK_TURN_FACTOR,
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
+  TRUCK_CREEP_SPEED,
   TRUCK_MAX_TURN_DEGREES_PER_SECOND,
   TRUCK_SPEED,
 } from '../config/tuning';
@@ -31,12 +33,14 @@ export interface TruckSpec {
   readonly accelerationSeconds: number;
   /** Seconds from top speed to a stop on the brake. */
   readonly brakingSeconds: number;
+  /** The speed the truck rolls at with no key held, px per second. */
+  readonly creepSpeed: number;
   /** The fastest the wheel turns the truck, degrees per second. */
   readonly maxTurnDegrees: number;
   /** How far the music reaches, px from the truck. */
   readonly musicRadius: number;
-  /** Crates in the cooler that can be used (the rest are locked). */
-  readonly coolerCrates: number;
+  /** SCREAM-269: true when the right half of every crate is covered (Story's starting cooler). */
+  readonly coolerHalfCovered: boolean;
   /** Ice creams the cooler holds. */
   readonly coolerCapacity: number;
   /** How far a full tank goes, px of driving. */
@@ -45,16 +49,25 @@ export interface TruckSpec {
 
 /** The truck for an evening: `weak` is Story's starting truck. */
 export function truckSpec(weak: boolean): TruckSpec {
-  const crates = weak ? Math.min(STORY_COOLER_CRATES, COOLER_CRATES) : COOLER_CRATES;
+  const halfCovered = weak && STORY_COOLER_HALF_COVERED;
   return {
     weak,
     topSpeed: weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED,
     accelerationSeconds: weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS,
     brakingSeconds: weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS,
+    creepSpeed: weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED,
     maxTurnDegrees: weak ? TRUCK_MAX_TURN_DEGREES_PER_SECOND * STORY_TRUCK_TURN_FACTOR : TRUCK_MAX_TURN_DEGREES_PER_SECOND,
     musicRadius: weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS,
-    coolerCrates: crates,
-    coolerCapacity: crates * CRATE_SIDE * CRATE_SIDE,
+    coolerHalfCovered: halfCovered,
+    coolerCapacity: halfCovered ? COOLER_CAPACITY / 2 : COOLER_CAPACITY,
     fuelTankPx: weak ? FUEL_TANK_PX / STORY_FUEL_BURN_FACTOR : FUEL_TANK_PX,
   };
+}
+
+/**
+ * SCREAM-269: whether a square of the cooler can be used. Squares are numbered crate by crate
+ * and row by row; with the halves covered, only the left two columns of each crate are open.
+ */
+export function coolerCellOpen(halfCovered: boolean, cell: number): boolean {
+  return cell >= 0 && cell < COOLER_CAPACITY && (!halfCovered || cell % CRATE_SIDE < CRATE_SIDE / 2);
 }

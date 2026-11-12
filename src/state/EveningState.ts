@@ -4,8 +4,8 @@ import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
-import { ROTARY_HINT_LINE } from '../config/tuning';
-import { truckSpec, type TruckSpec } from './TruckSpec';
+import { COOLER_CAPACITY, ROTARY_HINT_LINE } from '../config/tuning';
+import { coolerCellOpen, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
@@ -265,7 +265,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.homeMapId = mapId;
     this.story = carry?.story;
     this.spec = truckSpec(!!carry?.story);
-    for (let i = 0; i < this.spec.coolerCapacity; i++) this.coolerCells.push(null);
+    for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.mapsJoined = !!carry?.story && !this.tutorial;
@@ -299,7 +299,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       target.quantity += slot.quantity;
       target.priceCents = slot.priceCents;
     });
-    // SCREAM-204: a save from before the smaller cooler can hold more than fits now: the extras
+    // SCREAM-204 / SCREAM-269: a save from before the smaller cooler can hold more than fits now: the extras
     // (from the last flavours back) are left behind.
     let over = this.coolerSlots.reduce((sum, sl) => sum + sl.quantity, 0) - this.spec.coolerCapacity;
     for (let n = this.coolerSlots.length - 1; n >= 0 && over > 0; n--) {
@@ -310,7 +310,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       over -= cut;
     }
     carry?.cells?.forEach((f, i) => {
-      if (i < this.spec.coolerCapacity) this.coolerCells[i] = f;
+      if (this.cellOpen(i)) this.coolerCells[i] = f; // SCREAM-269: nothing sits under a covered half
     });
     this.syncCells();
   }
@@ -396,6 +396,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.coolerCells;
   }
 
+  /** SCREAM-269: whether a square can be used tonight (in Story the right half of each crate is covered). */
+  cellOpen(cell: number): boolean {
+    return coolerCellOpen(this.spec.coolerHalfCovered, cell);
+  }
+
+  /** The first empty square that can be used, or -1. */
+  private firstEmptyCell(): number {
+    return this.coolerCells.findIndex((f, i) => f === null && this.cellOpen(i));
+  }
+
   /** Which crate a square is in (0, 1 or 2). */
   static crateOf(cell: number): number {
     return Math.floor(cell / (CRATE_SIDE * CRATE_SIDE));
@@ -414,7 +424,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
         count--;
       }
       while (count < slot.quantity) {
-        const empty = this.coolerCells.indexOf(null);
+        const empty = this.firstEmptyCell();
         if (empty < 0) break;
         this.coolerCells[empty] = slot.flavour;
         count++;
@@ -751,7 +761,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** Puts an ice cream in a square, or the first empty one if that's taken. Doesn't tidy up. */
   private placeInCell(cell: number, flavour: FlavourId): void {
-    const target = this.coolerCells[cell] === null ? cell : this.coolerCells.indexOf(null);
+    const target = this.coolerCells[cell] === null && this.cellOpen(cell) ? cell : this.firstEmptyCell();
     if (target >= 0) this.coolerCells[target] = flavour;
   }
 
@@ -990,7 +1000,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     });
     // SCREAM-131/132: the squares as the player arranged them.
     order.layout.forEach((f, i) => {
-      this.coolerCells[i] = f;
+      this.coolerCells[i] = this.cellOpen(i) ? f : null;
     });
     this.syncCells();
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);
