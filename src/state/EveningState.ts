@@ -5,6 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import { ROTARY_HINT_LINE } from '../config/tuning';
+import { truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
@@ -17,7 +18,6 @@ import { TutorialEvents, TutorialRun } from './Tutorial';
 import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
 import {
-  COOLER_CAPACITY,
   ORDER_PICTURE_CHANCE,
   HINT_CHANCE,
   HINT_FIRST_AFTER_SALES,
@@ -41,7 +41,6 @@ import {
   FUEL_QUICK_PLAY_START,
   FUEL_TUTORIAL_START,
   FUEL_STEP_CENTS,
-  FUEL_TANK_PX,
   STARTING_CASH_CENTS,
 } from '../config/tuning';
 
@@ -219,7 +218,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * crate by crate and row by row, so the player has to remember where things are. Kept in
    * step with the stock counts (`coolerSlots`) by syncCells().
    */
-  private readonly coolerCells: (FlavourId | null)[] = Array.from({ length: COOLER_CAPACITY }, () => null);
+  private readonly coolerCells: (FlavourId | null)[] = [];
+  /** SCREAM-204: what tonight's truck can do (Story's is weaker than Quick play's). */
+  readonly spec: TruckSpec;
   /** During a sale: each ice cream in the bag and the square it came from, so it can go back there. */
   private bagCells: { cell: number; slot: number }[] = [];
 
@@ -263,6 +264,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.mapId = mapId;
     this.homeMapId = mapId;
     this.story = carry?.story;
+    this.spec = truckSpec(!!carry?.story);
+    for (let i = 0; i < this.spec.coolerCapacity; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.mapsJoined = !!carry?.story && !this.tutorial;
@@ -296,8 +299,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
       target.quantity += slot.quantity;
       target.priceCents = slot.priceCents;
     });
+    // SCREAM-204: a save from before the smaller cooler can hold more than fits now: the extras
+    // (from the last flavours back) are left behind.
+    let over = this.coolerSlots.reduce((sum, sl) => sum + sl.quantity, 0) - this.spec.coolerCapacity;
+    for (let n = this.coolerSlots.length - 1; n >= 0 && over > 0; n--) {
+      const sl = this.coolerSlots[n];
+      if (!sl) continue;
+      const cut = Math.min(sl.quantity, over);
+      sl.quantity -= cut;
+      over -= cut;
+    }
     carry?.cells?.forEach((f, i) => {
-      if (i < COOLER_CAPACITY) this.coolerCells[i] = f;
+      if (i < this.spec.coolerCapacity) this.coolerCells[i] = f;
     });
     this.syncCells();
   }
@@ -567,7 +580,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   burnFuel(px: number): void {
     if (this.ended || px <= 0) return;
     const before = this.fuelLeft;
-    this.fuelLeft = Math.max(0, this.fuelLeft - px / FUEL_TANK_PX);
+    this.fuelLeft = Math.max(0, this.fuelLeft - px / this.spec.fuelTankPx);
     if (before > 0 && this.fuelLeft <= 0) {
       this.ranOutOfGas = true;
       this.endNow();

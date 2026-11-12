@@ -11,21 +11,16 @@ import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
   HIT_MIN_SPEED_FRACTION,
-  MUSIC_RING_RADIUS,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
   POTHOLE_SPIN_SECONDS,
   ROAD_EDGE_DAMAGE_CENTS,
-  TRUCK_ACCELERATION_SECONDS,
-  TRUCK_BRAKING_SECONDS,
   TRUCK_COAST_SECONDS,
   TRUCK_CREEP_SPEED,
-  TRUCK_MAX_TURN_DEGREES_PER_SECOND,
   TRUCK_MIN_TURN_RADIUS,
   TRUCK_REVERSE_ACCELERATION_SECONDS,
   TRUCK_REVERSE_DELAY_SECONDS,
   TRUCK_REVERSE_SPEED,
-  TRUCK_SPEED,
   TRUCK_COAST_KEEP,
   TRUCK_COAST_KEEP_SECONDS,
   TRUCK_LENGTH,
@@ -283,7 +278,7 @@ export class DriveScene extends Phaser.Scene {
     this.placeObstacles();
     this.pickupZones.clear();
     this.bubbles.clear();
-    this.ring = this.add.circle(0, 0, MUSIC_RING_RADIUS).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
+    this.ring = this.add.circle(0, 0, this.evening.spec.musicRadius).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
     this.tweens.add({ targets: this.ring, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.residentSprites = this.evening.residents.all.map(() =>
       this.add.sprite(0, 0, residentsKey(), 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
@@ -490,7 +485,7 @@ export class DriveScene extends Phaser.Scene {
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: this.truck.x,
       y: this.truck.y,
-      radius: MUSIC_RING_RADIUS,
+      radius: this.evening.spec.musicRadius,
       open: this.evening.acceptingCustomers,
     });
     this.drawResidents(time);
@@ -615,18 +610,20 @@ export class DriveScene extends Phaser.Scene {
     // the brake stops it, and holding the brake at a stop reverses after a
     // moment. To stay still once stopped, put the park brake on (Q).
     // SCREAM-119: an empty tank ends the evening (the old quarter-speed crawl is gone).
-    const top = TRUCK_SPEED;
-    if (this.speed > top) this.speed = Math.max(top, this.speed - (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS);
+    // SCREAM-204: tonight's truck (Story's is weaker than Quick play's).
+    const spec = this.evening.spec;
+    const top = spec.topSpeed;
+    if (this.speed > top) this.speed = Math.max(top, this.speed - (top * dt) / TRUCK_COAST_SECONDS);
     if (gas && !brake) {
       this.parkBrake = false;
       this.brakeHeldStill = 0;
       this.speed =
         this.speed < 0
-          ? Math.min(0, this.speed + (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS)
-          : Math.min(top, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
+          ? Math.min(0, this.speed + (top * dt) / spec.brakingSeconds)
+          : Math.min(top, this.speed + (top * dt) / spec.accelerationSeconds);
     } else if (brake && !gas) {
       if (this.speed > 0) {
-        this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS);
+        this.speed = Math.max(0, this.speed - (top * dt) / spec.brakingSeconds);
         this.brakeHeldStill = 0;
       } else if (this.speed === 0 && this.brakeHeldStill < TRUCK_REVERSE_DELAY_SECONDS) {
         this.brakeHeldStill += dt;
@@ -639,7 +636,7 @@ export class DriveScene extends Phaser.Scene {
       this.speed = 0;
     } else {
       this.brakeHeldStill = 0;
-      const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
+      const roll = (top * dt) / TRUCK_COAST_SECONDS;
       const creep = this.rolling * TRUCK_CREEP_SPEED;
       // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
       // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
@@ -653,12 +650,12 @@ export class DriveScene extends Phaser.Scene {
     // Steering turns the truck only while it's moving, like a car: tight turns
     // when slow, wider at speed. In reverse the wheel works the other way round.
     if (steer !== 0 && this.speed !== 0) {
-      const turnRate = Math.min(TRUCK_MAX_TURN_DEGREES_PER_SECOND, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
+      const turnRate = Math.min(spec.maxTurnDegrees, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
       const turnedTo = this.heading + steer * Math.sign(this.speed) * turnRate * dt;
       // Don't swing the truck's nose or tail into a wall or a parked car.
       if (!this.obstacleAt(this.truck.x, this.truck.y, turnedTo)) this.setHeading(turnedTo);
-      const fast = TRUCK_SPEED * TURN_SLOWDOWN_ABOVE_FRACTION;
-      if (this.speed > fast) this.speed = Math.max(fast, this.speed - TRUCK_SPEED * TURN_SPEED_LOSS_PER_SECOND * dt);
+      const fast = top * TURN_SLOWDOWN_ABOVE_FRACTION;
+      if (this.speed > fast) this.speed = Math.max(fast, this.speed - top * TURN_SPEED_LOSS_PER_SECOND * dt);
     }
 
   }
@@ -875,7 +872,7 @@ export class DriveScene extends Phaser.Scene {
 
   /** Top speed: hits are priced against it. */
   private get topSpeed(): number {
-    return TRUCK_SPEED;
+    return this.evening.spec.topSpeed;
   }
 
   /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */

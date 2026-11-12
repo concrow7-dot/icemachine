@@ -1,6 +1,6 @@
 import { currentMap } from '../config/maps';
 import * as Phaser from 'phaser';
-import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
+import { FUEL_LOW, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
 import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -275,7 +275,7 @@ export class HudScene extends Phaser.Scene {
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: truck.x,
       y: truck.y,
-      radius: MUSIC_RING_RADIUS,
+      radius: this.evening.spec.musicRadius,
       open: serving && this.evening.acceptingCustomers,
       patience: serving ? SERVING_PATIENCE : 1,
     });

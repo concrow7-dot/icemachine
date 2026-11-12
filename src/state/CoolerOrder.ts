@@ -25,6 +25,8 @@ export class CoolerOrder {
   private readonly owned: readonly Readonly<CoolerSlot>[];
   private readonly cash: () => number;
   private readonly draft: CoolerCell[];
+  /** SCREAM-204: how many squares this cooler has (Story starts with fewer crates). */
+  readonly capacity: number;
   /** The squares holding this draft's picks, in the order they were picked. */
   private picked: number[] = [];
   private moved = false;
@@ -37,11 +39,12 @@ export class CoolerOrder {
    * `owned` is the cooler's stock as it is now, `cells` where each of those ice creams sits,
    * `cash` reads the player's current cash.
    */
-  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = []) {
+  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], capacity: number = COOLER_CAPACITY) {
+    this.capacity = capacity;
     this.owned = owned.map((s) => ({ ...s }));
     this.cash = cash;
     this.slots = owned.map((s) => ({ ...s }));
-    this.draft = Array.from({ length: COOLER_CAPACITY }, (_, i) => {
+    this.draft = Array.from({ length: capacity }, (_, i) => {
       const f = cells[i] ?? null;
       return f ? { flavour: f, paid: true } : null;
     });
@@ -67,7 +70,7 @@ export class CoolerOrder {
 
   /** True when every square is taken. */
   get isFull(): boolean {
-    return this.total >= COOLER_CAPACITY;
+    return this.total >= this.capacity;
   }
 
   /** What Buy Stock will charge: only what's been picked in this draft. */
@@ -101,7 +104,7 @@ export class CoolerOrder {
 
   /** Chooses the crate new picks go into. */
   chooseCrate(crate: number): void {
-    if (crate >= 0 && crate * CRATE_CELLS < COOLER_CAPACITY) this.crate = crate;
+    if (crate >= 0 && crate * CRATE_CELLS < this.capacity) this.crate = crate;
   }
 
   /** Picks one ice cream from the clipboard into the chosen crate's next empty square. */
@@ -113,7 +116,7 @@ export class CoolerOrder {
     if (getFlavour(flavour).costCents > this.cashAfterCents) return this.refuse('cash');
     // The chosen crate's next empty square; if that crate is full, the next crate with room
     // (which becomes the chosen one), so stocking up never stalls.
-    const crates = COOLER_CAPACITY / CRATE_CELLS;
+    const crates = this.capacity / CRATE_CELLS;
     let target = -1;
     for (let step = 0; step < crates && target < 0; step++) {
       const crate = (this.crate + step) % crates;
@@ -155,7 +158,7 @@ export class CoolerOrder {
 
   /** SCREAM-132: moves an ice cream to another square, swapping with whatever is there. */
   move(from: number, to: number): boolean {
-    if (from === to || from < 0 || to < 0 || from >= COOLER_CAPACITY || to >= COOLER_CAPACITY) return false;
+    if (from === to || from < 0 || to < 0 || from >= this.capacity || to >= this.capacity) return false;
     const a = this.draft[from] ?? null;
     if (!a) return false;
     const b = this.draft[to] ?? null;

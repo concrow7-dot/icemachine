@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
-import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
+import { CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
+import { addLockedCrate } from '../ui/lockedCrate';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -75,6 +76,8 @@ export class CoolerScene extends Phaser.Scene {
   private unpaidMarks!: Phaser.GameObjects.Graphics;
   /** SCREAM-131: the yellow outline round the crate new picks go into. */
   private crateMark!: Phaser.GameObjects.Graphics;
+  /** SCREAM-204: the covers over crates Story's cooler doesn't have yet (test hook). */
+  lockedCrates: Phaser.GameObjects.Container[] = [];
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -97,7 +100,7 @@ export class CoolerScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells);
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, this.evening.spec.coolerCapacity);
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -251,6 +254,7 @@ export class CoolerScene extends Phaser.Scene {
     this.crateMark = this.add.graphics();
     if (!this.locked) {
       crateLefts.forEach((left, crate) => {
+        if (crate >= this.evening.spec.coolerCrates) return; // SCREAM-204: a locked crate
         this.add
           .rectangle(left, crateTop, crateSize, crateSize, 0xffffff, 0.001)
           .setOrigin(0, 0)
@@ -261,7 +265,12 @@ export class CoolerScene extends Phaser.Scene {
           });
       });
     }
-    for (let i = 0; i < COOLER_CAPACITY; i++) {
+    // SCREAM-204: Story starts with fewer crates; the rest are shut and marked LOCKED.
+    this.lockedCrates = [];
+    crateLefts.forEach((left, crate) => {
+      if (crate >= this.evening.spec.coolerCrates) this.lockedCrates.push(addLockedCrate(this, left, crateTop, crateSize));
+    });
+    for (let i = 0; i < this.order.capacity; i++) {
       const { x, y } = this.cellCentre(i);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       this.cellIcons.push(icon);
@@ -302,7 +311,7 @@ export class CoolerScene extends Phaser.Scene {
   /** The square under a screen point, or -1. */
   private cellAt(x: number, y: number): number {
     const { cell } = COOLER_LAYOUT;
-    for (let i = 0; i < COOLER_CAPACITY; i++) {
+    for (let i = 0; i < this.order.capacity; i++) {
       const c = this.cellCentre(i);
       if (Math.abs(x - c.x) <= cell / 2 && Math.abs(y - c.y) <= cell / 2) return i;
     }
@@ -583,7 +592,7 @@ export class CoolerScene extends Phaser.Scene {
     const total = this.order.total;
     this.title.setText(
       (this.locked ? 'THE COOLER  (stock is set for tonight)' : this.restocking ? 'THE COOLER  –  RESTOCK AT HOME' : 'THE COOLER  –  PREP') +
-        `     ${total} / ${COOLER_CAPACITY}`,
+        `     ${total} / ${this.order.capacity}`,
     );
 
     // Clipboard: how many of each, and the focus.
