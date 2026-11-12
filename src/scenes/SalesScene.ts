@@ -23,6 +23,8 @@ const INK = '#2b1d10';
 /** The window's buttons sit centred below the counter, above the key hints (ICE-14). */
 const BUTTON_X = 480;
 const BUTTON_Y = 478;
+/** SCREAM-283: RETURN TO COOLER sits at the left end of the strip under the counter. */
+const RETURN_BUTTON_X = 118;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
 const CALC_X = 390;
 const CALC_Y = 278;
@@ -81,6 +83,8 @@ export class SalesScene extends Phaser.Scene {
   /** SCREAM-241: true while the finished sale's button reads NEXT CUSTOMER (someone is waiting at the truck). */
   offeringNext = false;
   private coolerButton!: Phaser.GameObjects.Text;
+  /** SCREAM-283: RETURN TO COOLER, at "How much?" (test hook). */
+  returnButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
   private typed = '';
 
@@ -192,6 +196,21 @@ export class SalesScene extends Phaser.Scene {
       .setVisible(false);
     this.coolerButton.on('pointerdown', () => this.goToCooler());
 
+    // SCREAM-283 (PO, November 12, on a screenshot): in the bottom left of the whole screen, on
+    // the strip under the counter (not on the counter, where the paper bag is).
+    this.returnButton = this.add
+      .text(RETURN_BUTTON_X, BUTTON_Y, 'RETURN TO COOLER', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 12, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+    this.returnButton.on('pointerdown', () => this.returnToCooler());
+
     this.hint = this.add
       .text(width / 2, height - 18, '', { fontFamily: 'monospace', fontSize: '15px', color: INK })
       .setOrigin(0.5);
@@ -248,7 +267,8 @@ export class SalesScene extends Phaser.Scene {
 
     if (sale.phase === 'pricing') {
       // Typed like a calculator (SCREAM-12); the number pad's keys arrive as the same characters.
-      if (key === 'Backspace') this.pressKey('BACK');
+      if (key === 'c' || key === 'C') this.returnToCooler();
+      else if (key === 'Backspace') this.pressKey('BACK');
       else if (key === 'Delete') this.pressKey('C');
       else if (key === 'Enter') this.pressKey('CHARGE');
       else if (/^[0-9]$/.test(key) || key === '.') this.pressKey(key as CalculatorKey);
@@ -260,6 +280,13 @@ export class SalesScene extends Phaser.Scene {
   private goToCooler(): void {
     if (!this.evening.sale?.skipToCooler(this.evening.nowMs)) return;
     this.evening.tutorial?.skipRepeatTip(); // SCREAM-172: the R tip is no use at the cooler
+    this.scene.start(SceneKeys.Fill);
+  }
+
+  /** SCREAM-283: from "How much?" back to the cooler with the bag, to change what's in it. */
+  private returnToCooler(): void {
+    if (!this.evening.sale?.backToCooler()) return;
+    this.typed = ''; // a price already typed is cleared (PO)
     this.scene.start(SceneKeys.Fill);
   }
 
@@ -466,6 +493,7 @@ export class SalesScene extends Phaser.Scene {
     this.offeringNext = sale.phase === 'over' && !!this.nextCustomer();
     this.roadButton.setText(this.offeringNext ? 'NEXT CUSTOMER' : 'BACK ON THE ROAD').setVisible(sale.phase === 'over');
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
+    this.returnButton.setVisible(pricing);
 
     let hint = '';
     if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
@@ -475,7 +503,8 @@ export class SalesScene extends Phaser.Scene {
       hint = `C Or Enter: Go To The Cooler    R: Ask Again${tipLeft ? ' (No Tip)' : ''}    B: Drive Off`;
     }
     if (pricing) {
-      hint = 'Type the price (7.25) or click the keys.    Enter: Charge    Backspace: Undo    B: Drive Off';
+      // Shortened to make room for C (the line was as wide as the screen).
+      hint = 'Type the price (7.25)    Enter: Charge    Backspace: Undo    C: Return To Cooler    B: Drive Off';
     }
     if (sale.phase === 'over') {
       hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';

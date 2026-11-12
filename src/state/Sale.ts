@@ -225,6 +225,17 @@ export class Sale {
     return true;
   }
 
+  /**
+   * SCREAM-283 (PO, November 12): RETURN TO COOLER at "How much?". The player takes the bag
+   * back to the cooler to change it; the sale and its clocks carry on.
+   */
+  backToCooler(): boolean {
+    if (this.phase !== 'pricing') return false;
+    this.phase = 'deciding';
+    this.say('…');
+    return true;
+  }
+
   get bagCount(): number {
     return this.bag.reduce((a, b) => a + b, 0);
   }

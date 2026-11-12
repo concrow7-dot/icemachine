@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 082 — Window: a RETURN TO COOLER button at "How much?" (2026-11-12)
+
+**Decision (Jira SCREAM-283, under SCREAM-154, PO, November 12, with two screenshots):** "on this screen, add a 'Return to Cooler' button in the bottom left." Where: "Under the tip jar bottom left (of the whole screen) not that section where the paper bag is", then circled on a screenshot: the left end of the strip under the counter.
+
+**Options considered:** a button on the strip under the counter, bottom left (chosen, the PO's mark); on the counter beside the paper bag, under Today's Menu (engineering's first suggestion; the PO said no); no way back once the bag is served, as before.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Agreed with the PO ("I agree with all the other suggestions"):** the sale stays on and the ice creams served are back in the bag to change; C does the same as the button; the tip keeps counting down; a price already typed is cleared.
+
+**Engineering's calls (proposals):**
+
+- The same blue as the Fill screen's button, with 18 px letters.
+- The keys along the bottom gained "C: Return To Cooler" and lost "or click the keys" so the line still fits the screen.
+- Both modes and the uncle's evening (one shared screen).
+
 ## 081 — Fill screen: BACK TO THE WINDOW becomes FORGOT ORDER, and the customer says the order again (2026-11-12)
 
 **Decision (Jira SCREAM-282, under SCREAM-154, PO, November 12):** "changing the text on the 'Back to the window' button to 'Forgot Order' and it brings you straight to the customer redoing the order". One step where there were two (back to the window, then R to ask again).
