@@ -230,6 +230,28 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   check('...driving off puts the bag back in the cooler', await stock(), stock283);
 
+  // ---- SCREAM-285 (PO, November 12): ASK AGAIN at the window, after the cooler too ----
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]);
+  const stock285 = await stock();
+  check('SCREAM-285: no ASK AGAIN while the order is showing', await sc('Sales', 's.askButton.visible'), false);
+  await tick(5100);
+  check('...order hidden: ASK AGAIN (NO TIP) at the right end of the strip under the counter', await sc('Sales', '(b => s.askButton.visible + " " + s.askButton.text + " " + (b.left > 720 && b.right <= 955 && b.top > 455 && b.bottom < 505))(s.askButton.getBounds())'), 'true ASK AGAIN (NO TIP) true');
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('...after the cooler, at "How much?": still there, clear of the keys along the bottom, which fit', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.askButton.visible + " " + (s.askButton.getBounds().bottom < s.hint.getBounds().top) + " " + (h => h.left > 0 && h.right < 960)(s.hint.getBounds())')), 'pricing true true true');
+  await page.screenshot({ path: outDir + '/sale_ask_again.png' });
+  await page.keyboard.type('4');
+  await page.mouse.click(836, 478); await wait(300);
+  check('...clicking it: the customer says the order again, the calculator is away, the tip is gone', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.orderVisible')) + ' ' + (await sc('Sales', 's.calculator.container.visible')) + ' ' + (await ev('e.sale.tipPercent(e.nowMs)')), 'ordering true false 0');
+  await tick(5100);
+  check('...then "How much?" again, the bag still served, the typed price cleared, the button now plain ASK AGAIN', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.line')) + ' ' + (await ev('e.sale.bagCount')) + ' ' + JSON.stringify(await sc('Sales', 's.typed')) + ' ' + (await sc('Sales', 's.askButton.text')), 'pricing How much? 1 "" ASK AGAIN');
+  await press('r'); await wait(200);
+  check('...R does the same; and going to the cooler while they repeat it works', await (async () => { const p = await ev('e.sale.phase'); await press('c'); await wait(300); return p + ' ' + (await scenes()) + ' ' + (await ev('e.sale.phase')); })(), 'ordering Fill,Hud deciding');
+  await press('Enter'); await wait(300);
+  check('...SERVE again: "How much?"', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud pricing');
+  await press('b'); await wait(300); await press('Enter'); await wait(300);
+  check('...(driving off puts the bag back)', await stock(), stock285);
+
+  // ---- Sale 4: ask again (R), then wrong -> no retry, given away ----
   await serveNow(); await setOrder([{ slot: 1, flavour: 'spongepop', count: 2 }]); await tick(5100);
   await press('r');
   check('R: the order is shown again', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')), 'ordering true');

@@ -25,6 +25,8 @@ const BUTTON_X = 480;
 const BUTTON_Y = 478;
 /** SCREAM-284: the window's tip bar is as tall as the tip jar. */
 const WINDOW_TIP_BAR_H = 70;
+/** SCREAM-285: ASK AGAIN sits at the right end of the strip under the counter. */
+const ASK_BUTTON_X = 836;
 /** SCREAM-283: RETURN TO COOLER sits at the left end of the strip under the counter. */
 const RETURN_BUTTON_X = 118;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
@@ -87,6 +89,8 @@ export class SalesScene extends Phaser.Scene {
   private coolerButton!: Phaser.GameObjects.Text;
   /** SCREAM-283: RETURN TO COOLER, at "How much?" (test hook). */
   returnButton!: Phaser.GameObjects.Text;
+  /** SCREAM-285: ASK AGAIN, the same as R (test hook). */
+  askButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
   private typed = '';
 
@@ -214,6 +218,21 @@ export class SalesScene extends Phaser.Scene {
       .setVisible(false);
     this.returnButton.on('pointerdown', () => this.returnToCooler());
 
+    // SCREAM-285 (PO, November 12): asking for the order again is a button, at the right end of
+    // the strip under the counter, before and after the cooler ("How much?" included).
+    this.askButton = this.add
+      .text(ASK_BUTTON_X, BUTTON_Y, 'ASK AGAIN', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 12, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+    this.askButton.on('pointerdown', () => this.askAgain());
+
     this.hint = this.add
       .text(width / 2, height - 18, '', { fontFamily: 'monospace', fontSize: '15px', color: INK })
       .setOrigin(0.5);
@@ -261,16 +280,14 @@ export class SalesScene extends Phaser.Scene {
 
     if (sale.phase === 'ordering' || sale.phase === 'deciding') {
       if (key === 'Enter' || key === 'c' || key === 'C') this.goToCooler();
-      else if ((key === 'r' || key === 'R') && sale.askAgain(this.evening.nowMs)) {
-        this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
-        this.refresh();
-      }
+      else if (key === 'r' || key === 'R') this.askAgain();
       return;
     }
 
     if (sale.phase === 'pricing') {
       // Typed like a calculator (SCREAM-12); the number pad's keys arrive as the same characters.
       if (key === 'c' || key === 'C') this.returnToCooler();
+      else if (key === 'r' || key === 'R') this.askAgain(); // SCREAM-285
       else if (key === 'Backspace') this.pressKey('BACK');
       else if (key === 'Delete') this.pressKey('C');
       else if (key === 'Enter') this.pressKey('CHARGE');
@@ -286,6 +303,14 @@ export class SalesScene extends Phaser.Scene {
     this.scene.start(SceneKeys.Fill);
   }
 
+  /** R or ASK AGAIN: the customer says the order again (no tip after that). */
+  private askAgain(): void {
+    if (!this.evening.sale?.askAgain(this.evening.nowMs)) return;
+    this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
+    this.typed = '';
+    this.refresh();
+  }
+
   /** SCREAM-283: from "How much?" back to the cooler with the bag, to change what's in it. */
   private returnToCooler(): void {
     if (!this.evening.sale?.backToCooler()) return;
@@ -295,6 +320,8 @@ export class SalesScene extends Phaser.Scene {
 
   /** Where "R: Ask Again (No Tip)" is in the hint line (it's monospace, so by its letters). */
   private repeatHintRect(): Phaser.Geom.Rectangle | null {
+    // SCREAM-285: the uncle's tip about asking again outlines the ASK AGAIN button when it's showing.
+    if (this.askButton?.visible) return Phaser.Geom.Rectangle.Inflate(this.askButton.getBounds(), 6, 6);
     const text = this.hint?.text ?? '';
     const at = text.indexOf('R: Ask Again');
     if (at < 0 || !this.hint.visible) return null;
@@ -497,17 +524,20 @@ export class SalesScene extends Phaser.Scene {
     this.roadButton.setText(this.offeringNext ? 'NEXT CUSTOMER' : 'BACK ON THE ROAD').setVisible(sale.phase === 'over');
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
     this.returnButton.setVisible(pricing);
+    // "(NO TIP)" until the tip has been given up (asked already, or a mistake).
+    const tipGone = sale.askedAgain || sale.retryUsed || sale.repriceUsed;
+    this.askButton.setText(tipGone ? 'ASK AGAIN' : 'ASK AGAIN (NO TIP)').setVisible(sale.phase === 'deciding' || pricing);
 
     let hint = '';
     if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
     if (sale.phase === 'deciding') {
       // SCREAM-282: asking again is always there; "(No Tip)" only while there is a tip to lose.
-      const tipLeft = sale.tipPercent(this.evening.nowMs) > 0;
+      const tipLeft = !(sale.askedAgain || sale.retryUsed || sale.repriceUsed);
       hint = `C Or Enter: Go To The Cooler    R: Ask Again${tipLeft ? ' (No Tip)' : ''}    B: Drive Off`;
     }
     if (pricing) {
       // Shortened to make room for C (the line was as wide as the screen).
-      hint = 'Type the price (7.25)    Enter: Charge    Backspace: Undo    C: Return To Cooler    B: Drive Off';
+      hint = 'Type The Price   Enter: Charge   Backspace: Undo   C: Return To Cooler   R: Ask Again   B: Drive Off';
     }
     if (sale.phase === 'over') {
       hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';

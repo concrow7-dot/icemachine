@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 084 — Window: asking for the order again is a button, and works after the cooler too (2026-11-12)
+
+**Decision (Jira SCREAM-285, under SCREAM-154, PO, November 12):** "user should be able to ask for the order again at the sales window, after the cooler."
+
+**Before:** R asked again at the window, once, and only before the bag was served; it was named only in the line of keys along the bottom. After SERVE, at "How much?", there was no way to hear the order again.
+
+**Options considered:** an ASK AGAIN button at the window, before and after the cooler (chosen, engineering's reading); the "..." bubble with dialog options (SCREAM-239, not built); leaving it to the R key alone.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- The button sits at the right end of the strip under the counter, opposite RETURN TO COOLER (082), in the same blue. It reads ASK AGAIN (NO TIP) until the tip has been given up, then ASK AGAIN. R does the same.
+- It shows once the order is hidden and at "How much?"; not while the order is still on screen, and not once the sale is over.
+- At "How much?" the customer says the order for the usual five seconds and then asks the price again; the bag stays served. To change the bag, RETURN TO COOLER (or GO TO THE COOLER while they are saying it).
+- It costs the tip, the same rule as before (Q9) and as FORGOT ORDER (081). It can be asked as often as the player likes.
+- The uncle's tip about asking again now outlines the button.
+- The keys along the bottom at "How much?" gained "R: Ask Again" and were shortened to fit ("Type The Price").
+- SCREAM-239 (the "..." bubble, first option: repeat the order) overlaps with this: the PO to say whether it is still wanted.
+
 ## 083 — Window: the tip cup has the same countdown bar as the cooler, at the jar's size (2026-11-12)
 
 **Decision (Jira SCREAM-284, under SCREAM-154, PO, November 12):** "The tip should continue the same countdown at the sales window, just smaller, the size of the tip jar". Follows 080 (the tall bar at the cooler).
