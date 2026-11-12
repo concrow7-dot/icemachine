@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser';
 import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
-import { addCoveredHalf, cutBottomRow } from '../ui/coveredHalf';
-import { openRows } from '../state/TruckSpec';
+import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -25,8 +24,6 @@ const CRATE_TOP = 96;
 const CELL = 38;
 const CELL_PAD = 4;
 const CRATE_PX = CRATE_SIDE * CELL + 2 * CELL_PAD;
-/** SCREAM-293: Story's crates are a row shorter. */
-const SHORT_CRATE_PX = (CRATE_SIDE - 1) * CELL + 2 * CELL_PAD;
 const CRATE_CELLS = CRATE_SIDE * CRATE_SIDE;
 /** SCREAM-138 (PO, November 2): a lid opens quickly, and the one that was open takes about half a second to close. */
 const LID_OPEN_MS = 200;
@@ -52,7 +49,9 @@ export class FillScene extends Phaser.Scene {
   /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
   coveredHalves: Phaser.GameObjects.Container[] = [];
   /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
-  coveredRows: Phaser.GameObjects.Graphics[] = [];
+  coveredRows: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-293: the crates' top: lower in Story, where they are a row shorter. */
+  private crateTop = CRATE_TOP;
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -84,6 +83,11 @@ export class FillScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.image(0, 0, FILL_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    // SCREAM-293: the open part of each crate (Story: 2 columns by 3 rows) sets its size and place.
+    const { coolerColumns: cols, coolerRows: rows } = this.evening.spec;
+    const crateH = rows * CELL + 2 * CELL_PAD;
+    const openW = cols < CRATE_SIDE ? CELL_PAD + cols * CELL : CRATE_PX;
+    this.crateTop = crateTopFor(CRATE_TOP, crateH, CRATE_PX);
     this.add
       .text(599, 61, 'THE COOLER  –  FILL THE ORDER', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
@@ -92,7 +96,7 @@ export class FillScene extends Phaser.Scene {
     this.tipBar = new TipBar(this, 124, 386, true, true);
 
     for (let i = 0; i < COOLER_CAPACITY; i++) {
-      const { x, y } = cellCentre(i);
+      const { x, y } = cellCentre(i, this.crateTop);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.take(i));
       this.cellIcons.push(icon);
@@ -105,11 +109,10 @@ export class FillScene extends Phaser.Scene {
     this.coveredRows = [];
     const half = this.evening.spec.coolerHalfCovered;
     CRATE_LEFTS.forEach((left, crate) => {
-      const h = half ? SHORT_CRATE_PX : CRATE_PX;
-      this.lids.push(this.makeLid(left, crate, half ? CRATE_PX / 2 : CRATE_PX, h));
-      if (half) this.coveredHalves.push(addCoveredHalf(this, left + CRATE_PX / 2, CRATE_TOP, CRATE_PX / 2, h, true));
+      this.lids.push(this.makeLid(left, crate, openW, crateH));
+      if (openW < CRATE_PX) this.coveredHalves.push(addCoveredHalf(this, left + openW, this.crateTop, CRATE_PX - openW, crateH, true));
       // SCREAM-291, SCREAM-293: and the bottom row is gone altogether.
-      if (half) this.coveredRows.push(cutBottomRow(this, left, CRATE_PX, CRATE_TOP + SHORT_CRATE_PX, CRATE_TOP + CRATE_PX));
+      if (crateH < CRATE_PX) this.coveredRows.push(moveShortCrate(this, FILL_KEY, left, CRATE_PX, CRATE_TOP, crateH, CRATE_PX));
     });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
@@ -200,11 +203,11 @@ export class FillScene extends Phaser.Scene {
     const number = this.add
       .text(w / 2, h / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
       .setOrigin(0.5);
-    const lid = this.add.container(left, CRATE_TOP, [g, number]).setDepth(10);
+    const lid = this.add.container(left, this.crateTop, [g, number]).setDepth(10);
     // PO (November 2): click on the cooler to open it. A plain click zone over the whole crate,
     // under the ice creams (once the crate is open, clicking an ice cream takes it instead).
     this.add
-      .zone(left, CRATE_TOP, w, h)
+      .zone(left, this.crateTop, w, h)
       .setOrigin(0, 0)
       .setDepth(-1)
       .setInteractive({ useHandCursor: true })
@@ -263,9 +266,9 @@ export class FillScene extends Phaser.Scene {
   private moveFocus(dx: number, dy: number): void {
     if (this.openCrate === null) return;
     // SCREAM-269: with the right half covered, the keyboard stays in the open columns.
-    const cols = this.evening.spec.coolerHalfCovered ? CRATE_SIDE / 2 : CRATE_SIDE;
+    const cols = this.evening.spec.coolerColumns;
     const col = (this.focus % CRATE_SIDE + dx + cols) % cols;
-    const rows = openRows(this.evening.spec.coolerHalfCovered); // SCREAM-291: not into the missing bottom row
+    const rows = this.evening.spec.coolerRows; // SCREAM-291, 293: only the open rows
     const row = (Math.floor(this.focus / CRATE_SIDE) + dy + rows) % rows;
     this.focus = row * CRATE_SIDE + col;
     this.refresh();
@@ -307,7 +310,7 @@ export class FillScene extends Phaser.Scene {
     });
     this.focusMark.clear();
     if (this.openCrate !== null) {
-      const c = cellCentre(this.openCrate * CRATE_CELLS + this.focus);
+      const c = cellCentre(this.openCrate * CRATE_CELLS + this.focus, this.crateTop);
       this.focusMark.lineStyle(3, 0xffc533, 1).strokeRect(c.x - CELL / 2 + 1, c.y - CELL / 2 + 1, CELL - 2, CELL - 2);
     }
 
@@ -327,11 +330,11 @@ export class FillScene extends Phaser.Scene {
 }
 
 /** The middle of a square on screen (the same places as on the prep screen). */
-function cellCentre(i: number): { x: number; y: number } {
+function cellCentre(i: number, top: number): { x: number; y: number } {
   const crate = Math.floor(i / CRATE_CELLS);
   const inCrate = i % CRATE_CELLS;
   return {
     x: (CRATE_LEFTS[crate] ?? 0) + CELL_PAD + (inCrate % CRATE_SIDE) * CELL + CELL / 2,
-    y: CRATE_TOP + CELL_PAD + Math.floor(inCrate / CRATE_SIDE) * CELL + CELL / 2,
+    y: top + CELL_PAD + Math.floor(inCrate / CRATE_SIDE) * CELL + CELL / 2,
   };
 }

@@ -5,7 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import { COOLER_CAPACITY, ROTARY_HINT_LINE } from '../config/tuning';
-import { coolerCellOpen, truckSpec, type TruckSpec } from './TruckSpec';
+import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
@@ -401,7 +401,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** SCREAM-269: whether a square can be used tonight (in Story the right half of each crate is covered). */
   cellOpen(cell: number): boolean {
-    return coolerCellOpen(this.spec.coolerHalfCovered, cell);
+    return coolerCellOpenIn(this.spec.coolerColumns, this.spec.coolerRows, cell);
   }
 
   /** The first empty square that can be used, or -1. */
