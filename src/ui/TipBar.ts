@@ -10,6 +10,11 @@ const JAR_W = 46;
 const JAR_H = 70;
 /** How far the bills stick out of the cup with the whole tip still on offer. */
 const BILLS_H = 30;
+/**
+ * SCREAM-281 (PO, November 12): at the cooler the green above the cup is a tall bar, full at
+ * the top tip and shrinking as the countdown runs, so the player can see the tip ticking away.
+ */
+const TALL_H = 190;
 
 /**
  * Issue #14/#15: the 40-second tip countdown, shown on the sales screen and
@@ -22,17 +27,44 @@ export class TipBar {
   private readonly fill: Phaser.GameObjects.Rectangle;
   private readonly label: Phaser.GameObjects.Text;
   private readonly jar: boolean;
+  private readonly tall: boolean;
+  /** How tall the green stands above the cup with the whole tip on offer (test hook). */
+  readonly fullHeight: number = BILLS_H;
+  /** SCREAM-281: the tall bar's zone labels, top tip first (test hook). */
+  readonly zoneLabels: Phaser.GameObjects.Text[] = [];
 
   /**
    * A bar across the top (the cooler), or with `jar`, a tip jar standing on the counter with
    * (x, y) the middle of its base: it empties from the top down as the tip shrinks.
    */
-  constructor(scene: Phaser.Scene, x: number, y: number, jar = false) {
+  constructor(scene: Phaser.Scene, x: number, y: number, jar = false, tall = false) {
     this.jar = jar;
+    this.tall = jar && tall;
     if (jar) {
+      const fullH = this.tall ? TALL_H : BILLS_H;
+      this.fullHeight = fullH;
+      const barW = JAR_W - 12;
+      const extras: Phaser.GameObjects.GameObject[] = [];
+      if (this.tall) {
+        // The bar's track, with a line and a label where the tip steps down (20%, 15%, 10%, 5%).
+        const track = scene.add.graphics();
+        const top = -JAR_H + 6 - fullH;
+        track.fillStyle(0x2b1d10, 0.12).fillRect(-barW / 2, top, barW, fullH);
+        track.lineStyle(2, 0x2b1d10, 0.55).strokeRect(-barW / 2, top, barW, fullH);
+        const zone = fullH / TIP_PERCENT_STEPS.length;
+        TIP_PERCENT_STEPS.forEach((percent, n) => {
+          if (n > 0) track.lineStyle(2, 0x2b1d10, 0.55).lineBetween(-barW / 2 - 4, top + n * zone, barW / 2 + 8, top + n * zone);
+          const label = scene.add
+            .text(barW / 2 + 12, top + (n + 0.5) * zone, `${percent}%`, { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' })
+            .setOrigin(0, 0.5);
+          this.zoneLabels.push(label);
+          extras.push(label);
+        });
+        extras.unshift(track);
+      }
       // The green cup from the PO's drawing, with TIP written on it (as in his first sketch).
       // Dollar bills stick out of the top and sink into the cup as the tip shrinks.
-      this.fill = scene.add.rectangle(0, -JAR_H + 6, JAR_W - 12, BILLS_H, 0x9ad48c).setOrigin(0.5, 1);
+      this.fill = scene.add.rectangle(0, -JAR_H + 6, barW, fullH, 0x9ad48c).setOrigin(0.5, 1);
       const cup = scene.add.graphics();
       cup.fillStyle(0x22b14c, 1).fillRoundedRect(-JAR_W / 2, -JAR_H, JAR_W, JAR_H, 5);
       cup.fillStyle(0x188c3a, 1).fillRect(-JAR_W / 2 + 4, -JAR_H + 4, JAR_W - 8, 8);
@@ -42,9 +74,11 @@ export class TipBar {
         .setOrigin(0.5)
         .setAngle(-6);
       this.label = scene.add
-        .text(0, -JAR_H - BILLS_H - 14, '', { fontFamily: 'monospace', fontSize: '14px', color: '#2b1d10', fontStyle: 'bold', align: 'center' })
+        .text(0, -JAR_H - fullH - (this.tall ? 10 : 14), '', { fontFamily: 'monospace', fontSize: this.tall ? '18px' : '14px', color: '#2b1d10', fontStyle: 'bold', align: 'center' })
         .setOrigin(0.5);
-      this.container = scene.add.container(x, y, [this.fill, cup, word, this.label]).setDepth(20);
+      // The track goes behind the green; the zone labels beside it.
+      const [track, ...labels] = extras;
+      this.container = scene.add.container(x, y, [...(track ? [track] : []), this.fill, ...labels, cup, word, this.label]).setDepth(20);
       return;
     }
     const title = scene.add
@@ -66,7 +100,7 @@ export class TipBar {
     // visit: full while the order shows, then emptying; when the sale ends it keeps its last look.
     if (this.jar && sale && sale.phase !== 'over' && seconds === null) {
       this.container.setVisible(true);
-      this.fill.setDisplaySize(JAR_W - 12, BILLS_H).setFillStyle(0x9ad48c);
+      this.fill.setDisplaySize(JAR_W - 12, this.fullHeight).setFillStyle(this.tall ? 0x2e7d32 : 0x9ad48c);
       this.label.setText('');
       return;
     }
@@ -82,13 +116,14 @@ export class TipBar {
     this.container.setVisible(true);
     const fraction = Math.max(0, 1 - seconds / TIP_COUNTDOWN_SECONDS);
     const percent = sale.tipPercent(evening.nowMs);
-    if (this.jar) this.fill.setDisplaySize(JAR_W - 12, Math.max(1, BILLS_H * fraction));
+    if (this.jar) this.fill.setDisplaySize(JAR_W - 12, Math.max(1, this.fullHeight * fraction));
     else this.fill.setDisplaySize(WIDTH * fraction, HEIGHT);
     // Greener for a bigger tip; grey once it's gone (asked again, a mistake, or out of time).
     const top = TIP_PERCENT_STEPS[0] ?? 20;
     const colour = percent === 0 ? 0x8a8a8a : percent >= top ? 0x2e7d32 : percent >= top / 2 ? 0x7cb342 : 0xf9a825;
     // The cup's bills stay bill-green while there's a tip, grey once it's gone.
-    this.fill.setFillStyle(this.jar ? (percent === 0 ? 0x8a8a8a : 0x9ad48c) : colour);
+    // SCREAM-281: the tall bar changes colour with the tip, like the old bar across the top.
+    this.fill.setFillStyle(this.jar && !this.tall ? (percent === 0 ? 0x8a8a8a : 0x9ad48c) : colour);
     const text = percent > 0 ? `${percent}%` : sale.askedAgain || sale.retryUsed || sale.repriceUsed ? 'No tip' : 'Took too long';
     // The jar is narrow: "Took too long" goes on two lines there.
     this.label.setText(this.jar && text === 'Took too long' ? 'Took too\nlong' : text);

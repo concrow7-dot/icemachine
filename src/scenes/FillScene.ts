@@ -81,7 +81,8 @@ export class FillScene extends Phaser.Scene {
       .text(599, 61, 'THE COOLER  –  FILL THE ORDER', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
     // The tip cup stands on the shelf on the left wall.
-    this.tipBar = new TipBar(this, 124, 386, true);
+    // SCREAM-281 (PO, November 12): with a tall green bar above it that shrinks as the tip ticks down.
+    this.tipBar = new TipBar(this, 124, 386, true, true);
 
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = cellCentre(i);

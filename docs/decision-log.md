@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 080 — Fill screen: a tall green tip bar above the cup that shrinks as the tip counts down (2026-11-12)
+
+**Decision (Jira SCREAM-281, under SCREAM-154, PO, November 12):** "Lets also add the tip countdown on the left side of that screen. [...] On the left side where the tip cup is. Lets extend the green bar to show the tip amount at 20%. As the time ticks away, show the tip decrease."
+
+**Options considered:** a tall bar above the cup on the left, full at 20% and shrinking (chosen); the short stub of bills sticking out of the cup, as before (SCREAM-125, SCREAM-134).
+
+**Why (product owner's rationale, November 12):** "Currently there isn't much indication that the players tip is ticking down."
+
+**Engineering's calls (proposals):**
+
+- "Tip amount" is shown as the percentage. The dollar amount isn't known on this screen: the player hasn't typed the price yet.
+- The bar is 190 px tall when full, with a line and a small label where the tip steps down (20%, 15%, 10%, 5%), and the tip on offer in bigger letters above it.
+- It changes colour as the tip drops (green, lighter green, amber) and goes grey when there is no tip.
+- Only the Fill screen changes. The cup at the window keeps its short stub: there the customer's patience and the order are what the player is watching.
+- Both modes: the Fill screen is shared.
+
 ## 079 — New Story: a left click or Enter begins, on every screen before the first evening (2026-11-12)
 
 **Decision (Jira SCREAM-270, under SCREAM-9, PO, November 12):** "On new story mode. Be able to click left mouse (and enter) to be begin."
