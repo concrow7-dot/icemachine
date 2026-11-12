@@ -348,22 +348,32 @@ export const FUEL_TUTORIAL_START = 0.25;
 /** Story's top speed: this share of TRUCK_SPEED. */
 export const STORY_TRUCK_SPEED_FACTOR = 0.8;
 /** Story takes this many times longer to reach top speed. PO, November 12: "Acceleration should be worse by double." */
-export const STORY_TRUCK_ACCELERATION_FACTOR = 2;
+export const STORY_TRUCK_ACCELERATION_FACTOR = 4; // then (02:17) "Acceleration should be reduced by 2x": twice as long again, 10 s
 /**
  * Story takes this many times longer to brake to a stop. PO, November 12: "the brake is way too good. If the
  * person holds break it should take 400x longer to break." Read as 400%, 4 times as long (0.15 s to 0.6 s);
  * 400 times would be a full minute.
  */
-export const STORY_TRUCK_BRAKING_FACTOR = 4;
+export const STORY_TRUCK_BRAKING_FACTOR = 8; // then (02:17) "Brake speed should be reduced by 2x": twice as long again, 1.2 s
 /**
  * PO, November 12: "roll speed should be reduced by 75%." Story's creep (the speed the truck rolls at with
  * no key held, TRUCK_CREEP_SPEED) is this share of Quick play's: 72 to 18 px/s.
  */
-export const STORY_TRUCK_CREEP_FACTOR = 0.25;
+export const STORY_TRUCK_CREEP_FACTOR = 0.25 * (2 / 3); // then (02:17) "Roll speed should be reduced by 1/3": 18 to 12 px/s
+/**
+ * PO, November 12 (02:17): "Reverse speed should be maxed out at 1/3 of current." Story's top reverse
+ * speed is this share of TRUCK_REVERSE_SPEED (about 137 to 46 px/s).
+ */
+export const STORY_TRUCK_REVERSE_SPEED_FACTOR = 1 / 3;
+/**
+ * PO, November 12 (02:17): "Reverse acceleration should be reduced. Should be half of current". Story takes
+ * this many times longer to reach its full reverse speed (0.5 s to 1 s).
+ */
+export const STORY_TRUCK_REVERSE_ACCELERATION_FACTOR = 2;
 /** Story's wheel turns the truck this share as fast at speed (the tightest turn when slow is unchanged). */
 export const STORY_TRUCK_TURN_FACTOR = 0.9;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
-export const STORY_MUSIC_RADIUS_FACTOR = 0.85;
+export const STORY_MUSIC_RADIUS_FACTOR = 0.7; // then (02:17) "reduced more, the same amount": another 15 points, 300 to 210
 /**
  * SCREAM-269 (PO, November 12: "24 to start"): in Story the right half of every crate is covered, so
  * the cooler holds half as much: 3 crates x 8 squares = 24 (SCREAM-25 will uncover them). It was 2

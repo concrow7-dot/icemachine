@@ -9,12 +9,16 @@ import {
   STORY_TRUCK_ACCELERATION_FACTOR,
   STORY_TRUCK_BRAKING_FACTOR,
   STORY_TRUCK_CREEP_FACTOR,
+  STORY_TRUCK_REVERSE_ACCELERATION_FACTOR,
+  STORY_TRUCK_REVERSE_SPEED_FACTOR,
   STORY_TRUCK_SPEED_FACTOR,
   STORY_TRUCK_TURN_FACTOR,
   TRUCK_ACCELERATION_SECONDS,
   TRUCK_BRAKING_SECONDS,
   TRUCK_CREEP_SPEED,
   TRUCK_MAX_TURN_DEGREES_PER_SECOND,
+  TRUCK_REVERSE_ACCELERATION_SECONDS,
+  TRUCK_REVERSE_SPEED,
   TRUCK_SPEED,
 } from '../config/tuning';
 
@@ -35,6 +39,10 @@ export interface TruckSpec {
   readonly brakingSeconds: number;
   /** The speed the truck rolls at with no key held, px per second. */
   readonly creepSpeed: number;
+  /** Top speed in reverse, px per second. */
+  readonly reverseSpeed: number;
+  /** Seconds to reach full reverse speed. */
+  readonly reverseAccelerationSeconds: number;
   /** The fastest the wheel turns the truck, degrees per second. */
   readonly maxTurnDegrees: number;
   /** How far the music reaches, px from the truck. */
@@ -56,6 +64,8 @@ export function truckSpec(weak: boolean): TruckSpec {
     accelerationSeconds: weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS,
     brakingSeconds: weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS,
     creepSpeed: weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED,
+    reverseSpeed: weak ? TRUCK_REVERSE_SPEED * STORY_TRUCK_REVERSE_SPEED_FACTOR : TRUCK_REVERSE_SPEED,
+    reverseAccelerationSeconds: weak ? TRUCK_REVERSE_ACCELERATION_SECONDS * STORY_TRUCK_REVERSE_ACCELERATION_FACTOR : TRUCK_REVERSE_ACCELERATION_SECONDS,
     maxTurnDegrees: weak ? TRUCK_MAX_TURN_DEGREES_PER_SECOND * STORY_TRUCK_TURN_FACTOR : TRUCK_MAX_TURN_DEGREES_PER_SECOND,
     musicRadius: weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS,
     coolerHalfCovered: halfCovered,
