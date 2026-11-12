@@ -162,6 +162,13 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300);
   check('C during the order: straight to the cooler, order hidden', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
   check('...tip countdown starts then (20%)', await sc('Fill', 's.tipBar.label.text'), '20%');
+  // ---- SCREAM-281 (PO, November 12): a tall green bar above the cup that shrinks with the tip ----
+  check('SCREAM-281: at the cooler the cup has a tall bar marked 20%, 15%, 10%, 5%; the window keeps the short one', (await sc('Fill', 's.tipBar.fullHeight + " " + s.tipBar.zoneLabels.map(l => l.text).join()')) + ' / ' + (await sc('Sales', 's.tipBar.fullHeight + " " + s.tipBar.zoneLabels.length')), '190 20%,15%,10%,5% / 30 0');
+  check('...nearly full and green at the start', await sc('Fill', '(f => f.displayHeight > 170 && f.fillColor === 0x2e7d32)(s.tipBar.fill)'), true);
+  check('...it stays left of the counter and under the clock strip', await sc('Fill', '(b => b.right < 245 && b.top > 45)(s.tipBar.container.getBounds())'), true);
+  await tick(12000);
+  check('...12 s on: about 70% of its height, a lighter green, and 15%', await sc('Fill', '(f => (f.displayHeight > 120 && f.displayHeight < 140) + " " + (f.fillColor === 0x7cb342))(s.tipBar.fill) + " " + s.tipBar.label.text'), 'true true 15%');
+  await page.screenshot({ path: outDir + '/fill_tip_bar.png' });
   check('SCREAM-273: BACK TO THE WINDOW on the left under the tip jar, SERVE in the middle where it was', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + s.serveButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true BACK TO THE WINDOW 124 600 true');
   check('...under the tip jar, not over it or the counter with the bag', await sc('Fill', '(b => b.top > 386 && b.left >= 0 && b.right < 245)(s.windowButton.getBounds())'), true);
   check('...and SERVE is clear of a full row of 10 in the bag', await sc('Fill', '(b => b.top > 410 + 24)(s.serveButton.getBounds())'), true);
