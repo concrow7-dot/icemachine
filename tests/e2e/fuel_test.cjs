@@ -246,7 +246,7 @@ const { chromium } = require('playwright');
   check('Day 2 starts with what was left in the tank', Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // Restart this evening (pause menu): back to how tonight started, tank included.
   await ev('(e.burnFuel(32100 * 0.3), true)');
-  await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
+  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // SCREAM-119 (PO): running out of gas ends the day; SCREAM-204 (PO, November 12): the next day starts with 1/3 of a tank (it was 1/6).
   await press('ArrowRight'); await press('Enter'); await wait(400);
