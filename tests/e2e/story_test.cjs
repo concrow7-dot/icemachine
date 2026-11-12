@@ -25,6 +25,7 @@ const { chromium } = require('playwright');
   const texts = (key) => sc(key, "s.children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')");
   const scenes = () => page.evaluate(() => window.__game.scene.getScenes(true).map(s => s.scene.key).join(','));
   const wait = ms => page.waitForTimeout(ms);
+  const until = async (fn, ms = 4000) => { const end = Date.now() + ms; while (Date.now() < end) { if (await fn()) return true; await wait(50); } return false; };
   const press = async (k, n = 1) => { for (let i = 0; i < n; i++) { await page.keyboard.press(k); await wait(60); } await wait(150); };
   const shift = async (d) => { await page.keyboard.down('Shift'); await page.keyboard.press('Digit' + d); await page.keyboard.up('Shift'); await wait(300); };
   const hudClock = () => sc('Hud', 's.clockText.text');
@@ -82,12 +83,19 @@ const { chromium } = require('playwright');
   check('...slower, slower to speed up, slower to stop, wider turns at speed', [spec.topSpeed < tune.speed, spec.accelerationSeconds > tune.acc, spec.brakingSeconds > tune.brake, spec.maxTurnDegrees < tune.turn].join(), 'true,true,true,true');
   check('...the music reaches less far', spec.musicRadius < tune.ring, true);
   check('...a tank of gas goes less far', spec.fuelTankPx < tune.tank, true);
-  check('...the cooler has 2 crates: 32 squares', spec.coolerCrates + ' ' + spec.coolerCapacity + ' ' + (await ev('e.cells.length')), '2 32 32');
-  check('...the cooler screen counts out of 32', /\/ 32$/.test(await sc('Cooler', 's.title.text')), true);
-  check('...and its third crate is shut and marked LOCKED', await sc('Cooler', "s.lockedCrates.length + ' ' + s.lockedCrates[0].getByName('locked-crate-label').text"), '1 LOCKED');
+  // SCREAM-269 (PO, November 12: "24 to start"): half of every crate is covered by a plain panel.
+  check('...the cooler holds 24: half of every crate is covered (SCREAM-269)', spec.coolerHalfCovered + ' ' + spec.coolerCapacity + ' ' + (await ev('e.cells.length')), 'true 24 48');
+  check('...the cooler screen counts out of 24', /\/ 24$/.test(await sc('Cooler', 's.title.text')), true);
+  check('...with a plain panel over the right half of each of the 3 crates, no words on it', await sc('Cooler', "s.coveredHalves.length + ' ' + s.coveredHalves.every(c => c.list.every(o => o.type !== 'Text'))"), '3 true');
+  check('...each panel covers exactly the right half of its crate', await sc('Cooler', "s.coveredHalves.map(c => Math.round(c.x)).join()"), [319, 519, 719].map(x => x + 80).join());
   await page.keyboard.press('3'); await wait(150);
-  check('...pressing 3 does not choose the locked crate', await sc('Cooler', 's.order.crate'), 0);
-  await page.screenshot({ path: outDir + '/story_cooler_locked_crate.png' });
+  check('...pressing 3 still chooses crate 3 (its left half is open)', await sc('Cooler', 's.order.crate'), 2);
+  await page.keyboard.press('1'); await wait(150);
+  const fill24 = await sc('Cooler', "(() => { const o = s.order; let n = 0; while (o.addOne('eclair')) n++; const cells = o.cells; const r = n + ' ' + o.refusal + ' ' + cells.every((c, i) => !c || i % 4 < 2) + ' ' + [0, 1, 2].map(k => cells.slice(k * 16, k * 16 + 16).filter(Boolean).length).join('/'); for (let k = 0; k < n; k++) o.removeOne('eclair'); return r; })()");
+  check('...it fills to 24 and stops: 8 in each crate, none under a panel', fill24, '24 full true 8/8/8');
+  check('...an ice cream can\'t be dragged onto a covered square', await sc('Cooler', "(() => { const o = s.order; o.addOne('eclair'); const moved = o.move(0, 2); o.removeOne('eclair'); return moved; })()"), false);
+  await sc('Cooler', '(s.refresh(), true)');
+  await page.screenshot({ path: outDir + '/story_cooler_half_covered.png' });
   // SCREAM-221 / SCREAM-232 (PO): Story starts on a Monday; the HUD shows just the weekday.
   check('HUD shows the weekday beside the clock: Monday', /Monday/.test(await hudClock()) && !/Day 1/.test(await hudClock()), true);
   // SCREAM-232: ticked today a bit likelier, not ticked much less likely; anyone but 0% may come.
@@ -251,7 +259,7 @@ const { chromium } = require('playwright');
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
   check('Saved: day 2, $47, 3 bars in the first slot', await saved(), '2 4700 3/0/0/0');
-  check('...and where each ice cream sits (SCREAM-131): 32 squares in Story (SCREAM-204), 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '32 3');
+  check('...and where each ice cream sits (SCREAM-131): 48 squares, 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '48 3');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----
@@ -493,6 +501,31 @@ const { chromium } = require('playwright');
   check('Quick play: no neighbour lines (PO: Story only)', await ev('e.neighbourLinesFor.size'), 0);
   await shift(3); await wait(300);
   check('Quick play ends on the results screen', await scenes(), 'Results');
+
+  // ---- SCREAM-269: filling an order in Story: half doors, the right half of each crate shut ----
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
+  await page.goto(`http://127.0.0.1:${port}/index.html`);
+  await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
+  await page.click('canvas'); await wait(200);
+  await press('ArrowDown'); await press('Enter'); await wait(200); await press('o'); await wait(300); await press('Enter'); await wait(400);
+  await press('+', 3); await press('Enter'); await wait(300);
+  if ((await scenes()).startsWith('Truck')) { await press('ArrowRight'); await press('Enter'); await wait(400); }
+  await ev('(e.orderPictureChance = 0, true)');
+  await ev("e.residents.callNow(e.residents.all.find(p => p.customer === 'none'))"); await wait(200);
+  await sc('Drive', '(s.truck.setPosition(s.pickupZone.x, s.pickupZone.y), s.speed = 0, s.parkBrake = true)'); await wait(500);
+  await until(async () => (await ev("e.sale && e.sale.phase")) === 'deciding', 9000);
+  await press('Enter'); await wait(400);
+  check('Story: at the cooler to fill an order (SCREAM-269)', await scenes(), 'Fill,Hud');
+  const fillS = (fn) => sc('Fill', fn);
+  check('...each crate has a half door (half as wide) and a shut plain half beside it', await fillS("s.lids.length + ' ' + s.coveredHalves.length + ' ' + s.lids.every((l, i) => Math.round(s.coveredHalves[i].x - l.x) === 80)"), '3 3 true');
+  check('...the shut halves have no words on them', await fillS("s.coveredHalves.every(c => c.list.every(o => o.type !== 'Text'))"), true);
+  await press('1'); await wait(400);
+  check('...pressing 1 opens crate 1\'s door; the three eclairs show, the plain half stays shut', await fillS("s.openCrate + ' ' + s.cellIcons.filter(i => i.visible).length + ' ' + s.coveredHalves[0].visible"), '0 3 true');
+  await press('ArrowRight', 2);
+  check('...the arrow keys stay in the two open columns', await fillS('s.focus % 4'), 0);
+  await press('ArrowRight');
+  check('...and reach the second column', await fillS('s.focus % 4'), 1);
+  await page.screenshot({ path: outDir + '/story_fill_half_doors.png' });
 
   // ---- SCREAM-220: with ?debug in the address, the debug hint is back (SCREAM-88: only Shift+3, right of the clock) ----
   await page.goto(`http://127.0.0.1:${port}/index.html?debug`);

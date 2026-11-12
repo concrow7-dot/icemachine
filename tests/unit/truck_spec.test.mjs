@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { truckSpec } = await game('state/TruckSpec');
+const { truckSpec, coolerCellOpen } = await game('state/TruckSpec');
 const t = await game('config/tuning');
 
 test("Quick play's truck is exactly the tuning values", () => {
@@ -15,7 +15,7 @@ test("Quick play's truck is exactly the tuning values", () => {
   assert.equal(full.creepSpeed, t.TRUCK_CREEP_SPEED);
   assert.equal(full.maxTurnDegrees, t.TRUCK_MAX_TURN_DEGREES_PER_SECOND);
   assert.equal(full.musicRadius, t.MUSIC_RING_RADIUS);
-  assert.equal(full.coolerCrates, t.COOLER_CRATES);
+  assert.equal(full.coolerHalfCovered, false);
   assert.equal(full.coolerCapacity, t.COOLER_CAPACITY);
   assert.equal(full.fuelTankPx, t.FUEL_TANK_PX);
 });
@@ -35,8 +35,9 @@ test("Story's truck is worse at everything the PO listed", () => {
   assert.equal(weak.musicRadius, full.musicRadius * 0.85);
   assert.ok(weak.maxTurnDegrees < full.maxTurnDegrees, 'turns less sharply at speed');
   assert.ok(weak.musicRadius < full.musicRadius, 'music reaches less far');
-  assert.ok(weak.coolerCrates < full.coolerCrates, 'fewer crates');
-  assert.equal(weak.coolerCapacity, weak.coolerCrates * t.CRATE_SIDE * t.CRATE_SIDE);
+  // SCREAM-269 (PO: "24 to start"): half of every crate is covered.
+  assert.equal(weak.coolerHalfCovered, true);
+  assert.equal(weak.coolerCapacity, 24);
   assert.ok(weak.fuelTankPx < full.fuelTankPx, 'a tank goes less far');
 });
 
@@ -49,4 +50,15 @@ test('the weaker truck can still reach a gas station from where a Story day can 
   assert.ok(reach(t.FUEL_STORY_START) > 5200, "Day 1's quarter tank");
   assert.ok(reach(t.FUEL_STORY_OUT_OF_GAS_START) > 5200, 'the third of a tank after running out');
   assert.ok(t.FUEL_STORY_OUT_OF_GAS_START > t.FUEL_STORY_MIN_START);
+});
+
+test('SCREAM-269: with the halves covered, the left two columns of each crate are open: 24 squares', () => {
+  const all = Array.from({ length: t.COOLER_CAPACITY }, (_, i) => i);
+  assert.equal(all.filter((i) => coolerCellOpen(false, i)).length, 48);
+  const open = all.filter((i) => coolerCellOpen(true, i));
+  assert.equal(open.length, 24);
+  assert.deepEqual(open.slice(0, 8), [0, 1, 4, 5, 8, 9, 12, 13], 'crate 1: columns 1 and 2 of each row');
+  for (const crate of [0, 1, 2]) assert.equal(open.filter((i) => Math.floor(i / 16) === crate).length, 8, 'eight in every crate');
+  assert.equal(coolerCellOpen(true, -1), false);
+  assert.equal(coolerCellOpen(false, 48), false);
 });

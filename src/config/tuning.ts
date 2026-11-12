@@ -364,8 +364,12 @@ export const STORY_TRUCK_CREEP_FACTOR = 0.25;
 export const STORY_TRUCK_TURN_FACTOR = 0.9;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.85;
-/** Story's cooler has this many crates to use; the others are locked (SCREAM-25 brings one back). */
-export const STORY_COOLER_CRATES = 2;
+/**
+ * SCREAM-269 (PO, November 12: "24 to start"): in Story the right half of every crate is covered, so
+ * the cooler holds half as much: 3 crates x 8 squares = 24 (SCREAM-25 will uncover them). It was 2
+ * whole crates and a locked third (32) for a few hours.
+ */
+export const STORY_COOLER_HALF_COVERED = true;
 /** Story burns gas this many times as fast. */
 export const STORY_FUEL_BURN_FACTOR = 1.3;
 /**

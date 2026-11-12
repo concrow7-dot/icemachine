@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
-import { CRATE_SIDE } from '../config/tuning';
-import { addLockedCrate } from '../ui/lockedCrate';
+import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
+import { addCoveredHalf } from '../ui/coveredHalf';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -42,8 +42,8 @@ export class FillScene extends Phaser.Scene {
   windowButton!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
-  /** SCREAM-204: the covers over crates Story's cooler doesn't have yet (test hook). */
-  lockedCrates: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
+  coveredHalves: Phaser.GameObjects.Container[] = [];
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -81,18 +81,21 @@ export class FillScene extends Phaser.Scene {
     // The tip cup stands on the shelf on the left wall.
     this.tipBar = new TipBar(this, 124, 386, true);
 
-    for (let i = 0; i < this.evening.spec.coolerCapacity; i++) {
+    for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = cellCentre(i);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.take(i));
       this.cellIcons.push(icon);
     }
     this.focusMark = this.add.graphics();
-    // SCREAM-204: Story starts with fewer crates; the rest are shut and marked LOCKED.
-    this.lockedCrates = [];
+    // SCREAM-269 (PO's sketch, November 12): in Story each crate has two half doors with a handle
+    // each. The left one opens (swinging up); the right one is a plain panel that stays shut.
+    // Quick play keeps one lid per crate.
+    this.coveredHalves = [];
+    const half = this.evening.spec.coolerHalfCovered;
     CRATE_LEFTS.forEach((left, crate) => {
-      if (crate < this.evening.spec.coolerCrates) this.lids.push(this.makeLid(left, crate));
-      else this.lockedCrates.push(addLockedCrate(this, left, CRATE_TOP, CRATE_PX));
+      this.lids.push(this.makeLid(left, crate, half ? CRATE_PX / 2 : CRATE_PX));
+      if (half) this.coveredHalves.push(addCoveredHalf(this, left + CRATE_PX / 2, CRATE_TOP, CRATE_PX / 2, CRATE_PX, true));
     });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
@@ -166,23 +169,25 @@ export class FillScene extends Phaser.Scene {
   }
 
   /** A crate's lid: frosted, solid (no peeking), with its number on it. Clicking the crate opens it. */
-  private makeLid(left: number, crate: number): Phaser.GameObjects.Container {
+  private makeLid(left: number, crate: number, w: number = CRATE_PX): Phaser.GameObjects.Container {
     const g = this.add.graphics();
-    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, CRATE_PX, CRATE_PX);
+    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, w, CRATE_PX);
     g.fillStyle(0xffffff, 0.7);
-    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % CRATE_PX) + 6, ((k * 37) % CRATE_PX) + 6, 2 + (k % 3));
-    g.lineStyle(10, 0xffffff, 0.6).lineBetween(CRATE_PX * 0.15, CRATE_PX, CRATE_PX * 0.45, 0);
-    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, CRATE_PX - 4, CRATE_PX - 4);
-    g.fillStyle(0xffffff, 1).fillRect(CRATE_PX / 2 - 22, CRATE_PX - 22, 44, 10);
-    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(CRATE_PX / 2 - 22, CRATE_PX - 22, 44, 10);
+    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % (w - 12)) + 6, ((k * 37) % CRATE_PX) + 6, 2 + (k % 3));
+    g.lineStyle(10, 0xffffff, 0.6).lineBetween(w * 0.15, CRATE_PX, w * 0.45, 0);
+    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, w - 4, CRATE_PX - 4);
+    // The handle (narrower on a half door).
+    const handle = w < CRATE_PX ? 28 : 44;
+    g.fillStyle(0xffffff, 1).fillRect(w / 2 - handle / 2, CRATE_PX - 22, handle, 10);
+    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - handle / 2, CRATE_PX - 22, handle, 10);
     const number = this.add
-      .text(CRATE_PX / 2, CRATE_PX / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
+      .text(w / 2, CRATE_PX / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
       .setOrigin(0.5);
     const lid = this.add.container(left, CRATE_TOP, [g, number]).setDepth(10);
     // PO (November 2): click on the cooler to open it. A plain click zone over the whole crate,
     // under the ice creams (once the crate is open, clicking an ice cream takes it instead).
     this.add
-      .zone(left, CRATE_TOP, CRATE_PX, CRATE_PX)
+      .zone(left, CRATE_TOP, w, CRATE_PX)
       .setOrigin(0, 0)
       .setDepth(-1)
       .setInteractive({ useHandCursor: true })
@@ -240,7 +245,9 @@ export class FillScene extends Phaser.Scene {
 
   private moveFocus(dx: number, dy: number): void {
     if (this.openCrate === null) return;
-    const col = (this.focus % CRATE_SIDE + dx + CRATE_SIDE) % CRATE_SIDE;
+    // SCREAM-269: with the right half covered, the keyboard stays in the open columns.
+    const cols = this.evening.spec.coolerHalfCovered ? CRATE_SIDE / 2 : CRATE_SIDE;
+    const col = (this.focus % CRATE_SIDE + dx + cols) % cols;
     const row = (Math.floor(this.focus / CRATE_SIDE) + dy + CRATE_SIDE) % CRATE_SIDE;
     this.focus = row * CRATE_SIDE + col;
     this.refresh();

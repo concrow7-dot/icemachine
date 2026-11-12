@@ -2,13 +2,40 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 076 — From now on, changes apply to Story only unless the PO says otherwise (2026-11-12)
+
+**Decision (PO, November 12):** "from now on, all changes to the game will be on story mode unless explicitly stated otherwise." Quick play stays as it is.
+
+**Options considered:** Story only by default (chosen); asking for each change whether Quick play gets it too, as before.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):** bug fixes still go to both modes. A change to something the two modes share (a screen's text, a key) is checked against Quick play in its tests, and the ticket says which mode it is for.
+
+## 075 — Story's cooler: half of every crate is covered, 24 ice creams to start (2026-11-12)
+
+**Decision (Jira SCREAM-269, under SCREAM-78, PO, November 12, with a sketch):** "Here is how I want the cooler to be. 24 to start." In Story the cooler keeps its three crates, but half of each is covered: 3 crates x 8 squares = 24 ice creams. Each crate has two half doors with a handle each; the open one swings up when filling an order, and the covered one is a plain panel with no words on it. This replaces the first version from 074 (two whole crates and a third marked LOCKED, 32 ice creams), which was on main for a few hours.
+
+**Options considered:** half of every crate covered, 24 (chosen, the PO's sketch); two whole crates and a locked third, 32 (engineering's first guess in 074); one whole crate, 16.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked why 24 and why half of every crate over whole crates.)*
+
+**Engineering's calls (proposals):**
+
+- The covered half is the right two columns of each crate; the left two are open.
+- When filling an order one door is open at a time, as crates were before (the PO confirmed). Today each crate has only one door that opens; when a bigger-cooler power-up (SCREAM-25) uncovers a second half, its door will open separately.
+- Keys 1, 2 and 3 still choose a crate. The arrow keys stay in the two open columns.
+- On the prep screen the covered halves are the same plain panels, without handles (the crates there are shown open).
+- Quick play is unchanged: whole lids, 48 squares (076).
+- A Story save holding more than 24 ice creams loses the extras when it is next opened; anything that sat under a covered half moves to the first open square.
+
 ## 074 — Story starts with a weaker truck, so power-ups feel earned (2026-11-12)
 
 **Decision (Jira SCREAM-204, under SCREAM-78, PO, November 8, 11 and 12):** in Story the player starts out worse at four things, and power-ups (073) will win them back. Quick play keeps the truck as it was.
 
 - **Driving:** the truck is slower, slower to speed up, slower to stop, rolls more slowly, and turns a little wider at speed. The PO's numbers (November 12): "the brake is way too good. If the person holds break it should take 400x longer to break. Acceleration should be worse by double. And roll speed should be reduced by 75%." So braking takes 4 times as long (0.15 s to 0.6 s), reaching top speed twice as long (2.5 s to 5 s), and the roll is a quarter of the speed.
 - **Music:** it reaches less far: 85% of Quick play's radius (300 to 255). PO, November 12: "Let's reduce radius by 85%" (read as "to 85%", one of the two sizes engineering offered; a cut of 85% would leave a ring smaller than the truck).
-- **Cooler:** it is smaller: 2 crates (32 ice creams) instead of 3 (48). The third crate is shut and marked LOCKED.
+- **Cooler:** it is smaller. First 2 crates (32 ice creams) instead of 3 (48), with the third marked LOCKED; replaced the same day by 075 (half of every crate covered, 24).
 - **Gas:** it burns faster. After an evening that ends out of gas, the next day starts with 1/3 of a tank (it was 1/6): "when player runs out, then should start with 1/3 tank now" (PO).
 
 **Options considered:** Story starts weaker (chosen); everything stays at full strength and power-ups only add on top.
@@ -22,7 +49,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Quick play is unchanged, so its high scores still compare with older ones.
 - The uncle's evening uses the weaker truck too: it is Day 1 of Story, and this way nothing is taken away on Day 2.
 - A day that ends low on gas without running out still starts the next with at least 1/6 of a tank, as before; only running right out gives 1/3.
-- A Story save from before this change holding more than 32 ice creams loses the extras when it is next opened.
+- A Story save from before this change holding more than the cooler now holds loses the extras when it is next opened.
 - Scenes now read the truck's abilities from `evening.spec` (`src/state/TruckSpec.ts`), which is where power-ups will change them.
 
 ## 073 — Power-ups are bought with money (2026-11-11)
