@@ -538,7 +538,7 @@ export class SalesScene extends Phaser.Scene {
     }
     if (pricing) {
       // Shortened to make room for C (the line was as wide as the screen).
-      hint = `Type The Price   Enter: Charge   Backspace: Undo   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
+      hint = `Type The Price   Enter: Charge   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
     }
     if (sale.phase === 'over') {
       hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';

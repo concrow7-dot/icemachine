@@ -35,8 +35,8 @@ const { chromium } = require('playwright');
   // (SCREAM-96: key hints have a capital on each word.)
   const title = await texts('Title');
   check('Title: no difficulty choice (no EASY / HARD)', /EASY|HARD|Choose a difficulty/.test(title), false);
-  check('Title: shows HOW TO DRIVE with the car-style controls', /HOW TO DRIVE/.test(title) && /Gas/.test(title) && /Q Park Brake/.test(title), true);
-  check('Title: Press Enter or click to start, credits still shown', /Press Enter Or Click To Start/.test(title) && /LimeZu/.test(title) && /OpenStreetMap/.test(title), true);
+  check('SCREAM-286: Title: no HOW TO DRIVE box', /HOW TO DRIVE|Q Park Brake/.test(title), false);
+  check('SCREAM-286: Title: no line of keys, credits still shown', /Press Enter Or Click To Start/.test(title) + ' ' + (/LimeZu/.test(title) && /OpenStreetMap/.test(title)), 'false true');
   await page.screenshot({ path: outDir + '/title_oneway.png' });
   await page.click('canvas'); await press('ArrowLeft'); await press('ArrowRight');
   check('Arrow keys on the title do nothing (still on the title)', await scenes(), 'Title');

@@ -368,7 +368,7 @@ export class DriveScene extends Phaser.Scene {
     camera.setZoom(DRIVE_CAMERA_ZOOM);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song   People in your ring may want ice cream (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
