@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 085 — Tip bar: once there is no tip, the countdown goes away and the cup just says "No tip" (2026-11-12)
+
+**Decision (Jira SCREAM-287, under SCREAM-154, PO, November 12):** "when user gets no tip. The countdown over the tip can end. Just show no tip." Follows 080 and 083, where the bar turned grey and kept shrinking.
+
+**Options considered:** no bar once the tip is gone, only the words (chosen); a grey bar that carries on shrinking (080, 083).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- The whole bar goes: the green, its outline and lines, and the side labels at the cooler. "No tip" sits just above the cup.
+- The same on the Fill screen and at the window.
+- When the 40 seconds simply run out the bar has already shrunk to nothing; the words there are still "Took too long", which says why.
+
 ## 084 — Window: asking for the order again is a button, and works after the cooler too (2026-11-12)
 
 **Decision (Jira SCREAM-285, under SCREAM-154, PO, November 12):** "user should be able to ask for the order again at the sales window, after the cooler."
