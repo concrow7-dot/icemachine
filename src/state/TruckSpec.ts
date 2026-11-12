@@ -82,7 +82,8 @@ export function truckSpec(weak: boolean): TruckSpec {
     turnAboveRoll: weak ? STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR : 1,
     musicRadius: weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS,
     coolerHalfCovered: halfCovered,
-    coolerCapacity: halfCovered ? COOLER_CAPACITY / 2 : COOLER_CAPACITY,
+    // SCREAM-291: Story's open squares, counted (18: two columns by three rows, in three crates).
+    coolerCapacity: Array.from({ length: COOLER_CAPACITY }, (_, i) => coolerCellOpen(halfCovered, i)).filter(Boolean).length,
     fuelTankPx: weak ? FUEL_TANK_PX / STORY_FUEL_BURN_FACTOR : FUEL_TANK_PX,
   };
 }
@@ -90,7 +91,17 @@ export function truckSpec(weak: boolean): TruckSpec {
 /**
  * SCREAM-269: whether a square of the cooler can be used. Squares are numbered crate by crate
  * and row by row; with the halves covered, only the left two columns of each crate are open.
+ * SCREAM-291 (PO, November 12): "completely remove the bottom row of the cooler. So there should be
+ * 18 total slots. 6 per cooler now": in Story the bottom row of every crate is gone too.
  */
 export function coolerCellOpen(halfCovered: boolean, cell: number): boolean {
-  return cell >= 0 && cell < COOLER_CAPACITY && (!halfCovered || cell % CRATE_SIDE < CRATE_SIDE / 2);
+  if (cell < 0 || cell >= COOLER_CAPACITY) return false;
+  if (!halfCovered) return true;
+  const inCrate = cell % (CRATE_SIDE * CRATE_SIDE);
+  return cell % CRATE_SIDE < CRATE_SIDE / 2 && Math.floor(inCrate / CRATE_SIDE) < CRATE_SIDE - 1;
+}
+
+/** SCREAM-291: the rows of a crate that can be used (Story: all but the bottom one). */
+export function openRows(halfCovered: boolean): number {
+  return halfCovered ? CRATE_SIDE - 1 : CRATE_SIDE;
 }

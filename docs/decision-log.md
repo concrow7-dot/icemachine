@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 092 — Story's cooler: the bottom row is gone, 18 ice creams to start (2026-11-12)
+
+**Decision (Jira SCREAM-291, under SCREAM-78, PO, November 12):** "I want to completely remove the bottom row of the cooler. So there should be 18 total slots. 6 per cooler now." Changes 075 (24).
+
+**Options considered:** the bottom row gone, 18 (chosen, the PO's own answer); 12 with one column open; 16 or 8 with whole crates covered (engineering's offers).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- Story only (076); Quick play keeps 48. In each crate, the left two columns of the top three rows are open.
+- Drawn as a plain strip over the bottom row of each crate's open half, the same grey as the covered half, at the cooler and the Fill screen. The keyboard at the Fill screen skips the bottom row.
+- A Story save with more than 18 in the cooler leaves the extras behind (as 075 did for 24). The uncle's evening uses the same cooler; his steps still work.
+
 ## 091 — End Evening on the pause menu (2026-11-12)
 
 **Decision (Jira SCREAM-290, under SCREAM-9, PO, November 12):** "A player to be able to end the night as it stands." "This is just like the shift + 3 command is all." Where: the pause menu with a Yes / No check, in Story and Quick play (the PO picked engineering's recommendation).
