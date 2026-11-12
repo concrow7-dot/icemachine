@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 077 — Fill screen: BACK TO THE WINDOW moves left under the tip jar, SERVE to the middle (2026-11-12)
+
+**Decision (Jira SCREAM-273, under SCREAM-154, PO, November 12, with a screenshot):** "Move 'Back to the window' to the left side under tips. Move Serve to where back to window is now." This changes where 071 (SCREAM-240) put the two buttons.
+
+**Options considered:** BACK TO THE WINDOW on the left under the tip jar and SERVE in the middle of the counter (chosen); as 071 left them (BACK TO THE WINDOW in the middle, SERVE at the bottom right).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+
+**Engineering's calls (proposals):**
+
+- BACK TO THE WINDOW is centred under the tip jar on SERVE's row, with its letters a little smaller (18 px, was 20) so it fits between the edge of the screen and the counter.
+- Keys are unchanged (B, Enter), and so is the line of keys along the bottom.
+- Both modes: the Fill screen is shared, and a button in a different place in each mode would be a trap.
+
 ## 076 — From now on, changes apply to Story only unless the PO says otherwise (2026-11-12)
 
 **Decision (PO, November 12):** "from now on, all changes to the game will be on story mode unless explicitly stated otherwise." Quick play stays as it is.

@@ -162,9 +162,11 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300);
   check('C during the order: straight to the cooler, order hidden', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
   check('...tip countdown starts then (20%)', await sc('Fill', 's.tipBar.label.text'), '20%');
-  check('SCREAM-240: a BACK TO THE WINDOW button in the middle of the serving area', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true BACK TO THE WINDOW 600 true');
+  check('SCREAM-273: BACK TO THE WINDOW on the left under the tip jar, SERVE in the middle where it was', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + s.serveButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true BACK TO THE WINDOW 124 600 true');
+  check('...under the tip jar, not over it or the counter with the bag', await sc('Fill', '(b => b.top > 386 && b.left >= 0 && b.right < 245)(s.windowButton.getBounds())'), true);
+  check('...and SERVE is clear of a full row of 10 in the bag', await sc('Fill', '(b => b.top > 410 + 24)(s.serveButton.getBounds())'), true);
   await page.screenshot({ path: outDir + '/fill_window_button.png' });
-  await page.mouse.click(600, 470); await wait(300);
+  await page.mouse.click(124, 470); await wait(300);
   check('...clicking it goes back to the window, like B', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud deciding');
   await press('b'); await wait(300);
 
