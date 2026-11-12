@@ -51,6 +51,8 @@ const { chromium } = require('playwright');
   check('Totals preview the order', await coolerText('totals'), 'This order: $4.00\nCash: $50.00 → $46.00');
   check('Button shows the order cost', await coolerText('buyButton'), 'BUY STOCK  $4.00');
   check('Title counts the squares', await coolerText('title'), 'THE COOLER  –  PREP     4 / 48');
+  // SCREAM-204: Quick play keeps the full-strength truck: 3 crates, nothing locked.
+  check('Quick play: the full-strength truck, no locked crate (SCREAM-204)', (await page.evaluate(() => { const e = window.__game.registry.get('evening'); return e.spec.weak + ' ' + e.spec.coolerCrates; })) + ' ' + (await page.evaluate(() => window.__game.scene.getScene('Cooler').lockedCrates.length)), 'false 3 0');
   check("Today's Menu: a card for eclairs only, price in marker", await menu(), 'eclair $2');
   await press('ArrowRight'); await press('+', 2);
   check('Right, then +2: the menu price goes up (part of the draft)', (await draft(0)) + ' / ' + (await menu()), 'eclair:4:250 / eclair $2.50');

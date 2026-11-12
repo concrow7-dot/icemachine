@@ -338,6 +338,33 @@ export const FUEL_QUICK_PLAY_START = 1;
 export const FUEL_TUTORIAL_START = 0.25;
 
 
+// ---- SCREAM-204 (PO, November 11-12): Story starts with a weaker truck ----
+// PO: "there are two areas of the game we should make the player worse at, at the beginning of
+// the game, so that the power-ups feel like they are earned: driving (the truck) and music (the
+// radius the music reaches)." Then: "Cooler size needs to be reduced as well" and "Fuel: it needs
+// to go down faster". Quick play keeps the full-strength truck. How much weaker is engineering's
+// starting guess for each; power-ups (decision 073) will win these back.
+
+/** Story's top speed: this share of TRUCK_SPEED. */
+export const STORY_TRUCK_SPEED_FACTOR = 0.8;
+/** Story takes this many times longer to reach top speed. */
+export const STORY_TRUCK_ACCELERATION_FACTOR = 1.4;
+/** Story takes this many times longer to brake to a stop. */
+export const STORY_TRUCK_BRAKING_FACTOR = 2;
+/** Story's wheel turns the truck this share as fast at speed (the tightest turn when slow is unchanged). */
+export const STORY_TRUCK_TURN_FACTOR = 0.9;
+/** Story's music reaches this share of MUSIC_RING_RADIUS. */
+export const STORY_MUSIC_RADIUS_FACTOR = 0.75;
+/** Story's cooler has this many crates to use; the others are locked (SCREAM-25 brings one back). */
+export const STORY_COOLER_CRATES = 2;
+/** Story burns gas this many times as fast. */
+export const STORY_FUEL_BURN_FACTOR = 1.3;
+/**
+ * PO, November 12: "when player runs out, then should start with 1/3 tank now": after an evening
+ * that ended out of gas, the next Story day starts with this much (it was the 1/6 above).
+ */
+export const FUEL_STORY_OUT_OF_GAS_START = 1 / 3;
+
 /** The HUD's gauge turns red at or below this much of a tank. */
 export const FUEL_LOW = 0.15;
 

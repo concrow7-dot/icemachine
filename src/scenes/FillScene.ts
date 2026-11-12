@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
+import { CRATE_SIDE } from '../config/tuning';
+import { addLockedCrate } from '../ui/lockedCrate';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -41,6 +42,8 @@ export class FillScene extends Phaser.Scene {
   windowButton!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-204: the covers over crates Story's cooler doesn't have yet (test hook). */
+  lockedCrates: Phaser.GameObjects.Container[] = [];
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -78,14 +81,19 @@ export class FillScene extends Phaser.Scene {
     // The tip cup stands on the shelf on the left wall.
     this.tipBar = new TipBar(this, 124, 386, true);
 
-    for (let i = 0; i < COOLER_CAPACITY; i++) {
+    for (let i = 0; i < this.evening.spec.coolerCapacity; i++) {
       const { x, y } = cellCentre(i);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.take(i));
       this.cellIcons.push(icon);
     }
     this.focusMark = this.add.graphics();
-    CRATE_LEFTS.forEach((left, crate) => this.lids.push(this.makeLid(left, crate)));
+    // SCREAM-204: Story starts with fewer crates; the rest are shut and marked LOCKED.
+    this.lockedCrates = [];
+    CRATE_LEFTS.forEach((left, crate) => {
+      if (crate < this.evening.spec.coolerCrates) this.lids.push(this.makeLid(left, crate));
+      else this.lockedCrates.push(addLockedCrate(this, left, CRATE_TOP, CRATE_PX));
+    });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
     this.bagEmpty = this.add.text(BAG_FIRST_X - 14, BAG_Y - 8, 'Nothing yet: open a crate and click an ice cream.', {

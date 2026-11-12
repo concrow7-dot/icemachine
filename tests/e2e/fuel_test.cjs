@@ -247,7 +247,7 @@ const { chromium } = require('playwright');
   await ev('(e.burnFuel(32100 * 0.3), true)');
   await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
-  // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
+  // SCREAM-119 (PO): running out of gas ends the day; SCREAM-204 (PO, November 12): the next day starts with 1/3 of a tank (it was 1/6).
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
   // SCREAM-208: the tank only runs dry on the road, so drive off first.
@@ -256,9 +256,9 @@ const { chromium } = require('playwright');
   check('Story: out of gas shows "Needed a tow home." first too', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text')), 'Drive,Hud Needed a tow home.');
   await until(async () => (await scenes()).startsWith('DayEnd'));
   const dayEnd = await texts('DayEnd');
-  check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
+  check('Story: out of gas ends the day, and says tomorrow starts with 1/3 of a tank (SCREAM-204)', /ran out of gas/.test(dayEnd) && /1\/3 of a tank/.test(dayEnd), true);
   await press('Enter'); await wait(300);
-  check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
+  check('...and the next day starts with 1/3 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.333);
   // A save from before fuel: a quarter tank.
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); d.day = 2; localStorage.setItem('icemachine.story.v2', JSON.stringify(d)); });
   // ...and from before SCREAM-129: three slots, any flavours (cookies in the third).

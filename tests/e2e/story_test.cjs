@@ -75,6 +75,19 @@ const { chromium } = require('playwright');
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
   check('Story starts with $50', await ev('e.moneyCents'), 5000);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
+  // ---- SCREAM-204 (PO, November 11-12): Story starts with a weaker truck ----
+  const tune = await page.evaluate(async () => { const t = await import('/src/config/tuning.js'); return { speed: t.TRUCK_SPEED, ring: t.MUSIC_RING_RADIUS, tank: t.FUEL_TANK_PX, acc: t.TRUCK_ACCELERATION_SECONDS, brake: t.TRUCK_BRAKING_SECONDS, turn: t.TRUCK_MAX_TURN_DEGREES_PER_SECOND }; });
+  const spec = await ev('e.spec');
+  check('Story: the truck is the weaker one (SCREAM-204)', spec.weak, true);
+  check('...slower, slower to speed up, slower to stop, wider turns at speed', [spec.topSpeed < tune.speed, spec.accelerationSeconds > tune.acc, spec.brakingSeconds > tune.brake, spec.maxTurnDegrees < tune.turn].join(), 'true,true,true,true');
+  check('...the music reaches less far', spec.musicRadius < tune.ring, true);
+  check('...a tank of gas goes less far', spec.fuelTankPx < tune.tank, true);
+  check('...the cooler has 2 crates: 32 squares', spec.coolerCrates + ' ' + spec.coolerCapacity + ' ' + (await ev('e.cells.length')), '2 32 32');
+  check('...the cooler screen counts out of 32', /\/ 32$/.test(await sc('Cooler', 's.title.text')), true);
+  check('...and its third crate is shut and marked LOCKED', await sc('Cooler', "s.lockedCrates.length + ' ' + s.lockedCrates[0].getByName('locked-crate-label').text"), '1 LOCKED');
+  await page.keyboard.press('3'); await wait(150);
+  check('...pressing 3 does not choose the locked crate', await sc('Cooler', 's.order.crate'), 0);
+  await page.screenshot({ path: outDir + '/story_cooler_locked_crate.png' });
   // SCREAM-221 / SCREAM-232 (PO): Story starts on a Monday; the HUD shows just the weekday.
   check('HUD shows the weekday beside the clock: Monday', /Monday/.test(await hudClock()) && !/Day 1/.test(await hudClock()), true);
   // SCREAM-232: ticked today a bit likelier, not ticked much less likely; anyone but 0% may come.
@@ -238,7 +251,7 @@ const { chromium } = require('playwright');
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
   check('Saved: day 2, $47, 3 bars in the first slot', await saved(), '2 4700 3/0/0/0');
-  check('...and where each ice cream sits (SCREAM-131): 48 squares, 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '48 3');
+  check('...and where each ice cream sits (SCREAM-131): 32 squares in Story (SCREAM-204), 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '32 3');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----

@@ -1,6 +1,6 @@
 import type { FlavourId } from '../config/flavours';
 import { FLAVOURS } from '../config/flavours';
-import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
+import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_OUT_OF_GAS_START, FUEL_STORY_START, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import type { MapId } from '../config/maps';
 import { EveningState, type CoolerSlot } from './EveningState';
 import { clearStorySave, saveStory, type StorySave } from './StorySave';
@@ -109,8 +109,9 @@ export class StoryRun {
     this.cashCents = evening.moneyCents;
     this.slots = evening.slotsSnapshot;
     this.cells = evening.cellsSnapshot;
-    // SCREAM-119: out of gas (or nearly), the next day starts with 1/6 of a tank, enough to reach a station.
-    this.fuel = Math.max(evening.fuel, FUEL_STORY_MIN_START);
+    // SCREAM-119: nearly out of gas, the next day starts with 1/6 of a tank, enough to reach a station.
+    // SCREAM-204 (PO, November 12): after running right out, with 1/3 (gas burns faster in Story now).
+    this.fuel = evening.endedOutOfGas ? FUEL_STORY_OUT_OF_GAS_START : Math.max(evening.fuel, FUEL_STORY_MIN_START);
     this.visits = { ...evening.visits }; // SCREAM-145
     this.rotaryHintGiven = evening.rotaryHintGiven;
     const b = evening.breakdown;

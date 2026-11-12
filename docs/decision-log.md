@@ -2,6 +2,29 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 074 — Story starts with a weaker truck, so power-ups feel earned (2026-11-12)
+
+**Decision (Jira SCREAM-204, under SCREAM-78, PO, November 8, 11 and 12):** in Story the player starts out worse at four things, and power-ups (073) will win them back. Quick play keeps the truck as it was.
+
+- **Driving:** the truck is slower, slower to speed up, slower to stop, and turns a little wider at speed.
+- **Music:** it reaches less far.
+- **Cooler:** it is smaller: 2 crates (32 ice creams) instead of 3 (48). The third crate is shut and marked LOCKED.
+- **Gas:** it burns faster. After an evening that ends out of gas, the next day starts with 1/3 of a tank (it was 1/6): "when player runs out, then should start with 1/3 tank now" (PO).
+
+**Options considered:** Story starts weaker (chosen); everything stays at full strength and power-ups only add on top.
+
+**Why (product owner's rationale, November 11):** "I think there are two areas of the game we should make the player worse at, at the beginning of the game, so that the powers up feel like they are earned: 1. Driving - truck 2. Music - radius the music reaches". Then: "Cooler size needs to be reduced as well" and "Also Fuel - it needs to go down faster". November 12: "Making things worse is the main priority".
+
+**Engineering's calls (proposals; every number is a starting guess in `tuning.ts`, easy to change):**
+
+- How much weaker: top speed 80% (547 to 438); 1.4 times as long to reach top speed (2.5 s to 3.5 s); twice as long to brake (0.15 s to 0.3 s); turning at speed 90% (the tightest slow turn is unchanged, so a U-turn still fits the road); music 75% (300 to 225); gas burns 1.3 times as fast.
+- Roll speed (on the PO's whiteboard) is not changed: it isn't clear whether rolling further or less far is the "worse" one. Asked.
+- Quick play is unchanged, so its high scores still compare with older ones.
+- The uncle's evening uses the weaker truck too: it is Day 1 of Story, and this way nothing is taken away on Day 2.
+- A day that ends low on gas without running out still starts the next with at least 1/6 of a tank, as before; only running right out gives 1/3.
+- A Story save from before this change holding more than 32 ice creams loses the extras when it is next opened.
+- Scenes now read the truck's abilities from `evening.spec` (`src/state/TruckSpec.ts`), which is where power-ups will change them.
+
 ## 073 — Power-ups are bought with money (2026-11-11)
 
 **Decision (Jira SCREAM-79, under SCREAM-78, PO, November 11):** players get power-ups and upgrades by spending the money they earn. The details the PO agreed the same evening:
