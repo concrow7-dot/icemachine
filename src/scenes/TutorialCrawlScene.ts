@@ -128,11 +128,13 @@ export class TutorialCrawlScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', () => this.finish());
 
-    // The tune, unless the player has muted the music (M). It pauses with the game (Esc), and
-    // fades out once the uncle appears (UncleIntroScene), however the credits ended.
+    // The tune. It pauses with the game (Esc), and fades out once the uncle appears
+    // (UncleIntroScene), however the credits ended. SCREAM-186: it plays muted when the music is
+    // muted, and M mutes or unmutes it like the music.
     this.sound.stopByKey(CREDITS_TUNE_KEY);
-    if (!musicFor(this).muted) {
+    {
       const tune = this.sound.add(CREDITS_TUNE_KEY, { volume: CREDITS_TUNE_VOLUME });
+      musicFor(this).follow(tune as Phaser.Sound.WebAudioSound);
       tune.play();
       const pause = () => tune.pause();
       const resume = () => tune.resume();
