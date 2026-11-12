@@ -187,6 +187,11 @@ const { chromium } = require('playwright');
   // SCREAM-236: the scroll sets up the bike instead.
   check('...ending with the $600 bike', /new bike in the shop window the other day for \$600\.00\. Better get to work/.test(await sc('TutorialCrawl', 's.lines.map(t => t.text).join(" ")')), true);
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
+  // SCREAM-186: M mutes the credits tune too, and M again brings it back.
+  await page.keyboard.press('m'); await wait(150);
+  check('SCREAM-186: M during the credits mutes the tune (and the music)', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").every(t => t.mute) + " " + window.__game.registry.get("music").muted'), 'true true');
+  await page.keyboard.press('m'); await wait(150);
+  check('...M again: the tune is back', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => !t.mute && t.isPlaying) + " " + window.__game.registry.get("music").muted'), 'true false');
   // SCREAM-217 (PO, November 9): X is the one skip key in the uncle's evening (PO changed it from S the same day); Enter and S no longer skip the credits.
   check('The credits say X skips them (SCREAM-217)', await sc('TutorialCrawl', "s.children.list.filter(o => o.type === 'Text').some(t => t.text === 'X: Skip')"), true);
   await press('Enter'); await wait(300);

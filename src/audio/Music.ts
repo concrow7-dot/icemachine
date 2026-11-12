@@ -29,6 +29,8 @@ export class Music {
   private mutedValue: boolean;
   /** Called with the song's title each time a new song starts. */
   onSong?: (title: string) => void;
+  /** SCREAM-186: other sounds (the credits tune) that mute and unmute with the music. */
+  private readonly followers = new Set<{ setMute(value: boolean): unknown }>();
 
   constructor(ctx: AudioContext | null | undefined) {
     this.ctx = ctx ?? null;
@@ -74,7 +76,18 @@ export class Music {
       // Storage can be blocked; muting still works for this session.
     }
     this.applyVolume();
+    for (const s of this.followers) s.setMute(this.mutedValue);
     return this.mutedValue;
+  }
+
+  /**
+   * SCREAM-186 (PO, November 6): a sound that should mute with the music, M on any screen: muted
+   * now if the music is, and from then on whenever M is pressed. Forgotten when it is destroyed.
+   */
+  follow(sound: { setMute(value: boolean): unknown; once(event: string, fn: () => void): unknown }): void {
+    sound.setMute(this.mutedValue);
+    this.followers.add(sound);
+    sound.once('destroy', () => this.followers.delete(sound));
   }
 
   /** N: skip to the next song. */

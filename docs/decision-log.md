@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 093 — M mutes the credits tune too (2026-11-12)
+
+**Decision (Jira SCREAM-186, under SCREAM-6, PO, November 6):** the music can be muted and unmuted on every screen that plays music, not only while driving, with one setting for the whole game.
+
+**What engineering found:** every evening screen already took M (the top bar handles it off the road, SCREAM-118), and the title, pause, end-of-day, results and high score screens play no music. The one gap was the uncle's credits tune: it didn't start if the music was muted, and M did nothing to it.
+
+**Options considered:** the credits tune follows the music's mute (chosen); a separate sound setting.
+
+**Why (product owner's rationale):** not given yet (the ticket gives the problem, not a reason). *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The tune always starts, muted if the music is, and M mutes or unmutes it while it plays (into the uncle's first lines, where it fades out).
+- No on-screen mute button: no screen has one today (the driving view shows "Music off (M)").
+
 ## 092 — Story's cooler: the bottom row is gone, 18 ice creams to start (2026-11-12)
 
 **Decision (Jira SCREAM-291, under SCREAM-78, PO, November 12):** "I want to completely remove the bottom row of the cooler. So there should be 18 total slots. 6 per cooler now." Changes 075 (24).
