@@ -208,7 +208,25 @@ const { chromium } = require('playwright');
   check('Overcharge, then a fair price: paid, with no tip (SCREAM-120)', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.tipCents')) + ' ' + ((await cash()) - c3b), 'paid 0 100');
   await press('Enter'); await wait(300);
   
-  // ---- Sale 4: ask again (R), then wrong -> no retry, given away ----
+  // ---- SCREAM-283 (PO, November 12): RETURN TO COOLER at "How much?" ----
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
+  const stock283 = await stock();
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-283: at "How much?" a RETURN TO COOLER button in the bottom left, under the counter', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', '(b => s.returnButton.visible + " " + s.returnButton.text + " " + (b.left >= 0 && b.right < 240 && b.top > 455 && b.bottom < 505))(s.returnButton.getBounds())')), 'pricing true RETURN TO COOLER true');
+  check('...and the keys along the bottom fit on the screen and name C', await sc('Sales', '(b => b.left > 0 && b.right < 960)(s.hint.getBounds()) + " " + /C: Return To Cooler/.test(s.hint.text)'), 'true true');
+  await page.screenshot({ path: outDir + '/sale_return_to_cooler.png' });
+  await page.keyboard.type('9');
+  await page.mouse.click(118, 478); await wait(300);
+  check('...clicking it: back at the cooler, the sale still on, the bag as it was', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.bagContents.map(b => b.flavour).join()')), 'Fill,Hud deciding spongepop');
+  await ev('(e.putBack(0), true)'); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('...swap it and SERVE: "How much?" again, the typed price cleared', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.bagMatchesOrder')) + ' ' + JSON.stringify(await sc('Sales', 's.typed')), 'pricing true ""');
+  await press('c'); await wait(300);
+  check('...C does the same as the button', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
+  await press('Enter'); await wait(300);
+  check('...not shown before "How much?" or once the sale is over', await (async () => { const a = await sc('Sales', 's.returnButton.visible'); await press('b'); await wait(300); return a + ' ' + (await sc('Sales', 's.returnButton.visible')); })(), 'true false');
+  await press('Enter'); await wait(300);
+  check('...driving off puts the bag back in the cooler', await stock(), stock283);
+
   await serveNow(); await setOrder([{ slot: 1, flavour: 'spongepop', count: 2 }]); await tick(5100);
   await press('r');
   check('R: the order is shown again', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')), 'ordering true');
