@@ -146,9 +146,9 @@ const { chromium } = require('playwright');
   check('...the customer drawn from the tutorial sheet', await page.evaluate(() => (p => p && p.texture.key)(window.__game.scene.getScene('Sales').children.getByName('customer'))), 'customer-smooth-residents-tutorial-' + (await ev('e.customer.resident.look')));
 
   // ---- Restart keeps the map; Quit then Quick play goes back to Worcester ----
-  await press('Escape'); await press('ArrowDown'); await press('Enter'); await press('y'); await wait(500);
-  check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
   await press('Escape'); await press('ArrowDown', 2); await press('Enter'); await press('y'); await wait(500);
+  check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
+  await press('Escape'); await press('ArrowDown', 3); await press('Enter'); await press('y'); await wait(500);
   check('Quit: title screen', await scenes(), 'Title');
   await press('Enter'); await wait(400);
   check('Quick Play: back on Worcester with its 160 residents', (await ev('e.mapId')) + ' ' + (await ev('e.residents.all.length')), 'worcester 160');
