@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 073 — Power-ups are bought with money (2026-11-11)
+
+**Decision (Jira SCREAM-79, under SCREAM-78, PO, November 11):** players get power-ups and upgrades by spending the money they earn. The details the PO agreed the same evening:
+
+- **Where:** at home, in the hub. The cork board above the cooler is the power-ups area: "The user can click into that and see the powerups menu." (PO)
+- **When:** before setting off, and on any stop at home to restock.
+- **Two kinds:** cheap ones that last one evening, and dearer ones that last the rest of the Story run (better brakes, for example). Some are bought again and again: "an emergency supply of gas is something I want to make a ticket for" (PO; that is SCREAM-122, the spare can of gas).
+- **Story only** for now. Quick play is one evening with no savings.
+- **One pot of money:** power-ups are paid for from the same money that is saving for the $600 bike.
+
+**Options considered:** buy them with money (chosen); roguelike, where the player is offered a choice of power-ups as a run goes on; find them on the map while driving.
+
+**Why (product owner's rationale, November 11):** "I think it's a more fun experience. I was kicking around the idea of making the game a rogue-like, but I think the real fun comes from weighing money vs the help you will get from the powerups. The saying 'Gotta spend money to make money.'"
+
+**Engineering's calls (proposals):**
+
+- Where and when to buy, the two kinds, Story only and the one pot of money were engineering's proposals; the PO agreed to each, and the cork board is his own idea.
+- With one pot of money, prices need tuning so that buying nothing is not always the best way to reach the bike. To be worked out with SCREAM-204 and the first power-ups.
+- The power-ups menu itself is a new ticket (SCREAM-267), to be built before any single power-up.
+
 ## 072 — Esc on the high score screen opens the pause menu, with a warning (2026-11-11)
 
 **Decision (Jira SCREAM-181, under SCREAM-8, PO, November 6):** while the high score screen is asking for initials, Esc opens the pause menu with the line "Quitting won't save your high score." Resume goes back to the screen as it was, with any letters already typed. Quit To Title asks "Are you sure?" and, on Yes, leaves without saving the score.
