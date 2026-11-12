@@ -206,6 +206,15 @@ const NEIGHBOUR_SALT = 0x5ca1ab1e;
  */
 export const HARD_TO_FIND_HINT_SKIP = 0.5;
 
+/**
+ * SCREAM-275 (PO, November 12): schedule and neighbour lines are only about the customers "who will
+ * give you better business", "people like Pizza Joe and Big Kev": a set order size (042) or hard to
+ * find (067).
+ */
+export function isSpecialCustomer(resident: Pick<Resident, 'orderSize' | 'hardToFind'>): boolean {
+  return resident.orderSize !== undefined || !!resident.hardToFind;
+}
+
 /** Whether other customers can talk about this resident: they have ticked days and do buy. */
 export function canBeToldAbout(resident: Pick<Resident, 'days' | 'likelihood'>): boolean {
   return !!resident.days && resident.days.length > 0 && resident.likelihood > 0;

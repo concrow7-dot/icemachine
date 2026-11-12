@@ -11,7 +11,7 @@ import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { assignHints } from './Hints';
 import { HINT_LINES } from '../config/hintLines';
-import { assignNeighbourLines, assignScheduleLines, neighbourLineToday, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
+import { assignNeighbourLines, assignScheduleLines, isSpecialCustomer, neighbourLineToday, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
 import { SCHEDULE_LINES } from '../config/scheduleLines';
 import { NEIGHBOUR_LINES } from '../config/neighbourLines';
 import { TutorialEvents, TutorialRun } from './Tutorial';
@@ -845,11 +845,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const forced = this.forceScheduleLine || this.forceNeighbourLine;
     if (!forced && this.scheduleLinesSaid >= SCHEDULE_LINES_MAX_PER_EVENING) return;
     const everyDay = (me.days?.length ?? 0) >= 7;
-    const own = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard);
+    // SCREAM-275: only special customers talk about their own week, and only special neighbours are talked about.
+    const own = isSpecialCustomer(me)
+      ? scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard)
+      : null;
     // SCREAM-248 (decision 065): or something about a neighbour on their street.
     const neighbour = neighbourLineToday(
       me,
-      this.residents.all.map((p) => p.resident),
+      this.residents.all.map((p) => p.resident).filter(isSpecialCustomer),
       this.neighbourLinesFor,
       this.story.day,
       STORY_DAYS,
