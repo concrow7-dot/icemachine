@@ -42,6 +42,8 @@ export class FillScene extends Phaser.Scene {
   private serveButton!: Phaser.GameObjects.Text;
   /** SCREAM-240: the button for B. SCREAM-282: it reads FORGOT ORDER. */
   windowButton!: Phaser.GameObjects.Text;
+  /** The keys along the bottom (SCREAM-288: B is named only while FORGOT ORDER is there). */
+  keysLine!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
   /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
@@ -136,8 +138,8 @@ export class FillScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.windowButton.on('pointerdown', () => this.forgotOrder());
 
-    this.add
-      .text(width / 2, height - 9, '1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve   B: Forgot Order', {
+    this.keysLine = this.add
+      .text(width / 2, height - 9, '', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: INK,
@@ -263,7 +265,9 @@ export class FillScene extends Phaser.Scene {
   /** SCREAM-282: back to the window, where the customer says the order again (no tip after that). */
   private forgotOrder(): void {
     const sale = this.evening.sale;
-    if (sale?.askAgain(this.evening.nowMs)) this.evening.tutorial?.release(); // as R does at the window (SCREAM-172)
+    // SCREAM-288: only twice per customer; after that the button is gone and B does nothing.
+    if (!sale?.askAgain(this.evening.nowMs)) return;
+    this.evening.tutorial?.release(); // as R does at the window (SCREAM-172)
     this.scene.start(SceneKeys.Sales);
   }
 
@@ -306,6 +310,9 @@ export class FillScene extends Phaser.Scene {
     );
     this.bagEmpty.setVisible(this.bagIcons.length === 0);
     this.serveButton.setAlpha(sale.bagCount > 0 ? 1 : 0.4);
+    // SCREAM-288: FORGOT ORDER goes away once this customer has been asked twice.
+    this.windowButton.setVisible(sale.canAskAgain);
+    this.keysLine.setText(`1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve${sale.canAskAgain ? '   B: Forgot Order' : ''}`);
   }
 }
 

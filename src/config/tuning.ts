@@ -124,6 +124,9 @@ export const PLACEHOLDER_SALE_CENTS = 400;
 
 // ---- Selling (#13-#15), decided in doc 08 ----
 
+/** SCREAM-288 (PO, November 12): how many times one customer can be asked for the order again. */
+export const ASK_AGAIN_LIMIT = 2;
+
 /** How long the customer's order stays in the speech bubble, in seconds. */
 export const ORDER_SHOW_SECONDS = 5;
 

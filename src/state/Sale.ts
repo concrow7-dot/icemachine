@@ -7,6 +7,7 @@ import {
   TIP_PERCENT_STEPS,
   TIP_STEP_SECONDS,
   WINDOW_PATIENCE_SECONDS,
+  ASK_AGAIN_LIMIT,
 } from '../config/tuning';
 import type { CoolerSlot } from './EveningState';
 
@@ -104,6 +105,8 @@ export class Sale {
   readonly bag: number[];
   /** True once the player has asked for the order again (R, or FORGOT ORDER): no tip, no retry (PO, Q9 and Q28). */
   askedAgain = false;
+  /** SCREAM-288: how many times the order has been asked for again. */
+  timesAsked = 0;
   /** True once a wrong order has been corrected (one retry only, Q27). */
   retryUsed = false;
   /** SCREAM-120: the player overcharged once and is trying the price again (no tip after that). */
@@ -219,16 +222,30 @@ export class Sale {
   /**
    * R at the window, FORGOT ORDER at the cooler: the customer repeats the order. The first time
    * cancels the tip and uses up the retry (Q9, Q28). SCREAM-282: it can be asked again after
-   * that, and after a corrected mistake, since there is nothing more to lose.
+   * that, and after a corrected mistake; SCREAM-288: twice in all.
    */
   askAgain(nowMs: number): boolean {
     // SCREAM-285 (PO, November 12): also after the bag is served, at "How much?". The customer
     // says the order, then asks the price again (unless the player heads for the cooler).
-    if (this.phase !== 'deciding' && this.phase !== 'pricing') return false;
+    if (!this.canAskAgain) return false;
     this.backToPricing = this.phase === 'pricing';
     this.askedAgain = true;
+    this.timesAsked++;
     this.showOrder(nowMs, describeOrder(this.order), '');
     return true;
+  }
+
+  /**
+   * SCREAM-288 (PO, November 12): each customer can be asked at most twice (`ASK_AGAIN_LIMIT`),
+   * counting the window (ASK AGAIN, R) and the cooler (FORGOT ORDER, B) together.
+   */
+  get canAskAgain(): boolean {
+    return (this.phase === 'deciding' || this.phase === 'pricing') && this.timesAsked < ASK_AGAIN_LIMIT;
+  }
+
+  /** How many times this customer can still be asked for the order again. */
+  get asksLeft(): number {
+    return Math.max(0, ASK_AGAIN_LIMIT - this.timesAsked);
   }
 
   /** The player comes back from the cooler and hands the items over: the customer asks the price. */
