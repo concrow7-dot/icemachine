@@ -23,6 +23,8 @@ const INK = '#2b1d10';
 /** The window's buttons sit centred below the counter, above the key hints (ICE-14). */
 const BUTTON_X = 480;
 const BUTTON_Y = 478;
+/** SCREAM-284: the window's tip bar is as tall as the tip jar. */
+const WINDOW_TIP_BAR_H = 70;
 /** SCREAM-283: RETURN TO COOLER sits at the left end of the strip under the counter. */
 const RETURN_BUTTON_X = 118;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
@@ -163,7 +165,8 @@ export class SalesScene extends Phaser.Scene {
     this.orderPictures = this.add.container(330, 212);
 
     // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
-    this.tipBar = new TipBar(this, 892, 412, true);
+    // SCREAM-284 (PO, November 12): the same countdown bar as at the cooler, at the jar's size.
+    this.tipBar = new TipBar(this, 892, 412, true, true, WINDOW_TIP_BAR_H);
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
     this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);

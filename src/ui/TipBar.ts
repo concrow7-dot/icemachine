@@ -15,6 +15,8 @@ const BILLS_H = 30;
  * the top tip and shrinking as the countdown runs, so the player can see the tip ticking away.
  */
 const TALL_H = 190;
+/** SCREAM-284: below this height there is no room for the 20% / 15% / 10% / 5% labels beside the bar. */
+const ZONE_LABELS_FROM = 150;
 
 /**
  * Issue #14/#15: the 40-second tip countdown, shown on the sales screen and
@@ -37,11 +39,12 @@ export class TipBar {
    * A bar across the top (the cooler), or with `jar`, a tip jar standing on the counter with
    * (x, y) the middle of its base: it empties from the top down as the tip shrinks.
    */
-  constructor(scene: Phaser.Scene, x: number, y: number, jar = false, tall = false) {
+  /** `tall`: the bar that shrinks with the tip (SCREAM-281), `barHeight` px when full (SCREAM-284: the window's is the jar's height). */
+  constructor(scene: Phaser.Scene, x: number, y: number, jar = false, tall = false, barHeight = TALL_H) {
     this.jar = jar;
     this.tall = jar && tall;
     if (jar) {
-      const fullH = this.tall ? TALL_H : BILLS_H;
+      const fullH = this.tall ? barHeight : BILLS_H;
       this.fullHeight = fullH;
       const barW = JAR_W - 12;
       const extras: Phaser.GameObjects.GameObject[] = [];
@@ -54,6 +57,7 @@ export class TipBar {
         const zone = fullH / TIP_PERCENT_STEPS.length;
         TIP_PERCENT_STEPS.forEach((percent, n) => {
           if (n > 0) track.lineStyle(2, 0x2b1d10, 0.55).lineBetween(-barW / 2 - 4, top + n * zone, barW / 2 + 8, top + n * zone);
+          if (fullH < ZONE_LABELS_FROM) return;
           const label = scene.add
             .text(barW / 2 + 12, top + (n + 0.5) * zone, `${percent}%`, { fontFamily: 'monospace', fontSize: '13px', color: '#5a4636' })
             .setOrigin(0, 0.5);
@@ -74,7 +78,7 @@ export class TipBar {
         .setOrigin(0.5)
         .setAngle(-6);
       this.label = scene.add
-        .text(0, -JAR_H - fullH - (this.tall ? 10 : 14), '', { fontFamily: 'monospace', fontSize: this.tall ? '18px' : '14px', color: '#2b1d10', fontStyle: 'bold', align: 'center' })
+        .text(0, -JAR_H - fullH - (this.tall ? 10 : 14), '', { fontFamily: 'monospace', fontSize: this.tall && fullH >= ZONE_LABELS_FROM ? '18px' : '14px', color: '#2b1d10', fontStyle: 'bold', align: 'center' })
         .setOrigin(0.5);
       // The track goes behind the green; the zone labels beside it.
       const [track, ...labels] = extras;
