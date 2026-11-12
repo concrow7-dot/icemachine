@@ -24,7 +24,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** no bar once the tip is gone, only the words (chosen); a grey bar that carries on shrinking (080, 083).
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale, November 12):** "I want the player to realize why they got no tip, so just some more context for them." Keeping "Took too long" when time runs out: confirmed (the same reason).
 
 **Engineering's calls (proposals):**
 
@@ -92,7 +92,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Engineering's calls (proposals):**
 
-- It costs the tip, like asking again at the window (Q9): engineering asked the PO and built the existing rule while waiting. If he wants FORGOT ORDER to keep the tip, it is one line.
+- It costs the tip, like asking again at the window (Q9): engineering asked the PO and built the existing rule while waiting. Confirmed by the PO, November 12: "Yes", it costs the tip.
 - Asking again is no longer once only. The first time still loses the tip and the second chance after a wrong order; after that (and after a corrected mistake) the player can ask as often as they like, since there is nothing more to lose. Otherwise FORGOT ORDER would sometimes do nothing.
 - B does the same as the button, and the keys along the bottom read "B: Forgot Order". There is no longer a way back to the window without asking again.
 - What is in the bag stays in the bag.
@@ -120,7 +120,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** a left click and Enter both work on every screen between choosing New Story and the first evening (chosen, engineering's reading of the PO's line); only on the New Bike screen; leaving the two questions on their letter keys.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering has asked.)*
+**Why (product owner's rationale):** no separate reason given. The PO confirmed engineering's two calls below (With Uncle marked first; No marked first on "Start a new story?") on November 12: "Yes".
 
 **Engineering's calls (proposals):**
 
