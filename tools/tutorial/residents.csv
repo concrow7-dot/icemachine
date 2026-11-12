@@ -1,7 +1,7 @@
 ID,Name,Age,Street,House,Likelihood (%),Look,Notes,Order size,Hinted,Mon,Tue,Wed,Thu,Fri,Sat,Sun,From,Until,Hard to find
 T001,Mary Poppsicles,Adult,Westland Street,2,30,201,,,,TRUE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,,,
 T002,Little Orphan Candy,Kid,Russell Street,5,30,202,,,,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,,,
-T003,Francine Fudge,Adult,Institute Road,6,85,203,,,Yes,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
+T003,Francine Fudge,Adult,Institute Road,6,65,203,,,Yes,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
 T004,Machine Gun Jelly,Adult,Westland Street,9,35,204,,,,FALSE,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE,,,
 T005,Itty Glitty,Adult,Westland Street,10,65,205,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
 T006,Pizza Joe,Adult,Westland Street,11,2,206,,10,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,6:00 PM,6:18 PM,Yes
@@ -10,11 +10,11 @@ T008,Chloe Hogan,Kid,Westland Street,18,80,208,The uncle's regular in the tutori
 T009,Mary Sullivan,Adult,Westland Street,20,35,209,,,,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,FALSE,,,
 T010,Jane Frostin,Adult,Westland Street,21,5,210,,,,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,,,
 T011,Rocky Road Ron,Kid,Germain Street,25,15,211,,,,TRUE,FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,,,
-T012,Candy Carlisle,Kid,Institute Road,27,65,212,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
-T013,Lucy Dulce,Kid,Institute Road,28,60,213,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,6:30 PM,
+T012,Candy Carlisle,Kid,Institute Road,27,50,212,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
+T013,Lucy Dulce,Kid,Institute Road,28,40,213,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,6:30 PM,
 T014,Joe Sullivan,Adult,Lee Street,36,35,214,,,,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,6:00 PM,,
 T015,Shamooz ,Adult,Lee Street,39,85,215,,,Yes,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
-T016,Zombie Poplicks,Adult,Lee Street,38,2,216,,10,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,7:30 PM,7:48 PM,Yes
+T016,Zombie A Poplicks,Adult,Lee Street,38,2,216,,10,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,7:30 PM,7:48 PM,Yes
 T017,Maximus Mintimus,Kid,Lee Street,41,7,217,,,,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,,,
 T018,Jennifer Lollipopez,Adult,Lee Street,42,30,218,,,,FALSE,FALSE,TRUE,TRUE,TRUE,FALSE,FALSE,,,
 T019,Penelope Crust,Adult,Germain Street,46,35,219,,,,FALSE,TRUE,FALSE,FALSE,TRUE,FALSE,FALSE,,,

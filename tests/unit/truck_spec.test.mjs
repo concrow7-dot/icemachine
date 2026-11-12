@@ -33,10 +33,17 @@ test("Story's truck is worse at everything the PO listed", () => {
   // PO, November 12, two rounds: braking 4 then 8 times as long, acceleration 2 then 4 times as long,
   // roll speed down 75% then by another third, music at 85% then 70%, reverse a third as fast and
   // twice as long to get there.
-  assert.equal(weak.brakingSeconds, full.brakingSeconds * 8);
+  assert.equal(weak.brakingSeconds, full.brakingSeconds * 16); // third round: 2x worse again
+  assert.equal(weak.turnAboveRoll, 0.5); // third round: above roll speed, turns are twice as wide
+  assert.equal(full.turnAboveRoll, 1);
+  // PO, 02:49: the roll from top speed down to the creep takes 4 seconds in Story (about 10 in Quick play).
+  assert.equal(full.coastKeep, t.TRUCK_COAST_KEEP);
+  const rollSeconds = (sp) => (Math.log(sp.creepSpeed / sp.topSpeed) / Math.log(sp.coastKeep)) * t.TRUCK_COAST_KEEP_SECONDS;
+  assert.ok(Math.abs(rollSeconds(weak) - 4) < 1e-6, 'Story rolls down in 4 s');
+  assert.ok(rollSeconds(full) > 9 && rollSeconds(full) < 10.5, 'Quick play still about 10 s');
   assert.equal(weak.accelerationSeconds, full.accelerationSeconds * 4);
   assert.ok(Math.abs(weak.creepSpeed - full.creepSpeed / 6) < 1e-9);
-  assert.equal(weak.musicRadius, full.musicRadius * 0.7);
+  assert.ok(Math.abs(weak.musicRadius - full.musicRadius * 0.55) < 1e-9); // 85%, 70%, then 55%
   assert.ok(Math.abs(weak.reverseSpeed - full.reverseSpeed / 3) < 1e-9);
   assert.equal(weak.reverseAccelerationSeconds, full.reverseAccelerationSeconds * 2);
   assert.ok(weak.maxTurnDegrees < full.maxTurnDegrees, 'turns less sharply at speed');

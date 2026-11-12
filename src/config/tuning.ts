@@ -354,7 +354,7 @@ export const STORY_TRUCK_ACCELERATION_FACTOR = 4; // then (02:17) "Acceleration 
  * person holds break it should take 400x longer to break." Read as 400%, 4 times as long (0.15 s to 0.6 s);
  * 400 times would be a full minute.
  */
-export const STORY_TRUCK_BRAKING_FACTOR = 8; // then (02:17) "Brake speed should be reduced by 2x": twice as long again, 1.2 s
+export const STORY_TRUCK_BRAKING_FACTOR = 16; // (02:17) "reduced by 2x": 1.2 s; (02:36) "Braking reduced again. 2x worse": 2.4 s
 /**
  * PO, November 12: "roll speed should be reduced by 75%." Story's creep (the speed the truck rolls at with
  * no key held, TRUCK_CREEP_SPEED) is this share of Quick play's: 72 to 18 px/s.
@@ -372,8 +372,21 @@ export const STORY_TRUCK_REVERSE_SPEED_FACTOR = 1 / 3;
 export const STORY_TRUCK_REVERSE_ACCELERATION_FACTOR = 2;
 /** Story's wheel turns the truck this share as fast at speed (the tightest turn when slow is unchanged). */
 export const STORY_TRUCK_TURN_FACTOR = 0.9;
+/**
+ * PO, November 12 (02:36): "At any speed above roll: turning should be 2x worse". In Story, whenever the
+ * truck is going faster than its roll (the creep with no key held), the wheel turns it this share as
+ * fast, so every turn is twice as wide. At roll speed or slower, turning is as before.
+ */
+export const STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR = 0.5;
+/**
+ * PO, November 12 (02:49): "I think the roll for 10 seconds is too long, lets go to 4 seconds". The roll
+ * is what the truck does after the gas is let go: it keeps most of its speed and slows gently to its
+ * creep. In Story, rolling down from top speed to the creep takes this many seconds (Quick play keeps
+ * TRUCK_COAST_KEEP, about 10 s).
+ */
+export const STORY_TRUCK_ROLL_SECONDS = 4;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
-export const STORY_MUSIC_RADIUS_FACTOR = 0.7; // then (02:17) "reduced more, the same amount": another 15 points, 300 to 210
+export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**
  * SCREAM-269 (PO, November 12: "24 to start"): in Story the right half of every crate is covered, so
  * the cooler holds half as much: 3 crates x 8 squares = 24 (SCREAM-25 will uncover them). It was 2

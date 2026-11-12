@@ -18,7 +18,6 @@ import {
   TRUCK_COAST_SECONDS,
   TRUCK_MIN_TURN_RADIUS,
   TRUCK_REVERSE_DELAY_SECONDS,
-  TRUCK_COAST_KEEP,
   TRUCK_COAST_KEEP_SECONDS,
   TRUCK_LENGTH,
   TRUCK_WIDTH,
@@ -638,7 +637,7 @@ export class DriveScene extends Phaser.Scene {
       // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
       // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
       if (Math.abs(this.speed) > this.evening.spec.creepSpeed)
-        this.speed = Math.sign(this.speed) * Math.max(this.evening.spec.creepSpeed, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
+        this.speed = Math.sign(this.speed) * Math.max(this.evening.spec.creepSpeed, Math.abs(this.speed) * spec.coastKeep ** (dt / TRUCK_COAST_KEEP_SECONDS));
       else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
     if (this.speed !== 0) this.rolling = Math.sign(this.speed);
@@ -647,7 +646,9 @@ export class DriveScene extends Phaser.Scene {
     // Steering turns the truck only while it's moving, like a car: tight turns
     // when slow, wider at speed. In reverse the wheel works the other way round.
     if (steer !== 0 && this.speed !== 0) {
-      const turnRate = Math.min(spec.maxTurnDegrees, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
+      // SCREAM-280 (PO, November 12): in Story, above the roll speed every turn is twice as wide.
+      const aboveRoll = Math.abs(this.speed) > spec.creepSpeed + 1 ? spec.turnAboveRoll : 1;
+      const turnRate = aboveRoll * Math.min(spec.maxTurnDegrees, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
       const turnedTo = this.heading + steer * Math.sign(this.speed) * turnRate * dt;
       // Don't swing the truck's nose or tail into a wall or a parked car.
       if (!this.obstacleAt(this.truck.x, this.truck.y, turnedTo)) this.setHeading(turnedTo);
