@@ -13,6 +13,8 @@ test("Quick play's truck is exactly the tuning values", () => {
   assert.equal(full.accelerationSeconds, t.TRUCK_ACCELERATION_SECONDS);
   assert.equal(full.brakingSeconds, t.TRUCK_BRAKING_SECONDS);
   assert.equal(full.creepSpeed, t.TRUCK_CREEP_SPEED);
+  assert.equal(full.reverseSpeed, t.TRUCK_REVERSE_SPEED);
+  assert.equal(full.reverseAccelerationSeconds, t.TRUCK_REVERSE_ACCELERATION_SECONDS);
   assert.equal(full.maxTurnDegrees, t.TRUCK_MAX_TURN_DEGREES_PER_SECOND);
   assert.equal(full.musicRadius, t.MUSIC_RING_RADIUS);
   assert.equal(full.coolerHalfCovered, false);
@@ -28,11 +30,15 @@ test("Story's truck is worse at everything the PO listed", () => {
   assert.ok(weak.accelerationSeconds > full.accelerationSeconds, 'slower to speed up');
   assert.ok(weak.brakingSeconds > full.brakingSeconds, 'slower to stop');
   assert.ok(weak.creepSpeed < full.creepSpeed, 'rolls more slowly');
-  // PO, November 12: braking 4 times as long, acceleration twice as long, roll speed down 75%, music at 85%.
-  assert.equal(weak.brakingSeconds, full.brakingSeconds * 4);
-  assert.equal(weak.accelerationSeconds, full.accelerationSeconds * 2);
-  assert.equal(weak.creepSpeed, full.creepSpeed * 0.25);
-  assert.equal(weak.musicRadius, full.musicRadius * 0.85);
+  // PO, November 12, two rounds: braking 4 then 8 times as long, acceleration 2 then 4 times as long,
+  // roll speed down 75% then by another third, music at 85% then 70%, reverse a third as fast and
+  // twice as long to get there.
+  assert.equal(weak.brakingSeconds, full.brakingSeconds * 8);
+  assert.equal(weak.accelerationSeconds, full.accelerationSeconds * 4);
+  assert.ok(Math.abs(weak.creepSpeed - full.creepSpeed / 6) < 1e-9);
+  assert.equal(weak.musicRadius, full.musicRadius * 0.7);
+  assert.ok(Math.abs(weak.reverseSpeed - full.reverseSpeed / 3) < 1e-9);
+  assert.equal(weak.reverseAccelerationSeconds, full.reverseAccelerationSeconds * 2);
   assert.ok(weak.maxTurnDegrees < full.maxTurnDegrees, 'turns less sharply at speed');
   assert.ok(weak.musicRadius < full.musicRadius, 'music reaches less far');
   // SCREAM-269 (PO: "24 to start"): half of every crate is covered.

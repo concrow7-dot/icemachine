@@ -17,9 +17,7 @@ import {
   ROAD_EDGE_DAMAGE_CENTS,
   TRUCK_COAST_SECONDS,
   TRUCK_MIN_TURN_RADIUS,
-  TRUCK_REVERSE_ACCELERATION_SECONDS,
   TRUCK_REVERSE_DELAY_SECONDS,
-  TRUCK_REVERSE_SPEED,
   TRUCK_COAST_KEEP,
   TRUCK_COAST_KEEP_SECONDS,
   TRUCK_LENGTH,
@@ -628,7 +626,7 @@ export class DriveScene extends Phaser.Scene {
         this.brakeHeldStill += dt;
       } else {
         this.parkBrake = false;
-        this.speed = Math.max(-TRUCK_REVERSE_SPEED, this.speed - (TRUCK_REVERSE_SPEED * dt) / TRUCK_REVERSE_ACCELERATION_SECONDS);
+        this.speed = Math.max(-spec.reverseSpeed, this.speed - (spec.reverseSpeed * dt) / spec.reverseAccelerationSeconds);
       }
     } else if (this.parkBrake) {
       this.brakeHeldStill = 0;
