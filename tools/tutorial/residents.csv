@@ -1,7 +1,7 @@
 ID,Name,Age,Street,House,Likelihood (%),Look,Notes,Order size,Hinted,Mon,Tue,Wed,Thu,Fri,Sat,Sun,From,Until,Hard to find
 T001,Mary Poppsicles,Adult,Westland Street,2,30,201,,,,TRUE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,,,
 T002,Little Orphan Candy,Kid,Russell Street,5,30,202,,,,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,,,
-T003,Francine Fudge,Adult,Institute Road,6,65,203,,,Yes,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
+T003,Francine Fudge,Adult,Institute Road,6,65,11851,,,Yes,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
 T004,Machine Gun Jelly,Adult,Westland Street,9,35,204,,,,FALSE,TRUE,TRUE,FALSE,TRUE,FALSE,FALSE,,,
 T005,Itty Glitty,Adult,Westland Street,10,65,205,,,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,,,
 T006,Pizza Joe,Adult,Westland Street,11,2,206,,10,,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,6:00 PM,6:18 PM,Yes
