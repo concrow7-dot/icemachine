@@ -33,6 +33,8 @@ const BAG_FIRST_X = 380;
 const BAG_Y = 410;
 const BAG_GAP = 48;
 const INK = '#2b1d10';
+/** SCREAM-273: BACK TO THE WINDOW is centred under the tip jar (the jar stands at x 124). */
+const WINDOW_BUTTON_X = 124;
 
 export class FillScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -106,7 +108,7 @@ export class FillScene extends Phaser.Scene {
     });
 
     this.serveButton = this.add
-      .text(880, 470, 'SERVE', {
+      .text(600, 470, 'SERVE', {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: '#ffffff',
@@ -117,11 +119,13 @@ export class FillScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.serveButton.on('pointerdown', () => this.serve());
 
-    // SCREAM-240 (PO, November 10): a button for B, in the middle of the serving area, on SERVE's row.
+    // SCREAM-240 (PO, November 10): a button for B. SCREAM-273 (PO, November 12): it sits on the
+    // left under the tip jar and its shelf, and SERVE takes its old place in the middle.
     this.windowButton = this.add
-      .text(600, 470, 'BACK TO THE WINDOW', {
+      .text(WINDOW_BUTTON_X, 470, 'BACK TO THE WINDOW', {
         fontFamily: 'monospace',
-        fontSize: '20px',
+        // 18px (was 20px in the middle) so it fits between the screen's edge and the counter.
+        fontSize: '18px',
         color: '#ffffff',
         backgroundColor: '#1d5c8c',
         padding: { x: 14, y: 7 },
