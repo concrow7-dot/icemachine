@@ -238,9 +238,10 @@ const { chromium } = require('playwright');
   const tank = await ev('e.fuel');
   near('...$20 is 2/3 of a tank: now 11/12', Math.round(tank * 1000) / 1000, 0.916, 0.917);
   await shift(3); await wait(300);
-  check('End of day 1: Gas line on the end-of-day screen', /Gas/.test(await texts('DayEnd')) && /-\$20\.00/.test(await texts('DayEnd')), true);
+  // SCREAM-268: on your own, the first pump is the uncle's $20, so nothing is spent on gas.
+  check('End of day 1: Gas line on the end-of-day screen, $0.00 (the uncle paid, SCREAM-268)', /Gas/.test(await texts('DayEnd')) && !/-\$20\.00/.test(await texts('DayEnd')), true);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')));
-  check("The save keeps the tank and the run's gas", Math.abs(saved.fuel - tank) < 1e-9 && saved.totals.gasCents === 2000, true);
+  check("The save keeps the tank and the run's gas", Math.abs(saved.fuel - tank) < 1e-9 && saved.totals.gasCents === 0 && saved.uncleGasUsed === true, true);
   await press('Enter'); await wait(300);
   check('Day 2 starts with what was left in the tank', Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // Restart this evening (pause menu): back to how tonight started, tank included.

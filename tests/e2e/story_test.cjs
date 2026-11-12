@@ -539,6 +539,34 @@ const { chromium } = require('playwright');
   check('...and reach the second column', await fillS('s.focus % 4'), 1);
   await page.screenshot({ path: outDir + '/story_fill_half_doors.png' });
 
+  // ---- SCREAM-268: On My Own, the uncle's $20 for gas waits at the first pump ----
+  {
+    const flow = (call) => page.evaluate(`(async () => { const f = await import('/src/flow.js'); const s = window.__game.scene.getScenes(true)[0]; ${call}; return true; })()`);
+    const pump = async () => { await page.evaluate(() => { const g = window.__game; if (g.scene.isActive('Drive')) g.scene.getScene('Drive').scene.pause(); g.scene.start('Pump'); }); await wait(600); };
+    await flow('f.startStory(s, false)');
+    await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
+    await until(async () => (await scenes()).includes('Cooler')); await wait(300);
+    check('SCREAM-268: On My Own: the uncle\'s gas is waiting', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'true true');
+    await pump();
+    check('...the first pump says he left $20', await sc('Pump', 's.noteText.text'), 'Your uncle left $20 for you to use.');
+    const cash0 = await ev('e.cashCents'); const fuel0 = await ev('e.fuel');
+    await press('ArrowUp', 6);
+    check('...up to $20, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), "2000 | UNCLE PAYS $20.00 | That's the uncle's $20.");
+    await press('Enter'); await wait(400);
+    check('...the tank fills by $20 and the cash is untouched', ((await ev('e.fuel')) - fuel0 > 0.6) + ' ' + ((await ev('e.cashCents')) === cash0), 'true true');
+    check('...used up: the next pump is the player\'s', await ev('e.uncleLeftGas + " " + e.unclePaysGas + " " + e.uncleGasUsed'), 'false false true');
+    await flow("f.endEvening(window.__game.scene.getScenes(true)[0])"); await until(async () => (await scenes()).includes('DayEnd')); await wait(300);
+    check('...and stays used up in the save', (await story('r.uncleGasUsed')) + ' ' + (await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')).uncleGasUsed)), 'true true');
+    await press('Enter'); await until(async () => (await scenes()).includes('Cooler')); await wait(300);
+    check('...Tuesday: no uncle\'s gas', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'false false');
+    // With Uncle, skipped before his pump: the same $20 waits.
+    await flow('f.startStory(s, true)');
+    await until(async () => (await scenes()).includes('TutorialCrawl')); await wait(500);
+    await press('x'); await until(async () => (await scenes()).includes('UncleIntro')); await wait(500);
+    await press('x'); await wait(500);
+    check('SCREAM-268: With Uncle, skipped before the pump: the uncle\'s gas waits too', await ev('e.tutorial.skipped + " " + e.uncleLeftGas + " " + e.unclePaysGas'), 'true true true');
+  }
+
   // ---- SCREAM-220: with ?debug in the address, the debug hint is back (SCREAM-88: only Shift+3, right of the clock) ----
   await page.goto(`http://127.0.0.1:${port}/index.html?debug`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
