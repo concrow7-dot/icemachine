@@ -50,7 +50,7 @@ const { chromium } = require('playwright');
   // SCREAM-238 (PO, November 10; replaces SCREAM-219): bigger, at the bottom left, above the controls hint.
   const gaugeAt = () => sc('Hud', '(() => { const g = s.fuelGauge; return g.x < s.scale.width / 4 && g.y > s.scale.height * 0.8 && g.y <= 506; })()');
   check('The gauge sits at the bottom left, above the controls hint (SCREAM-238)', await gaugeAt(), true);
-  check('...and it is bigger than the old one (E and F are more than 80 px apart; they were 57)', await sc('Hud', 's.emptyLabel.x < 0 && Math.abs(s.emptyLabel.x) * 2 > 80'), true);
+  check('...and it is bigger than the old one (E and F are more than 80 px apart; they were 57)', await sc('Hud', 's.dial.emptyLabel.x < 0 && Math.abs(s.dial.emptyLabel.x) * 2 > 80'), true);
   check('...the park brake sign starts right of it, not under it', await sc('Drive', 's.parkLabel.x >= s.scene.get("Hud").fuelGauge.x + 68'), true);
   await ev('(e.changeMoney(123400, "test", false), true)'); await wait(150);
   check('...and it stays put when the cash gets wider ($1,000s)', await gaugeAt(), true);

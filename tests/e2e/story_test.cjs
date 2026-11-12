@@ -562,9 +562,18 @@ const { chromium } = require('playwright');
     check('...the tank fills by $20 and the cash is untouched', ((await ev('e.fuel')) - fuel0 > 0.6) + ' ' + ((await ev('e.cashCents')) === cash0), 'true true');
     check('...used up: the next pump is the player\'s', await ev('e.uncleLeftGas + " " + e.unclePaysGas + " " + e.uncleGasUsed'), 'false false true');
     await flow("f.endEvening(window.__game.scene.getScenes(true)[0])"); await until(async () => (await scenes()).includes('DayEnd')); await wait(300);
+    check('SCREAM-276: the end-of-day screen shows the gas dial, bottom left, at tomorrow\'s level', await sc('DayEnd', "(d => !!d && d.container.x < 160 && d.container.y > 450)(s.gasDial)"), true);
+    await page.screenshot({ path: outDir + '/story_day_end_gas.png' });
     check('...and stays used up in the save', (await story('r.uncleGasUsed')) + ' ' + (await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')).uncleGasUsed)), 'true true');
     await press('Enter'); await until(async () => (await scenes()).includes('Cooler')); await wait(300);
     check('...Tuesday: no uncle\'s gas', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'false false');
+    check('SCREAM-276: no gas dial at the cooler', await sc('Hud', 's.fuelGauge.visible'), false);
+    await ev('(e.fuelLeft = 0.1, true)');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Truck')); await wait(600);
+    check('SCREAM-276: inside the truck (Story) the gas dial shows, bottom left', await sc('Hud', 's.fuelGauge.visible + " " + (s.fuelGauge.x < 160) + " " + (s.fuelGauge.y > 450)'), 'true true true');
+    const needles = []; for (let i = 0; i < 5; i++) { needles.push(await sc('Hud', 's.fuelNeedle')); await wait(150); }
+    check('...steady below a quarter (no wobble in the truck), at the true level', needles.every(n => n === 0.1), true);
+    await page.screenshot({ path: outDir + '/story_hub_gas.png' });
     // With Uncle, skipped before his pump: the same $20 waits.
     await flow('f.startStory(s, true)');
     await until(async () => (await scenes()).includes('TutorialCrawl')); await wait(500);

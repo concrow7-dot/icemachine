@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { buildFuelDial, drawFuelNeedle, FUEL_DIAL_SPOT, type FuelDialParts } from '../ui/fuelDial';
 import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
@@ -29,6 +30,9 @@ export class DayEndScene extends Phaser.Scene {
     loadTruckInterior(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
+
+  /** SCREAM-276: the gas dial (a test hook); only when there is a tomorrow. */
+  gasDial?: FuelDialParts;
 
   create(): void {
     // SCREAM-123: the sun has set: the inside of the truck under a dusk-blue layer.
@@ -110,6 +114,14 @@ export class DayEndScene extends Phaser.Scene {
         ? 'You ran out of gas!\nTomorrow you start with 1/3 of a tank.\n\n'
         : 'You ran out of gas!\n\n';
     this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
+
+    // SCREAM-276 (PO, November 12): the gas dial, the same as on the road, bottom left. It shows what
+    // tomorrow's tank starts with (after a near-empty or empty night, the 1/6 or 1/3 the player is given).
+    if (this.outcome === 'next') {
+      this.gasDial = buildFuelDial(this, FUEL_DIAL_SPOT.x, FUEL_DIAL_SPOT.pumpY);
+      this.gasDial.container.setName('gas-dial');
+      drawFuelNeedle(this.gasDial, story.fuel, story.fuel);
+    }
 
     const footer =
       this.outcome === 'next' ? `Enter: Start ${weekdayName(story.day)}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';

@@ -1,11 +1,12 @@
 import { currentMap } from '../config/maps';
 import * as Phaser from 'phaser';
-import { FUEL_LOW, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
+import { PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
 import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
+import { buildFuelDial, drawFuelNeedle, FUEL_DIAL, FUEL_DIAL_SPOT, type FuelDialParts } from '../ui/fuelDial';
 import { debugOn } from '../util/debug';
 import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
@@ -13,25 +14,6 @@ import { markTutorialDone, skipUncle } from '../state/Tutorial';
 import { count } from '../state/Counter';
 import { weekdayName } from '../state/Residents';
 
-/**
- * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
- * middle; the face is a fan from E (left) to F (right), angles in degrees clockwise from
- * pointing right (so 270 is straight up).
- */
-const FUEL_DIAL = { radius: 72, from: 200, to: 340 };
-/**
- * SCREAM-238 (PO, November 10; replaces SCREAM-219's top right): the gauge is bigger and sits at the
- * bottom left. `x` is the needle's pivot; on the road the pivot sits just above the controls hint,
- * at the pump (no hint on the left there) it sits lower, clear of the pump's picture.
- */
-export const FUEL_DIAL_SPOT = { x: 80, driveY: 504, pumpY: 530 };
-/** How much bigger the dial is than the one it was first drawn as (radius 46): labels and needle scale with it. */
-const DIAL_SCALE = FUEL_DIAL.radius / 46;
-const DIAL_FACE = 0x4b4440;
-const DIAL_EDGE = 0x241f1c;
-const DIAL_INK = 0xf4ead2;
-const DIAL_INK_CSS = '#f4ead2';
-const DIAL_LOW_CSS = '#ff6b5e';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
@@ -51,9 +33,7 @@ export class HudScene extends Phaser.Scene {
   towText?: Phaser.GameObjects.Text;
   /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
   private fuelGauge!: Phaser.GameObjects.Container;
-  private dialFace!: Phaser.GameObjects.Graphics;
-  private needle!: Phaser.GameObjects.Graphics;
-  private emptyLabel!: Phaser.GameObjects.Text;
+  private dial!: FuelDialParts;
   /** SCREAM-121: where the needle points (0 = E, 1 = F); tests read it. */
   fuelNeedle = 1;
   private readonly wobble = new NeedleWobble();
@@ -297,37 +277,10 @@ export class HudScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * SCREAM-121 (PO, November 2): an old car's gas gauge, a dark fan with E, 1/2 and F and a
-   * pale needle (the PO's reference photo). SCREAM-238: bigger, at the bottom left.
-   */
+  /** SCREAM-121, SCREAM-238: the gas dial, bottom left (drawn by ui/fuelDial, SCREAM-276). */
   private buildFuelDial(): void {
-    const { radius, from, to } = FUEL_DIAL;
-    const rad = Phaser.Math.DegToRad;
-    const at = (deg: number, r: number) => ({ x: Math.cos(rad(deg)) * r, y: Math.sin(rad(deg)) * r });
-    this.dialFace = this.add.graphics();
-    const face = this.dialFace;
-    face.fillStyle(DIAL_FACE, 1).slice(0, 0, radius, rad(from), rad(to), false).fillPath();
-    // A lighter rim inside the dark edge, like the pressed metal plate.
-    face.lineStyle(2, 0x6e645d, 1).beginPath().arc(0, 0, radius - 4, rad(from + 2), rad(to - 2), false).strokePath();
-    // "E . 1/2 . F" round the top, like the reference photo: dots at a quarter and three quarters.
-    const labelR = radius - Math.round(13 * DIAL_SCALE);
-    face.fillStyle(DIAL_INK, 1);
-    for (const f of [0.25, 0.75]) {
-      const p = at(from + (to - from) * f, labelR);
-      face.fillRect(Math.round(p.x) - 3, Math.round(p.y) - 3, 6, 6);
-    }
-    const label = (deg: number, text: string, size: number, font = 'monospace') => {
-      const p = at(deg, labelR);
-      return this.add
-        .text(p.x, p.y, text, { fontFamily: font, fontSize: `${Math.round(size * DIAL_SCALE)}px`, fontStyle: 'bold', color: DIAL_INK_CSS })
-        .setOrigin(0.5);
-    };
-    this.emptyLabel = label(from + 10, 'E', 16);
-    const half = label(270, '½', 15, 'Arial, sans-serif');
-    const full = label(to - 10, 'F', 16);
-    this.needle = this.add.graphics();
-    this.fuelGauge = this.add.container(FUEL_DIAL_SPOT.x, FUEL_DIAL_SPOT.driveY, [face, this.emptyLabel, half, full, this.needle]);
+    this.dial = buildFuelDial(this, FUEL_DIAL_SPOT.x, FUEL_DIAL_SPOT.driveY);
+    this.fuelGauge = this.dial.container;
   }
 
   /**
@@ -336,28 +289,19 @@ export class HudScene extends Phaser.Scene {
    * the plate's edge flashes red when empty.
    */
   private drawFuel(delta = 16): void {
-    const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump);
+    // SCREAM-276 (PO, November 12): inside the truck too, in Story: "Same as the roads dial. Except it
+    // doesn't wobble under 1/4 full like on the road. Similar spot in the bottom left corner."
+    const inHub = !!getStory(this) && this.scene.isActive(SceneKeys.Truck);
+    const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump) || inHub;
     this.fuelGauge.setVisible(show);
     if (!show) return;
-    this.fuelGauge.setY(this.scene.isActive(SceneKeys.Pump) ? FUEL_DIAL_SPOT.pumpY : FUEL_DIAL_SPOT.driveY);
+    this.fuelGauge.setY(this.scene.isActive(SceneKeys.Pump) ? FUEL_DIAL_SPOT.pumpY : inHub ? FUEL_DIAL_SPOT.hubY : FUEL_DIAL_SPOT.driveY);
     const fuel = this.evening.fuel;
-    this.fuelNeedle = this.wobble.update(fuel, this.time.now, delta);
-    const { radius, from, to } = FUEL_DIAL;
-    const rad = Phaser.Math.DegToRad;
+    this.fuelNeedle = inHub ? fuel : this.wobble.update(fuel, this.time.now, delta);
     // SCREAM-208: faster and bolder while the tow message shows.
     const flash = fuel <= 0 && Math.floor(this.time.now / (this.towing ? 200 : 300)) % 2 === 0;
     this.gaugeRed = flash;
-    this.emptyLabel.setColor(fuel <= FUEL_LOW ? DIAL_LOW_CSS : DIAL_INK_CSS);
-    const angle = rad(from + (to - from) * this.fuelNeedle);
-    const tipX = Math.cos(angle) * (radius - 9);
-    const tipY = Math.sin(angle) * (radius - 9);
-    const g = this.needle.clear();
-    g.lineStyle(flash && this.towing ? 6 : 3, flash ? 0xff5252 : DIAL_EDGE, 1).beginPath().arc(0, 0, radius, rad(from), rad(to), false);
-    g.lineTo(0, 0).closePath().strokePath();
-    g.lineStyle(7, DIAL_EDGE, 1).lineBetween(0, 0, tipX, tipY);
-    g.lineStyle(4, DIAL_INK, 1).lineBetween(0, 0, tipX, tipY);
-    g.fillStyle(DIAL_EDGE, 1).fillCircle(0, 0, 9);
-    g.fillStyle(DIAL_INK, 1).fillCircle(0, 0, 6);
+    drawFuelNeedle(this.dial, fuel, this.fuelNeedle, flash, this.towing);
   }
 
   private refresh(): void {
