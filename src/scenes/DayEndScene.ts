@@ -66,9 +66,12 @@ export class DayEndScene extends Phaser.Scene {
       ['Gas', -b.gasCents, '#ff9c9c'],
       ['Damage', -b.damageCents, '#ff9c9c'],
     ];
+    // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
+    if (b.powerUpsCents > 0) rows.push(['Power-ups', -b.powerUpsCents, '#ff9c9c']);
+    const rowGap = rows.length > 5 ? 23 : ROW_GAP;
     this.add.text(110, 130, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     rows.forEach(([label, cents, colour], i) => {
-      const y = 165 + i * ROW_GAP;
+      const y = 165 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });

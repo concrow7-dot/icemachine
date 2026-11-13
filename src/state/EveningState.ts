@@ -45,6 +45,12 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
+import { POWER_UP_TREES } from '../config/powerUps';
+import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
+
+/** SCREAM-296: every note on the cork board. */
+const POWER_UP_NOTES = placeNotes(POWER_UP_TREES);
+
 export const EveningEvents = {
   /** (changeCents: number, cashCents: number, label: string, popup: boolean) */
   MoneyChanged: 'money-changed',
@@ -247,6 +253,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     rotaryHintGiven?: boolean;
     /** SCREAM-268: Story only: the uncle's $20 for gas hasn't been used yet this run. */
     uncleGas?: boolean;
+    /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
+    powerUps?: readonly string[];
   }, mapId: MapId = 'worcester', guided = false) {
     super();
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
@@ -271,6 +279,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
+    this.powerUpsOwned = [...(carry?.powerUps ?? [])];
     this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
     const map = currentMap();
@@ -559,14 +568,46 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.largestSaleTotalCents;
   }
 
+  // ---- Power-ups (SCREAM-296) ----
+
+  private powerUpsOwned: string[] = [];
+  private powerUpsSpentCents = 0;
+
+  /** The power-ups owned now: the run's, plus any bought tonight. Restart Evening goes back to the run's. */
+  get powerUps(): readonly string[] {
+    return this.powerUpsOwned;
+  }
+
+  /** 073: power-ups are bought at home. For now that is before first setting off (a restock stop opens only the cooler). */
+  get atHome(): boolean {
+    return !this.prepLocked && !this.ended;
+  }
+
+  /** Whether the cork board's note can be bought now, and if not, why. */
+  powerUpStatus(id: string): BuyStatus | null {
+    const note = POWER_UP_NOTES.find((n) => n.id === id);
+    return note ? buyStatus(note, this.powerUpsOwned, this.cashCents, this.atHome) : null;
+  }
+
+  /** Buys a note from the cork board with tonight's cash. Returns false, changing nothing, if it can't be bought. */
+  buyPowerUp(id: string): boolean {
+    const note = POWER_UP_NOTES.find((n) => n.id === id);
+    if (!note || this.powerUpStatus(id) !== 'ok') return false;
+    this.powerUpsOwned.push(id);
+    this.powerUpsSpentCents += note.priceCents;
+    this.changeMoney(-note.priceCents, 'Power-up');
+    return true;
+  }
+
   /** Tonight's breakdown for the results screen (#16). */
-  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number } {
+  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
     return {
       salesCents: this.salesTotalCents,
       tipsCents: this.tipsTotalCents,
       stockCents: this.stockSpentCents,
       gasCents: this.gasSpentCents,
       damageCents: this.damageTotalCents,
+      powerUpsCents: this.powerUpsSpentCents,
     };
   }
 

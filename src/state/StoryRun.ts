@@ -38,6 +38,8 @@ export type RunTotals = {
   stockCents: number;
   gasCents: number;
   damageCents: number;
+  /** SCREAM-296: spent at the cork board. */
+  powerUpsCents: number;
   /** SCREAM-93: the run's largest single sale (price plus tip). */
   largestSaleCents: number;
 };
@@ -63,10 +65,12 @@ export class StoryRun {
    * who goes On My Own or skips him first gets it at their first pump instead.
    */
   uncleGasUsed = false;
+  /** SCREAM-296: the power-ups owned when tonight started (note ids). Bought with the run's cash; kept for the rest of the run. */
+  powerUps: string[] = [];
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
-  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, largestSaleCents: 0 };
+  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, powerUpsCents: 0, largestSaleCents: 0 };
 
   /** SCREAM-205 (PO, November 8): the uncle's tutorial evening is Day 1 (unless the player chose On My Own). */
   readonly withUncle: boolean;
@@ -84,6 +88,7 @@ export class StoryRun {
       this.visits = { ...(save.visits ?? {}) };
       this.rotaryHintGiven = save.rotaryHintGiven ?? false;
       this.uncleGasUsed = save.uncleGasUsed ?? false;
+      this.powerUps = [...(save.powerUps ?? [])];
       if (save.seed !== undefined) this.seed = save.seed;
     }
   }
@@ -100,6 +105,7 @@ export class StoryRun {
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
         uncleGas: !this.uncleGasUsed,
+        powerUps: this.powerUps,
       },
       STORY_MAP,
       this.withUncle && this.day === 1,
@@ -122,6 +128,7 @@ export class StoryRun {
     this.visits = { ...evening.visits }; // SCREAM-145
     this.rotaryHintGiven = evening.rotaryHintGiven;
     if (evening.uncleGasUsed) this.uncleGasUsed = true;
+    this.powerUps = [...evening.powerUps]; // SCREAM-296
     const b = evening.breakdown;
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,
@@ -129,6 +136,7 @@ export class StoryRun {
       stockCents: this.totals.stockCents + b.stockCents,
       gasCents: this.totals.gasCents + b.gasCents,
       damageCents: this.totals.damageCents + b.damageCents,
+      powerUpsCents: this.totals.powerUpsCents + b.powerUpsCents,
       largestSaleCents: Math.max(this.totals.largestSaleCents, evening.largestSaleCents),
     };
     if (result === 'next') {
@@ -145,6 +153,7 @@ export class StoryRun {
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
         uncleGasUsed: this.uncleGasUsed,
+        powerUps: this.powerUps,
       });
     } else {
       this.outcome = result;

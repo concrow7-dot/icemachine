@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { placeNotes, nextNote } = await game('state/PowerUpBoard');
+const { placeNotes, nextNote, buyStatus } = await game('state/PowerUpBoard');
 const { POWER_UP_TREES } = await game('config/powerUps');
 
 const notes = placeNotes(POWER_UP_TREES);
@@ -55,4 +55,21 @@ test('every note can be reached with the arrow keys from the first one', () => {
     }
   }
   assert.equal(seen.size, notes.length);
+});
+
+test('SCREAM-296: every note has a name and a price', () => {
+  assert.equal(notes.find((n) => n.id === 'speaker-3').name, 'SPEAKER 3');
+  assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && n.priceCents > 0));
+});
+
+test('SCREAM-296: when a note can be bought', () => {
+  const top = notes.find((n) => n.id === 'truck-1');
+  const below = notes.find((n) => n.id === 'truck-5'); // hangs from truck-2 and truck-3
+  assert.equal(buyStatus(top, [], top.priceCents, true), 'ok');
+  assert.equal(buyStatus(top, [], top.priceCents - 1, true), 'poor', 'a cent short');
+  assert.equal(buyStatus(top, [], 99999, false), 'away', 'not at home');
+  assert.equal(buyStatus(top, ['truck-1'], 0, false), 'owned', 'owned wins over everything');
+  assert.equal(buyStatus(below, ['truck-1'], 99999, true), 'locked', 'neither note above is owned');
+  assert.equal(buyStatus(below, ['truck-1', 'truck-3'], 99999, true), 'ok', 'one of the notes above is enough');
+  assert.equal(buyStatus(below, [], 0, false), 'locked', 'locked is said before away or poor');
 });
