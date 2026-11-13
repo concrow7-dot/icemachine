@@ -527,3 +527,10 @@ export const PORTAL_VOLUME = 0.1;
  * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
  */
 export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
+
+// ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
+/** How much of the tank the can pours in when the tank runs empty: a fifth. */
+export const GAS_CAN_FILL = 1 / 5;
+/** How long the game stops while the can shows, in ms, and how many times it pulses. */
+export const GAS_CAN_POP_MS = 1500;
+export const GAS_CAN_PULSES = 3;

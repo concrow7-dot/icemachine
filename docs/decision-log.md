@@ -2,6 +2,25 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 099 — The first power-up: the Temporary Gas Can ($15, bought once, full again every day) (2026-11-13)
+
+**Decision (Jira SCREAM-122, under SCREAM-78, PO, November 13):** "The first powerup I want to add is under truck. It should be called temporary gas can. It will fill up your tank 1/5 of the way. If the player runs out of gas it automatically puts the gas in the tank. The game should pause and the temporary gas tank should pop onto the screen pulse a few times and then go away. I want to make the logo for the powerup to be similar to the image provided. I want it to look like the art style of the trucks inside." (The image: a photo of a red plastic gas can with a black spout.) His answers to engineering's questions: the price: "Lets say $15"; which note: "Top on under the truck"; how many: "Just the one"; an unused can: "Every day the can should start full", which he confirmed means **buy once, refills daily** (pay $15 once; every evening after that starts with a full can, good for one rescue that evening, for the rest of the Story run); the picture, drawn by engineering in code in the hub's cartoon style as an original design with no brand label: "Sounds great."
+
+**This changes the November 11 plan** (SCREAM-122's comment, 073): the can was going to be bought again each time it was used up. It is now bought once.
+
+**Options considered:** how the can lasts: buy once and it refills daily (chosen); buy again after each use, an unused can carrying over; buy fresh every day. Price: $15 (chosen, the PO's); $5, the dummy price (engineering's proposal). Used by itself when the tank runs dry (chosen, the PO's); used by hand.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The can sets the tank to a fifth (the tank is empty when it pours). Running empty a second time the same evening ends the evening as before (025, SCREAM-119).
+- The pop-up: the game stops like a pause, the clock too, for 1.5 seconds; the can pops into the middle of the screen, pulses three times and pops out. No words on it. The numbers are in `tuning.ts`.
+- Bought at home and full straight away, so it works the same evening.
+- The note's id changed from `truck-1` to `temp-gas-can`, so a dummy TRUCK 1 bought while testing 098 does not become a gas can.
+- The other Truck notes are still dummies and hang from the can.
+- Nothing on the road shows whether today's can is still full (the board says "Yours" either way). A small can beside the gas dial would do it: not built, to ask.
+
 ## 098 — Cork board notes open bigger and can be bought: grey until bought, unlocked by the note above, at home only (2026-11-12)
 
 **Decision (Jira SCREAM-296, under SCREAM-78, PO, November 12):** "I think the next item to work on is having the ability of the player to click on the skill, and have it magnify. The "?" on the current screen (post it notes) would be a fun image. If the player clicks on the post it, the note should open to be bigger. The note should have the logo and a description. With the price listed, and the ability to purchase the skill. No button if already purchased." On how notes look: "Lets have the notes that aren't purchased, greyed out. The the items purchased will look as they do now. The user can still look at the greyed out notes." He agreed to engineering's proposals ("Agreed on the last 3", then "I agree with all"): a note you can't afford shows its price in red with the button greyed out; Enter opens the marked note and Enter again buys it, with no "are you sure" step; Restart Evening gives back anything bought that evening; buying is real in this ticket (the cash leaves and the note is saved as owned) although the notes are still dummies; the strings lock notes (a note can be bought once you own a note it hangs from; the top notes are open); placeholder pictures by engineering, one per tree; buying only while parked at home, the board readable anywhere; a locked note is greyed like any unbought note and says what to buy first in place of the button. Builds on 073 and 097.

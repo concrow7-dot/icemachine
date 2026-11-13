@@ -1,4 +1,4 @@
-import type { PowerUpTree } from '../config/powerUps';
+import { DUMMY_NOTE_TEXT, type PowerUpLogo, type PowerUpTree } from '../config/powerUps';
 
 // SCREAM-267: where the cork board's notes sit and how the arrow keys move between them.
 // No Phaser here, so it can be unit-tested.
@@ -23,6 +23,8 @@ export type PlacedNote = {
   from: string[];
   /** What the player sees it called: "TRUCK 3". */
   name: string;
+  description: string;
+  logo: PowerUpLogo;
   priceCents: number;
 };
 
@@ -38,7 +40,9 @@ export function placeNotes(trees: PowerUpTree[]): PlacedNote[] {
         x: BOARD_LAYOUT.treeX[t] + (note.col - 1) * BOARD_LAYOUT.colGap,
         y: BOARD_LAYOUT.firstRowY + note.row * BOARD_LAYOUT.rowGap,
         from: note.from,
-        name: `${tree.name} ${n + 1}`,
+        name: note.name ?? `${tree.name} ${n + 1}`,
+        description: note.description ?? DUMMY_NOTE_TEXT,
+        logo: note.logo ?? tree.id,
         priceCents: note.priceCents,
       });
     });

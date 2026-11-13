@@ -6,6 +6,9 @@
 
 export type PowerUpTreeId = 'truck' | 'speaker' | 'sales';
 
+/** The picture on a note: its tree's placeholder, or a power-up's own. */
+export type PowerUpLogo = PowerUpTreeId | 'gas-can';
+
 export type PowerUpNote = {
   id: string;
   /** Column in its tree: 0 left, 1 middle, 2 right. */
@@ -16,7 +19,14 @@ export type PowerUpNote = {
   from: string[];
   /** What it costs, from the Story cash (decision 073). */
   priceCents: number;
+  /** A real power-up's name, description and picture. A dummy note has none: it is called by its tree and number. */
+  name?: string;
+  description?: string;
+  logo?: PowerUpLogo;
 };
+
+/** SCREAM-122: the Temporary Gas Can's note. */
+export const GAS_CAN_ID = 'temp-gas-can';
 
 export type PowerUpTree = {
   id: PowerUpTreeId;
@@ -40,9 +50,19 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     string: 0xd9622b,
     paper: 0xfff2a8,
     notes: [
-      { id: 'truck-1', col: 1, row: 0, from: [], priceCents: 500 },
-      { id: 'truck-2', col: 0, row: 1, from: ['truck-1'], priceCents: 1000 },
-      { id: 'truck-3', col: 2, row: 1, from: ['truck-1'], priceCents: 1000 },
+      // SCREAM-122 (PO, November 13): the first real power-up. $15, bought once; the can is full again every day.
+      {
+        id: GAS_CAN_ID,
+        col: 1,
+        row: 0,
+        from: [],
+        priceCents: 1500,
+        name: 'TEMPORARY GAS CAN',
+        description: 'Run out of gas and it pours itself in: a fifth of a tank. Full again every day.',
+        logo: 'gas-can',
+      },
+      { id: 'truck-2', col: 0, row: 1, from: [GAS_CAN_ID], priceCents: 1000 },
+      { id: 'truck-3', col: 2, row: 1, from: [GAS_CAN_ID], priceCents: 1000 },
       { id: 'truck-4', col: 0, row: 2, from: ['truck-2'], priceCents: 1500 },
       { id: 'truck-5', col: 1, row: 2, from: ['truck-2', 'truck-3'], priceCents: 1500 },
       { id: 'truck-6', col: 2, row: 2, from: ['truck-3'], priceCents: 1500 },

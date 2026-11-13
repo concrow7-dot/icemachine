@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
-import { DUMMY_NOTE_TEXT, POWER_UP_TREES } from '../config/powerUps';
+import { POWER_UP_TREES } from '../config/powerUps';
 import { BOARD_LAYOUT, nextNote, placeNotes, type BoardDirection, type BuyStatus, type PlacedNote } from '../state/PowerUpBoard';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -43,6 +43,7 @@ export class PowerUpsScene extends Phaser.Scene {
   open = false;
   detailName!: Phaser.GameObjects.Text;
   detailStatus!: Phaser.GameObjects.Text;
+  detailText!: Phaser.GameObjects.Text;
   backButton!: Phaser.GameObjects.Zone;
   /** The opened note's BUY button, or null when there is none (owned, locked, away from home). */
   buyButton: Phaser.GameObjects.Zone | null = null;
@@ -171,7 +172,7 @@ export class PowerUpsScene extends Phaser.Scene {
     art.add(this.add.rectangle(2, 3, size, size, 0x000000, 0.22));
     art.add(this.add.rectangle(0, 0, size, size, owned ? tree.paper : GREY_PAPER, 1).setStrokeStyle(2, OUTLINE, 0.9));
     const logo = this.add.container(0, 5);
-    addPowerUpLogo(this, logo, tree.id, 26, !owned);
+    addPowerUpLogo(this, logo, note.logo, note.logo === 'gas-can' ? 30 : 26, !owned);
     art.add(logo);
     const pinY = -size / 2 + 5;
     art.add(this.add.circle(1, pinY + 1, 5, 0x000000, 0.3));
@@ -201,7 +202,7 @@ export class PowerUpsScene extends Phaser.Scene {
     this.detailStatus = this.add
       .text(x + w / 2 - 16, y - 13, '', { fontFamily: 'monospace', fontSize: '16px', fontStyle: 'bold', color: INK })
       .setOrigin(1, 0.5);
-    this.add.text(x - w / 2 + 16, y + 15, DUMMY_NOTE_TEXT, { fontFamily: 'monospace', fontSize: '14px', color: INK }).setOrigin(0, 0.5);
+    this.detailText = this.add.text(x - w / 2 + 16, y + 15, '', { fontFamily: 'monospace', fontSize: '14px', color: INK }).setOrigin(0, 0.5);
   }
 
   private addBack(): void {
@@ -285,18 +286,18 @@ export class PowerUpsScene extends Phaser.Scene {
     big.add(this.add.circle(x - 3, top + 11, 2.5, 0xffffff, 0.8));
 
     const logo = this.add.container(x, top + 84);
-    addPowerUpLogo(this, logo, tree.id, 92, !owned);
+    addPowerUpLogo(this, logo, note.logo, note.logo === 'gas-can' ? 104 : 92, !owned);
     big.add(logo);
 
-    const name = this.add.text(x, top + 158, note.name, { fontFamily: MARKER_FONT, fontSize: '30px', color: INK }).setOrigin(0.5);
+    const name = this.add.text(x, top + 158, note.name, { fontFamily: MARKER_FONT, fontSize: note.name.length > 12 ? '24px' : '30px', color: INK }).setOrigin(0.5);
     const description = this.add
-      .text(x, top + 206, DUMMY_NOTE_TEXT, { fontFamily: 'monospace', fontSize: '15px', color: INK, align: 'center', wordWrap: { width: w - 40 } })
+      .text(x, top + 210, note.description, { fontFamily: 'monospace', fontSize: '15px', color: INK, align: 'center', wordWrap: { width: w - 40 } })
       .setOrigin(0.5);
     const price = this.add
-      .text(x, top + 258, formatMoney(note.priceCents), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
+      .text(x, top + 266, formatMoney(note.priceCents), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
       .setOrigin(0.5);
     big.add([name, description, price]);
-    this.bigTexts = [note.name, DUMMY_NOTE_TEXT, formatMoney(note.priceCents)];
+    this.bigTexts = [note.name, note.description, formatMoney(note.priceCents)];
 
     this.buyButton = null;
     const buttonY = top + 320;
@@ -345,6 +346,8 @@ export class PowerUpsScene extends Phaser.Scene {
     this.ring.lineStyle(4, HIGHLIGHT, 1).strokeRect(note.x - half, note.y - half, half * 2, half * 2);
     const status = this.status(note.id);
     this.detailName.setText(note.name);
+    // The card has one line: a long description is cut short there (the opened note has all of it).
+    this.detailText.setText(note.description.length > 58 ? `${note.description.slice(0, 55).trimEnd()}...` : note.description);
     this.detailStatus.setText(status === 'owned' ? 'Yours' : formatMoney(note.priceCents)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
     if (this.open) this.drawBig(note);
   }

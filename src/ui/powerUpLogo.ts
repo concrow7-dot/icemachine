@@ -1,9 +1,11 @@
 import * as Phaser from 'phaser';
-import type { PowerUpTreeId } from '../config/powerUps';
+import type { PowerUpLogo } from '../config/powerUps';
 import { MARKER_FONT } from './flavourArt';
 
 // SCREAM-296: the picture on a cork board note. Engineering's placeholders, drawn in code, one
 // per tree (a wheel, a speaker, a coin), until the PO draws a logo for each power-up.
+// SCREAM-122: the Temporary Gas Can has its own: a red can with a black spout, in the hub's
+// cartoon style (flat colours, thick dark outlines). An original design: no brand, no label text.
 
 const INK = 0x2b1d10;
 
@@ -14,7 +16,7 @@ const INK = 0x2b1d10;
 export function addPowerUpLogo(
   scene: Phaser.Scene,
   into: Phaser.GameObjects.Container,
-  tree: PowerUpTreeId,
+  tree: PowerUpLogo,
   size: number,
   grey: boolean,
 ): void {
@@ -24,7 +26,9 @@ export function addPowerUpLogo(
   const line = Math.max(2, size / 14);
   const colour = (c: number) => (grey ? 0x9a9a9a : c);
   g.setAlpha(grey ? 0.75 : 1);
-  if (tree === 'truck') {
+  if (tree === 'gas-can') {
+    drawGasCan(g, size, grey);
+  } else if (tree === 'truck') {
     // A wheel: tyre, hubcap and five spokes.
     g.fillStyle(colour(0x33302c), 1).fillCircle(0, 0, r);
     g.fillStyle(grey ? 0xd0d0d0 : 0xcfd6dc, 1).fillCircle(0, 0, r * 0.58);
@@ -53,4 +57,41 @@ export function addPowerUpLogo(
     dollar.setAlpha(grey ? 0.75 : 1);
     into.add(dollar);
   }
+}
+
+/**
+ * SCREAM-122: the gas can, centred on (0, 0), about `size` px tall. The PO's reference was a
+ * photo of a red plastic can: square body, a handle on top, a black spout up to the left, a
+ * yellow label. Drawn like the truck's inside: flat colour, a thick dark outline, one highlight.
+ */
+export function drawGasCan(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const red = grey ? 0xa9a9a9 : 0xd8332a;
+  const redDark = grey ? 0x8f8f8f : 0xa8231c;
+  const yellow = grey ? 0xcfcfcf : 0xffd84a;
+  const black = grey ? 0x7d7d7d : 0x2a2622;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  // The spout: a black tube up and to the left, with its collar where it meets the can.
+  poly(black, [[30, 34], [14, 6], [24, 1], [42, 30]]);
+  poly(black, [[24, 30], [48, 24], [52, 36], [28, 42]]);
+  // The body, with the handle's block on top at the right.
+  poly(red, [[54, 36], [59, 14], [87, 14], [93, 36]]);
+  poly(red, [[20, 40], [26, 34], [90, 34], [96, 42], [96, 90], [90, 97], [26, 97], [20, 90]]);
+  // The grip under the handle (a darker hollow).
+  g.fillStyle(redDark, 1).fillPoints([P(66, 21), P(81, 21), P(84, 31), P(63, 31)], true);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokePoints([P(66, 21), P(81, 21), P(84, 31), P(63, 31)], true, true);
+  // The shaded right side and a highlight on the left.
+  g.fillStyle(redDark, 1).fillPoints([P(82, 40), P(92, 44), P(92, 88), P(82, 92)], true);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.35).fillRect((26 - 50) * u, (44 - 50) * u, 4 * u, 22 * u);
+  // The label: yellow, with a dark drop on it (no words).
+  poly(yellow, [[34, 54], [66, 54], [66, 88], [34, 88]]);
+  g.fillStyle(ink, 1).fillCircle(0, (76 - 50) * u, 6 * u);
+  g.fillTriangle((44 - 50) * u, (74 - 50) * u, (56 - 50) * u, (74 - 50) * u, 0, (60 - 50) * u);
 }
