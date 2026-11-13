@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 100 — Story starts with $25, not $50 (2026-11-13)
+
+**Decision (Jira SCREAM-294, under SCREAM-78, PO, November 12):** Story's starting money (the uncle's $50, decision 046) becomes $25. The $600 bike stays as it is. Story only (076); Quick play keeps its $50.
+
+**Options considered:** $25 (chosen, the PO's); leave it at $50.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The uncle leaves what Story starts with, so his line at the cooler now reads "I left $25 on the truck for you to get started." (his words with the number changed; the PO to confirm the wording).
+- His $20 for gas (088) is separate and unchanged, so a new player still has $25 for stock plus $20 of gas.
+- The opening screen already reads the amount from the setting ("You've got $25.00 and an ice cream truck.").
+- A run saved before this change keeps the cash it has.
+- Worth knowing: with $25, buying the Temporary Gas Can ($15, 099) on the first evening leaves $10 for stock.
+
 ## 099 — The first power-up: the Temporary Gas Can ($15, bought once, full again every day) (2026-11-13)
 
 **Decision (Jira SCREAM-122, under SCREAM-78, PO, November 13):** "The first powerup I want to add is under truck. It should be called temporary gas can. It will fill up your tank 1/5 of the way. If the player runs out of gas it automatically puts the gas in the tank. The game should pause and the temporary gas tank should pop onto the screen pulse a few times and then go away. I want to make the logo for the powerup to be similar to the image provided. I want it to look like the art style of the trucks inside." (The image: a photo of a red plastic gas can with a black spout.) His answers to engineering's questions: the price: "Lets say $15"; which note: "Top on under the truck"; how many: "Just the one"; an unused can: "Every day the can should start full", which he confirmed means **buy once, refills daily** (pay $15 once; every evening after that starts with a full can, good for one rescue that evening, for the rest of the Story run); the picture, drawn by engineering in code in the hub's cartoon style as an original design with no brand label: "Sounds great."

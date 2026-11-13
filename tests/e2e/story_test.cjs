@@ -3,7 +3,7 @@
 // is game over, and Quick play is unchanged.
 // SCREAM-17: the run is saved at the end of each evening; Continue and New story.
 // SCREAM-18: the bike story: intro screen, bike goal, end of run with the Story high scores.
-// SCREAM-205, SCREAM-85: on the tutorial map, 5 days, $50 to start, a $600 bike. These play
+// SCREAM-205, SCREAM-85: on the tutorial map, 5 days, $25 to start, a $600 bike. These play
 // On My Own (the uncle's Day 1 is in the tutorial suite).
 const { chromium } = require('playwright');
 (async () => {
@@ -80,7 +80,7 @@ const { chromium } = require('playwright');
   await page.mouse.click(480, 270); await wait(300);
   check('...a left click: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
-  check('Story starts with $50', await ev('e.moneyCents'), 5000);
+  check('Story starts with $25', await ev('e.moneyCents'), 2500);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
   // ---- SCREAM-204 (PO, November 11-12): Story starts with a weaker truck ----
   const tune = await page.evaluate(async () => { const t = await import('/src/config/tuning.js'); return { speed: t.TRUCK_SPEED, ring: t.MUSIC_RING_RADIUS, tank: t.FUEL_TANK_PX, acc: t.TRUCK_ACCELERATION_SECONDS, brake: t.TRUCK_BRAKING_SECONDS, turn: t.TRUCK_MAX_TURN_DEGREES_PER_SECOND }; });
@@ -263,24 +263,24 @@ const { chromium } = require('playwright');
   await ev('(e.scheduleLinesSaid = 0, e.scheduleLinesHeard.length = 0, e.neighboursToldAbout.length = 0, e.scheduleLineChance = 0, 0)');
 
   await press('+', 3); await press('Enter'); await wait(300);
-  check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4700 3');
+  check('Bought 3 ice creams ($3)', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2200 3');
   await shift(3); await wait(300);
   check('Day 1 over: end-of-day screen, not the results screen', await scenes(), 'DayEnd');
   const day1 = await texts('DayEnd');
-  check('...it says END OF MONDAY and shows the wallet', /END OF MONDAY/.test(day1) && /WALLET/.test(day1) && /\$47\.00/.test(day1), true);
+  check('...it says END OF MONDAY and shows the wallet', /END OF MONDAY/.test(day1) && /WALLET/.test(day1) && /\$22\.00/.test(day1), true);
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
   check('...and Enter starts day 2 (SCREAM-232: "Start Tuesday")', /Enter: Start Tuesday(?!,)/.test(day1) && /END OF MONDAY/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
-  check('Saved: day 2, $47, 3 bars in the first slot', await saved(), '2 4700 3/0/0/0');
+  check('Saved: day 2, $22, 3 bars in the first slot', await saved(), '2 2200 3/0/0/0');
   check('...and where each ice cream sits (SCREAM-131): 48 squares, 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '48 3');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----
   await press('Enter'); await wait(300);
   check('Day 2 opens at the cooler', (await scenes()).startsWith('Cooler'), true);
-  check('Cash carried over ($47)', await ev('e.moneyCents'), 4700);
+  check('Cash carried over ($22)', await ev('e.moneyCents'), 2200);
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
   check('HUD says Tuesday', /Tuesday/.test(await hudClock()), true);
@@ -293,7 +293,7 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
   await press('+'); await press('Enter'); await wait(300);
-  check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4600 4');
+  check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
   await press('ArrowRight'); await press('Enter'); await wait(600);
   check('Roundabouts: on the road in Elm Park, with a roundabout', (await scenes()) + ' ' + (await sc('Drive', 's.laps !== null')), 'Drive,Hud true');
   check('...the roundabouts lead somewhere in Story, home is Elm Park', (await ev('e.mapsJoined')) + ' ' + (await ev('e.homeMapId')) + ' ' + (await ev('e.awayFromHome')), 'true tutorial false');
@@ -371,14 +371,14 @@ const { chromium } = require('playwright');
 
   // ---- Restart evening goes back to how tonight started ----
   await press('+'); await press('Enter'); await wait(300);
-  check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '4600 4');
+  check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
   await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
   check('Restart prompt explains Story restarts', /Cash, stock and gas go back/.test(await texts('Pause')), true);
   // SCREAM-89: the question stays inside the pause box (420 px wide, centred).
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
   await page.screenshot({ path: outDir + '/story_pause_restart.png' });
   await press('y'); await wait(400);
-  check('Restart: back to $47 and 3 bars, still day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')) + ' ' + (await story('r.day')), '4700 3 2');
+  check('Restart: back to $22 and 3 bars, still day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')) + ' ' + (await story('r.day')), '2200 3 2');
 
   // ---- Days 3 and 4, then day 5, the last ----
   await shift(3); await press('Enter'); await wait(300);
@@ -389,12 +389,12 @@ const { chromium } = require('playwright');
   await shift(3); await wait(300);
   const last = await texts('DayEnd');
   check('After day 5: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
-  check('...short of the bike ($47 of $600: $553 short)', /\$553\.00 short of the bike/.test(last), true);
+  check('...short of the bike ($22 of $600: $578 short)', /\$578\.00 short of the bike/.test(last), true);
   check('...Enter goes to the Story high scores', /Enter: Story High Scores/.test(last), true);
   await press('Enter'); await wait(300);
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');
-  check('...run stats: 5 days, $3 stock, final cash $47, no bike', /5 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$47\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
+  check('...run stats: 5 days, $3 stock, final cash $22, no bike', /5 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$22\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
   // SCREAM-94: short of the bike, the F stamp lands (after a short pause).
   await wait(1000);
   check('...the F stamp is on screen, landed', await sc('Results', "(() => { const f = s.children.getByName('f-stamp'); return !!f && f.scale === 1 && f.alpha > 0.8; })()"), true);
@@ -408,7 +408,7 @@ const { chromium } = require('playwright');
   check('...Esc again: back to the initials', (await scenes()) + ' ' + (await sc('Results', 's.entering')), 'Results true');
   await page.keyboard.type('CON', { delay: 80 }); await press('Enter'); await wait(200); // typed at a person's pace
   check('...saved to the Story table, not the Quick play one',
-    await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v2') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON4700 null');
+    await page.evaluate(() => { const st = JSON.parse(localStorage.getItem('icemachine.highscores.story.v2') || '[]'); return st.map(x => x.initials + x.scoreCents).join() + ' ' + localStorage.getItem('icemachine.highscores.v1'); }), 'CON2200 null');
   check('...STORY HIGH SCORES, Enter: back to the title', /STORY HIGH SCORES/.test(await texts('Results')) && /Enter: Back To The Title/.test(await texts('Results')), true);
   await page.screenshot({ path: outDir + '/story_results.png' });
   await press('Enter'); await wait(300);
@@ -488,7 +488,7 @@ const { chromium } = require('playwright');
   check('...Y: then the uncle question (SCREAM-205)', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('o'); await wait(300);
   await press('Enter'); await wait(300); // past the intro
-  check('...O: a new run at day 1 with $50, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 5000 none');
+  check('...O: a new run at day 1 with $25, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 2500 none');
   await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150); await press('y'); await wait(300);
 
   // ---- SCREAM-94: reaching the bike's price gets a victory lap ----
