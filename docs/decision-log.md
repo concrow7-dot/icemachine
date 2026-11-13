@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 095 — Title screen: the title and the menu together, centred (2026-11-12)
+
+**Decision (Jira SCREAM-292, under SCREAM-6, PO, November 12):** "Lets Move the Title and Menu options together and Vertically center the text." Follows 087, which took the HOW TO DRIVE box off the title screen and left a gap.
+
+**Options considered:** the title, the options and the lock note as one group in the middle of the screen (chosen); the menu moved up under the title where it was.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- 36 px between the title and the first option (a little under the title's height). The group is centred on the whole screen, with 2, 3 or 4 options and the lock note when it shows.
+- The title truck's two lanes (top and bottom) are unchanged; the group sits between them.
+
 ## 094 — Story's crates are three rows tall: no grey strip where the bottom row was (2026-11-12)
 
 **Decision (Jira SCREAM-293, a subtask of SCREAM-291, PO, November 12, testing PR #199 with a marked screenshot):** "completely remove the row highlighted in red." Changes how 092 draws the missing row.

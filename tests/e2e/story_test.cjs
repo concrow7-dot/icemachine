@@ -481,6 +481,8 @@ const { chromium } = require('playwright');
   await press('Escape'); await wait(200); await press('Enter'); await wait(200);
   const noAt = await sc('Title', "(() => { const t = s.answers[1].text; return [Math.round(t.x), Math.round(t.y)]; })()");
   await page.mouse.click(noAt[0], noAt[1]); await wait(200);
+  // SCREAM-292: the menu is in the middle now, so the click left the mouse over an option (hover picks it): pick New Story again.
+  await page.mouse.move(5, 5); await sc('Title', '(s.selected = s.options.findIndex(o => o.id === "story"), s.refreshModes(), true)'); await wait(100);
   check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0');
   await press('Enter'); await wait(200); await press('y'); await wait(300);
   check('...Y: then the uncle question (SCREAM-205)', await sc('Title', 's.confirming && s.asking'), 'uncle');

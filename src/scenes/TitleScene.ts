@@ -109,15 +109,24 @@ export class TitleScene extends Phaser.Scene {
     if (locked) for (const o of this.options) o.locked = o.id === 'quick';
     this.selected = Math.max(0, this.options.findIndex((o) => !o.locked));
 
+    // SCREAM-292 (PO, November 12): "Move the Title and Menu options together and Vertically center
+    // the text." The title, the options and (before the uncle's evening is done) the lock note are
+    // one group, centred on the screen.
+    const spacing = this.options.length > 3 ? 26 : this.options.length > 2 ? 30 : 34;
+    const TITLE_H = 60;
+    const TITLE_GAP = 36; // engineering's call: about one line of the title's height, a little less
+    const NOTE_H = locked ? 26 : 0;
+    const groupH = TITLE_H + TITLE_GAP + this.options.length * spacing + NOTE_H;
+    const groupTop = Math.round(height / 2 - groupH / 2);
+    const firstOptionY = groupTop + TITLE_H + TITLE_GAP + spacing / 2;
     this.add
-      .text(width / 2, 112, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
+      .text(width / 2, groupTop + TITLE_H / 2, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
       .setOrigin(0.5);
     // SCREAM-286 (PO, November 12): no HOW TO DRIVE box; the drive screen's line names the keys.
 
-    const spacing = this.options.length > 3 ? 26 : this.options.length > 2 ? 30 : 34;
     this.modeTexts = this.options.map((m, i) =>
       this.add
-        .text(width / 2, 345 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
+        .text(width / 2, firstOptionY + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -134,7 +143,7 @@ export class TitleScene extends Phaser.Scene {
     );
     this.refreshModes();
     this.lockNote = this.add
-      .text(width / 2, 345 + this.options.length * spacing + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
+      .text(width / 2, firstOptionY + (this.options.length - 0.5) * spacing + NOTE_H / 2 + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
       .setOrigin(0.5)
       .setName('lock-note');
     // SCREAM-286: no line of keys along the bottom here.
