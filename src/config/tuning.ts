@@ -19,6 +19,14 @@ export const STARTING_CASH_CENTS = 5000;
 export const STORY_START_CASH_CENTS = 2500;
 
 /**
+ * SCREAM-243 (PO, November 12: "a short fade between screens"): leaving the title or the New Bike
+ * screen for a Story fades to black for this long, and the next screen fades in for as long.
+ */
+export const SCREEN_FADE_MS = 200;
+/** SCREAM-243: if pictures are still loading this long after that fade, the loading screen comes up. */
+export const LOAD_AHEAD_LOADING_AFTER_MS = 600;
+
+/**
  * SCREAM-295: on the end-of-day screen a click moves on, but not in its first half second
  * (a click meant for the sales window or the cooler as the evening ends shouldn't skip it).
  */

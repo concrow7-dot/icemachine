@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 103 — Starting Story: pictures are loaded ahead and screens fade, so the loading screen no longer flashes (2026-11-13)
+
+**Decision (Jira SCREAM-243, under SCREAM-6, PO, November 12):** the split-second flash between Play Story and the game was the loading screen, up for 0.15 to 0.4 s while the next screen fetched its pictures. Offered three options, the PO chose the first ("Thats good with me"): load the next screen's pictures earlier, while the title or New Bike screen is up, so nothing shows in between, plus a short fade between screens.
+
+**Options considered:** load ahead plus a short fade (chosen); keep the loading screen up for a minimum time (about 0.6 s) so it looks intentional; only a fade over the in-between.
+
+**Why (product owner's rationale):** not given yet beyond agreeing to engineering's suggestion. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- While the title is up, the game fetches the cooler, the ice cream pictures and their font, and the inside of the truck. A new player (whose Story always starts with the uncle) also gets his credits' map and tune and his picture; a returning player gets those when the title asks "Bring your uncle along again?".
+- The fade is 0.2 s to black and 0.2 s back in, on these steps only: title to the New Bike screen, title to the uncle's credits, the New Bike screen to the cooler, and Continue to the cooler.
+- If someone starts in the page's very first moments, before those pictures have arrived, the game waits for them under the black; the loading screen comes up only if that takes more than 0.6 s (a slow connection).
+- Quick play gets no fade (076). In those same first moments it too waits for the pictures already on their way, so no picture is fetched twice.
+- The first drive of an evening still shows the loading screen while the map loads: that is a longer, real wait and was not the flash in this ticket.
+
 ## 102 — The end-of-day screen moves on with a click as well as Enter (2026-11-13)
 
 **Decision (Jira SCREAM-295, under SCREAM-7, PO, November 12):** on the end-of-day screen, clicking the mouse works as well as pressing Enter. Enter keeps working. Like 079 (click or Enter to begin).
