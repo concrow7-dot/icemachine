@@ -100,6 +100,8 @@ const { chromium } = require('playwright');
   await page.keyboard.press('1'); await wait(150);
   const fill24 = await sc('Cooler', "(() => { const o = s.order; let n = 0; while (o.addOne('eclair')) n++; const cells = o.cells; const r = n + ' ' + o.refusal + ' ' + cells.every((c, i) => !c || (i % 4 < 2 && i % 16 < 12)) + ' ' + [0, 1, 2].map(k => cells.slice(k * 16, k * 16 + 16).filter(Boolean).length).join('/'); for (let k = 0; k < n; k++) o.removeOne('eclair'); return r; })()");
   check('...it fills to 18 and stops: 6 in each crate, none under a panel', fill24, '18 full true 6/6/6');
+  check('SCREAM-293: the ice creams are drawn over the (moved) crates, not hidden under them', await sc('Cooler', "s.cellIcons.filter(i => i.visible).every(i => i.depth > Math.max(...s.coveredRows.map(c => c.depth)))"), true);
+  await page.screenshot({ path: outDir + '/story_cooler_full.png' });
   check('...an ice cream can\'t be dragged onto a covered square', await sc('Cooler', "(() => { const o = s.order; o.addOne('eclair'); const moved = o.move(0, 2); o.removeOne('eclair'); return moved; })()"), false);
   await sc('Cooler', '(s.refresh(), true)');
   await page.screenshot({ path: outDir + '/story_cooler_half_covered.png' });

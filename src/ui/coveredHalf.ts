@@ -57,5 +57,6 @@ export function moveShortCrate(
   img.setScale(1 / k).setCrop((left - 2) * k, (top - 1) * k, (width + 4) * k, shortH * k);
   const edge = scene.add.graphics();
   edge.lineStyle(4, CRATE_EDGE, 1).lineBetween(left + 1, top + drop + shortH - 2, left + width - 1, top + drop + shortH - 2);
-  return scene.add.container(0, 0, [g, img, edge]).setDepth(1).setName('moved-crate');
+  // Just above the background (depth -2) and under everything else, the ice creams included.
+  return scene.add.container(0, 0, [g, img, edge]).setDepth(-1).setName('moved-crate');
 }
