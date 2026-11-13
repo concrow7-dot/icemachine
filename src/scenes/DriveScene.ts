@@ -31,7 +31,7 @@ import {
   TURN_SPEED_LOSS_PER_SECOND,
   RING_LAPS,
 } from '../config/tuning';
-import { getEvening, SceneKeys } from '../flow';
+import { getEvening, SceneKeys, showGasCan } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
 import { UNCLE_URL } from '../ui/smoothPixels';
@@ -506,7 +506,7 @@ export class DriveScene extends Phaser.Scene {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
       if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
-      else this.evening.burnFuel(Math.abs(this.speed) * dt); // SCREAM-22: driving uses gas
+      else if (this.evening.burnFuel(Math.abs(this.speed) * dt)) showGasCan(this); // SCREAM-22: driving uses gas; SCREAM-122: the can pours itself in
     }
 
     this.checkPotholes();

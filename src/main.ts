@@ -3,6 +3,7 @@ import { HudScene } from './scenes/HudScene';
 import { LoadingScene } from './scenes/LoadingScene';
 import { PauseScene } from './scenes/PauseScene';
 import { PowerUpsScene } from './scenes/PowerUpsScene';
+import { GasCanScene } from './scenes/GasCanScene';
 import { CoolerScene } from './scenes/CoolerScene';
 import { PumpScene } from './scenes/PumpScene';
 import { DriveScene } from './scenes/DriveScene';
@@ -47,6 +48,7 @@ const config: Phaser.Types.Core.GameConfig = {
     TutorialCrawlScene,
     CoolerScene,
     PowerUpsScene,
+    GasCanScene,
     SalesScene,
     FillScene,
     DriveScene,

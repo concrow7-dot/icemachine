@@ -23,6 +23,7 @@ export const SceneKeys = {
   UncleIntro: 'UncleIntro',
   TutorialCrawl: 'TutorialCrawl',
   PowerUps: 'PowerUps',
+  GasCan: 'GasCan',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -124,6 +125,18 @@ export function pauseEvening(from: Phaser.Scene): void {
   for (const key of paused) from.scene.pause(key);
   from.scene.launch(SceneKeys.Pause, { paused });
   from.scene.bringToTop(SceneKeys.Pause);
+}
+
+/**
+ * SCREAM-122 (PO, November 13): the Temporary Gas Can has just poured itself in. The game
+ * stops like a pause (the clock too) while the can pops onto the screen, pulses and goes away.
+ */
+export function showGasCan(from: Phaser.Scene): void {
+  if (from.scene.isActive(SceneKeys.GasCan)) return;
+  const paused = EVENING_SCENES.filter((key) => from.scene.isActive(key));
+  for (const key of paused) from.scene.pause(key);
+  from.scene.launch(SceneKeys.GasCan, { paused });
+  from.scene.bringToTop(SceneKeys.GasCan);
 }
 
 /**

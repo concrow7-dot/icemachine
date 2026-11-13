@@ -4,7 +4,8 @@ import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
-import { COOLER_CAPACITY, ROTARY_HINT_LINE } from '../config/tuning';
+import {
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -45,7 +46,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { POWER_UP_TREES } from '../config/powerUps';
+import { GAS_CAN_ID, POWER_UP_TREES } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 
 /** SCREAM-296: every note on the cork board. */
@@ -280,6 +281,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
+    this.gasCanReady = this.powerUpsOwned.includes(GAS_CAN_ID); // SCREAM-122: full again every day
     this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
     const map = currentMap();
@@ -594,6 +596,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const note = POWER_UP_NOTES.find((n) => n.id === id);
     if (!note || this.powerUpStatus(id) !== 'ok') return false;
     this.powerUpsOwned.push(id);
+    if (id === GAS_CAN_ID) this.gasCanReady = true; // it comes full
     this.powerUpsSpentCents += note.priceCents;
     this.changeMoney(-note.priceCents, 'Power-up');
     return true;
@@ -627,18 +630,42 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.ranOutOfGas;
   }
 
+  // SCREAM-122 (PO, November 13): the Temporary Gas Can. Owned for the rest of the run once
+  // bought, and full at the start of every evening; it pours itself in once an evening.
+  private gasCanReady = false;
+  private gasCansPoured = 0;
+
+  /** True while tonight's can is still full. */
+  get gasCanFull(): boolean {
+    return this.gasCanReady;
+  }
+
+  /** How many times the can has been poured in tonight (0 or 1). */
+  get gasCansUsed(): number {
+    return this.gasCansPoured;
+  }
+
   /**
    * Uses up the gas for driving this many px (forward or back). SCREAM-119 (PO, November 2):
    * when the tank runs empty, the evening ends (it used to let the truck crawl to the pumps).
+   * SCREAM-122: unless the Temporary Gas Can is full: then it pours itself in (a fifth of a
+   * tank), the evening carries on, and this returns true so the road can show the can.
    */
-  burnFuel(px: number): void {
-    if (this.ended || px <= 0) return;
+  burnFuel(px: number): boolean {
+    if (this.ended || px <= 0) return false;
     const before = this.fuelLeft;
     this.fuelLeft = Math.max(0, this.fuelLeft - px / this.spec.fuelTankPx);
     if (before > 0 && this.fuelLeft <= 0) {
+      if (this.gasCanReady) {
+        this.gasCanReady = false;
+        this.gasCansPoured += 1;
+        this.fuelLeft = GAS_CAN_FILL;
+        return true;
+      }
       this.ranOutOfGas = true;
       this.endNow();
     }
+    return false;
   }
 
   /**
