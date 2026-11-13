@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 097 — The cork board opens a power-ups skill map: three trees (Truck, Speaker, Sales), a dummy to look at first (2026-11-12)
+
+**Decision (Jira SCREAM-267, under SCREAM-78, PO, November 12):** "IM ready to start working on powerups. My thinking is to start by letting the player to click into the cork board (above the cooler. They should see something similar to the pasted photo. For now lets just add a dummy skill map. As we add more powerups, the actual skill trees will take shape." The photo was another game's skill map: three framed trees side by side, squares joined by lines. Asked three questions, the PO answered: the trees are called **"Truck, Speaker, Sales"** (his own names, in place of engineering's proposal of Window, Truck, Neighbourhood); the squares are **look only** for now (nothing can be bought; buying comes with the first real power-up); and the screen is a **cork board with pinned notes** joined by string, not a dark panel like the photo. Builds on 073 (power-ups are bought with money, at the cork board).
+
+**Options considered:** tree names: Truck, Speaker, Sales (chosen, the PO's); Window, Truck, Neighbourhood; placeholder names; one tree. Dummy behaviour: look only (chosen); notes that can be bought and do nothing. Look: cork board with pinned notes (chosen); a dark panel like the photo.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- In Story the board on the wall above the cooler was the MENU (it opened the pause menu). It now opens the skill map and is tagged POWER-UPS; Esc still opens the menu everywhere. Quick play keeps MENU (076), and so does the uncle's evening (like End Evening, 091: nothing new while he is teaching).
+- 25 dummy notes (9, 7 and 9), each a "?" with a name like "TRUCK 3", "Not for sale yet" and one line of text. The shapes of the trees mean nothing yet. The data is `src/config/powerUps.ts`: each power-up ticket replaces a dummy note with a real one.
+- Arrow keys (or W A S D) move to the nearest note that way, across trees; pointing with the mouse marks a note; B, Backspace or the BACK button returns to the hub. Enter does nothing yet.
+- The board can be looked at wherever the hub can be opened, and the clock keeps running, as at the cooler (029). 073's "bought at home" rule belongs to buying, so it comes with the first real power-up.
+- Placeholder art drawn in code by engineering (cork, paper notes, pins, string), until the PO draws the board in his own style.
+
 ## 096 — Francine Fudge gets a new outfit (Look 11851), so she has no "big mouth" at the window (2026-11-12)
 
 **Decision (Jira SCREAM-289, under SCREAM-11, PO, November 12):** "Some players get what looks like an extra large mouth when they are made for the sales window." The cause is in the art: the chin line with bare skin under it. The PO chose "Change those customers' outfits in the Residents sheet", then "lets just fix Francine only", and picked option 5 of five (Look 11851): "Lets go with this one".
