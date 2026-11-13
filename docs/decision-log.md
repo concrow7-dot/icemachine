@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 096 — Francine Fudge gets a new outfit (Look 11851), so she has no "big mouth" at the window (2026-11-12)
+
+**Decision (Jira SCREAM-289, under SCREAM-11, PO, November 12):** "Some players get what looks like an extra large mouth when they are made for the sales window." The cause is in the art: the chin line with bare skin under it. The PO chose "Change those customers' outfits in the Residents sheet", then "lets just fix Francine only", and picked option 5 of five (Look 11851): "Lets go with this one".
+
+**Options considered:** a new outfit for Francine only (chosen); new outfits for everyone with the pattern (about 13 on Elm Park, 41 on Foley Stadium); shading the chin line at the window in code.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The five options kept her body (skin), hair and age and changed the outfit and eyes; Look 11851 gives a patterned top up to the chin.
+- The Residents sheet's Elm Park tab now says 11851 (engineering changed the cell for the PO). The build puts looks in number order, so in residents-tutorial.png she moves to the end and the others move up one place; every other picture is unchanged.
+
 ## 095 — Title screen: the title and the menu together, centred (2026-11-12)
 
 **Decision (Jira SCREAM-292, under SCREAM-6, PO, November 12):** "Lets Move the Title and Menu options together and Vertically center the text." Follows 087, which took the HOW TO DRIVE box off the title screen and left a gap.
