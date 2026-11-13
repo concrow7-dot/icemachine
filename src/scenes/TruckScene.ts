@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { getEvening, pauseEvening, SceneKeys, type Station } from '../flow';
+import { getEvening, getStory, pauseEvening, SceneKeys, type Station } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
@@ -10,10 +10,16 @@ import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 // clickable: the freezer opens the cooler, the front of the truck starts
 // driving, the menu board opens the menu, and the serving window opens a sale
 // (only while one is going on). Arrow keys move between them in screen order.
+// SCREAM-267 (PO, November 11): in Story the board on the wall above the cooler is the cork
+// board: it opens the power-ups skill map instead of the menu (Esc still opens the menu).
+// Not in the uncle's evening, and not in Quick play (decision 076).
 
 
 export const HIGHLIGHT = 0xffe066;
 export const OUTLINE = 0x3b2a1a;
+
+/** SCREAM-267: the board's name tag in Story. */
+export const POWER_UPS_TAG = 'POWER-UPS';
 
 type Zone = {
   id: Station;
@@ -141,6 +147,11 @@ export class TruckScene extends Phaser.Scene {
     return id !== 'window' || this.evening.customerWaiting;
   }
 
+  /** SCREAM-267: Story's cork board (after the uncle's evening) opens the power-ups. */
+  boardIsPowerUps(): boolean {
+    return !!getStory(this) && !this.evening.tutorial;
+  }
+
   /** Moves the highlight left or right, skipping zones that aren't available. */
   private move(direction: -1 | 1): void {
     const order = ZONES.map((z) => z.id);
@@ -158,7 +169,10 @@ export class TruckScene extends Phaser.Scene {
 
   private activate(id: Station): void {
     if (!this.isAvailable(id)) return;
-    if (id === 'menu') pauseEvening(this);
+    if (id === 'menu') {
+      if (this.boardIsPowerUps()) this.scene.start(SceneKeys.PowerUps);
+      else pauseEvening(this);
+    }
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
     if (id === 'driver') {
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
@@ -180,6 +194,6 @@ export class TruckScene extends Phaser.Scene {
     for (let i = 0; i < pts.length; i += 2) path.push(new Phaser.Math.Vector2(pts[i], pts[i + 1]));
     this.outline.lineStyle(9, OUTLINE, 0.9).strokePoints(path, true, true);
     this.outline.lineStyle(5, HIGHLIGHT, 1).strokePoints(path, true, true);
-    this.tag.setText(zone.name).setPosition(zone.tag.x, zone.tag.y).setVisible(true);
+    this.tag.setText(zone.id === 'menu' && this.boardIsPowerUps() ? POWER_UPS_TAG : zone.name).setPosition(zone.tag.x, zone.tag.y).setVisible(true);
   }
 }

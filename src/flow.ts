@@ -22,6 +22,7 @@ export const SceneKeys = {
   Loading: 'Loading',
   UncleIntro: 'UncleIntro',
   TutorialCrawl: 'TutorialCrawl',
+  PowerUps: 'PowerUps',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -30,6 +31,7 @@ export const EVENING_SCENES: string[] = [
   SceneKeys.UncleIntro,
   SceneKeys.Truck,
   SceneKeys.Cooler,
+  SceneKeys.PowerUps,
   SceneKeys.Sales,
   SceneKeys.Fill,
   SceneKeys.Drive,
