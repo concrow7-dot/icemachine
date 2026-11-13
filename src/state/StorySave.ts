@@ -28,6 +28,8 @@ export type StorySave = {
   rotaryHintGiven?: boolean;
   /** SCREAM-268: the uncle's $20 of gas has been used (at his pump, or at the first pump on your own). */
   uncleGasUsed?: boolean;
+  /** SCREAM-296: the power-ups owned (the cork board's note ids). Saves from before it have none. */
+  powerUps?: string[];
 };
 
 /**
@@ -77,12 +79,14 @@ export function loadStory(): StorySave | null {
           : undefined,
       rotaryHintGiven: data.rotaryHintGiven === true,
       uncleGasUsed: data.uncleGasUsed === true,
+      powerUps: Array.isArray(data.powerUps) ? data.powerUps.filter((id): id is string => typeof id === 'string') : undefined,
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),
         stockCents: cents(t.stockCents),
         gasCents: cents(t.gasCents),
         damageCents: cents(t.damageCents),
+        powerUpsCents: cents(t.powerUpsCents),
         largestSaleCents: cents(t.largestSaleCents),
       },
     };

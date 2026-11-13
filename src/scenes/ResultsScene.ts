@@ -124,8 +124,11 @@ export class ResultsScene extends Phaser.Scene {
       ['Gas', -t.gasCents, '#ff9c9c'],
       ['Damage', -t.damageCents, '#ff9c9c'],
     ];
+    // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
+    if (t.powerUpsCents > 0) rows.push(['Power-ups', -t.powerUpsCents, '#ff9c9c']);
+    const rowGap = rows.length > 5 ? 23 : ROW_GAP;
     rows.forEach(([label, cents, colour], i) => {
-      const y = 145 + i * ROW_GAP;
+      const y = 145 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });

@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 098 — Cork board notes open bigger and can be bought: grey until bought, unlocked by the note above, at home only (2026-11-12)
+
+**Decision (Jira SCREAM-296, under SCREAM-78, PO, November 12):** "I think the next item to work on is having the ability of the player to click on the skill, and have it magnify. The "?" on the current screen (post it notes) would be a fun image. If the player clicks on the post it, the note should open to be bigger. The note should have the logo and a description. With the price listed, and the ability to purchase the skill. No button if already purchased." On how notes look: "Lets have the notes that aren't purchased, greyed out. The the items purchased will look as they do now. The user can still look at the greyed out notes." He agreed to engineering's proposals ("Agreed on the last 3", then "I agree with all"): a note you can't afford shows its price in red with the button greyed out; Enter opens the marked note and Enter again buys it, with no "are you sure" step; Restart Evening gives back anything bought that evening; buying is real in this ticket (the cash leaves and the note is saved as owned) although the notes are still dummies; the strings lock notes (a note can be bought once you own a note it hangs from; the top notes are open); placeholder pictures by engineering, one per tree; buying only while parked at home, the board readable anywhere; a locked note is greyed like any unbought note and says what to buy first in place of the button. Builds on 073 and 097.
+
+**Options considered:** how an owned note looks: unbought notes grey and bought ones in colour (chosen, the PO's); a "SOLD" stamp on bought notes (engineering's first proposal). Buying: real now, with dummy notes (chosen); wait for the first real power-up. Strings: lock the notes below (chosen); decoration only. Pictures: engineering's placeholders (chosen); wait for the PO's drawings. Where: at home only (chosen); anywhere the board opens. Confirming a purchase: none (chosen); an "are you sure" step.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- "At home" means before first setting off for the evening. A stop at home to restock opens only the cooler and goes straight back to the road, so there is no way to the board then; 073's "on any stop at home to restock" needs its own change (a way from the restock cooler to the board).
+- A note hanging from two notes needs only one of them ("Buy TRUCK 2 or TRUCK 3 first").
+- Dummy prices: $5.00 for the top row, $5.00 more each row down ($25.00 at the bottom). Dummy description: "A dummy power-up. It does nothing yet."
+- The pictures: a wheel (Truck), a loudspeaker (Speaker), a coin (Sales), drawn in code.
+- The opened note closes with B, Backspace or a click on the dimmed board. After buying, it stays open and says "Yours".
+- Money spent at the board is a "Power-ups" row on the end-of-day screen and the end-of-run screen, shown only when something was bought, so the rows still add up to the profit.
+- What is owned is kept in the Story run and its save (`powerUps`); older saves read as owning nothing.
+
 ## 097 — The cork board opens a power-ups skill map: three trees (Truck, Speaker, Sales), a dummy to look at first (2026-11-12)
 
 **Decision (Jira SCREAM-267, under SCREAM-78, PO, November 12):** "IM ready to start working on powerups. My thinking is to start by letting the player to click into the cork board (above the cooler. They should see something similar to the pasted photo. For now lets just add a dummy skill map. As we add more powerups, the actual skill trees will take shape." The photo was another game's skill map: three framed trees side by side, squares joined by lines. Asked three questions, the PO answered: the trees are called **"Truck, Speaker, Sales"** (his own names, in place of engineering's proposal of Window, Truck, Neighbourhood); the squares are **look only** for now (nothing can be bought; buying comes with the first real power-up); and the screen is a **cork board with pinned notes** joined by string, not a dark panel like the photo. Builds on 073 (power-ups are bought with money, at the cork board).

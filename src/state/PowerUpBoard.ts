@@ -21,6 +21,9 @@ export type PlacedNote = {
   x: number;
   y: number;
   from: string[];
+  /** What the player sees it called: "TRUCK 3". */
+  name: string;
+  priceCents: number;
 };
 
 /** Every note of every tree with its place on the screen. */
@@ -35,6 +38,8 @@ export function placeNotes(trees: PowerUpTree[]): PlacedNote[] {
         x: BOARD_LAYOUT.treeX[t] + (note.col - 1) * BOARD_LAYOUT.colGap,
         y: BOARD_LAYOUT.firstRowY + note.row * BOARD_LAYOUT.rowGap,
         from: note.from,
+        name: `${tree.name} ${n + 1}`,
+        priceCents: note.priceCents,
       });
     });
   });
@@ -67,4 +72,24 @@ export function nextNote(notes: PlacedNote[], fromId: string, direction: BoardDi
     }
   }
   return best;
+}
+
+/**
+ * SCREAM-296: can this note be bought right now?
+ * `owned`: already bought (no button). `locked`: none of the notes it hangs from is owned yet.
+ * `away`: the truck has left home (073: power-ups are bought at home). `poor`: not enough cash.
+ */
+export type BuyStatus = 'owned' | 'locked' | 'away' | 'poor' | 'ok';
+
+export function buyStatus(
+  note: { id: string; from: string[]; priceCents: number },
+  owned: readonly string[],
+  cashCents: number,
+  atHome: boolean,
+): BuyStatus {
+  if (owned.includes(note.id)) return 'owned';
+  if (note.from.length > 0 && !note.from.some((id) => owned.includes(id))) return 'locked';
+  if (!atHome) return 'away';
+  if (cashCents < note.priceCents) return 'poor';
+  return 'ok';
 }

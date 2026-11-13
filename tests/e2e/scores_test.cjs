@@ -38,7 +38,7 @@ const { chromium } = require('playwright');
   check('Evening over: results screen', await scenes(), 'Results');
   check('Results sit over the truck interior picture (SCREAM-123)', await page.evaluate(() => window.__game.scene.getScene('Results').children.list.some(o => o.texture && o.texture.key === 'truck-interior')), true);
   check('Breakdown: sales $2.00, tips $0.40, stock $2.00, damage $5.00',
-    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500 }));
+    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500, powerUpsCents: 0 }));
   check("Tonight's profit = sales + tips - stock - damage (-$4.60)", await ev('e.profitCents'), -460);
   // SCREAM-93: the largest sale, price plus tip, against Quick play's record (none yet)
   check('Largest sale: $2.40 (price + tip), a new record', await res('s.children.getByName("largest-sale").text'), 'Largest sale: $2.40  NEW RECORD!');
