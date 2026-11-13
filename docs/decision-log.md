@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 102 — The end-of-day screen moves on with a click as well as Enter (2026-11-13)
+
+**Decision (Jira SCREAM-295, under SCREAM-7, PO, November 12):** on the end-of-day screen, clicking the mouse works as well as pressing Enter. Enter keeps working. Like 079 (click or Enter to begin).
+
+**Options considered:** a click anywhere on the screen (chosen, as on the opening screen); a button to click.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The end-of-day screen is only ever shown in Story (Quick play goes straight to its results), so there was no both-modes question to answer.
+- The hint at the bottom reads "Click Or Enter: Start Tuesday" (or "Story High Scores", or "Back To The Title"), in the opening screen's wording.
+- Only the left button counts, and a click in the screen's first half second is ignored, so a click meant for the sales window as the evening ends doesn't skip the screen.
+- The screens after it are unchanged: the high score screen still takes the keyboard (it asks for initials).
+
 ## 101 — Story burns gas 5% faster (2026-11-13)
 
 **Decision (Jira SCREAM-298, under SCREAM-7, PO, November 13):** "increase the rate that gas burns by 5%".
