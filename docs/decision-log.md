@@ -27,7 +27,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** how an owned note looks: unbought notes grey and bought ones in colour (chosen, the PO's); a "SOLD" stamp on bought notes (engineering's first proposal). Buying: real now, with dummy notes (chosen); wait for the first real power-up. Strings: lock the notes below (chosen); decoration only. Pictures: engineering's placeholders (chosen); wait for the PO's drawings. Where: at home only (chosen); anywhere the board opens. Confirming a purchase: none (chosen); an "are you sure" step.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+**Why (product owner's rationale):** PO, November 13: "I wanted to promote the player needing to plan their build out. So they couldn't just get anything whenever you wanted."
 
 **Engineering's calls (proposals):**
 
@@ -45,7 +45,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Options considered:** tree names: Truck, Speaker, Sales (chosen, the PO's); Window, Truck, Neighbourhood; placeholder names; one tree. Dummy behaviour: look only (chosen); notes that can be bought and do nothing. Look: cork board with pinned notes (chosen); a dark panel like the photo.
 
-**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+**Why (product owner's rationale):** PO, November 13, on the trees and their names: "I'm still toying with exactly what the columns should be. Those are just first ideas." So Truck, Speaker and Sales are first ideas, open to change. *(Why a skill map with trees rather than a plain list: not given yet.)*
 
 **Engineering's calls (proposals):**
 
