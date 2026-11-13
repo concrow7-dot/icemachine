@@ -592,7 +592,8 @@ export class CoolerScene extends Phaser.Scene {
     for (const [x0, x1] of [[left, mid], [mid, right]]) {
       const w = (x1 ?? 0) - (x0 ?? 0);
       const h = bottom - top;
-      const lid = this.add.graphics().setDepth(10);
+      // SCREAM-297: above the grey covered halves (depth 11), which showed through the shut lids.
+      const lid = this.add.graphics().setDepth(12).setName('cooler-lid');
       lid.fillStyle(0xcfeef5, 1).fillRect(0, 0, w, h);
       lid.lineStyle(10, 0xffffff, 0.7).lineBetween(w * 0.15, h, w * 0.45, 0).lineBetween(w * 0.3, h, w * 0.6, 0);
       lid.lineStyle(6, 0x7f7f7f, 1).strokeRect(3, 3, w - 6, h - 6);

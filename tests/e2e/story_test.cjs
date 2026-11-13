@@ -79,6 +79,7 @@ const { chromium } = require('playwright');
   check('...a right click does not begin', await scenes(), 'StoryIntro');
   await page.mouse.click(480, 270); await wait(300);
   check('...a left click: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
+  check('SCREAM-297: the shut lids are drawn above the grey covered halves', await sc('Cooler', "(() => { const d = (n) => s.children.list.filter(o => o.name === n).map(o => o.depth); const lids = d('cooler-lid'), halves = d('covered-half'); return lids.length + ' ' + halves.length + ' ' + (Math.min(...lids) > Math.max(...halves)); })()"), '2 3 true');
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
   check('Story starts with $25', await ev('e.moneyCents'), 2500);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
