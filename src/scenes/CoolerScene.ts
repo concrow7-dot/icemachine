@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
-import { addCoveredHalf } from '../ui/coveredHalf';
+import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -82,6 +82,14 @@ export class CoolerScene extends Phaser.Scene {
   coveredHalves: Phaser.GameObjects.Container[] = [];
   /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
   coveredRows: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-293: the crates' top: lower in Story, where they are a row shorter. */
+  private get crateTop(): number {
+    return crateTopFor(COOLER_LAYOUT.crateTop, this.crateHeight, CRATE_SIDE * COOLER_LAYOUT.cell + 2 * COOLER_LAYOUT.cellPad);
+  }
+  /** SCREAM-293: a crate's height: its open rows (Story: 3). */
+  private get crateHeight(): number {
+    return this.evening.spec.coolerRows * COOLER_LAYOUT.cell + 2 * COOLER_LAYOUT.cellPad;
+  }
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -114,7 +122,7 @@ export class CoolerScene extends Phaser.Scene {
     this.cards = [];
     const { width, height } = this.scale;
 
-    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height).setDepth(-2); // SCREAM-293: under the moved crates
     this.title = this.add
       .text(599, 61, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
@@ -243,14 +251,19 @@ export class CoolerScene extends Phaser.Scene {
   // ---- The crates ----
 
   private makeCells(): void {
-    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const { crateLefts, cell, cellPad } = COOLER_LAYOUT;
+    const crateTop = this.crateTop;
     const crateSize = CRATE_SIDE * cell + 2 * cellPad;
+    // SCREAM-293: Story's crates are a row shorter.
+    const crateH = this.crateHeight;
+    const cols = this.evening.spec.coolerColumns;
+    const openW = cols < CRATE_SIDE ? cellPad + cols * cell : crateSize;
     // SCREAM-131 (PO, November 2): picks go into the chosen crate. Click a crate (or press 1, 2, 3) to choose it.
     this.crateMark = this.add.graphics();
     if (!this.locked) {
       crateLefts.forEach((left, crate) => {
         this.add
-          .rectangle(left, crateTop, crateSize, crateSize, 0xffffff, 0.001)
+          .rectangle(left, crateTop, crateSize, crateH, 0xffffff, 0.001)
           .setOrigin(0, 0)
           .setInteractive({ useHandCursor: true })
           .on('pointerdown', () => {
@@ -262,11 +275,10 @@ export class CoolerScene extends Phaser.Scene {
     // SCREAM-269: in Story the right half of every crate is under a plain panel.
     this.coveredHalves = [];
     this.coveredRows = [];
-    if (this.evening.spec.coolerHalfCovered) {
-      crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + crateSize / 2, crateTop, crateSize / 2, crateSize)));
-      // SCREAM-291: the bottom row of the open half is gone too.
-      const rowTop = crateTop + cellPad + (CRATE_SIDE - 1) * cell;
-      crateLefts.forEach((left) => this.coveredRows.push(addCoveredHalf(this, left, rowTop, crateSize / 2, crateTop + crateSize - rowTop).setName('covered-row')));
+    if (openW < crateSize) crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + openW, crateTop, crateSize - openW, crateH)));
+    if (crateH < crateSize) {
+      // SCREAM-291, SCREAM-293: the bottom row is gone altogether.
+      crateLefts.forEach((left) => this.coveredRows.push(moveShortCrate(this, COOLER_KEY, left, crateSize, COOLER_LAYOUT.crateTop, crateH, crateSize)));
     }
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = this.cellCentre(i);
@@ -297,7 +309,8 @@ export class CoolerScene extends Phaser.Scene {
 
   /** The middle of a square on screen. */
   private cellCentre(i: number): { x: number; y: number } {
-    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const { crateLefts, cell, cellPad } = COOLER_LAYOUT;
+    const crateTop = this.crateTop;
     const crate = Math.floor(i / (CRATE_SIDE * CRATE_SIDE));
     const inCrate = i % (CRATE_SIDE * CRATE_SIDE);
     return {
@@ -618,9 +631,11 @@ export class CoolerScene extends Phaser.Scene {
     const cells = this.order.cells;
     this.crateMark.clear();
     if (!this.locked) {
-      const { crateLefts, crateTop, cellPad } = COOLER_LAYOUT;
+      const { crateLefts, cellPad } = COOLER_LAYOUT;
+      const crateTop = this.crateTop;
       const size = CRATE_SIDE * cell + 2 * cellPad;
-      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, size + 6);
+      const h = this.crateHeight; // SCREAM-293
+      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, h + 6);
     }
     this.unpaidMarks.clear();
     cells.forEach((c, i) => {

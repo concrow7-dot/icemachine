@@ -396,6 +396,13 @@ export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%
  * whole crates and a locked third (32) for a few hours.
  */
 export const STORY_COOLER_HALF_COVERED = true;
+/**
+ * SCREAM-291, SCREAM-293 (PO, November 12): the squares of each crate that are open in Story's
+ * starting cooler: 2 columns by 3 rows (18 in all). The rest stays drawn in the art and comes back
+ * when these grow (PO: "I do want to eventually reveal the other sections of the cooler"; SCREAM-25).
+ */
+export const STORY_COOLER_COLUMNS = 2;
+export const STORY_COOLER_ROWS = 3;
 /** Story burns gas this many times as fast. */
 export const STORY_FUEL_BURN_FACTOR = 1.3;
 /**
