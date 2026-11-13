@@ -122,7 +122,7 @@ export class CoolerScene extends Phaser.Scene {
     this.cards = [];
     const { width, height } = this.scale;
 
-    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height).setDepth(-2); // SCREAM-293: under the moved crates
     this.title = this.add
       .text(599, 61, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);

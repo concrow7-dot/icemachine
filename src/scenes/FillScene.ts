@@ -82,7 +82,7 @@ export class FillScene extends Phaser.Scene {
     this.focus = 0;
     const { width, height } = this.scale;
 
-    this.add.image(0, 0, FILL_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    this.add.image(0, 0, FILL_KEY).setOrigin(0, 0).setDisplaySize(width, height).setDepth(-2); // SCREAM-293: under the moved crates
     // SCREAM-293: the open part of each crate (Story: 2 columns by 3 rows) sets its size and place.
     const { coolerColumns: cols, coolerRows: rows } = this.evening.spec;
     const crateH = rows * CELL + 2 * CELL_PAD;
