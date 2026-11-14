@@ -197,7 +197,7 @@ export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: 
 export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const line = Math.max(2, 5 * u);
+  const line = Math.max(2, 5 * u); // PO (03:05): the same lines as Gitty Up's truck
   const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
   const poly = (colour: number, pts: [number, number][]) => {
     const v = pts.map(([x, y]) => P(x, y));
@@ -211,9 +211,10 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
   // A leg: a thick outlined line through its joints, with a hoof at the end.
   const leg = (colour: number, pts: [number, number][]) => {
     const v = pts.map(([x, y]) => P(x, y));
-    const w = 6 * u;
-    g.lineStyle(w + line * 2, ink, 1).strokePoints(v, false, false);
-    for (const p of v) g.fillStyle(ink, 1).fillCircle(p.x, p.y, w / 2 + line);
+    // PO (03:05): the lines should match Gitty Up's truck: the outline is half a line each side.
+    const w = 7 * u;
+    g.lineStyle(w + line, ink, 1).strokePoints(v, false, false);
+    for (const p of v) g.fillStyle(ink, 1).fillCircle(p.x, p.y, (w + line) / 2);
     g.lineStyle(w, colour, 1).strokePoints(v, false, false);
     for (const p of v) g.fillStyle(colour, 1).fillCircle(p.x, p.y, w / 2);
     const end = v[v.length - 1];
