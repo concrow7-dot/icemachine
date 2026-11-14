@@ -35,6 +35,8 @@ export function isBroke(cashCents: number, stockLeft: number): boolean {
 export type RunTotals = {
   salesCents: number;
   tipsCents: number;
+  /** SCREAM-313: the part of the tips SpongePops earned. */
+  spongePopCents: number;
   stockCents: number;
   gasCents: number;
   damageCents: number;
@@ -70,7 +72,7 @@ export class StoryRun {
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
-  totals: RunTotals = { salesCents: 0, tipsCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, powerUpsCents: 0, largestSaleCents: 0 };
+  totals: RunTotals = { salesCents: 0, tipsCents: 0, spongePopCents: 0, stockCents: 0, gasCents: 0, damageCents: 0, powerUpsCents: 0, largestSaleCents: 0 };
 
   /** SCREAM-205 (PO, November 8): the uncle's tutorial evening is Day 1 (unless the player chose On My Own). */
   readonly withUncle: boolean;
@@ -133,6 +135,7 @@ export class StoryRun {
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,
       tipsCents: this.totals.tipsCents + b.tipsCents,
+      spongePopCents: this.totals.spongePopCents + b.spongePopCents,
       stockCents: this.totals.stockCents + b.stockCents,
       gasCents: this.totals.gasCents + b.gasCents,
       damageCents: this.totals.damageCents + b.damageCents,

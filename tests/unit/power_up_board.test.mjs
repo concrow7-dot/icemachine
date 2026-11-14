@@ -97,16 +97,16 @@ test('SCREAM-310: Trot is the right note under the gas can, $20, with its own na
   assert.deepEqual(notes.find((n) => n.id === 'truck-6').from, ['trot']);
 });
 
-test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair, $15 each', () => {
+test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair; SpongePop $20, Explorer $25 (PO, November 14), the rest $15', () => {
   const tree = POWER_UP_TREES.find((t) => t.id === 'icecream');
   assert.deepEqual(tree.notes.map((n) => n.id), ['icecream-eclair', 'icecream-spongepop', 'icecream-explorer', 'icecream-cookie', 'icecream-5', 'icecream-6']);
   assert.deepEqual(FREE_NOTE_IDS, ['icecream-eclair']);
-  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 1500, 1500, 1500, 1500, 1500]);
+  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 2000, 2500, 1500, 1500, 1500]);
   assert.deepEqual(tree.notes.slice(0, 4).map((n) => n.row), [0, 1, 2, 3]);
   const [, sponge, explorer] = tree.notes;
-  assert.equal(buyStatus(sponge, FREE_NOTE_IDS, 1500, true), 'ok');
-  assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 1500, true), 'locked');
-  assert.equal(buyStatus(explorer, [...FREE_NOTE_IDS, sponge.id], 1500, true), 'ok');
+  assert.equal(buyStatus(sponge, FREE_NOTE_IDS, 2000, true), 'ok');
+  assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 2500, true), 'locked');
+  assert.equal(buyStatus(explorer, [...FREE_NOTE_IDS, sponge.id], 2500, true), 'ok');
   assert.match(tree.notes[0].description, /won't pay more than \$2\.50/);
   assert.equal(storyRefuseAboveCents('eclair'), 250);
   assert.equal(storyRefuseAboveCents('cookie'), 400);
