@@ -2,6 +2,27 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 116 — SpongePop: a kid whose order includes one tips 10 points more (2026-11-14)
+
+**Decision (Jira SCREAM-313, under SCREAM-78, PO, November 14):** "I want the spongepop to increase tips by children by 10%". Asked what that means, he chose **10 percentage points more** (not 1.1 times), and **only when the kid's order includes a SpongePop**. So a quick tip goes 30%, 25%, 20%, 15% instead of 20%, 15%, 10%, 5%. The first ice cream with an effect of its own (SCREAM-135).
+
+**Options considered:** 10 points more (chosen) or 1.1 times the tip; when the kid's order includes a SpongePop (chosen), for every kid once the note is owned, or for every kid while SpongePop is stocked tonight.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- A kid is a resident marked Kid in the Residents sheet's Age column (both maps).
+- One SpongePop anywhere in the order is enough; more SpongePops don't add more.
+- With Service With A Smile the two add up: 35%, 30%, 25%, 20%, 15%. A hard-to-find kid's 4x multiplies the raised tip.
+- The tip bar shows the raised steps; no new line or pop-up.
+- The SpongePop note says "Kids who order one tip 10% more." (engineering's wording).
+
+**Changed while testing (PO, November 14, 16:00):** "I want to change the purchase price for \"powerup\" spongepop to be $20 and the explorer pop to $25. I want the price people are willing to pay to be both be $3. Lets remove the line \"Stock it and customers order it.\"" So SpongePop's note costs $20 and the Lil Explorer Pop's $25 (the sandwich keeps $15); customers won't pay more than $3.00 for either (the sandwich keeps $4.00); and no ice cream note starts with "Stock it and customers order it." any more (engineering's call: the sandwich's too, as it's the same line).
+
+**Also while testing (PO, November 14, 16:07 and 16:11):** "On the spongpop, similar to on the explorer, I want to include how much was earned because of the pop." And: "If there are too many different tip types on the successful sale screen, the tips should scroll behind the overall price after they have appear to reveal the bottom tips." So the SpongePop's part of the tip (the 10 points) is its own line at the window ("+$0.30 SPONGEPOP TIP", after the tip, which now shows only the rest) and its own "SpongePop tips" row under Tips on the end-of-day and run-stats screens (only when there was any; each row past six moves the line and what's under it down a row). With more than one tip line, each appears under the price, then scrolls up behind it as the next comes in; the last one stays. Engineering's calls: the SpongePop's part is the tip minus what it would have been without the 10 points; its pink colour.
+- Story only (decision 076).
+
 ## 115 — Home and the pump: go in again without driving out of the spot first (2026-11-14)
 
 **Decision (Jira SCREAM-304, under SCREAM-7, PO, November 14):** after visiting home or the gas station, "the only way to go in again is to drive out of the entry rectangle and back in. That is a pointless detour." A truck that stays in the spot is offered the way back in.

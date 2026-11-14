@@ -189,6 +189,23 @@ const { chromium } = require('playwright');
   check('SCREAM-288: that was the second and last time for this customer', (await ev('e.sale.asksLeft')) + ' ' + (await ev('e.sale.askAgain(e.nowMs)')), '0 false');
   await press('b'); await wait(300);
 
+  check('SCREAM-313: Quick play: a kid with a SpongePop tips as before', await ev("e.saleTipSteps([{ slot: 0, flavour: 'spongepop', count: 1 }], e.residents.all.find(p => p.resident.kid)).join()"), '20,15,10,5');
+  // ---- SCREAM-313 (PO, November 14): more than one tip line: each scrolls up behind the price for the next ----
+  await serveNow(); await wait(200);
+  const flashTexts = () => sc('Sales', "s.children.list.filter(o => o.name === 'sale-flash' && o.alpha > 0.5).sort((a, b) => a.y - b.y).map(o => o.text + '@' + Math.round(o.y)).join(' / ')");
+  await sc('Sales', '(s.flashLines(300, [{ text: "+$0.60 TIP", colour: "#1d5c8c", size: 44 }, { text: "+$0.30 SPONGEPOP TIP", colour: "#c2185b", size: 30 }, { text: "+$1.60 EXPLORATION TIP", colour: "#6a3d9a", size: 30 }]), true)');
+  await wait(1600);
+  check('SCREAM-313: first the price, then the first tip line under it', await flashTexts(), '+$3.00@300 / +$0.60 TIP@360');
+  await page.screenshot({ path: outDir + '/sale_tips_1.png' });
+  await wait(700);
+  await page.screenshot({ path: outDir + '/sale_tips_2.png' });
+  await wait(600);
+  check('...the first two have scrolled up behind the price; the last stays under it', await flashTexts(), '+$3.00@300 / +$1.60 EXPLORATION TIP@360');
+  check('...the price is drawn over the tip lines', await sc('Sales', "(f => f.find(o => o.text === '+$3.00').depth > f.find(o => o.text.endsWith('TIP')).depth)(s.children.list.filter(o => o.name === 'sale-flash'))"), true);
+  await page.screenshot({ path: outDir + '/sale_tips_3.png' });
+  await ev('(e.driveOffFromSale(), true)'); await sc('Sales', '(s.leave(), true)'); await wait(400);
+
+
   // ---- SCREAM-303: with Service With A Smile the tip starts at 25% and the bar has five steps ----
   await ev("(e.powerUpsOwned.push('service-with-a-smile'), true)");
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);

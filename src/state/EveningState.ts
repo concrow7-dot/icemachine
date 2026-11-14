@@ -1,11 +1,11 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
-import { generateOrder, orderTotalCents, Sale } from './Sale';
+import { generateOrder, orderTotalCents, Sale, type OrderLine } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, TIP_PERCENT_STEPS } from '../config/tuning';
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -154,6 +154,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private damageTotalCents = 0;
   private salesTotalCents = 0;
   private tipsTotalCents = 0;
+  /** SCREAM-313: the part of tonight's tips that SpongePops earned (their own row on the end-of-day screen). */
+  private spongePopTotalCents = 0;
   /** SCREAM-93: the most paid for one order tonight, price plus tip. */
   private largestSaleTotalCents = 0;
   private stockSpentCents = 0;
@@ -622,6 +624,21 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.powerUpsOwned.includes(SMILE_ID) ? SMILE_TIP_PERCENT_STEPS : TIP_PERCENT_STEPS;
   }
 
+  /**
+   * The tip steps for one sale: tonight's (SCREAM-303), plus 10 points at every step when a kid's
+   * order includes a SpongePop (SCREAM-313, PO, November 14; Story only).
+   */
+  saleTipSteps(order: readonly OrderLine[], customer?: ResidentNow): readonly number[] {
+    const points = this.spongePopPoints(order, customer);
+    return points > 0 ? this.tipSteps.map((percent) => percent + points) : this.tipSteps;
+  }
+
+  /** SCREAM-313: the extra tip points a SpongePop brings: 10 for a kid who orders one in Story, else 0. */
+  spongePopPoints(order: readonly OrderLine[], customer?: ResidentNow): number {
+    const kidWithSpongePop = this.story && !!customer?.resident.kid && order.some((line) => line.flavour === 'spongepop');
+    return kidWithSpongePop ? SPONGEPOP_KID_TIP_POINTS : 0;
+  }
+
   /** SCREAM-271: the ice creams the clipboard offers tonight, in the order of FLAVOURS. */
   get unlockedFlavours(): FlavourId[] {
     return FLAVOURS.map((f) => f.id).filter((id) => this.flavourUnlocked(id));
@@ -645,10 +662,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /** Tonight's breakdown for the results screen (#16). */
-  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
+  get breakdown(): { salesCents: number; tipsCents: number; spongePopCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
     return {
       salesCents: this.salesTotalCents,
       tipsCents: this.tipsTotalCents,
+      spongePopCents: this.spongePopTotalCents, // SCREAM-313
       stockCents: this.stockSpentCents,
       gasCents: this.gasSpentCents,
       damageCents: this.damageTotalCents,
@@ -837,7 +855,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, (f) => this.refuseAboveCents(f)), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
-    this.saleNow.tipSteps = this.tipSteps; // SCREAM-303
+    this.saleNow.tipSteps = this.saleTipSteps(this.saleNow.order, customer); // SCREAM-303, SCREAM-313
+    this.saleNow.spongePopPoints = this.spongePopPoints(this.saleNow.order, customer);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;
@@ -908,8 +927,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (sale.outcome?.kind === 'paid') {
       this.changeMoney(sale.outcome.priceCents, 'Sale');
       this.salesTotalCents += sale.outcome.priceCents;
-      if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
-      this.tipsTotalCents += sale.outcome.tipCents;
+      // SCREAM-313 (PO, November 14): the part of the tip a SpongePop earned is shown and counted on its own.
+      const sponge = sale.spongePopTipCents;
+      if (sale.outcome.tipCents - sponge > 0) this.changeMoney(sale.outcome.tipCents - sponge, 'Tip');
+      if (sponge > 0) this.changeMoney(sponge, 'SpongePop tip');
+      this.tipsTotalCents += sale.outcome.tipCents - sponge;
+      this.spongePopTotalCents += sponge;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145

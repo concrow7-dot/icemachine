@@ -137,7 +137,7 @@ const { chromium } = require('playwright');
   await press('b');
   ice = await noteAt('icecream-spongepop');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('...SpongePop costs $15.00', await big(), "true | SPONGEPOP | Stock it and customers order it. The average person won't pay more than $4.00 for one. | $15.00 | BUY | button=true");
+  check('...SpongePop costs $20.00 (PO, November 14)', await big(), "true | SPONGEPOP | Kids who order one tip 10% more. The average person won't pay more than $3.00 for one. | $20.00 | BUY | button=true");
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_ice_cream.png' });
   await press('b');
@@ -254,8 +254,9 @@ const { chromium } = require('playwright');
   // ---- SCREAM-271: in Story only the Chocolate Eclair can be stocked until an ice cream is bought on the board ----
   check('SCREAM-271: Story\'s clipboard offers only the Chocolate Eclair', (await sc('Cooler', "s.offered.map(f => f.id).join()")) + ' ' + (await sc('Cooler', '[...s.addButtons.keys()].join()')), 'eclair eclair');
   check('...the others are locked', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.flavourUnlocked(f)).join()"), 'true,false,false,false');
-  check('...the average person won\'t pay over $2.50 for an eclair; the others keep $4.00', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.refuseAboveCents(f)).join()"), '250,400,400,400');
-  await ev("(e.changeMoney(1500, 'Test', false), true)");
+  check('...the average person won\'t pay over $2.50 for an eclair, $3.00 for SpongePop and the Explorer Pop (PO, November 14); the sandwich keeps $4.00', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.refuseAboveCents(f)).join()"), '250,300,300,400');
+  await ev("(e.changeMoney(2000, 'Test', false), true)");
+  check('PO, November 14: the notes cost $20 (SpongePop) and $25 (Lil Explorer Pop); the sandwich keeps $15', await pu("['icecream-spongepop','icecream-explorer','icecream-cookie'].map(id => s.notes.find(n => n.id === id).priceCents).join()"), '2000,2500,1500');
   check('...Explorer can\'t be bought before SpongePop; SpongePop can', (await ev("e.buyPowerUp('icecream-explorer')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true eclair,spongepop');
   await press('b'); await until(async () => (await scenes()) === 'Truck,Hud', 1500);
   if ((await scenes()) === 'Truck,Hud') { await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); }

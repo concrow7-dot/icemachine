@@ -70,25 +70,29 @@ export class DayEndScene extends Phaser.Scene {
     ];
     // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
     if (b.powerUpsCents > 0) rows.push(['Power-ups', -b.powerUpsCents, '#ff9c9c']);
+    // SCREAM-313 (PO, November 14): what SpongePops earned gets its own row, under Tips, only when there was any.
+    if (b.spongePopCents > 0) rows.splice(2, 0, ['SpongePop tips', b.spongePopCents, '#c8f7c5']);
     const rowGap = rows.length > 5 ? 23 : ROW_GAP;
+    // Each row past six pushes the line and everything under it down by a row.
+    const below = Math.max(0, rows.length - 6) * rowGap;
     this.add.text(110, 130, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     rows.forEach(([label, cents, colour], i) => {
       const y = 165 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });
-    this.add.rectangle(110, 308, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
-    this.add.text(110, 322, "Tonight's profit", { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    this.add.rectangle(110, 308 + below, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 322 + below, "Tonight's profit", { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
     const profit = evening.profitCents;
     this.add
-      .text(420, 354, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .text(420, 354 + below, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
 
     // SCREAM-93: tonight's largest sale (price plus tip), against Story's record.
     const largest = evening.largestSaleCents;
     const record = offerLargestSale('story', largest);
     this.add
-      .text(110, 410, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
+      .text(110, 410 + below, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
       .setName('largest-sale');
 
     // ---- The wallet and the cooler ----

@@ -44,6 +44,10 @@ const BUBBLE_PAD = 14;
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
 const TIP_FLASH_DELAY_MS = 1050;
+/** Where the price and the tip lines flash, and how long a tip line takes to scroll up behind the price (SCREAM-313). */
+const PRICE_FLASH_Y = 300;
+const TIP_FLASH_Y = 360;
+const TIP_SCROLL_MS = 350;
 /** SCREAM-106: the customer in the right half of the window, their map sprite blown up 13x (SCREAM-110: smoothed). */
 const CUSTOMER_X = 756;
 const CUSTOMER_SCALE = 13;
@@ -170,7 +174,7 @@ export class SalesScene extends Phaser.Scene {
 
     // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
     // SCREAM-284 (PO, November 12): the same countdown bar as at the cooler, at the jar's size.
-    this.tipBar = new TipBar(this, 892, 412, true, true, WINDOW_TIP_BAR_H, this.evening.tipSteps);
+    this.tipBar = new TipBar(this, 892, 412, true, true, WINDOW_TIP_BAR_H, this.evening.sale?.tipSteps ?? this.evening.tipSteps); // SCREAM-313: this sale's own steps
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
     this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);
@@ -350,32 +354,59 @@ export class SalesScene extends Phaser.Scene {
     this.typed = '';
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
-    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents);
+    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0);
   }
 
-  /** PO, doc 08 Q16: the payment flashes on screen, then the tip. */
-  private celebrate(priceCents: number, tipCents: number): void {
-    const flash = (text: string, y: number, colour: string, delay: number) => {
-      const t = this.add
-        .text(330, y, text, { fontFamily: 'monospace', fontSize: '44px', color: colour, fontStyle: 'bold' })
+  /**
+   * PO, doc 08 Q16: the payment flashes on screen, then the tip. SCREAM-313 (PO, November 14):
+   * the part of the tip a SpongePop earned has its own line. With more than one tip line, they
+   * take turns under the price: each appears, then scrolls up behind the price to make room for
+   * the next ("the tips should scroll behind the overall price after they have appeared").
+   */
+  private celebrate(priceCents: number, tipCents: number, spongePopCents = 0): void {
+    const plainTip = tipCents - spongePopCents;
+    const lines: { text: string; colour: string; size: number }[] = [
+      { text: plainTip > 0 ? `+${formatMoney(plainTip)} TIP` : 'No tip', colour: plainTip > 0 ? '#1d5c8c' : '#8a6a4a', size: 44 },
+    ];
+    if (spongePopCents > 0) lines.push({ text: `+${formatMoney(spongePopCents)} SPONGEPOP TIP`, colour: '#c2185b', size: 30 });
+    this.flashLines(priceCents, lines);
+  }
+
+  /** The price at the top, then each tip line in turn below it (see celebrate). */
+  private flashLines(priceCents: number, lines: { text: string; colour: string; size: number }[]): void {
+    const make = (text: string, y: number, colour: string, size: number, depth: number) =>
+      this.add
+        .text(330, y, text, { fontFamily: 'monospace', fontSize: `${size}px`, color: colour, fontStyle: 'bold' })
         .setOrigin(0.5)
         .setStroke('#ffffff', 6)
         .setAlpha(0)
-        .setScale(0.6);
-      // One flash each, held 1.5x longer than before (PO, October 30: it used to flash twice).
+        .setScale(0.6)
+        .setDepth(depth)
+        .setName('sale-flash');
+    // The price stays up until the last tip line has had its time (one flash, PO, October 30).
+    const price = make(`+${formatMoney(priceCents)}`, PRICE_FLASH_Y, '#2e7d32', 44, 21);
+    this.tweens.add({ targets: price, alpha: 1, scale: 1.15, duration: FLASH_IN_MS, yoyo: true, hold: FLASH_HOLD_MS + (lines.length - 1) * TIP_FLASH_DELAY_MS, onComplete: () => price.destroy() });
+    lines.forEach((line, n) => {
+      const t = make(line.text, TIP_FLASH_Y, line.colour, line.size, 20);
+      const last = n === lines.length - 1;
       this.tweens.add({
         targets: t,
         alpha: 1,
         scale: 1.15,
         duration: FLASH_IN_MS,
-        delay,
-        yoyo: true,
-        hold: FLASH_HOLD_MS,
-        onComplete: () => t.destroy(),
+        delay: TIP_FLASH_DELAY_MS * (n + 1),
+        yoyo: last,
+        hold: last ? FLASH_HOLD_MS : 0,
+        onComplete: () => {
+          if (last) {
+            t.destroy();
+            return;
+          }
+          // Not the last: scroll up behind the price as the next line comes in.
+          this.tweens.add({ targets: t, y: PRICE_FLASH_Y, alpha: 0, scale: 0.8, delay: TIP_FLASH_DELAY_MS - FLASH_IN_MS - TIP_SCROLL_MS / 2, duration: TIP_SCROLL_MS, onComplete: () => t.destroy() });
+        },
       });
-    };
-    flash(`+${formatMoney(priceCents)}`, 300, '#2e7d32', 0);
-    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'No tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
+    });
   }
 
   private driveOff(): void {

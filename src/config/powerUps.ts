@@ -5,7 +5,7 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
@@ -78,6 +78,11 @@ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
  * the sandwich, then a split into ice creams not decided yet ("just make them ? for now").
  * The sketch's last two shapes (a circle, then a box) wait for a taller board: it has 5 rows.
  */
+/** SCREAM-135: what an ice cream does besides selling, told on its note (Story only). */
+const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
+  spongepop: 'Kids who order one tip 10% more.', // SCREAM-313; engineering's wording
+};
+
 function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
   const f = getFlavour(flavour);
   const first = flavour === STORY_FIRST_FLAVOUR;
@@ -88,9 +93,10 @@ function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
     col: 1,
     row,
     from: first || !before ? [] : [iceCreamNoteId(before.id)],
-    priceCents: first ? 0 : ICE_CREAM_UNLOCK_CENTS,
+    priceCents: first ? 0 : ICE_CREAM_UNLOCK_PRICES[flavour] ?? ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
-    description: first ? `Owned from the start. ${limit}` : `Stock it and customers order it. ${limit}`,
+    // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
+    description: [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour], limit].filter(Boolean).join(' '),
     logo: flavour,
     flavour,
     free: first,

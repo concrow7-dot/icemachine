@@ -68,11 +68,14 @@ export const REFUSE_ABOVE_CENTS = 400;
  * order. One not listed keeps REFUSE_ABOVE_CENTS. Quick play keeps REFUSE_ABOVE_CENTS for all.
  * (SCREAM-272 will set the others.)
  */
-export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250 };
+// PO, November 14 (testing SCREAM-313 and 312): "I want the price people are willing to pay to be both be $3."
+export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300 };
 /** SCREAM-271: the ice cream Story starts with; every other one is bought on the cork board. */
 export const STORY_FIRST_FLAVOUR = 'eclair';
 /** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
 export const ICE_CREAM_UNLOCK_CENTS = 1500;
+/** PO, November 14 (testing SCREAM-313 and 312): SpongePop's note costs $20 and the Lil Explorer Pop's $25. Others keep ICE_CREAM_UNLOCK_CENTS. */
+export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500 };
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
@@ -184,6 +187,12 @@ export const TIP_PERCENT_STEPS = [20, 15, 10, 5];
  * one more 10-second step at the top, so 50 seconds in all.
  */
 export const SMILE_TIP_PERCENT_STEPS = [25, 20, 15, 10, 5];
+
+/**
+ * SCREAM-313 (PO, November 14; decision 116): in Story, a kid whose order includes a SpongePop
+ * tips this many percentage points more at every step ("10 points more": 30%, 25%, 20%, 15%).
+ */
+export const SPONGEPOP_KID_TIP_POINTS = 10;
 /** SCREAM-303 (PO: "$15"). */
 export const SMILE_PRICE_CENTS = 1500;
 
