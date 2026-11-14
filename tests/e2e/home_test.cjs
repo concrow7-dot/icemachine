@@ -61,6 +61,8 @@ const { chromium } = require('playwright');
   check('...3 eclairs in the cooler, $3.00 charged, price $2.50', (await stock()) + ' ' + (cash - (await ev('e.moneyCents'))) + ' ' + (await ev('e.slots[0].priceCents')), '3,0,0,0 300 250');
   check('...not restocking any more; the arrow has gone', (await ev('e.isRestocking')) + ' ' + (await drive('s.homeArrow.visible')), 'false false');
   check('...still in the spot, it does not open again', await scenes(), 'Drive,Hud');
+  await drive('(s.speed = 20, s.parkBrake = false, true)'); await wait(80); await drive('(s.speed = 0, s.parkBrake = true, true)'); await wait(300);
+  check('SCREAM-304: Quick play unchanged: moving and stopping in the spot does not open it', await scenes(), 'Drive,Hud');
   await awayFromDriveway(); await wait(300); await intoDriveway(); await wait(400);
   check('Leave the spot and come back: it opens again', await scenes(), 'Cooler,Hud');
   await press('b'); await wait(400);
