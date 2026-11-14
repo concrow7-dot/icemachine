@@ -178,9 +178,10 @@ export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: 
 }
 
 /**
- * SCREAM-310: Trot, from the PO's sketch (Personal Notes, November 14): someone leaning back in a
- * lounge chair with their hands behind their head and their feet up on a footstool. Drawn like the
- * gas can, on a 100 x 100 grid.
+ * SCREAM-310: Trot. The PO (November 14, 02:35) wanted "a more cartoonish version" of a trotting
+ * horse outline icon he found (his first sketch was someone with their feet up). Engineering's own
+ * drawing, not a copy: a brown horse side-on, at a trot (one front leg and the opposite back leg
+ * lifted), in the gas can's style, on a 100 x 100 grid.
  */
 export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
@@ -192,29 +193,38 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
     g.fillStyle(colour, 1).fillPoints(v, true);
     g.lineStyle(line, ink, 1).strokePoints(v, true, true);
   };
-  const limb = (colour: number, pts: [number, number][], width: number) => {
+  const coat = grey ? 0xb5b5b5 : 0xb7743f;
+  const coatFar = grey ? 0x9a9a9a : 0x8f5a2f;
+  const hair = grey ? 0x7d7d7d : 0x4a2c17;
+  const hoof = grey ? 0x6f6f6f : 0x2a2622;
+  // A leg: a thick outlined line through its joints, with a hoof at the end.
+  const leg = (colour: number, pts: [number, number][]) => {
     const v = pts.map(([x, y]) => P(x, y));
-    g.lineStyle(width * u + line * 2, ink, 1).strokePoints(v, false, false);
-    g.lineStyle(width * u, colour, 1).strokePoints(v, false, false);
-    for (const p of v) g.fillStyle(colour, 1).fillCircle(p.x, p.y, (width * u) / 2);
+    const w = 8 * u;
+    g.lineStyle(w + line * 2, ink, 1).strokePoints(v, false, false);
+    for (const p of v) g.fillStyle(ink, 1).fillCircle(p.x, p.y, w / 2 + line);
+    g.lineStyle(w, colour, 1).strokePoints(v, false, false);
+    for (const p of v) g.fillStyle(colour, 1).fillCircle(p.x, p.y, w / 2);
+    const end = v[v.length - 1];
+    g.fillStyle(hoof, 1).fillCircle(end.x, end.y + 1.5 * u, 5 * u);
   };
-  const seat = grey ? 0xb5b5b5 : 0xd9622b;
-  const legs = (pts: [number, number][]) => g.lineStyle(line, ink, 1).strokePoints(pts.map(([x, y]) => P(x, y)), false, false);
-  // The footstool: a round cushion on two legs.
-  legs([[12, 76], [7, 90]]);
-  legs([[26, 76], [30, 90]]);
-  g.fillStyle(seat, 1).fillEllipse((19 - 50) * u, (73 - 50) * u, 30 * u, 10 * u);
-  g.lineStyle(line, ink, 1).strokeEllipse((19 - 50) * u, (73 - 50) * u, 30 * u, 10 * u);
-  // The chair: a reclined back and seat in one piece, on a two-legged base.
-  legs([[50, 86], [40, 97]]);
-  legs([[56, 86], [66, 97]]);
-  poly(seat, [[36, 84], [42, 76], [76, 30], [90, 36], [62, 86], [46, 90]]);
-  // The person: legs out to the stool, the body leaning back, hands behind the head.
-  limb(grey ? 0x8a8a8a : 0x3b5ba5, [[48, 72], [34, 68], [22, 66]], 7);
-  g.fillStyle(grey ? 0x7d7d7d : 0x2a2622, 1).fillCircle((18 - 50) * u, (65 - 50) * u, 4.5 * u);
-  limb(grey ? 0xa5a5a5 : 0xf2d14a, [[48, 72], [66, 40]], 10);
-  limb(grey ? 0xc4c4c4 : 0xf2c49b, [[66, 40], [56, 30], [64, 18]], 5);
-  const skin = grey ? 0xd0d0d0 : 0xf2c49b;
-  g.fillStyle(skin, 1).fillCircle((71 - 50) * u, (24 - 50) * u, 10 * u);
-  g.lineStyle(line, ink, 1).strokeCircle((71 - 50) * u, (24 - 50) * u, 10 * u);
+  // The legs on the far side, darker: the front one straight down, the back one lifted.
+  leg(coatFar, [[40, 56], [40, 72], [40, 86]]);
+  leg(coatFar, [[70, 56], [78, 68], [72, 78]]);
+  // The tail.
+  poly(hair, [[76, 40], [90, 44], [96, 60], [88, 58], [80, 48]]);
+  // The body, the neck and the head (facing left).
+  g.fillStyle(coat, 1).fillEllipse((56 - 50) * u, (50 - 50) * u, 48 * u, 26 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((56 - 50) * u, (50 - 50) * u, 48 * u, 26 * u);
+  poly(coat, [[34, 48], [24, 24], [36, 16], [46, 42]]);
+  poly(coat, [[24, 24], [12, 32], [9, 38], [16, 42], [28, 34], [36, 20], [30, 14]]);
+  poly(coat, [[30, 16], [32, 5], [38, 15]]);
+  // The mane, down the back of the neck.
+  poly(hair, [[32, 13], [41, 15], [48, 38], [43, 41]]);
+  // The eye and the nostril.
+  g.fillStyle(ink, 1).fillCircle((25 - 50) * u, (26 - 50) * u, 2.6 * u);
+  g.fillStyle(ink, 1).fillCircle((13 - 50) * u, (36 - 50) * u, 1.6 * u);
+  // The legs on the near side: the front one lifted, the back one straight down.
+  leg(coat, [[38, 58], [30, 68], [36, 76]]);
+  leg(coat, [[66, 58], [68, 72], [70, 86]]);
 }
