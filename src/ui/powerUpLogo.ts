@@ -191,8 +191,8 @@ export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: 
 /**
  * SCREAM-310: Trot. The PO (November 14, 02:35) wanted "a more cartoonish version" of a trotting
  * horse outline icon he found (his first sketch was someone with their feet up). Engineering's own
- * drawing, not a copy: a brown horse side-on, at a trot (one front leg and the opposite back leg
- * lifted), in the gas can's style, on a 100 x 100 grid.
+ * drawing, not a copy: a brown horse side-on, at a trot (redrawn from his sketch of one, 02:55),
+ * in the gas can's style, on a 100 x 100 grid.
  */
 export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
@@ -219,23 +219,25 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
     const end = v[v.length - 1];
     g.fillStyle(hoof, 1).fillRect(end.x - 4.5 * u, end.y, 9 * u, 5 * u);
   };
-  // The legs on the far side, darker: the front one straight down, the back one lifted.
-  leg(coatFar, [[38, 54], [38, 70], [37, 84]]);
-  leg(coatFar, [[74, 54], [83, 65], [78, 76]]);
-  // The tail.
-  poly(hair, [[76, 40], [90, 44], [96, 60], [88, 58], [80, 48]]);
-  // The body, the neck and the head (facing left).
-  g.fillStyle(coat, 1).fillEllipse((57 - 50) * u, (48 - 50) * u, 52 * u, 24 * u);
-  g.lineStyle(line, ink, 1).strokeEllipse((57 - 50) * u, (48 - 50) * u, 52 * u, 24 * u);
-  poly(coat, [[34, 48], [24, 24], [36, 16], [46, 42]]);
-  poly(coat, [[24, 24], [12, 32], [9, 38], [16, 42], [28, 34], [36, 20], [30, 14]]);
-  poly(coat, [[30, 16], [32, 5], [38, 15]]);
-  // The mane, down the back of the neck.
-  poly(hair, [[32, 13], [41, 15], [48, 38], [43, 41]]);
+  // PO's sketch (November 14, 02:55, "Trot horse" in Personal Notes): facing right, a long body,
+  // the tail swept back, a front leg reaching forward and a back leg tucked up.
+  // The legs on the far side, darker: the front one straight down, the back one tucked up.
+  leg(coatFar, [[60, 56], [59, 70], [58, 84]]);
+  leg(coatFar, [[38, 56], [45, 66], [38, 74], [43, 80]]);
+  // The tail, swept back from the rump.
+  poly(hair, [[24, 38], [8, 50], [3, 58], [12, 58], [26, 46]]);
+  // The body, the neck and the head (facing right).
+  g.fillStyle(coat, 1).fillEllipse((45 - 50) * u, (46 - 50) * u, 52 * u, 22 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((45 - 50) * u, (46 - 50) * u, 52 * u, 22 * u);
+  poly(coat, [[58, 46], [64, 32], [74, 20], [84, 26], [74, 40], [70, 52]]);
+  poly(coat, [[74, 18], [84, 14], [94, 24], [97, 32], [90, 35], [80, 28]]);
+  poly(coat, [[77, 16], [79, 6], [84, 14]]);
+  // The mane, along the top of the neck.
+  poly(hair, [[62, 36], [73, 18], [79, 16], [69, 36]]);
   // The eye and the nostril.
-  g.fillStyle(ink, 1).fillCircle((25 - 50) * u, (26 - 50) * u, 2.6 * u);
-  g.fillStyle(ink, 1).fillCircle((13 - 50) * u, (36 - 50) * u, 1.6 * u);
-  // The legs on the near side: the front one lifted, the back one straight down.
-  leg(coat, [[36, 56], [27, 66], [33, 75]]);
-  leg(coat, [[70, 56], [72, 70], [73, 84]]);
+  g.fillStyle(ink, 1).fillCircle((85 - 50) * u, (22 - 50) * u, 2.6 * u);
+  g.fillStyle(ink, 1).fillCircle((93 - 50) * u, (30 - 50) * u, 1.6 * u);
+  // The legs on the near side: the back one straight down with the hoof kicked back, the front one reaching forward.
+  leg(coat, [[30, 54], [28, 70], [22, 82]]);
+  leg(coat, [[66, 54], [76, 64], [85, 72]]);
 }
