@@ -118,6 +118,7 @@ const { chromium } = require('playwright');
   check('Stopped in the bay: the pump opens', await until(async () => (await scenes()) === 'Pump,Hud'), true);
   check('The pump screen shows the pump picture (SCREAM-111)', await sc('Pump', "(p => p ? p.texture.key + ':' + p.frame.name : 'none')(s.children.getByName('pump'))"), 'map-atlas:pump');
   await page.screenshot({ path: outDir + '/fuel_pump.png' });
+  check('SCREAM-316: Quick play keeps the pump buttons where they were', await sc('Pump', '[s.payButton.x, s.payButton.y, s.driveOffButton.x, s.driveOffButton.y].join()'), '470,478,760,478');
   const clock0 = await ev('e.clockMinutes'); await wait(800);
   check('The clock keeps running at the pump', (await ev('e.clockMinutes')) > clock0, true);
   check('The gauge shows at the pump too', await sc('Hud', 's.fuelGauge.visible'), true);
