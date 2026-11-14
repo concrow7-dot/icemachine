@@ -90,7 +90,7 @@ function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
     from: first || !before ? [] : [iceCreamNoteId(before.id)],
     priceCents: first ? 0 : ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
-    description: first ? `Yours from the start. ${limit}` : `Stock it and customers order it. ${limit}`,
+    description: first ? `Owned from the start. ${limit}` : `Stock it and customers order it. ${limit}`,
     logo: flavour,
     flavour,
     free: first,
