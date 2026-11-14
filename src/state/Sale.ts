@@ -319,6 +319,11 @@ export class Sale {
     // An undercharge is simply accepted (Q18); the tip is a share of what was charged (Q29).
     const tipPercent = this.tipPercent(nowMs);
     const tipCents = Math.round(((priceCents * tipPercent) / 100) * this.tipFactor);
+    // SCREAM-313: what the tip would have been without the SpongePop's extra points.
+    if (tipPercent > 0 && this.spongePopPoints > 0) {
+      const without = Math.round(((priceCents * (tipPercent - this.spongePopPoints)) / 100) * this.tipFactor);
+      this.spongePopTipCents = Math.max(0, tipCents - without);
+    }
     this.finish({ kind: 'paid', priceCents, tipCents, tipPercent }, 'Thanks!');
     return 'over';
   }
@@ -372,6 +377,10 @@ export class Sale {
   tipFactor = 1;
   /** SCREAM-312: the exploration tip paid with this sale, in cents (Lil Explorer Pops, Story only). */
   explorationTipCents = 0;
+  /** SCREAM-313: the extra tip points a SpongePop brings to this sale (10 for a kid who ordered one). */
+  spongePopPoints = 0;
+  /** SCREAM-313: the part of the tip the SpongePop earned, in cents (set when paid). */
+  spongePopTipCents = 0;
 
   /** SCREAM-248: the neighbour this customer told the player about (resident id), or null. */
   neighbourAbout: string | null = null;

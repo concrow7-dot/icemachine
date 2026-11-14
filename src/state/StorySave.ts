@@ -84,6 +84,7 @@ export function loadStory(): StorySave | null {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),
         explorationCents: cents(t.explorationCents), // SCREAM-312: 0 in older saves
+        spongePopCents: cents(t.spongePopCents), // SCREAM-313: 0 in older saves
         stockCents: cents(t.stockCents),
         gasCents: cents(t.gasCents),
         damageCents: cents(t.damageCents),

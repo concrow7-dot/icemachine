@@ -427,6 +427,24 @@ const { chromium } = require('playwright');
   await shift(3); await press('Enter'); await wait(300);
   await shift(3); await press('Enter'); await wait(300);
   check('Day 5 starts, the last', (await story('r.day')) + ' ' + /Friday/.test(await hudClock()), '5 true');
+  // ---- SCREAM-313: what a SpongePop earned is counted on its own (a stand-in paid sale; the wallet is put back after) ----
+  const sponge = await page.evaluate(async () => {
+    const e = window.__game.registry.get('evening');
+    const { Sale } = await import('/src/state/Sale.js');
+    const kid = e.residents.all.find((p) => p.resident.kid);
+    const order = [{ slot: 0, flavour: 'spongepop', count: 1 }];
+    const s = new Sale(order, 4, 0, false);
+    s.phase = 'ordering'; s.order = order;
+    e.servingNow = kid; e.saleNow = s; e.hintChance = 0; e.scheduleLineChance = 0;
+    s.charge = () => { s.phase = 'over'; s.spongePopTipCents = 30; s.outcome = { kind: 'paid', priceCents: 0, tipCents: 90, tipPercent: 30 }; s.line = 'Thanks!'; return 'paid'; };
+    const before = e.cashCents, tips = e.breakdown.tipsCents;
+    e.chargeForSale(0);
+    const result = [e.cashCents - before, e.breakdown.tipsCents - tips, e.breakdown.spongePopCents, e.spongePopPoints(order, kid), e.spongePopPoints(order, e.residents.all.find((p) => !p.resident.kid))].join();
+    e.cashCents = before; e.largestSaleTotalCents = 0; e.saleNow = null; e.servingNow = null;
+    e.tipsTotalCents = tips; e.powerUpsSpentCents = 2000; // with a Power-ups row and the exploration tips below: eight rows on the end-of-day screen
+    return result;
+  });
+  check('SCREAM-313: a 90c tip with 30c from the SpongePop: 90c in the wallet, 60c counted as tips, 30c as SpongePop tips; 10 points for a kid, none for an adult', sponge, '90,60,30,10,0');
   // ---- SCREAM-312: the exploration tip (a stand-in sale of 2 Lil Explorer Pops; the wallet is put back after) ----
   const explore = await page.evaluate(async () => {
     const e = window.__game.registry.get('evening');
@@ -444,15 +462,15 @@ const { chromium } = require('playwright');
     const got = e.cashCents - before;
     const result = [per % 10 === 0 && per > 0 && per <= 100, got === 2 * per, s.explorationTipCents === got, e.breakdown.explorationCents === got].join();
     e.cashCents = before; e.largestSaleTotalCents = 0; e.saleNow = null; e.servingNow = null;
-    e.powerUpsSpentCents = 2000; // with a Power-ups row too: seven rows on the end-of-day screen
     return result + ' ' + got;
   });
   check('SCREAM-312: 2 Explorer Pops far from home in Elm Park: 2 exploration tips, in $0.10 steps, up to $1 each, paid with no normal tip', explore.split(' ')[0], 'true,true,true,true');
   await shift(3); await wait(300);
   const last = await texts('DayEnd');
   const exploreText = '$' + (Number(explore.split(' ')[1]) / 100).toFixed(2);
-  check('SCREAM-312: the end-of-day screen has its own Exploration tips row, right under Tips', (() => { const a = last.indexOf('Tips |'), b = last.indexOf('Exploration tips'); return a >= 0 && b > a && last.includes(exploreText); })(), true);
-  check('...seven rows, all above the line', await sc('DayEnd', "(() => { const line = s.children.list.find(o => o.type === 'Rectangle' && o.x === 110 && o.width === 310); const rows = s.children.list.filter(o => o.type === 'Text' && o.x === 110 && o.y >= 165 && o.y < line.y); return rows.length + ' ' + rows.every(o => o.getBounds().bottom <= line.y); })()"), '7 true');
+  check('SCREAM-313: the end-of-day screen has its own SpongePop tips row, right under Tips', (() => { const a = last.indexOf('Tips |'), b = last.indexOf('SpongePop tips'); return a >= 0 && b > a && last.includes('$0.30'); })(), true);
+  check('SCREAM-312: ...and its own Exploration tips row, under that', (() => { const a = last.indexOf('SpongePop tips'), b = last.indexOf('Exploration tips'); return a >= 0 && b > a && last.includes(exploreText); })(), true);
+  check('...eight rows, all above the line', await sc('DayEnd', "(() => { const line = s.children.list.find(o => o.type === 'Rectangle' && o.x === 110 && o.width === 310); const rows = s.children.list.filter(o => o.type === 'Text' && o.x === 110 && o.y >= 165 && o.y < line.y); return rows.length + ' ' + rows.every(o => o.getBounds().bottom <= line.y); })()"), '8 true');
   await page.screenshot({ path: outDir + '/story_day_end_exploration.png' });
   check('After day 5: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
   check('...short of the bike ($22 of $600: $578 short)', /\$578\.00 short of the bike/.test(last), true);
@@ -461,8 +479,9 @@ const { chromium } = require('playwright');
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');
   check('...run stats: 5 days, $3 stock, final cash $22, no bike', /5 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$22\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
-  check('SCREAM-312: the run stats have the Exploration tips row too, with 7 rows above the line', /Exploration tips/.test(runRes) && runRes.includes(exploreText), true);
+  check('SCREAM-312: the run stats have the Exploration tips row too', /Exploration tips/.test(runRes) && runRes.includes(exploreText), true);
   await page.screenshot({ path: outDir + '/story_results_exploration.png' });
+  check('SCREAM-313: the run stats have the SpongePop tips row too', /SpongePop tips/.test(runRes) && runRes.includes('$0.30'), true);
   // SCREAM-94: short of the bike, the F stamp lands (after a short pause).
   await wait(1000);
   check('...the F stamp is on screen, landed', await sc('Results', "(() => { const f = s.children.getByName('f-stamp'); return !!f && f.scale === 1 && f.alpha > 0.8; })()"), true);

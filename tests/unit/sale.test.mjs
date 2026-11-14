@@ -89,3 +89,18 @@ test('SCREAM-303: Service With A Smile: 25% first, one more 10-second step, stil
   assert.deepEqual([0, 9.9, 10, 19.9, 20, 30, 40, 49.9, 50, 70].map((s) => tipPercentAt(s, smile)), [25, 25, 20, 20, 15, 10, 5, 5, 0, 0]);
   assert.equal(tipPercentAt(40), 0, 'without the power-up: nothing at 40 s');
 });
+
+test("SCREAM-313: the SpongePop's part of a kid's tip is worked out on its own", async () => {
+  const { Sale } = await game('state/Sale');
+  const sale = (nowMs, factor = 1) => {
+    const s = new Sale([{ slot: 0, flavour: 'spongepop', count: 1 }], 4, 0, false);
+    s.phase = 'pricing'; s.orderHiddenMs = 0; s.bag[0] = 1;
+    s.tipSteps = [30, 25, 20, 15]; s.spongePopPoints = 10; s.tipFactor = factor;
+    s.charge(300, 300, nowMs);
+    return [s.outcome.tipCents, s.spongePopTipCents];
+  };
+  assert.deepEqual(sale(1000), [90, 30], 'a quick $3 sale: 30% tip, of which 10 points ($0.30) is the SpongePop');
+  assert.deepEqual(sale(15000), [75, 30], 'second step: 25%, still $0.30 from the SpongePop');
+  assert.deepEqual(sale(1000, 4), [360, 120], 'a hard-to-find kid: 4 times both');
+  assert.deepEqual(sale(60000), [0, 0], 'no tip: nothing from the SpongePop either');
+});

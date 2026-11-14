@@ -126,11 +126,13 @@ export class ResultsScene extends Phaser.Scene {
     ];
     // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
     if (t.powerUpsCents > 0) rows.push(['Power-ups', -t.powerUpsCents, '#ff9c9c']);
-    // SCREAM-312 (PO, November 14): exploration tips get their own row, under Tips, only when there were any.
+    // SCREAM-313 and SCREAM-312 (PO, November 14): what SpongePops earned and exploration tips each get
+    // their own row, under Tips, only when there was any.
     if (t.explorationCents > 0) rows.splice(2, 0, ['Exploration tips', t.explorationCents, '#c8f7c5']);
+    if (t.spongePopCents > 0) rows.splice(2, 0, ['SpongePop tips', t.spongePopCents, '#c8f7c5']);
     const rowGap = rows.length > 5 ? 23 : ROW_GAP;
-    // SCREAM-312: a seventh row pushes the line and everything under it down by a row.
-    const below = rows.length > 6 ? rowGap : 0;
+    // Each row past six pushes the line and everything under it down by a row.
+    const below = Math.max(0, rows.length - 6) * rowGap;
     rows.forEach(([label, cents, colour], i) => {
       const y = 145 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
