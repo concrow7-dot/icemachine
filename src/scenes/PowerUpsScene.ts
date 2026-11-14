@@ -225,7 +225,8 @@ export class PowerUpsScene extends Phaser.Scene {
   /** B: closes the opened note, or goes back to the hub with the board still highlighted. */
   private back(): void {
     if (this.open) return this.closeNote();
-    returnToTruck(this, 'menu');
+    // SCREAM-307: looking at the board doesn't start the clock (on Day 2 the evening opens at the hub).
+    returnToTruck(this, 'menu', false);
   }
 
   /** Enter: opens the highlighted note; on an opened note, buys it (PO: no "are you sure" step). */

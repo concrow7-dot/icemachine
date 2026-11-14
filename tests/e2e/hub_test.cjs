@@ -224,7 +224,23 @@ const { chromium } = require('playwright');
   await page.click('canvas'); await page.mouse.move(5, 5); await wait(200);
   await sc('Title', "(() => { const i = s.modeTexts.findIndex(o => o.text.includes('Continue')); s.modeTexts[i].emit('pointerover'); })()");
   await press('Enter');
-  await until(async () => (await scenes()).startsWith('Cooler'));
+  await until(async () => (await scenes()) === 'Truck,Hud');
+  // ---- SCREAM-307: from the second night the evening opens at the truck screen ----
+  check('SCREAM-307: Continue on day 2 opens at the truck screen, cooler highlighted, clock waiting', (await scenes()) + ' ' + (await sel()) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').isClockRunning)), 'Truck,Hud cooler false');
+  await press('ArrowRight'); await press('ArrowRight');
+  check('...the board can be picked first', await sel(), 'menu');
+  await press('Enter'); await until(async () => (await scenes()) === 'PowerUps,Hud');
+  await press('b'); await until(async () => (await scenes()) === 'Truck,Hud');
+  check('...back from the board, the clock is still waiting', await page.evaluate(() => window.__game.registry.get('evening').isClockRunning), false);
+  await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots.forEach(s => (s.quantity = 0)); e.syncCells(); });
+  await press('ArrowLeft');
+  check('...the driver\'s seat with nothing in the cooler', (await sel()) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').stockLeft)), 'driver 0');
+  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
+  check('...opens the cooler instead, with the warning, and the truck stays home', (await scenes()) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').isPrepLocked)) + ' ' + (await sc('Cooler', 's.note.text')), 'Cooler,Hud false Add at least one ice cream before you leave the cooler.');
+  await wait(300); await press('b'); await until(async () => (await scenes()) === 'Truck,Hud');
+  check('...B with an empty cooler goes back to the truck screen, the clock still waiting', (await scenes()) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').isClockRunning)), 'Truck,Hud false');
+  check('...with the cooler highlighted', await sel(), 'cooler');
+  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
   check('...Continue after closing the game: day 2 still owns them', await page.evaluate(() => { const g = window.__game.registry; return g.get('story').day + ' ' + g.get('evening').powerUps.join(','); }), '2 temp-gas-can,truck-2');
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   // ---- SCREAM-271: in Story only the Chocolate Eclair can be stocked until an ice cream is bought on the board ----

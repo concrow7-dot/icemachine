@@ -179,6 +179,13 @@ export class EveningState extends Phaser.Events.EventEmitter {
   mapSwitches = 0;
   /** SCREAM-169: the uncle's steps, on the tutorial map when he's guiding; null otherwise. */
   readonly tutorial: TutorialRun | null;
+  /**
+   * SCREAM-307 (PO, November 14): "on the second night. The player should start not at the
+   * cooler, but at the truck screen. That way they can decide to go to the powerups or the
+   * cooler screen first." Story from Day 2 on. The clock still waits until the player leaves
+   * the cooler or drives off.
+   */
+  readonly opensAtHub: boolean;
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
@@ -275,6 +282,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.mapId = mapId;
     this.homeMapId = mapId;
     this.story = carry?.story;
+    this.opensAtHub = !!carry?.story && carry.story.day >= 2 && !this.tutorial; // SCREAM-307
     this.spec = truckSpec(!!carry?.story);
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };

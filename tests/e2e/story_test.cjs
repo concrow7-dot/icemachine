@@ -288,7 +288,9 @@ const { chromium } = require('playwright');
   await page.mouse.click(700, 300, { button: 'right' }); await wait(200);
   check('SCREAM-295: a right click does not move on', await scenes(), 'DayEnd');
   await page.mouse.click(700, 300); await wait(300);
-  check('SCREAM-295: a click starts day 2, at the cooler', (await scenes()).startsWith('Cooler') + ' ' + (await story('r.day')), 'true 2');
+  check('SCREAM-295, SCREAM-307: a click starts day 2, at the truck screen (not the cooler), cooler highlighted', (await scenes()) + ' ' + (await story('r.day')) + ' ' + (await sc('Truck', 's.selected')), 'Truck,Hud 2 cooler');
+  const k2 = await ev('e.clockMinutes'); await wait(800);
+  check('SCREAM-307: ...the clock waits at the truck screen', (await ev('e.clockMinutes')) === k2 && !(await ev('e.isClockRunning')), true);
   check('Cash carried over ($22)', await ev('e.moneyCents'), 2200);
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
@@ -301,6 +303,8 @@ const { chromium } = require('playwright');
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
+  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
+  check('SCREAM-307: Enter opens the cooler from there, the clock still waiting', (await scenes()) + ' ' + (await ev('e.isClockRunning')), 'Cooler,Hud false');
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
   await press('ArrowRight'); await press('Enter'); await wait(600);
@@ -376,7 +380,8 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/story_roundabout.png' });
   await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150);
   await press('y'); await wait(400);
-  check('Restart evening: back at the cooler', (await scenes()).startsWith('Cooler'), true);
+  check('Restart evening: back at how tonight started (day 2: the truck screen, SCREAM-307)', await scenes(), 'Truck,Hud');
+  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
 
   // ---- Restart evening goes back to how tonight started ----
   await press('+'); await press('Enter'); await wait(300);
@@ -466,7 +471,7 @@ const { chromium } = require('playwright');
   check('Title offers Continue story (Tuesday, $0.50) and New story', /Continue Story: Tuesday, \$0\.50/.test(withSave) && /New Story/.test(withSave), true);
   await page.screenshot({ path: outDir + '/story_title_continue.png' });
   await press('ArrowDown'); await press('Enter'); await wait(300);
-  check('Continue skips the intro: day 2 at the cooler, $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Cooler 2 50 2');
+  check('Continue skips the intro: day 2 at the truck screen (SCREAM-307), $0.50 and the 2 bars', (await scenes()).split(',')[0] + ' ' + (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), 'Truck 2 50 2');
   check('Continue: HUD says Tuesday', /Tuesday/.test(await hudClock()), true);
   // A reload (closing the browser) keeps the save too.
   await page.reload(); await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0); await page.click('canvas'); await wait(200);
@@ -579,7 +584,8 @@ const { chromium } = require('playwright');
     check('SCREAM-276: the end-of-day screen shows the gas dial, bottom left, at tomorrow\'s level', await sc('DayEnd', "(d => !!d && d.container.x < 160 && d.container.y > 450)(s.gasDial)"), true);
     await page.screenshot({ path: outDir + '/story_day_end_gas.png' });
     check('...and stays used up in the save', (await story('r.uncleGasUsed')) + ' ' + (await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')).uncleGasUsed)), 'true true');
-    await press('Enter'); await until(async () => (await scenes()).includes('Cooler')); await wait(300);
+    await press('Enter'); await until(async () => (await scenes()).includes('Truck')); await wait(300);
+    await page.evaluate(() => window.__game.scene.getScene('Truck').scene.start('Cooler')); await until(async () => (await scenes()).includes('Cooler')); await wait(300);
     check('...Tuesday: no uncle\'s gas', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'false false');
     check('SCREAM-276: no gas dial at the cooler', await sc('Hud', 's.fuelGauge.visible'), false);
     await ev('(e.fuelLeft = 0.1, true)');

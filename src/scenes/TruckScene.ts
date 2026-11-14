@@ -175,7 +175,14 @@ export class TruckScene extends Phaser.Scene {
     }
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
     if (id === 'driver') {
+      // SCREAM-307: from the hub with nothing stocked yet, the cooler opens with its warning
+      // instead (the truck can't set off empty, as the cooler already said, #66).
+      if (!this.evening.isPrepLocked && this.evening.stockLeft === 0) {
+        this.scene.start(SceneKeys.Cooler, { warnEmpty: true });
+        return;
+      }
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
+      this.evening.startClock(); // SCREAM-307: from the hub the clock may still be waiting
       this.evening.lockPrep();
       this.scene.start(SceneKeys.Drive);
     }

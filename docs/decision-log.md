@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 111 — From the second night, a Story evening opens at the truck screen, not the cooler (2026-11-14)
+
+**Decision (Jira SCREAM-307, under SCREAM-78, PO, November 14):** "From now on, on the second night. The player should start not at the cooler, but at the truck screen. That way they can decide to go to the powerups or the cooler screen first." So from Day 2 on (Continue and Restart Evening included), a Story evening opens at the truck screen with the cooler highlighted. Day 1 (the uncle's evening, or On My Own) and Quick play still open at the cooler (#66).
+
+**Options considered:** the truck screen from Day 2 (chosen); the cooler, as before; the cork board first.
+
+**Why (product owner's rationale):** so the player can decide whether to go to the power-ups or the cooler first (his message, above).
+
+**Engineering's calls (proposals):**
+
+- The clock still waits until the player leaves the cooler or drives off (005, 029, #66): looking at the cork board first doesn't start it.
+- With nothing in the cooler before setting off, B at the cooler goes back to the truck screen (the clock still waiting), so the player can visit the board first.
+- The driver's seat with nothing in the cooler before setting off opens the cooler with its usual warning ("Add at least one ice cream before you leave the cooler."), as the truck could never set off empty (#66).
+
 ## 110 — Service With A Smile: a power-up that starts tips at 25% and gives 10 more seconds to earn one (2026-11-14)
 
 **Decision (Jira SCREAM-303, under SCREAM-78, PO, November 14):** "The next powerup I want to add is increased tips under customer. Lets go with a 5% increase. So 25% is the first tip number. It also extends the time you can get a tip. It should still countdown to 5%, then 0." So the second real power-up is the top item of the cork board's Customer tree: **Service With A Smile** (his name), $15, bought once. With it the tip counts down 25%, 20%, 15%, 10%, 5%, then nothing: one more 10-second step at the top, 50 seconds in all (he confirmed that reading). Its picture is his sketch: a jar with TIPS on it and a plus at its top right ("Tip jar plus, the increased tips power-up (sketch, November 14)" in Personal Notes).
