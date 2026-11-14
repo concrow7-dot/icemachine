@@ -41,6 +41,28 @@ export function addPowerUpLogo(
       .setOrigin(0.5);
     mark.setAlpha(grey ? 0.75 : 1);
     into.add(mark);
+  } else if (tree === 'tip-jar') {
+    // SCREAM-303: the PO's sketch (Personal Notes, November 14): a jar with TIPS on it and a plus
+    // at its top right. Drawn like the gas can: flat colour, a thick dark outline.
+    const ink = grey ? 0x6f6f6f : INK;
+    const w = size * 0.56;
+    const h = size * 0.8;
+    const left = -w / 2 - size * 0.08;
+    const top = -h / 2 + size * 0.08;
+    g.fillStyle(grey ? 0xdcdcdc : 0xd8f1ff, 1).fillRoundedRect(left, top, w, h, size * 0.08);
+    g.lineStyle(line, ink, 1).strokeRoundedRect(left, top, w, h, size * 0.08);
+    g.fillStyle(grey ? 0xc4c4c4 : 0xa9dcf7, 1).fillEllipse(left + w / 2, top, w, size * 0.2);
+    g.lineStyle(line, ink, 1).strokeEllipse(left + w / 2, top, w, size * 0.2);
+    const word = scene.add
+      .text(left + w / 2, top + h * 0.55, 'TIPS', { fontFamily: MARKER_FONT, fontSize: `${Math.max(7, Math.round(size * 0.21))}px`, color: grey ? '#6f6f6f' : '#2b1d10' })
+      .setOrigin(0.5);
+    into.add(word);
+    // The plus, top right.
+    const px = left + w + size * 0.12;
+    const py = top - size * 0.02;
+    const arm = size * 0.13;
+    g.lineStyle(Math.max(3, size / 9), grey ? 0x8a8a8a : 0x2e9e44, 1);
+    g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
   } else if (tree === 'gas-can') {
     drawGasCan(g, size, grey);
   } else if (tree === 'truck') {

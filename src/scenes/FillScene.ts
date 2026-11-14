@@ -93,7 +93,7 @@ export class FillScene extends Phaser.Scene {
       .setOrigin(0.5);
     // The tip cup stands on the shelf on the left wall.
     // SCREAM-281 (PO, November 12): with a tall green bar above it that shrinks as the tip ticks down.
-    this.tipBar = new TipBar(this, 124, 386, true, true);
+    this.tipBar = new TipBar(this, 124, 386, true, true, undefined, this.evening.tipSteps);
 
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = cellCentre(i, this.crateTop);

@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { pickOrderSize, generateOrder, orderTotalCents, tipPercentAt, describeOrder } = await game('state/Sale');
-const { ORDER_SIZE_WEIGHTS, REFUSE_ABOVE_CENTS, TIP_COUNTDOWN_SECONDS } = await game('config/tuning');
+const { pickOrderSize, generateOrder, orderTotalCents, tipPercentAt, tipCountdownSeconds, describeOrder, Sale } = await game('state/Sale');
+const { ORDER_SIZE_WEIGHTS, REFUSE_ABOVE_CENTS, TIP_COUNTDOWN_SECONDS, SMILE_TIP_PERCENT_STEPS } = await game('config/tuning');
 
 const slots = [
   { flavour: 'eclair', quantity: 5, priceCents: 200 },
@@ -79,4 +79,13 @@ test('SCREAM-271: a flavour can have its own limit (Story: an eclair over $2.50 
   assert.equal(generateOrder([{ flavour: 'eclair', quantity: 5, priceCents: 250 }], Math.random, 3, limit)[0].count, 3);
   assert.ok(generateOrder(stock(275), Math.random, 6, limit).every((line) => line.flavour === 'spongepop'));
   assert.equal(generateOrder([{ flavour: 'eclair', quantity: 5, priceCents: 275 }], Math.random, 3)[0].count, 3, 'without a limit of its own: $4.00');
+});
+
+test('SCREAM-303: Service With A Smile: 25% first, one more 10-second step, still down to 5% then nothing', () => {
+  const smile = SMILE_TIP_PERCENT_STEPS;
+  assert.deepEqual(smile, [25, 20, 15, 10, 5]);
+  assert.equal(tipCountdownSeconds(), TIP_COUNTDOWN_SECONDS);
+  assert.equal(tipCountdownSeconds(smile), 50);
+  assert.deepEqual([0, 9.9, 10, 19.9, 20, 30, 40, 49.9, 50, 70].map((s) => tipPercentAt(s, smile)), [25, 25, 20, 20, 15, 10, 5, 5, 0, 0]);
+  assert.equal(tipPercentAt(40), 0, 'without the power-up: nothing at 40 s');
 });

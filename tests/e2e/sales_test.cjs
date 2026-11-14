@@ -31,7 +31,7 @@ const { chromium } = require('playwright');
     const m = await import('/src/state/Sale.js');
     const counts = [0, 0, 0, 0, 0, 0];
     for (let i = 0; i < 20000; i++) counts[m.pickOrderSize(Math.random()) - 1]++;
-    const tips = [0, 9.9, 10, 19.9, 20, 29.9, 30, 39.9, 40, 55].map(m.tipPercentAt);
+    const tips = [0, 9.9, 10, 19.9, 20, 29.9, 30, 39.9, 40, 55].map((sec) => m.tipPercentAt(sec));
     const slots = [
       { flavour: 'eclair', quantity: 2, priceCents: 200 },
       { flavour: 'spongepop', quantity: 1, priceCents: 250 },
@@ -188,6 +188,21 @@ const { chromium } = require('playwright');
   check('...B does the same, a second time too', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud ordering');
   check('SCREAM-288: that was the second and last time for this customer', (await ev('e.sale.asksLeft')) + ' ' + (await ev('e.sale.askAgain(e.nowMs)')), '0 false');
   await press('b'); await wait(300);
+
+  // ---- SCREAM-303: with Service With A Smile the tip starts at 25% and the bar has five steps ----
+  await ev("(e.powerUpsOwned.push('service-with-a-smile'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
+  check('SCREAM-303: with the power-up the tip countdown starts at 25%, on a full green bar', (await sc('Sales', 's.tipBar.label.text')) + ' ' + (await sc('Sales', 's.tipBar.fill.fillColor === 0x2e7d32')), '25% true');
+  await press('c'); await wait(300);
+  check('...the cooler\'s tall bar is marked 25%, 20%, 15%, 10%, 5%', await sc('Fill', 's.tipBar.zoneLabels.map(l => l.text).join()'), '25%,20%,15%,10%,5%');
+  await page.screenshot({ path: outDir + '/sale_tip_bar_smile.png' });
+  await tick(42000);
+  check('...42 s in there is still a tip: 5%, on a fifth of the bar or less', (await ev('e.sale.tipPercent(e.nowMs)')) + ' ' + (await sc('Fill', 's.tipBar.fill.displayHeight < 190 / 5 + 1')), '5 true');
+  await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  const smilePrice = await ev('e.sale.totalCents ?? 0');
+  await ev('(e.powerUpsOwned.pop(), true)');
+  await ev('(e.driveOffFromSale(), true)'); await sc('Sales', '(s.leave(), true)'); await wait(400);
+  check('...(left that sale; back on the road)', await scenes(), 'Drive,Hud');
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);

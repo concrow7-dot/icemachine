@@ -114,7 +114,7 @@ const { chromium } = require('playwright');
   check('...a click opens the cork board, not the menu', await scenes(), 'PowerUps,Hud');
   const boardTexts = () => sc('PowerUps', "s.children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')");
   check('...with three trees: TRUCK, ICE CREAM, CUSTOMER (SCREAM-271)', (await boardTexts()).split(' | ').filter(t => ['TRUCK', 'ICE CREAM', 'CUSTOMER', 'SPEAKER', 'SALES'].includes(t)).join(','), 'TRUCK,ICE CREAM,CUSTOMER');
-  check('...24 notes pinned to it', await sc('PowerUps', 's.notes.length'), 24);
+  check('...23 notes pinned to it', await sc('PowerUps', 's.notes.length'), 23);
   // SCREAM-296: notes have pictures and prices, open bigger, and can be bought.
   const pu = (fn) => sc('PowerUps', fn);
   const cashNow = () => page.evaluate(() => window.__game.registry.get('evening').moneyCents);
@@ -141,19 +141,26 @@ const { chromium } = require('playwright');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_ice_cream.png' });
   await press('b');
-  let spot = await noteAt('customer-6');
+  ice = await noteAt('service-with-a-smile');
+  await page.mouse.click(ice[0], ice[1]); await wait(150);
+  check('SCREAM-303: the Customer tree\'s top note is Service With A Smile, $15', await big(), 'true | SERVICE WITH A SMILE | Tips start at 25%, not 20%, and you get 10 more seconds to earn one. | $15.00 | BUY | button=true');
+  await page.mouse.move(5, 300); await wait(100);
+  await page.screenshot({ path: outDir + '/hub_cork_note_smile.png' });
+  check('...it is the Customer tree\'s only top note (PO), in the middle, and both notes under it hang from it', await pu("s.notes.filter(n => n.tree === 2 && n.from.length === 0).map(n => n.id).join() + ' ' + s.notes.filter(n => n.from.includes('service-with-a-smile')).map(n => n.id).join() + ' ' + (s.notes.find(n => n.id === 'service-with-a-smile').x === 790)"), 'service-with-a-smile customer-2,customer-3 true');
+  await press('b');
+  let spot = await noteAt('customer-5');
   await page.mouse.move(spot[0], spot[1]); await wait(150);
-  check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'CUSTOMER 6 false');
+  check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'CUSTOMER 5 false');
   // SCREAM-294: Story starts with $25 now, so the test adds $25 to afford the two notes it buys below.
   await page.evaluate(() => window.__game.registry.get('evening').changeMoney(2500, 'Test', false)); await wait(100);
   const cash = await cashNow();
   await page.mouse.click(spot[0], spot[1]); await wait(150);
-  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first, with no button', await big(), 'true | CUSTOMER 6 | A dummy power-up. It does nothing yet. | $20.00 | Buy CUSTOMER 5 first | button=false');
+  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first, with no button', await big(), 'true | CUSTOMER 5 | A dummy power-up. It does nothing yet. | $20.00 | Buy CUSTOMER 4 first | button=false');
   await page.screenshot({ path: outDir + '/hub_cork_note_locked.png' });
   await press('Enter');
-  check('...Enter on a locked note buys nothing', (await cashNow()) + ' ' + (await pu("s.status('customer-6')")), cash + ' locked');
+  check('...Enter on a locked note buys nothing', (await cashNow()) + ' ' + (await pu("s.status('customer-5')")), cash + ' locked');
   await press('ArrowLeft');
-  check('...the arrow keys wait while a note is open', await pu('s.selected'), 'customer-6');
+  check('...the arrow keys wait while a note is open', await pu('s.selected'), 'customer-5');
   await press('b');
   check('...B closes the note, still at the board', (await pu('s.open')) + ' ' + (await scenes()), 'false PowerUps,Hud');
   spot = await noteAt('temp-gas-can');
@@ -230,6 +237,11 @@ const { chromium } = require('playwright');
   if ((await scenes()) === 'Truck,Hud') { await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); }
   else { await sc('Cooler', '(s.scene.restart(), true)'); await wait(400); }
   check('...opened again, the clipboard offers SpongePop too', await sc('Cooler', "s.offered.map(f => f.id).join()"), 'eclair,spongepop');
+  // ---- SCREAM-303: Service With A Smile: tips start at 25% and the countdown is 10 s longer ----
+  check('SCREAM-303: without the power-up the tip steps are 20, 15, 10, 5', await ev('e.tipSteps.join()'), '20,15,10,5');
+  await ev("(e.changeMoney(1500, 'Test', false), true)");
+  check('...the note is a top note of its tree: it can be bought with $15 and nothing else owned first', (await ev("e.powerUpStatus('service-with-a-smile')")) + ' ' + (await ev("e.powerUpStatus('customer-3')")), 'ok locked');
+  check('...bought at home: 25% first, five steps', (await ev("e.buyPowerUp('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
   check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('truck-3'))"), 'ok');
@@ -259,6 +271,7 @@ const { chromium } = require('playwright');
   await page.keyboard.up('ArrowUp');
   check('...running empty a second time the same evening ends it, as before', (await ev('e.endedOutOfGas')) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('GasCan'))), 'true false');
   check('...and tomorrow the can is full again', await page.evaluate(() => { const g = window.__game.registry; const s = g.get('story'); return s.newEvening ? (s.powerUps.includes('temp-gas-can') && s.newEvening().gasCanFull) : null; }), true);
+  check('SCREAM-303: the power-up is in tonight\'s notes, which the run keeps when the day ends (SCREAM-296)', (await ev("e.powerUps.includes('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();
