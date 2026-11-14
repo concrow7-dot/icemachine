@@ -2,6 +2,28 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 109 — The ice creams are power-ups: Story starts with only the Chocolate Eclair, and an eclair over $2.50 isn't ordered (2026-11-13)
+
+**Decision (Jira SCREAM-271, under SCREAM-78, PO, November 12 and 13):** "Lock all ice creams, except chocolate eclair. Need to be purchased to be unlocked." On November 13: "I'm going to have the ice creams be powerups. So they will be unlocked by paying a one time fee, just like the other powers. So lets not completely remove the ice creams, just have them in the power ups menu." So in Story the cooler's clipboard offers only the Chocolate Eclair. The other ice creams are notes on the cork board, in a tree of their own (ICE CREAM), bought once for $15 each, top down: Chocolate Eclair (yours from the start), SpongePop, Lil Explorer Pop, Cookie Ice Cream Sandwich, then a split into two ice creams not decided yet (his sketch, "Power-up trees (notepad, November 13)" in Personal Notes; "Those are tbd, just make them ? for now, like the others"). He also asked for a note that "the average person won't accept the ice cream over $2.50", and for that to be built now: in Story, customers leave a Chocolate Eclair priced over $2.50 out of their order, and its note says so.
+
+The PO's answers (November 13): Story only; its own tree; "Prices will be different. To start lets say $15."; the uncle's evening sells only Chocolate Eclairs; "For now they only show up in the powerups menu, greyed out, like the other powerups."
+
+**Options considered:** ice creams as notes on the board, one fee each (chosen); a separate shop for ice creams; locked ice creams shown greyed out in the cooler and on Today's Menu (the ticket's first draft; the PO chose the board only, for now).
+
+**Why (product owner's rationale):** "After a friend of mine played the game he suggested the ice creams have different effects, like they open new customers or better tips, or better price acceptance. I really liked the idea, so I think this is how I want to implement it."
+
+**Engineering's calls (proposals):**
+
+- The board gains a fourth tree (TRUCK, ICE CREAM, SPEAKER, SALES). The sketch's own three names (Truck, Ice Cream, Customer) wait for the PO to say the rename is decided.
+- The sketch's last two shapes (a circle, then a box, under the two "?" notes) are left off: the board has room for 5 rows. They come back when the board is laid out again or the ice creams are named.
+- The $2.50 limit is the Chocolate Eclair's, for every customer ("average person": nobody pays more yet). The other three keep the old $4.00 limit until SCREAM-272 sets theirs; each note states its ice cream's limit. Quick play keeps $4.00 for all four.
+- An unlock lasts for the Story run, like the other power-ups, and is bought at home before setting off.
+- Customers only ever order what is in the cooler, so set orders (042) use what is unlocked without a new rule.
+- A saved run that already has other ice creams in its cooler keeps them and can sell them; it can't restock them until they are bought.
+- The two "?" notes are dummies at $15 that do nothing, like the other dummy notes.
+- The sandwich keeps its name in the game (Cookie Ice Cream Sandwich; the sketch says "Choc. Chip Sandwich").
+- The effects in the PO's reason (new customers, better tips, better price acceptance) are not built here: SCREAM-272 and SCREAM-135.
+
 ## 108 — When the truck sells out, customers coming or waiting walk home, and buy later if it comes back with stock (2026-11-13)
 
 **Decision (Jira SCREAM-155, under SCREAM-11, PO, November 13):** a customer could reach the window right after the last ice cream was sold. The PO: "Those players should start walking home. If the player goes home, gets ice cream and then returns to that player, they should be willing to buy". So when the cooler empties on the road, everyone on their way to the truck or waiting at a pink square gives up the square and walks home; if the truck restocks and comes back within earshot, they come out for it again.

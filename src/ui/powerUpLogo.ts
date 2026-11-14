@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import type { PowerUpLogo } from '../config/powerUps';
-import { MARKER_FONT } from './flavourArt';
+import { FLAVOURS } from '../config/flavours';
+import { FLAVOUR_FRAME_H, FLAVOUR_ICONS_KEY, flavourFrame, MARKER_FONT } from './flavourArt';
 
 // SCREAM-296: the picture on a cork board note. Engineering's placeholders, drawn in code, one
 // per tree (a wheel, a speaker, a coin), until the PO draws a logo for each power-up.
@@ -26,7 +27,21 @@ export function addPowerUpLogo(
   const line = Math.max(2, size / 14);
   const colour = (c: number) => (grey ? 0x9a9a9a : c);
   g.setAlpha(grey ? 0.75 : 1);
-  if (tree === 'gas-can') {
+  const flavour = FLAVOURS.find((f) => f.id === tree);
+  if (flavour) {
+    // SCREAM-271: an ice cream's own picture (the loading screen's caller loads the sheet).
+    // Whole-number scale, so the pixel art stays sharp.
+    const picture = scene.add.image(0, -size * 0.08, FLAVOUR_ICONS_KEY, flavourFrame(flavour.id)).setScale(Math.max(1, Math.round(size / FLAVOUR_FRAME_H)));
+    if (grey) picture.setTint(0x8f8f8f).setAlpha(0.6);
+    into.add(picture);
+  } else if (tree === 'question') {
+    // SCREAM-271: an ice cream the PO hasn't decided yet.
+    const mark = scene.add
+      .text(0, 0, '?', { fontFamily: MARKER_FONT, fontSize: `${Math.round(size * 1.05)}px`, color: grey ? '#8a8a8a' : '#2b1d10' })
+      .setOrigin(0.5);
+    mark.setAlpha(grey ? 0.75 : 1);
+    into.add(mark);
+  } else if (tree === 'gas-can') {
     drawGasCan(g, size, grey);
   } else if (tree === 'truck') {
     // A wheel: tyre, hubcap and five spokes.

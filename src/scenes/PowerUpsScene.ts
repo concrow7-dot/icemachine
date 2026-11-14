@@ -11,7 +11,8 @@ import { HIGHLIGHT, OUTLINE } from './TruckScene';
 
 // SCREAM-267: the cork board above the cooler, opened from the hub (Story). The PO's reference
 // was a game's skill map: three trees side by side, squares joined by lines. Here they are
-// paper notes pinned to cork and joined by string: TRUCK, SPEAKER and SALES (the PO's names).
+// paper notes pinned to cork and joined by string: TRUCK, SPEAKER and SALES (the PO's names),
+// and since SCREAM-271 ICE CREAM, where each ice cream but the eclair is bought.
 // SCREAM-296 (PO, November 12): each note shows a picture; clicking one opens it bigger, with
 // the picture, a description, the price and a BUY button ("No button if already purchased").
 // Notes not bought yet are greyed out and can still be opened; bought ones are in colour.

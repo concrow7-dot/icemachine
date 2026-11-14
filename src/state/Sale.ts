@@ -33,7 +33,7 @@ export type SaleOutcome =
   | { kind: 'overcharged' } // price too high: they leave with the ice cream for free
   | { kind: 'wrong-order' } // wrong items with no retry left: they leave with them for free
   | { kind: 'timed-out' } // waited the full minute: "Sorry, I have to go"
-  | { kind: 'too-expensive' } // every flavour over $4.00: no order
+  | { kind: 'too-expensive' } // every flavour priced over what they'd pay ($4.00; Story: SCREAM-271): no order
   | { kind: 'sold-out' } // SCREAM-218: nothing left in the cooler; the player says sorry
   | { kind: 'drove-off' }; // the player left without serving: a lost sale
 
@@ -59,8 +59,10 @@ export function generateOrder(
   random: () => number = Math.random,
   /** SCREAM-189: this customer always orders this many (the sheet's "Order size"). */
   fixedSize?: number,
+  /** SCREAM-271: the most they pay for one of a flavour (Story has its own per ice cream). */
+  refuseAbove: (flavour: FlavourId) => number = () => REFUSE_ABOVE_CENTS,
 ): OrderLine[] {
-  const left = slots.map((s) => (s.priceCents <= REFUSE_ABOVE_CENTS ? s.quantity : 0));
+  const left = slots.map((s) => (s.priceCents <= refuseAbove(s.flavour) ? s.quantity : 0));
   const available = left.reduce((a, b) => a + b, 0);
   if (available === 0) return [];
 

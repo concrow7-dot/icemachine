@@ -5,10 +5,10 @@ import { DUMMY_NOTE_TEXT, type PowerUpLogo, type PowerUpTree } from '../config/p
 
 /** The board on the 960 x 540 screen: each tree's middle, and the notes' spacing. */
 export const BOARD_LAYOUT = {
-  treeX: [170, 480, 790],
+  treeX: [125, 362, 598, 835], // SCREAM-271: four trees
   firstRowY: 136,
   rowGap: 60,
-  colGap: 84,
+  colGap: 80, // SCREAM-271: was 84 with three trees
   note: 46,
 };
 

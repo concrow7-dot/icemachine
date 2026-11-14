@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
+import { FLAVOURS, getFlavour, type Flavour, type FlavourId } from '../config/flavours';
 import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
 import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
@@ -78,6 +78,8 @@ export class CoolerScene extends Phaser.Scene {
   private focus: Focus = { area: 'clipboard', row: 0 };
   private rowHighlight!: Phaser.GameObjects.Rectangle;
   private rowCounts: Phaser.GameObjects.Text[] = [];
+  /** SCREAM-271: the clipboard's rows (test hook): every ice cream, or in Story the unlocked ones. */
+  offered: Flavour[] = [];
   /** SCREAM-133: each row's add button, the ice cream's picture with a "+" on it, by flavour. */
   private addButtons = new Map<FlavourId, Phaser.GameObjects.Container>();
   private cellIcons: Phaser.GameObjects.Image[] = [];
@@ -190,7 +192,9 @@ export class CoolerScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.rowHighlight = this.add.rectangle(middle, rowY[0] ?? 0, paper.right - paper.left - 6, 56, 0xffe066, 0.55);
 
-    FLAVOURS.forEach((flavour, row) => {
+    // SCREAM-271: in Story the clipboard lists only the ice creams unlocked so far.
+    this.offered = FLAVOURS.filter((f) => this.evening.flavourUnlocked(f.id));
+    this.offered.forEach((flavour, row) => {
       const y = rowY.at(row) ?? 0;
       // SCREAM-144 (PO, November 3): no picture on the left; name and price left-aligned, the add picture on the right.
       const textLeft = paper.left + 12;
@@ -490,7 +494,7 @@ export class CoolerScene extends Phaser.Scene {
   /** Up and down: between the clipboard's flavours, or along the menu's cards. */
   private moveFocus(direction: -1 | 1): void {
     if (this.focus.area === 'clipboard') {
-      this.focus = { area: 'clipboard', row: (this.focus.row + direction + FLAVOURS.length) % FLAVOURS.length };
+      this.focus = { area: 'clipboard', row: (this.focus.row + direction + this.offered.length) % this.offered.length };
     } else {
       const count = this.visibleCards().length;
       if (count > 0) this.focus = { area: 'menu', index: (this.focus.index + direction + count) % count };
@@ -514,7 +518,7 @@ export class CoolerScene extends Phaser.Scene {
   /** + and -: on the clipboard, pick one or put the last one back; on the menu, change the price. */
   private adjust(direction: -1 | 1): void {
     if (this.focus.area === 'clipboard') {
-      const flavour = FLAVOURS.at(this.focus.row)?.id;
+      const flavour = this.offered.at(this.focus.row)?.id;
       if (!flavour) return;
       if (direction === 1) this.pick(flavour);
       else if (this.order.removeOne(flavour)) this.refresh();
@@ -626,7 +630,7 @@ export class CoolerScene extends Phaser.Scene {
     );
 
     // Clipboard: how many of each, and the focus.
-    FLAVOURS.forEach((flavour, row) => {
+    this.offered.forEach((flavour, row) => {
       const count = this.order.quantity(flavour.id);
       this.rowCounts.at(row)?.setText(count > 0 ? `x${count}` : '');
     });
