@@ -138,6 +138,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/tutorial_gas.png' });
 
   // ---- A customer at the window ----
+  await ev("(e.coolerSlots[0].quantity = 3, true)"); // SCREAM-155: with an empty cooler (emptied above) a called customer walks straight home
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
   await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);
   check('A customer gets a pink square on a tutorial street', await drive(`(z => !!z && z.visible && s.roads.onRoad(z.x, z.y))(s.pickupZones.get(${idx}))`), true);

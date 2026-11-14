@@ -206,6 +206,8 @@ export interface Ring {
   radius: number;
   /** False when nobody new should come out: sold out, after 8 PM, or the evening is over. */
   open: boolean;
+  /** SCREAM-155: the truck is on the road with an empty cooler: customers coming or waiting walk home. */
+  soldOut?: boolean;
   /**
    * SCREAM-118: how many times longer waiting customers are willing to wait right now
    * (2 while you serve someone at the window). Leave out for normal waiting.
@@ -237,6 +239,12 @@ interface Running extends ResidentNow {
   decided?: boolean;
   /** SCREAM-142: true for customers who follow the truck (not the test hook's, who stay at their curb). */
   follows?: boolean;
+  /**
+   * SCREAM-155 (PO, November 13): sent home because the truck sold out. "If the player goes home,
+   * gets ice cream and then returns to that player, they should be willing to buy": they come
+   * straight out again when they next hear the truck with stock.
+   */
+  missedOut?: boolean;
 }
 
 const between = (rnd: () => number, [low, high]: readonly [number, number]) => low + rnd() * (high - low);
@@ -376,6 +384,7 @@ export class Residents {
   update(dt: number, ring?: Ring): void {
     this.now += dt;
     if (ring) this.truck = [ring.x, ring.y];
+    if (ring?.soldOut) this.sendHomeSoldOut();
     this.sinceRoll += dt;
     while (this.sinceRoll >= 1) {
       this.sinceRoll -= 1;
@@ -430,6 +439,28 @@ export class Residents {
     p.plan = { kind: 'idle', until: Infinity };
   }
 
+  /**
+   * SCREAM-155 (PO, November 13): the truck has sold out. "Those players should start walking home":
+   * everyone on their way to the truck or waiting at a pink square gives up their square and walks
+   * home. They aren't done for the night: see `missedOut`. Returns how many were sent.
+   */
+  sendHomeSoldOut(): number {
+    let sent = 0;
+    for (const p of this.people) {
+      if (p.customer !== 'running' && p.customer !== 'waiting') continue;
+      p.customer = 'none';
+      p.missedOut = true;
+      p.heard = 0;
+      p.waitLeft = 0;
+      p.waitAt = undefined;
+      p.spotStand = undefined;
+      p.follows = false;
+      this.walkHome(p);
+      sent += 1;
+    }
+    return sent;
+  }
+
   private rollChances(ring?: Ring): void {
     for (const p of this.people) {
       if (p.customer !== 'none') continue;
@@ -446,6 +477,11 @@ export class Residents {
       // SCREAM-250 (PO, November 10): a hard-to-find customer comes out for certain ("100% in the
       // window") when the music reaches them inside their window on a ticked day. At any other
       // time they're "nearly impossible": the usual roll with their tiny Likelihood from the sheet.
+      // SCREAM-155: someone the truck sold out on comes out again as soon as they hear it with stock.
+      if (p.missedOut) {
+        if (inRing && ring?.open && !this.hearingOff) this.wantIceCream(p);
+        continue;
+      }
       if (this.story && p.resident.hardToFind) {
         if (!this.hardToFindOn) continue; // the uncle's evening
         const today = p.resident.days?.includes(weekdayOf(this.story.day)) ?? false;
@@ -497,6 +533,7 @@ export class Residents {
 
   private wantIceCream(p: Running): void {
     p.customer = 'running';
+    p.missedOut = false;
     p.patience = CUSTOMER_WAIT_SECONDS;
     p.waitAt = undefined;
     const fromDoor = !p.outside;

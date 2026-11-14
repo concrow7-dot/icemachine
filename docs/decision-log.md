@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 108 — When the truck sells out, customers coming or waiting walk home, and buy later if it comes back with stock (2026-11-13)
+
+**Decision (Jira SCREAM-155, under SCREAM-11, PO, November 13):** a customer could reach the window right after the last ice cream was sold. The PO: "Those players should start walking home. If the player goes home, gets ice cream and then returns to that player, they should be willing to buy". So when the cooler empties on the road, everyone on their way to the truck or waiting at a pink square gives up the square and walks home; if the truck restocks and comes back within earshot, they come out for it again.
+
+**Options considered:** walk home, and willing to buy again after a restock (chosen); keep waiting in case the truck restocks nearby; walk home and not come back (engineering's first proposal on the ticket).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- "Willing to buy" is read as certain: they come straight out the next time they hear the truck with stock, whatever their Likelihood (they already wanted one tonight). Their hours (From, Until) still apply, and so does the 8 PM close.
+- Selling out with someone waiting costs nothing (the PO was asked and did not say).
+- They leave as soon as the sale that emptied the cooler is over. No "sold out" speech bubble (the HUD's SOLD OUT says it).
+- Both maps and both modes: it fixes a bug the PO reported (076's "Story only" is for new features).
+- The "Sorry, I'm sold out." sale (SCREAM-218) stays for the rare case someone still reaches the window.
+
 ## 107 — The rotary hint comes from the third regular served twice (2026-11-13)
 
 **Decision (Jira SCREAM-299, under SCREAM-11, PO, November 13):** the hint about the roundabout (050) is given later. The PO: "When the player successfully completes an order with a regular it should count as the first interaction with a regular. The player should then successfully complete 2 transactions with 3 regulars." So: a paid sale to a regular counts as one; once three different regulars have each been served twice in the Story run, the third of them tells the trick. Before, the second regular served twice told it.

@@ -512,6 +512,7 @@ export class DriveScene extends Phaser.Scene {
       y: this.truck.y,
       radius: this.evening.spec.musicRadius,
       open: this.evening.acceptingCustomers,
+      soldOut: this.evening.isSoldOut, // SCREAM-155
     });
     this.drawResidents(time);
     this.drawCustomers();
