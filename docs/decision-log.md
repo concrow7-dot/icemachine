@@ -16,7 +16,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Paid only on a paid sale (not after a refusal, a wrong order or an overcharge).
 - At the window it flashes after the tip: "+$1.60 EXPLORATION TIP" in purple, a little smaller.
 - The end-of-day and run-stats screens show "Exploration tips" under Tips, only when there were any; with seven rows the line and everything under it move down a row. It counts towards the night's largest sale.
-- The note says "Sell one far from home for an exploration tip: the further, the bigger." (engineering's wording).
+- The note's line was engineering's "Sell one far from home for an exploration tip: the further, the bigger."; while testing the PO set it: "For the Explorer pop I want the description to be: 'The further from home, the bigger the tip.'" Its note also costs $25, customers won't pay more than $3.00 for one, and it no longer starts "Stock it and customers order it." (see 116). With the SpongePop's line, tip lines take turns under the price (see 116).
 - Story only (decision 076). Old saves start the run's exploration total at $0.
 
 ## 116 — SpongePop: a kid whose order includes one tips 10 points more (2026-11-14)
