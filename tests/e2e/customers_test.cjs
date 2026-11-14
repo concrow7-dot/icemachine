@@ -238,6 +238,27 @@ const { chromium } = require('playwright');
   check('M again: music back on', await drive('s.music.muted'), false);
 
   // ---- Sold out ----
+  // SCREAM-155: two customers are out when the cooler empties: one waiting at a pink square, one on the way.
+  const out155 = await page.evaluate(() => {
+    const e = window.__game.registry.get('evening'); const s = window.__game.scene.getScene('Drive'); const R = e.residents;
+    const near = R.all.filter(p => p.customer === 'none' && p.buys).sort((a, b) => Math.hypot(a.resident.door[0] - s.truck.x, a.resident.door[1] - s.truck.y) - Math.hypot(b.resident.door[0] - s.truck.x, b.resident.door[1] - s.truck.y)).slice(0, 2);
+    R.callNow(near[0]); R.wantIceCream(near[1]);
+    window.__out155 = near;
+    return near.map(p => p.customer).join(',');
+  });
+  check('SCREAM-155: one customer waiting, one on the way', out155, 'waiting,running');
+  const stock155 = await ev('JSON.stringify(e.coolerSlots.map(s => s.quantity))');
+  await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots.forEach(s => { s.quantity = 0; }); e.emit('cooler-changed'); });
+  await wait(200);
+  check('SCREAM-155: sold out: both give up and walk home, still willing to buy later', await page.evaluate(() => window.__out155.map(p => p.customer + ' ' + p.missedOut + ' ' + p.walking + ' ' + p.plan.then).join(',')), 'none true true inside,none true true inside');
+  check('...no pink square is left on the road', await ev('e.residents.waiting.length'), 0);
+  await wait(1200);
+  check('...and they stay away while the truck is sold out', await page.evaluate(() => window.__out155.map(p => p.customer).join(',')), 'none,none');
+  // Restocked (as after a stop at home) and back beside them: they come straight out again.
+  await page.evaluate((q) => { const e = window.__game.registry.get('evening'); JSON.parse(q).forEach((n, i) => { e.coolerSlots[i].quantity = n; }); e.emit('cooler-changed'); window.__h155 = [e.residents.hearingOff, e.spec.musicRadius]; e.residents.hearingOff = false; e.spec.musicRadius = 700; }, stock155);
+  await wait(1600);
+  await page.evaluate(() => { const e = window.__game.registry.get('evening'); [e.residents.hearingOff, e.spec.musicRadius] = window.__h155; });
+  check('SCREAM-155: restocked and back in earshot: both come out for the truck again', await page.evaluate(() => window.__out155.map(p => (p.customer === 'running' || p.customer === 'waiting') + ' ' + p.missedOut).join(',')), 'true false,true false');
   await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.coolerSlots.forEach(s => { s.quantity = 0; }); e.emit('cooler-changed'); });
   await wait(200);
   check('Empty cooler on the road: no new customers', await ev('e.acceptingCustomers'), false);
