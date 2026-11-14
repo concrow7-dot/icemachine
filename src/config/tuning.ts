@@ -31,6 +31,10 @@ export const LOAD_AHEAD_LOADING_AFTER_MS = 600;
  * (a click meant for the sales window or the cooler as the evening ends shouldn't skip it).
  */
 export const DAY_END_CLICK_WAIT_MS = 500;
+/** SCREAM-207: the "How To Drive" pop-up ignores clicks and Enter for this long after it opens (a key still held from before doesn't close it). */
+export const HOW_TO_DRIVE_CLOSE_WAIT_MS = 500;
+/** SCREAM-207: the pop-up opens this long after the drive screen is up, so the player sees the road first. */
+export const HOW_TO_DRIVE_DELAY_MS = 600;
 
 /**
  * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run was 3 evenings.

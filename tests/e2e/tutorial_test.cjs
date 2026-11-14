@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
+  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); });
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const sc = (key, fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('${key}'); return ${fn}; })()`);
@@ -161,7 +161,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-169: the uncle's steps ----
   // Music on for this part, to hear the credits' tune (SCREAM-178).
   // SCREAM-175: a brand-new player (no tutorial finished, no Story, no high scores).
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '0'); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); localStorage.setItem('icemachine.music.muted.v1', '0'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -353,8 +353,15 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_home.png' });
   await page.mouse.click(600, 300); await wait(300);
   check('Click: his last words', (await sc('UncleIntro', 's.shown')) + ' ' + (await scenes()), 'Good luck, kiddo. UncleIntro,Hud');
+  await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // SCREAM-207: the suites switch the pop-up off; here it is wanted
   await page.mouse.click(600, 300);
-  await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 }); await wait(600);
+  await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);
+  check('SCREAM-207: the uncle has handed over the wheel: the "How To Drive" pop-up, the road waits', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('HowToDrive', 's.lines.length')), 'true 7');
+  await page.screenshot({ path: outDir + '/how_to_drive_after_uncle.png' });
+  await page.mouse.click(600, 300); await wait(400);
+  check('...a click closes it and the road runs', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false false');
+  await page.evaluate(() => localStorage.setItem('icemachine.howtodrive.off.v1', '1')); await wait(200);
   check('Click: on the road alone; he is done', (await ev('e.tutorial.step')) + ' ' + (await ev('e.residents.hearingOff')) + ' ' + (await uncle()), 'done false ');
   // SCREAM-190: he steps out of the truck and walks home.
   check('...and he steps out of the truck, map-sized', await drive('(w => !!w && w.active && w.texture.key)(s.children.getByName("uncle-walker"))'), 'uncle-walker');
@@ -386,7 +393,7 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-200: skipping the uncle ----
   // A brand-new player again; skip him on his very first line, in the truck.
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '1'); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -409,7 +416,7 @@ const { chromium } = require('playwright');
   check('Buy Stock: the plain truck screen (no uncle walking to the cab)', await scenes(), 'Truck,Hud');
 
   // Skip him while he drives: the truck stops, the player has the wheel.
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);

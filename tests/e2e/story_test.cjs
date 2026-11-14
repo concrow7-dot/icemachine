@@ -11,7 +11,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   // SCREAM-175: these suites play as a player who has finished the tutorial (every mode unlocked).
-  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); } catch {} });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -533,7 +533,7 @@ const { chromium } = require('playwright');
   check('Quick play ends on the results screen', await scenes(), 'Results');
 
   // ---- SCREAM-269: filling an order in Story: half doors, the right half of each crate shut ----
-  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   await page.click('canvas'); await wait(200);
@@ -592,6 +592,41 @@ const { chromium } = require('playwright');
     await press('x'); await until(async () => (await scenes()).includes('UncleIntro')); await wait(500);
     await press('x'); await wait(500);
     check('SCREAM-268: With Uncle, skipped before the pump: the uncle\'s gas waits too', await ev('e.tutorial.skipped + " " + e.uncleLeftGas + " " + e.unclePaysGas'), 'true true true');
+  }
+
+  // ---- SCREAM-207: the "How To Drive" pop-up, the first time the player has the wheel (Story's Day 1) ----
+  {
+    const flow = (call) => page.evaluate(`(async () => { const f = await import('/src/flow.js'); const s = window.__game.scene.getScenes(true)[0]; ${call}; return true; })()`);
+    const running = (key) => page.evaluate((k) => window.__game.scene.isActive(k) && !window.__game.scene.isPaused(k), key);
+    await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // the suites switch the pop-up off; this block wants it, as a first-time player
+    await flow('f.startStory(s, false)');
+    await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
+    await until(async () => (await scenes()).includes('Cooler')); await wait(1000);
+    check('SCREAM-207: no pop-up at the cooler', await page.evaluate(() => window.__game.scene.isActive('HowToDrive')), false);
+    await ev('(e.lockPrep(), true)');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Drive'));
+    await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 });
+    check('SCREAM-207: Day 1, On My Own, first drive: the "How To Drive" pop-up opens', await page.evaluate(() => window.__game.scene.isActive('HowToDrive')), true);
+    // The pop-up ignores Enter and clicks in its first half second (a key still held from the screen before).
+    check('...closing in its first moments does nothing', await page.evaluate(() => { const g = window.__game; const s = g.scene.getScene('HowToDrive'); s.openedAt = g.getTime(); s.close(); return g.scene.isActive('HowToDrive') && !s.closing; }), true);
+    await wait(700);
+    check('...the road and the clock wait behind it', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Hud'))), 'true true');
+    check('...it lists the driving keys, gas to Esc', await sc('HowToDrive', "s.lines.length + ' ' + s.lines[0] + ' | ' + s.lines[3] + ' | ' + s.lines[6]"), '7 ↑ Or W: Gas | Q: Park Brake (When Stopped) | Esc: Pause');
+    await page.screenshot({ path: outDir + '/how_to_drive_popup.png' });
+    await press('Enter'); await wait(300);
+    check('...Enter closes it and the player drives: the road runs again', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')) + ' ' + (await running('Hud')), 'false true true');
+    check('...it shows once an evening', await ev('e.howToDriveShown'), true);
+    await page.evaluate(() => window.__game.scene.getScene('Drive').scene.start('Drive')); await wait(1800);
+    check('...a second drive the same evening: no pop-up', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')), 'false true');
+    // PO, November 13: only the first time playing. A new Story in the same browser doesn't show it again.
+    check('...and the browser remembers it was shown', await page.evaluate(() => localStorage.getItem('icemachine.howtodrive.seen.v1')), '1');
+    await flow('f.startStory(s, false)');
+    await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
+    await until(async () => (await scenes()).includes('Cooler')); await wait(300);
+    await ev('(e.lockPrep(), true)');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Drive')); await wait(2000);
+    check('...a new Story later: Day 1\'s first drive has no pop-up', (await page.evaluate(() => window.__game.registry.get('story').day)) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')), '1 false true');
+    await page.evaluate(() => localStorage.setItem('icemachine.howtodrive.off.v1', '1'));
   }
 
   // ---- SCREAM-220: with ?debug in the address, the debug hint is back (SCREAM-88: only Shift+3, right of the clock) ----

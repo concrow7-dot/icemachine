@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 105 — "How To Drive" is a pop-up the first time the player has the wheel (2026-11-13)
+
+**Decision (Jira SCREAM-207, under SCREAM-5, PO, November 13: "go ahead"):** when the uncle finishes driving and hands over the wheel, a "How To Drive" pop-up shows the driving keys; the player closes it to start driving. The title screen's HOW TO DRIVE box was already removed (087), and the full list of keys is the pause menu's Key Bindings page (104).
+
+**Options considered:** a pop-up the player closes (chosen, as the ticket says); a line on the drive screen only (it is there already, small, along the bottom).
+
+**Why (product owner's rationale):** not given yet beyond the ticket's wording. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The ticket's open question ("if the player skips the uncle, should the pop-up still appear when they first take the wheel?") is answered yes for now: the pop-up shows on Story's Day 1 the first time the player has the wheel, whichever way they got there (after the uncle's drive home, after skipping him, even mid-drive, or On My Own). Once an evening, Day 1 only, Story only (076). Say if skippers and On My Own players should not get it.
+- With the uncle it comes after his last words ("Good luck, kiddo."), when the truck is back on the road at home: that is when the player first steers. His own drives earlier in the evening show nothing.
+- It stops the game like a pause (the clock too) and opens 0.6 s after the road appears. Enter, Space or a left click closes it; these are ignored for its first half second, so a key still held from the uncle's last line doesn't close it unread.
+- It lists the same seven driving keys as the Key Bindings page (one list, `DRIVING_KEYS`), and one line pointing to Pause > Key Bindings.
+- SCREAM-207 asked to ship in the same PR as SCREAM-206 so the controls never vanished from the title before the page existed. The title's box went on November 12 (087), so they are two PRs, stacked: merge 206 first.
+
+**The PO's change while testing PR #214 (November 13):** "Only show the driving instructions the first time playing." The pop-up now shows once per player: the game remembers in the browser that it has been shown, and a later New Story does not show it again. (Before, every new Story's Monday showed it.) His reason: not given yet. *(Placeholder: engineering will ask.)* Engineering's call: "the first time playing" is per browser, like the saved Story and the high scores; clearing the browser's data shows it once more. Someone who played before this change sees it once, on their next new Story's Monday.
+
 ## 104 — Pause menu: a Key Bindings page listing every key (2026-11-13)
 
 **Decision (Jira SCREAM-206, under SCREAM-5, PO, November 13: "go ahead"):** the pause menu gets a Key Bindings option. It opens a page that lists every key a player can press, grouped by screen. This is the one place a player can always look up the controls now that the title screen's HOW TO DRIVE box is gone (087).

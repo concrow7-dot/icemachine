@@ -25,6 +25,7 @@ export const SceneKeys = {
   PowerUps: 'PowerUps',
   GasCan: 'GasCan',
   KeyBindings: 'KeyBindings',
+  HowToDrive: 'HowToDrive',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -138,6 +139,47 @@ export function showGasCan(from: Phaser.Scene): void {
   for (const key of paused) from.scene.pause(key);
   from.scene.launch(SceneKeys.GasCan, { paused });
   from.scene.bringToTop(SceneKeys.GasCan);
+}
+
+/** SCREAM-207: a switch for the test suites (set to '1' in browser storage): no "How To Drive" pop-up, so a test that drives isn't frozen by it. Players never set it. */
+export const HOW_TO_DRIVE_OFF_KEY = 'icemachine.howtodrive.off.v1';
+
+/** PO, November 13 (testing PR #214): "Only show the driving instructions the first time playing." Kept in the browser once the pop-up has been shown. */
+export const HOW_TO_DRIVE_SEEN_KEY = 'icemachine.howtodrive.seen.v1';
+
+export function howToDriveSeen(): boolean {
+  try {
+    return localStorage.getItem(HOW_TO_DRIVE_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function howToDriveOff(): boolean {
+  try {
+    return localStorage.getItem(HOW_TO_DRIVE_OFF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * SCREAM-207: the player has the wheel for the first time (Day 1, after the uncle's drive, after
+ * skipping him, or On My Own). The game stops like a pause (the clock too) while the "How To
+ * Drive" pop-up shows the keys; closing it starts the player's driving.
+ */
+export function showHowToDrive(from: Phaser.Scene): void {
+  if (howToDriveOff() || howToDriveSeen()) return;
+  try {
+    localStorage.setItem(HOW_TO_DRIVE_SEEN_KEY, '1');
+  } catch {
+    // No browser storage: it shows again next game.
+  }
+  if (from.scene.isActive(SceneKeys.HowToDrive)) return;
+  const paused = EVENING_SCENES.filter((key) => from.scene.isActive(key));
+  for (const key of paused) from.scene.pause(key);
+  from.scene.launch(SceneKeys.HowToDrive, { paused });
+  from.scene.bringToTop(SceneKeys.HowToDrive);
 }
 
 /**
