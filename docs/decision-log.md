@@ -18,6 +18,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - It lists the same seven driving keys as the Key Bindings page (one list, `DRIVING_KEYS`), and one line pointing to Pause > Key Bindings.
 - SCREAM-207 asked to ship in the same PR as SCREAM-206 so the controls never vanished from the title before the page existed. The title's box went on November 12 (087), so they are two PRs, stacked: merge 206 first.
 
+**The PO's change while testing PR #214 (November 13):** "Only show the driving instructions the first time playing." The pop-up now shows once per player: the game remembers in the browser that it has been shown, and a later New Story does not show it again. (Before, every new Story's Monday showed it.) His reason: not given yet. *(Placeholder: engineering will ask.)* Engineering's call: "the first time playing" is per browser, like the saved Story and the high scores; clearing the browser's data shows it once more. Someone who played before this change sees it once, on their next new Story's Monday.
+
 ## 104 — Pause menu: a Key Bindings page listing every key (2026-11-13)
 
 **Decision (Jira SCREAM-206, under SCREAM-5, PO, November 13: "go ahead"):** the pause menu gets a Key Bindings option. It opens a page that lists every key a player can press, grouped by screen. This is the one place a player can always look up the controls now that the title screen's HOW TO DRIVE box is gone (087).

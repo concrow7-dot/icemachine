@@ -353,7 +353,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_home.png' });
   await page.mouse.click(600, 300); await wait(300);
   check('Click: his last words', (await sc('UncleIntro', 's.shown')) + ' ' + (await scenes()), 'Good luck, kiddo. UncleIntro,Hud');
-  await page.evaluate(() => localStorage.removeItem('icemachine.howtodrive.off.v1')); // SCREAM-207: the suites switch the pop-up off; here it is wanted
+  await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // SCREAM-207: the suites switch the pop-up off; here it is wanted
   await page.mouse.click(600, 300);
   await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
   await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);
