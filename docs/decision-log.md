@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 120 — Upgrade Speaker: the music ring reaches 10% further, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-81, under SCREAM-78, PO, November 14):** "I want to add the next two power ups under customer. The left one should be “Upgrade Speaker” which will “Increase the reach of the speaker by 10%.” It should cost $30." Asked what 10% means, he chose **10% of today's ring**: Story's ring goes from 165 px to about 182 px (165 x 1.1). He sent a photo of a grey horn loudspeaker for the picture.
+
+**Options considered:** 10% of today's ring (chosen) or a tenth of Quick play's 300 px (165 to 195).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The note is the Customer tree's left note under Service With A Smile (it was the dummy Customer 2); the middle note under both now hangs from Upgrade Speaker or Customer 3.
+- The picture is an original horn speaker on a U bracket, drawn like the gas can; not a copy of the photo.
+- SCREAM-81 (the old "music reaches further" upgrade from November 1) was rewritten for it rather than making a duplicate ticket.
+- Bought at home, the ring is bigger as soon as the truck drives.
+- Story only (decision 076).
+
 ## 119 — The gas station: Buy Gas bottom right, Leave bottom left (2026-11-14)
 
 **Decision (Jira SCREAM-316, under SCREAM-7, PO, November 14):** "Move the buy gas button to the bottom left. Move the leave button to the bottom left of the screen." Asked which goes where, he answered: "Buy gas bottom right." So the pay button (PAY $x, or UNCLE PAYS $x) is in the bottom-right corner and DRIVE OFF in the bottom-left. Priority High (his answer).

@@ -512,6 +512,8 @@ export class DriveScene extends Phaser.Scene {
     if (this.leaving) return;
     this.music.tick();
     this.ring.setPosition(this.truck.x, this.truck.y);
+    // SCREAM-81: a speaker bought at home makes the ring bigger without a scene restart.
+    if (this.ring.radius !== this.evening.spec.musicRadius) this.ring.setRadius(this.evening.spec.musicRadius);
     this.uncle?.update(Math.min(deltaMs, 100) / 1000, time);
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: this.truck.x,

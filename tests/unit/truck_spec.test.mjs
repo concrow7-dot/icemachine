@@ -97,3 +97,11 @@ test('SCREAM-310: Trot raises Story\'s creep from 12 to 18 px/s; the roll from t
   const both = truckSpec(true, ['temp-gas-can', 'gitty-up', 'trot']);
   assert.deepEqual([both.creepSpeed, both.accelerationSeconds], [trot.creepSpeed, truckSpec(true, ['gitty-up']).accelerationSeconds], 'the two add up');
 });
+
+test('SCREAM-81: Upgrade Speaker makes the music ring 10% bigger: Story\'s 165 px to 181.5', () => {
+  const weak = truckSpec(true);
+  const speaker = truckSpec(true, ['service-with-a-smile', 'upgrade-speaker']);
+  assert.ok(Math.abs(weak.musicRadius - 165) < 1e-9);
+  assert.ok(Math.abs(speaker.musicRadius - 181.5) < 1e-9);
+  for (const k of Object.keys(weak)) if (k !== 'musicRadius') assert.equal(speaker[k], weak[k], k);
+});

@@ -1,7 +1,8 @@
-import { GITTY_UP_ID, TROT_ID } from '../config/powerUps';
+import { GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
 import {
   COOLER_CAPACITY,
   GITTY_UP_ACCELERATION_FACTOR,
+  SPEAKER_RADIUS_FACTOR,
   TROT_CREEP_FACTOR,
   CRATE_SIDE,
   FUEL_TANK_PX,
@@ -96,7 +97,8 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     reverseAccelerationSeconds: weak ? TRUCK_REVERSE_ACCELERATION_SECONDS * STORY_TRUCK_REVERSE_ACCELERATION_FACTOR : TRUCK_REVERSE_ACCELERATION_SECONDS,
     maxTurnDegrees: weak ? TRUCK_MAX_TURN_DEGREES_PER_SECOND * STORY_TRUCK_TURN_FACTOR : TRUCK_MAX_TURN_DEGREES_PER_SECOND,
     turnAboveRoll: weak ? STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR : 1,
-    musicRadius: weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS,
+    // SCREAM-81: Upgrade Speaker reaches 10% further than tonight's ring.
+    musicRadius: (weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS) * (has(SPEAKER_ID) ? SPEAKER_RADIUS_FACTOR : 1),
     coolerHalfCovered: halfCovered,
     coolerColumns: halfCovered ? STORY_COOLER_COLUMNS : CRATE_SIDE,
     coolerRows: halfCovered ? STORY_COOLER_ROWS : CRATE_SIDE,

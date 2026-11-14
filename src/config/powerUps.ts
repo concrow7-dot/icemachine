@@ -5,7 +5,7 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
@@ -42,6 +42,9 @@ export const GITTY_UP_ID = 'gitty-up';
 
 /** SCREAM-310: the Trot note (the truck creeps faster with no key held). */
 export const TROT_ID = 'trot';
+
+/** SCREAM-81: the Upgrade Speaker note (the music reaches 10% further). */
+export const SPEAKER_ID = 'upgrade-speaker';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -183,9 +186,19 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         logo: 'tip-jar',
       },
       // SCREAM-303 (PO, November 14): "service with a smile is the only first option under the customer tree".
-      { id: 'customer-2', col: 0, row: 1, from: [SMILE_ID], priceCents: 1000 },
+      // SCREAM-81 (PO, November 14): the left note under Service With A Smile.
+      {
+        id: SPEAKER_ID,
+        col: 0,
+        row: 1,
+        from: [SMILE_ID],
+        priceCents: SPEAKER_PRICE_CENTS,
+        name: 'UPGRADE SPEAKER',
+        description: 'Increase the reach of the speaker by 10%.',
+        logo: 'speaker',
+      },
       { id: 'customer-3', col: 2, row: 1, from: [SMILE_ID], priceCents: 1000 },
-      { id: 'customer-4', col: 1, row: 2, from: ['customer-2', 'customer-3'], priceCents: 1500 },
+      { id: 'customer-4', col: 1, row: 2, from: [SPEAKER_ID, 'customer-3'], priceCents: 1500 },
       { id: 'customer-5', col: 1, row: 3, from: ['customer-4'], priceCents: 2000 },
       { id: 'customer-6', col: 0, row: 4, from: ['customer-5'], priceCents: 2500 },
       { id: 'customer-7', col: 1, row: 4, from: ['customer-5'], priceCents: 2500 },
