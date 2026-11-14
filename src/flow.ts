@@ -24,6 +24,7 @@ export const SceneKeys = {
   TutorialCrawl: 'TutorialCrawl',
   PowerUps: 'PowerUps',
   GasCan: 'GasCan',
+  KeyBindings: 'KeyBindings',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */

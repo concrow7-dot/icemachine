@@ -148,7 +148,7 @@ const { chromium } = require('playwright');
   // ---- Restart keeps the map; Quit then Quick play goes back to Worcester ----
   await press('Escape'); await press('ArrowDown', 2); await press('Enter'); await press('y'); await wait(500);
   check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
-  await press('Escape'); await press('ArrowDown', 3); await press('Enter'); await press('y'); await wait(500);
+  await press('Escape'); await press('ArrowUp'); await press('Enter'); await press('y'); await wait(500); // ↑ from Resume wraps to the last item
   check('Quit: title screen', await scenes(), 'Title');
   await press('Enter'); await wait(400);
   check('Quick Play: back on Worcester with its 160 residents', (await ev('e.mapId')) + ' ' + (await ev('e.residents.all.length')), 'worcester 160');
