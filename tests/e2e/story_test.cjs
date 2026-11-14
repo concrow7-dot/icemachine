@@ -269,7 +269,7 @@ const { chromium } = require('playwright');
   const day1 = await texts('DayEnd');
   check('...it says END OF MONDAY and shows the wallet', /END OF MONDAY/.test(day1) && /WALLET/.test(day1) && /\$22\.00/.test(day1), true);
   check('...and the ice creams left', /Ice creams left: 3/.test(day1), true);
-  check('...and Enter starts day 2 (SCREAM-232: "Start Tuesday")', /Enter: Start Tuesday(?!,)/.test(day1) && /END OF MONDAY/.test(day1), true);
+  check('...and the hint says Click Or Enter: Start Tuesday (SCREAM-232, SCREAM-295)', /Click Or Enter: Start Tuesday(?!,)/.test(day1) && /END OF MONDAY/.test(day1), true);
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
@@ -278,8 +278,12 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
   // ---- Day 2: cash and stock carried over ----
-  await press('Enter'); await wait(300);
-  check('Day 2 opens at the cooler', (await scenes()).startsWith('Cooler'), true);
+  // SCREAM-295: a left click moves on, as Enter does (the first half second of the screen is ignored).
+  await wait(700);
+  await page.mouse.click(700, 300, { button: 'right' }); await wait(200);
+  check('SCREAM-295: a right click does not move on', await scenes(), 'DayEnd');
+  await page.mouse.click(700, 300); await wait(300);
+  check('SCREAM-295: a click starts day 2, at the cooler', (await scenes()).startsWith('Cooler') + ' ' + (await story('r.day')), 'true 2');
   check('Cash carried over ($22)', await ev('e.moneyCents'), 2200);
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
@@ -390,7 +394,7 @@ const { chromium } = require('playwright');
   const last = await texts('DayEnd');
   check('After day 5: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
   check('...short of the bike ($22 of $600: $578 short)', /\$578\.00 short of the bike/.test(last), true);
-  check('...Enter goes to the Story high scores', /Enter: Story High Scores/.test(last), true);
+  check('...Click Or Enter goes to the Story high scores (SCREAM-295)', /Click Or Enter: Story High Scores/.test(last), true);
   await press('Enter'); await wait(300);
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');

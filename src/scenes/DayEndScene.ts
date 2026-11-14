@@ -4,7 +4,7 @@ import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
 import { largestSaleLine, offerLargestSale } from '../state/Records';
-import { BIKE_PRICE_CENTS } from '../config/tuning';
+import { BIKE_PRICE_CENTS, DAY_END_CLICK_WAIT_MS } from '../config/tuning';
 import { addTruckBackdrop, DUSK_SHADE, loadTruckInterior } from '../ui/truckInterior';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { weekdayName } from '../state/Residents';
@@ -21,6 +21,8 @@ const ROW_GAP = 27;
 
 export class DayEndScene extends Phaser.Scene {
   private outcome: DayOutcome = 'next';
+  /** SCREAM-295: a click and Enter together move on only once. */
+  private leaving = false;
 
   constructor() {
     super(SceneKeys.DayEnd);
@@ -126,18 +128,34 @@ export class DayEndScene extends Phaser.Scene {
       drawFuelNeedle(this.gasDial, story.fuel, story.fuel);
     }
 
+    // SCREAM-295 (PO, November 12): a left click moves on, as well as Enter (like 079's "Click Or Enter").
     const footer =
-      this.outcome === 'next' ? `Enter: Start ${weekdayName(story.day)}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';
-    this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
+      this.outcome === 'next'
+        ? `Click Or Enter: Start ${weekdayName(story.day)}`
+        : this.outcome === 'complete'
+          ? 'Click Or Enter: Story High Scores'
+          : 'Click Or Enter: Back To The Title';
+    this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5).setName('continue-hint');
 
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') return;
+    const moveOn = () => {
+      if (this.leaving) return;
+      this.leaving = true;
       if (this.outcome === 'next') startStoryEvening(this);
       else if (this.outcome === 'complete') this.scene.start(SceneKeys.Results, { story: true }); // SCREAM-18
       else {
         clearStory(this);
         this.scene.start(SceneKeys.Title);
       }
+    };
+    this.leaving = false;
+    // A click in the first moments is ignored: the player may still be clicking at the sales
+    // window or the cooler when the evening ends, and that click shouldn't skip this screen.
+    const opened = this.time.now;
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0 && this.time.now - opened >= DAY_END_CLICK_WAIT_MS) moveOn();
+    });
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter') moveOn();
     });
   }
 

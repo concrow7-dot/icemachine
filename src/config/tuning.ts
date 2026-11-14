@@ -19,6 +19,12 @@ export const STARTING_CASH_CENTS = 5000;
 export const STORY_START_CASH_CENTS = 2500;
 
 /**
+ * SCREAM-295: on the end-of-day screen a click moves on, but not in its first half second
+ * (a click meant for the sales window or the cooler as the evening ends shouldn't skip it).
+ */
+export const DAY_END_CLICK_WAIT_MS = 500;
+
+/**
  * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run was 3 evenings.
  * SCREAM-85 (PO, November 8): 5 evenings, a full week; the uncle's evening is Day 1 (SCREAM-205).
  * Lower it to 1 or 2 to test the end of a run quickly.
