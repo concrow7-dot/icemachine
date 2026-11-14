@@ -78,6 +78,25 @@ export function generateOrder(
   });
 }
 
+/**
+ * SCREAM-315 (PO, November 14): "If at least one of these are in the cooler, the customer will
+ * buy one more ice cream than they would have", and the extra one is a Chocolate Eclair. Adds one
+ * eclair to the order when one is left in the cooler beyond those already ordered, at a price they
+ * would pay. An order that was empty (everything else too dear) becomes just the eclair.
+ */
+export function withExtraEclair(
+  order: readonly OrderLine[],
+  slots: readonly Readonly<CoolerSlot>[],
+  refuseAbove: (flavour: FlavourId) => number = () => REFUSE_ABOVE_CENTS,
+): OrderLine[] {
+  const ordered = (slot: number) => order.filter((line) => line.slot === slot).reduce((n, line) => n + line.count, 0);
+  const slot = slots.findIndex((s, i) => s.flavour === 'eclair' && s.priceCents <= refuseAbove('eclair') && s.quantity > ordered(i));
+  if (slot < 0) return [...order];
+  const line = order.find((l) => l.slot === slot);
+  if (line) return order.map((l) => (l === line ? { ...l, count: l.count + 1 } : l));
+  return [...order, { slot, flavour: 'eclair' as FlavourId, count: 1 }].sort((a, b) => a.slot - b.slot);
+}
+
 /** "2 Chocolate Eclair, 1 SpongePop" */
 export function describeOrder(order: readonly OrderLine[]): string {
   return order.map((line) => `${line.count} ${getFlavour(line.flavour).name}`).join(', ');

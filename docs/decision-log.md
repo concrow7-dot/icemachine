@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 118 — Chocolate Eclair: with one in the cooler, every customer orders one extra eclair (2026-11-14)
+
+**Decision (Jira SCREAM-315, under SCREAM-78, PO, November 14):** "I want to add a powerup to chocolate eclair: If at least one of these are in the cooler, the customer will buy one more ice cream than they would have". His answers: the extra one is **a Chocolate Eclair**; it works **from day 1** (the eclair is owned from the start); **everyone**, set order sizes included (Big Kev's 7 becomes 8); **nothing extra shown** (the order is just one bigger). The note's line is his: "If you have these stocked in your cooler, every customer will buy an extra ice cream."
+
+**Options considered:** an extra eclair (chosen) or one more of any ice cream; from day 1 (chosen) or after buying an upgrade note; everyone (chosen) or not customers with a set order size; nothing shown (chosen) or a line at the window and a row at the end of the day.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Only with an eclair left beyond those the customer already ordered, and priced at what they'd pay ($2.50 or less); otherwise the order is as before.
+- A customer who'd have ordered nothing (everything else too dear) orders just the one eclair.
+- In the uncle's evening too, since it's Story's day 1 (Big Kev's order there is 8).
+- Story only (decision 076).
+
 ## 117 — The Lil Explorer Pop's exploration tip (2026-11-14)
 
 **Decision (Jira SCREAM-312, under SCREAM-78, PO, November 14):** "Explorer pop. when sold, gives you money for the distance from home you are. Almost like a tip. except the further away the more the \"tip\". Call it the exploration tip." His answers: measured in a **straight line**; in Elm Park from **$0 at home to $1.00 at the roundabout**, in **$0.10 steps**; in Foley Stadium from **$1.50 at Newton Square** up to **$5.00 at the farthest customer** ("I'd be willing to have the far corner ... be $5", then moved to the farthest customer so it can be earned), growing with no cap; **paid even with no normal tip**; **one per Explorer Pop** ("You get three of the tips"); **its own row** on the end-of-day screen ("I like having it be its own row").

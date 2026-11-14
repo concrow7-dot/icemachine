@@ -50,16 +50,16 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-189: Big Kev always orders 7 (sheet 23's "Order size") ----
   check('Big Kev: an order size of 7 from the sheet', await ev("e.residents.all.find(p => p.resident.id === 'T034').resident.orderSize"), 7);
-  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) { c.quantity = 4; c.priceCents = 200; } }), e.orderPictureChance = 0, true)");
+  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) { c.quantity = 8; c.priceCents = 200; } }), e.orderPictureChance = 0, true)");
   await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
   await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
-  check('...he orders 7 ice creams', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 7);
+  check('...he orders 8 ice creams: his 7, plus one eclair (SCREAM-315)', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 8);
   await page.screenshot({ path: outDir + '/bigkev_words.png' });
   await press('b'); await wait(600);
-  await ev("(e.orderPictureChance = 1, e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 4; }), true)");
+  await ev("(e.orderPictureChance = 1, e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 8; }), true)");
   await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
   await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
-  check('...in pictures too', (await ev('e.sale.pictures')) + ' ' + (await ev('e.sale.order.reduce((n, l) => n + l.count, 0)')), 'true 7');
+  check('...in pictures too', (await ev('e.sale.pictures')) + ' ' + (await ev('e.sale.order.reduce((n, l) => n + l.count, 0)')), 'true 8');
   await page.screenshot({ path: outDir + '/bigkev_pictures.png' });
   await press('b'); await wait(600);
   await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 1; }), e.orderPictureChance = 0.5, true)");
