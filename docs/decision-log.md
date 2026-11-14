@@ -15,7 +15,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - "10% more acceleration" is read as speeding up 1.1 times as fast. Only the gas: reverse, braking and top speed are unchanged.
 - The first power-up that changes the truck: `evening.spec` is now built from the mode and the power-ups owned tonight, and rebuilt when one is bought, so it works the same evening it is bought (at home, before setting off) and every evening after.
 - Kept for the Story run, like the other power-ups. Story only (the board is Story's). A save that bought the old TRUCK 2 dummy gets nothing.
-- The note's text is his description as written. The picture is engineering's drawing of his sketch, in the gas can's style.
+- The note's text is his description as written. The picture is engineering's drawing of his sketch, in the gas can's style. Testing, he asked for the truck to lean back more, "like a big truck will do": its body tilts back 9 degrees on the rear wheel, both wheels on the ground.
 
 ## 111 — From the second night, a Story evening opens at the truck screen, not the cooler (2026-11-14)
 
