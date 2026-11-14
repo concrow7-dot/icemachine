@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 116 — SpongePop: a kid whose order includes one tips 10 points more (2026-11-14)
+
+**Decision (Jira SCREAM-313, under SCREAM-78, PO, November 14):** "I want the spongepop to increase tips by children by 10%". Asked what that means, he chose **10 percentage points more** (not 1.1 times), and **only when the kid's order includes a SpongePop**. So a quick tip goes 30%, 25%, 20%, 15% instead of 20%, 15%, 10%, 5%. The first ice cream with an effect of its own (SCREAM-135).
+
+**Options considered:** 10 points more (chosen) or 1.1 times the tip; when the kid's order includes a SpongePop (chosen), for every kid once the note is owned, or for every kid while SpongePop is stocked tonight.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- A kid is a resident marked Kid in the Residents sheet's Age column (both maps).
+- One SpongePop anywhere in the order is enough; more SpongePops don't add more.
+- With Service With A Smile the two add up: 35%, 30%, 25%, 20%, 15%. A hard-to-find kid's 4x multiplies the raised tip.
+- The tip bar shows the raised steps; no new line or pop-up.
+- The SpongePop note says "Kids who order one tip 10% more." (engineering's wording).
+- Story only (decision 076).
+
 ## 115 — Home and the pump: go in again without driving out of the spot first (2026-11-14)
 
 **Decision (Jira SCREAM-304, under SCREAM-7, PO, November 14):** after visiting home or the gas station, "the only way to go in again is to drive out of the entry rectangle and back in. That is a pointless detour." A truck that stays in the spot is offered the way back in.

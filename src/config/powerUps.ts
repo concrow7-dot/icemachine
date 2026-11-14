@@ -78,6 +78,11 @@ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
  * the sandwich, then a split into ice creams not decided yet ("just make them ? for now").
  * The sketch's last two shapes (a circle, then a box) wait for a taller board: it has 5 rows.
  */
+/** SCREAM-135: what an ice cream does besides selling, told on its note (Story only). */
+const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
+  spongepop: 'Kids who order one tip 10% more.', // SCREAM-313; engineering's wording
+};
+
 function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
   const f = getFlavour(flavour);
   const first = flavour === STORY_FIRST_FLAVOUR;
@@ -90,7 +95,7 @@ function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
     from: first || !before ? [] : [iceCreamNoteId(before.id)],
     priceCents: first ? 0 : ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
-    description: first ? `Owned from the start. ${limit}` : `Stock it and customers order it. ${limit}`,
+    description: [first ? 'Owned from the start.' : 'Stock it and customers order it.', ICE_CREAM_EFFECTS[flavour], limit].filter(Boolean).join(' '),
     logo: flavour,
     flavour,
     free: first,

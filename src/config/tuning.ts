@@ -184,6 +184,12 @@ export const TIP_PERCENT_STEPS = [20, 15, 10, 5];
  * one more 10-second step at the top, so 50 seconds in all.
  */
 export const SMILE_TIP_PERCENT_STEPS = [25, 20, 15, 10, 5];
+
+/**
+ * SCREAM-313 (PO, November 14; decision 116): in Story, a kid whose order includes a SpongePop
+ * tips this many percentage points more at every step ("10 points more": 30%, 25%, 20%, 15%).
+ */
+export const SPONGEPOP_KID_TIP_POINTS = 10;
 /** SCREAM-303 (PO: "$15"). */
 export const SMILE_PRICE_CENTS = 1500;
 

@@ -1,11 +1,11 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
-import { generateOrder, orderTotalCents, Sale } from './Sale';
+import { generateOrder, orderTotalCents, Sale, type OrderLine } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, TIP_PERCENT_STEPS } from '../config/tuning';
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -622,6 +622,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.powerUpsOwned.includes(SMILE_ID) ? SMILE_TIP_PERCENT_STEPS : TIP_PERCENT_STEPS;
   }
 
+  /**
+   * The tip steps for one sale: tonight's (SCREAM-303), plus 10 points at every step when a kid's
+   * order includes a SpongePop (SCREAM-313, PO, November 14; Story only).
+   */
+  saleTipSteps(order: readonly OrderLine[], customer?: ResidentNow): readonly number[] {
+    const steps = this.tipSteps;
+    const kidWithSpongePop = this.story && !!customer?.resident.kid && order.some((line) => line.flavour === 'spongepop');
+    return kidWithSpongePop ? steps.map((percent) => percent + SPONGEPOP_KID_TIP_POINTS) : steps;
+  }
+
   /** SCREAM-271: the ice creams the clipboard offers tonight, in the order of FLAVOURS. */
   get unlockedFlavours(): FlavourId[] {
     return FLAVOURS.map((f) => f.id).filter((id) => this.flavourUnlocked(id));
@@ -837,7 +847,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, (f) => this.refuseAboveCents(f)), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
-    this.saleNow.tipSteps = this.tipSteps; // SCREAM-303
+    this.saleNow.tipSteps = this.saleTipSteps(this.saleNow.order, customer); // SCREAM-303, SCREAM-313
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

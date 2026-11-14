@@ -137,7 +137,7 @@ const { chromium } = require('playwright');
   await press('b');
   ice = await noteAt('icecream-spongepop');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('...SpongePop costs $15.00', await big(), "true | SPONGEPOP | Stock it and customers order it. The average person won't pay more than $4.00 for one. | $15.00 | BUY | button=true");
+  check('...SpongePop costs $15.00', await big(), "true | SPONGEPOP | Stock it and customers order it. Kids who order one tip 10% more. The average person won't pay more than $4.00 for one. | $15.00 | BUY | button=true");
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_ice_cream.png' });
   await press('b');

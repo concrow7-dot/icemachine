@@ -309,6 +309,15 @@ const { chromium } = require('playwright');
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
   await press('ArrowRight'); await press('Enter'); await wait(600);
   check('Roundabouts: on the road in Elm Park, with a roundabout', (await scenes()) + ' ' + (await sc('Drive', 's.laps !== null')), 'Drive,Hud true');
+  // ---- SCREAM-313: a kid whose order includes a SpongePop tips 10 points more ----
+  const kidSteps = (kid, flavours) => ev(`(() => { const p = e.residents.all.find(p => !!p.resident.kid === ${kid}); return e.saleTipSteps(${JSON.stringify(flavours)}.map((f, i) => ({ slot: i, flavour: f, count: 1 })), p).join(); })()`);
+  check('SCREAM-313: a kid who orders a SpongePop: 30, 25, 20, 15', await kidSteps(true, ['spongepop']), '30,25,20,15');
+  check('...a SpongePop among other ice creams counts too', await kidSteps(true, ['eclair', 'spongepop']), '30,25,20,15');
+  check('...a kid without a SpongePop tips as before', await kidSteps(true, ['eclair']), '20,15,10,5');
+  check('...an adult with a SpongePop tips as before', await kidSteps(false, ['spongepop']), '20,15,10,5');
+  await ev("(e.powerUpsOwned.push('service-with-a-smile'), true)");
+  check('...with Service With A Smile the two add up: 35 down to 15', await kidSteps(true, ['spongepop']), '35,30,25,20,15');
+  await ev('(e.powerUpsOwned.pop(), true)');
   // ---- SCREAM-304: still in the spot after a visit, move a little and stop again to go back in ----
   const nudgeThenStop = async () => { await sc('Drive', '(s.speed = 20, s.parkBrake = false, true)'); await wait(80); await sc('Drive', '(s.speed = 0, s.parkBrake = true, true)'); await wait(300); };
   check('SCREAM-304: starting in the driveway spot does not open the cooler', await scenes(), 'Drive,Hud');

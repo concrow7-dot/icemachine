@@ -189,6 +189,8 @@ const { chromium } = require('playwright');
   check('SCREAM-288: that was the second and last time for this customer', (await ev('e.sale.asksLeft')) + ' ' + (await ev('e.sale.askAgain(e.nowMs)')), '0 false');
   await press('b'); await wait(300);
 
+  check('SCREAM-313: Quick play: a kid with a SpongePop tips as before', await ev("e.saleTipSteps([{ slot: 0, flavour: 'spongepop', count: 1 }], e.residents.all.find(p => p.resident.kid)).join()"), '20,15,10,5');
+
   // ---- SCREAM-303: with Service With A Smile the tip starts at 25% and the bar has five steps ----
   await ev("(e.powerUpsOwned.push('service-with-a-smile'), true)");
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
