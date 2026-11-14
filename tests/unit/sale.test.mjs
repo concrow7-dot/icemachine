@@ -71,3 +71,12 @@ test('SCREAM-103: a hint follows the thanks, only after a paid sale', async () =
   lost.addHint('T034', 'Anything.');
   assert.equal(lost.hintAbout, null);
 });
+
+test('SCREAM-271: a flavour can have its own limit (Story: an eclair over $2.50 is left out)', () => {
+  const limit = (f) => (f === 'eclair' ? 250 : 400);
+  const stock = (cents) => [{ flavour: 'eclair', quantity: 5, priceCents: cents }, { flavour: 'spongepop', quantity: 2, priceCents: 400 }];
+  assert.deepEqual(generateOrder([{ flavour: 'eclair', quantity: 5, priceCents: 275 }], Math.random, 3, limit), []);
+  assert.equal(generateOrder([{ flavour: 'eclair', quantity: 5, priceCents: 250 }], Math.random, 3, limit)[0].count, 3);
+  assert.ok(generateOrder(stock(275), Math.random, 6, limit).every((line) => line.flavour === 'spongepop'));
+  assert.equal(generateOrder([{ flavour: 'eclair', quantity: 5, priceCents: 275 }], Math.random, 3)[0].count, 3, 'without a limit of its own: $4.00');
+});

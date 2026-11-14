@@ -11,7 +11,8 @@ import { HIGHLIGHT, OUTLINE } from './TruckScene';
 
 // SCREAM-267: the cork board above the cooler, opened from the hub (Story). The PO's reference
 // was a game's skill map: three trees side by side, squares joined by lines. Here they are
-// paper notes pinned to cork and joined by string: TRUCK, SPEAKER and SALES (the PO's names).
+// paper notes pinned to cork and joined by string: TRUCK, ICE CREAM and CUSTOMER (the PO's names
+// since SCREAM-271; they were Truck, Speaker, Sales). Each ice cream but the eclair is bought here.
 // SCREAM-296 (PO, November 12): each note shows a picture; clicking one opens it bigger, with
 // the picture, a description, the price and a BUY button ("No button if already purchased").
 // Notes not bought yet are greyed out and can still be opened; bought ones are in colour.
@@ -298,6 +299,12 @@ export class PowerUpsScene extends Phaser.Scene {
       .setOrigin(0.5);
     big.add([name, description, price]);
     this.bigTexts = [note.name, note.description, formatMoney(note.priceCents)];
+    // SCREAM-271 (PO, November 14): a note that was never for sale (the Chocolate Eclair) shows no
+    // price: "$0.00" "makes it seem like you paid for it already, or that the ice cream should cost that much".
+    if (note.priceCents === 0) {
+      price.setVisible(false);
+      this.bigTexts = [note.name, note.description];
+    }
 
     this.buyButton = null;
     const buttonY = top + 320;

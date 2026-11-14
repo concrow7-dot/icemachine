@@ -5,7 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS } from '../config/tuning';
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -46,7 +46,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { GAS_CAN_ID, POWER_UP_TREES } from '../config/powerUps';
+import { FREE_NOTE_IDS, GAS_CAN_ID, iceCreamNoteId, POWER_UP_TREES, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 
 /** SCREAM-296: every note on the cork board. */
@@ -592,7 +592,28 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** Whether the cork board's note can be bought now, and if not, why. */
   powerUpStatus(id: string): BuyStatus | null {
     const note = POWER_UP_NOTES.find((n) => n.id === id);
-    return note ? buyStatus(note, this.powerUpsOwned, this.cashCents, this.atHome) : null;
+    // SCREAM-271: the free notes (the Chocolate Eclair) are owned without being in the run's list.
+    return note ? buyStatus(note, [...FREE_NOTE_IDS, ...this.powerUpsOwned], this.cashCents, this.atHome) : null;
+  }
+
+  /**
+   * SCREAM-271 (PO, November 13): in Story only the Chocolate Eclair can be stocked until an
+   * ice cream's note is bought on the cork board. Quick play has them all.
+   */
+  flavourUnlocked(flavour: FlavourId): boolean {
+    if (!this.story) return true;
+    const id = iceCreamNoteId(flavour);
+    return FREE_NOTE_IDS.includes(id) || this.powerUpsOwned.includes(id);
+  }
+
+  /** SCREAM-271: the ice creams the clipboard offers tonight, in the order of FLAVOURS. */
+  get unlockedFlavours(): FlavourId[] {
+    return FLAVOURS.map((f) => f.id).filter((id) => this.flavourUnlocked(id));
+  }
+
+  /** SCREAM-271: the most a customer pays for one of these tonight before leaving it out of the order. */
+  refuseAboveCents(flavour: FlavourId): number {
+    return this.story ? storyRefuseAboveCents(flavour) : REFUSE_ABOVE_CENTS;
   }
 
   /** Buys a note from the cork board with tonight's cash. Returns false, changing nothing, if it can't be bought. */
@@ -796,7 +817,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     }
     this.setCustomerWaiting(true);
     // SCREAM-218: an empty cooler (the HUD's SOLD OUT) is "sold out", not "too expensive".
-    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
+    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, (f) => this.refuseAboveCents(f)), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
     this.lastSalePhase = this.saleNow.phase;

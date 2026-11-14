@@ -62,6 +62,17 @@ export const MAX_PRICE_CENTS = 1000;
 
 /** Issue #23: first-playable rule, customers refuse to pay more than this per ice cream. */
 export const REFUSE_ABOVE_CENTS = 400;
+/**
+ * SCREAM-271 (PO, November 13: "the average person won't accept the ice cream over $2.50"):
+ * in Story, each ice cream can have its own price above which customers leave it out of their
+ * order. One not listed keeps REFUSE_ABOVE_CENTS. Quick play keeps REFUSE_ABOVE_CENTS for all.
+ * (SCREAM-272 will set the others.)
+ */
+export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250 };
+/** SCREAM-271: the ice cream Story starts with; every other one is bought on the cork board. */
+export const STORY_FIRST_FLAVOUR = 'eclair';
+/** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
+export const ICE_CREAM_UNLOCK_CENTS = 1500;
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO

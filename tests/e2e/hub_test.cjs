@@ -113,35 +113,47 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()) === 'PowerUps,Hud');
   check('...a click opens the cork board, not the menu', await scenes(), 'PowerUps,Hud');
   const boardTexts = () => sc('PowerUps', "s.children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')");
-  check('...with three trees: TRUCK, SPEAKER, SALES', (await boardTexts()).split(' | ').filter(t => ['TRUCK', 'SPEAKER', 'SALES'].includes(t)).join(',') === 'TRUCK,SPEAKER,SALES', true);
-  check('...25 notes pinned to it', await sc('PowerUps', 's.notes.length'), 25);
+  check('...with three trees: TRUCK, ICE CREAM, CUSTOMER (SCREAM-271)', (await boardTexts()).split(' | ').filter(t => ['TRUCK', 'ICE CREAM', 'CUSTOMER', 'SPEAKER', 'SALES'].includes(t)).join(','), 'TRUCK,ICE CREAM,CUSTOMER');
+  check('...24 notes pinned to it', await sc('PowerUps', 's.notes.length'), 24);
   // SCREAM-296: notes have pictures and prices, open bigger, and can be bought.
   const pu = (fn) => sc('PowerUps', fn);
   const cashNow = () => page.evaluate(() => window.__game.registry.get('evening').moneyCents);
   const noteAt = (id) => pu(`(() => { const n = s.notes.find(n => n.id === '${id}'); return [n.x, n.y]; })()`);
   const big = () => pu("s.open + ' | ' + s.bigTexts.join(' | ') + ' | button=' + !!s.buyButton");
   check('...the first note is marked, and the card gives its name and price', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')) + ' / ' + (await pu('s.detailStatus.text')), 'temp-gas-can / TEMPORARY GAS CAN / $15.00');
-  check('...no note says ? any more (SCREAM-296: pictures)', (await boardTexts()).split(' | ').includes('?'), false);
-  check('...nothing is owned yet: every note is grey', await pu("s.notes.every(n => s.status(n.id) !== 'owned')"), true);
+  check('...only the two undecided ice creams say ? (SCREAM-271)', await pu("s.notes.filter(n => n.logo === 'question').map(n => n.id).join()"), 'icecream-5,icecream-6');
+  check('...nothing is owned yet but the Chocolate Eclair (SCREAM-271)', await pu("s.notes.filter(n => s.status(n.id) === 'owned').map(n => n.id).join()"), 'icecream-eclair');
+  check('SCREAM-271: the ice creams hang top down: eclair, SpongePop, Explorer, the sandwich, then two not decided', await pu("s.notes.filter(n => n.id.startsWith('icecream')).map(n => n.name + '<' + n.from.join('+')).join(' | ')"), 'CHOCOLATE ECLAIR< | SPONGEPOP<icecream-eclair | LIL EXPLORER POP<icecream-spongepop | COOKIE ICE CREAM SANDWICH<icecream-explorer | ICE CREAM 5<icecream-cookie | ICE CREAM 6<icecream-cookie');
+  check('...SpongePop can be bought first; Explorer waits for it', (await pu("s.status('icecream-spongepop')")) + ' ' + (await pu("s.status('icecream-explorer')")), 'ok locked');
   await page.mouse.move(5, 5); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_board.png' });
   await press('ArrowDown');
   check('...Down moves to the note below', await pu('s.selected'), 'truck-5');
   await press('ArrowRight'); await press('ArrowRight');
-  check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'speaker-3 / SPEAKER 3');
-  let spot = await noteAt('sales-6');
+  check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'icecream-explorer / LIL EXPLORER POP');
+  let ice = await noteAt('icecream-eclair');
+  await page.mouse.click(ice[0], ice[1]); await wait(150);
+  check('SCREAM-271: the Chocolate Eclair is yours from the start, with its price note and no $0.00', await big(), "true | CHOCOLATE ECLAIR | Yours from the start. The average person won't pay more than $2.50 for one. | Yours | button=false");
+  await press('b');
+  ice = await noteAt('icecream-spongepop');
+  await page.mouse.click(ice[0], ice[1]); await wait(150);
+  check('...SpongePop costs $15.00', await big(), "true | SPONGEPOP | Stock it and customers order it. The average person won't pay more than $4.00 for one. | $15.00 | BUY | button=true");
+  await page.mouse.move(5, 300); await wait(100);
+  await page.screenshot({ path: outDir + '/hub_cork_note_ice_cream.png' });
+  await press('b');
+  let spot = await noteAt('customer-6');
   await page.mouse.move(spot[0], spot[1]); await wait(150);
-  check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'SALES 6 false');
+  check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'CUSTOMER 6 false');
   // SCREAM-294: Story starts with $25 now, so the test adds $25 to afford the two notes it buys below.
   await page.evaluate(() => window.__game.registry.get('evening').changeMoney(2500, 'Test', false)); await wait(100);
   const cash = await cashNow();
   await page.mouse.click(spot[0], spot[1]); await wait(150);
-  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first, with no button', await big(), 'true | SALES 6 | A dummy power-up. It does nothing yet. | $20.00 | Buy SALES 5 first | button=false');
+  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first, with no button', await big(), 'true | CUSTOMER 6 | A dummy power-up. It does nothing yet. | $20.00 | Buy CUSTOMER 5 first | button=false');
   await page.screenshot({ path: outDir + '/hub_cork_note_locked.png' });
   await press('Enter');
-  check('...Enter on a locked note buys nothing', (await cashNow()) + ' ' + (await pu("s.status('sales-6')")), cash + ' locked');
+  check('...Enter on a locked note buys nothing', (await cashNow()) + ' ' + (await pu("s.status('customer-6')")), cash + ' locked');
   await press('ArrowLeft');
-  check('...the arrow keys wait while a note is open', await pu('s.selected'), 'sales-6');
+  check('...the arrow keys wait while a note is open', await pu('s.selected'), 'customer-6');
   await press('b');
   check('...B closes the note, still at the board', (await pu('s.open')) + ' ' + (await scenes()), 'false PowerUps,Hud');
   spot = await noteAt('temp-gas-can');
@@ -207,8 +219,18 @@ const { chromium } = require('playwright');
   await press('Enter');
   await until(async () => (await scenes()).startsWith('Cooler'));
   check('...Continue after closing the game: day 2 still owns them', await page.evaluate(() => { const g = window.__game.registry; return g.get('story').day + ' ' + g.get('evening').powerUps.join(','); }), '2 temp-gas-can,truck-2');
-  // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
+  // ---- SCREAM-271: in Story only the Chocolate Eclair can be stocked until an ice cream is bought on the board ----
+  check('SCREAM-271: Story\'s clipboard offers only the Chocolate Eclair', (await sc('Cooler', "s.offered.map(f => f.id).join()")) + ' ' + (await sc('Cooler', '[...s.addButtons.keys()].join()')), 'eclair eclair');
+  check('...the others are locked', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.flavourUnlocked(f)).join()"), 'true,false,false,false');
+  check('...the average person won\'t pay over $2.50 for an eclair; the others keep $4.00', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.refuseAboveCents(f)).join()"), '250,400,400,400');
+  await ev("(e.changeMoney(1500, 'Test', false), true)");
+  check('...Explorer can\'t be bought before SpongePop; SpongePop can', (await ev("e.buyPowerUp('icecream-explorer')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true eclair,spongepop');
+  await press('b'); await until(async () => (await scenes()) === 'Truck,Hud', 1500);
+  if ((await scenes()) === 'Truck,Hud') { await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); }
+  else { await sc('Cooler', '(s.scene.restart(), true)'); await wait(400); }
+  check('...opened again, the clipboard offers SpongePop too', await sc('Cooler', "s.offered.map(f => f.id).join()"), 'eclair,spongepop');
+  // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
   check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('truck-3'))"), 'ok');
   await press('+'); await press('Enter');

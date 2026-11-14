@@ -4,10 +4,15 @@
 // power-up ticket replaces a dummy note with a real one (name, price, what it does).
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
-export type PowerUpTreeId = 'truck' | 'speaker' | 'sales';
+import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
+import { ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS } from './tuning';
+
+// SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
+// and customer"): Speaker is part of Truck now, and Sales became Customer.
+export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'gas-can';
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -23,6 +28,10 @@ export type PowerUpNote = {
   name?: string;
   description?: string;
   logo?: PowerUpLogo;
+  /** SCREAM-271: the ice cream this note unlocks in Story. */
+  flavour?: FlavourId;
+  /** SCREAM-271: owned from the start of every run (the Chocolate Eclair): never bought, never saved. */
+  free?: boolean;
 };
 
 /** SCREAM-122: the Temporary Gas Can's note. */
@@ -41,6 +50,43 @@ export type PowerUpTree = {
 
 /** SCREAM-296: what a dummy note says when it is opened (doc 15). Dummy prices too: $5 a row. */
 export const DUMMY_NOTE_TEXT = 'A dummy power-up. It does nothing yet.';
+
+/** SCREAM-271: the id of the note that unlocks an ice cream. */
+export function iceCreamNoteId(flavour: FlavourId): string {
+  return `icecream-${flavour}`;
+}
+
+/** SCREAM-271: the most a customer pays for one of these in Story before leaving it out of the order. */
+export function storyRefuseAboveCents(flavour: FlavourId): number {
+  return STORY_REFUSE_ABOVE_CENTS[flavour] ?? REFUSE_ABOVE_CENTS;
+}
+
+const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+/**
+ * SCREAM-271 (PO, November 13): the ice creams are power-ups. His sketch ("Power-up trees",
+ * Personal Notes): top down, Chocolate Eclair (yours from the start), SpongePop, Explorer,
+ * the sandwich, then a split into ice creams not decided yet ("just make them ? for now").
+ * The sketch's last two shapes (a circle, then a box) wait for a taller board: it has 5 rows.
+ */
+function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
+  const f = getFlavour(flavour);
+  const first = flavour === STORY_FIRST_FLAVOUR;
+  const before = FLAVOURS[FLAVOURS.findIndex((x) => x.id === flavour) - 1];
+  const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
+  return {
+    id: iceCreamNoteId(flavour),
+    col: 1,
+    row,
+    from: first || !before ? [] : [iceCreamNoteId(before.id)],
+    priceCents: first ? 0 : ICE_CREAM_UNLOCK_CENTS,
+    name: f.name.toUpperCase(),
+    description: first ? `Yours from the start. ${limit}` : `Stock it and customers order it. ${limit}`,
+    logo: flavour,
+    flavour,
+    free: first,
+  };
+}
 
 // Left to right on the board.
 export const POWER_UP_TREES: PowerUpTree[] = [
@@ -72,35 +118,34 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     ],
   },
   {
-    id: 'speaker',
-    name: 'SPEAKER',
-    string: 0x2f9e44,
-    paper: 0xc9efc0,
+    id: 'icecream',
+    name: 'ICE CREAM',
+    string: 0x2884d6,
+    paper: 0xcfe6fb,
     notes: [
-      { id: 'speaker-1', col: 1, row: 0, from: [], priceCents: 500 },
-      { id: 'speaker-2', col: 1, row: 1, from: ['speaker-1'], priceCents: 1000 },
-      { id: 'speaker-3', col: 0, row: 2, from: ['speaker-2'], priceCents: 1500 },
-      { id: 'speaker-4', col: 2, row: 2, from: ['speaker-2'], priceCents: 1500 },
-      { id: 'speaker-5', col: 0, row: 3, from: ['speaker-3'], priceCents: 2000 },
-      { id: 'speaker-6', col: 2, row: 3, from: ['speaker-4'], priceCents: 2000 },
-      { id: 'speaker-7', col: 1, row: 4, from: ['speaker-5', 'speaker-6'], priceCents: 2500 },
+      ...FLAVOURS.map((f, row) => iceCreamNote(f.id, row)),
+      { id: 'icecream-5', col: 0, row: FLAVOURS.length, from: [iceCreamNoteId(FLAVOURS[FLAVOURS.length - 1].id)], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
+      { id: 'icecream-6', col: 2, row: FLAVOURS.length, from: [iceCreamNoteId(FLAVOURS[FLAVOURS.length - 1].id)], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
     ],
   },
   {
-    id: 'sales',
-    name: 'SALES',
+    id: 'customer',
+    name: 'CUSTOMER',
     string: 0xb23aa8,
     paper: 0xf6cdea,
     notes: [
-      { id: 'sales-1', col: 0, row: 0, from: [], priceCents: 500 },
-      { id: 'sales-2', col: 2, row: 0, from: [], priceCents: 500 },
-      { id: 'sales-3', col: 0, row: 1, from: ['sales-1'], priceCents: 1000 },
-      { id: 'sales-4', col: 2, row: 1, from: ['sales-2'], priceCents: 1000 },
-      { id: 'sales-5', col: 1, row: 2, from: ['sales-3', 'sales-4'], priceCents: 1500 },
-      { id: 'sales-6', col: 1, row: 3, from: ['sales-5'], priceCents: 2000 },
-      { id: 'sales-7', col: 0, row: 4, from: ['sales-6'], priceCents: 2500 },
-      { id: 'sales-8', col: 1, row: 4, from: ['sales-6'], priceCents: 2500 },
-      { id: 'sales-9', col: 2, row: 4, from: ['sales-6'], priceCents: 2500 },
+      { id: 'customer-1', col: 0, row: 0, from: [], priceCents: 500 },
+      { id: 'customer-2', col: 2, row: 0, from: [], priceCents: 500 },
+      { id: 'customer-3', col: 0, row: 1, from: ['customer-1'], priceCents: 1000 },
+      { id: 'customer-4', col: 2, row: 1, from: ['customer-2'], priceCents: 1000 },
+      { id: 'customer-5', col: 1, row: 2, from: ['customer-3', 'customer-4'], priceCents: 1500 },
+      { id: 'customer-6', col: 1, row: 3, from: ['customer-5'], priceCents: 2000 },
+      { id: 'customer-7', col: 0, row: 4, from: ['customer-6'], priceCents: 2500 },
+      { id: 'customer-8', col: 1, row: 4, from: ['customer-6'], priceCents: 2500 },
+      { id: 'customer-9', col: 2, row: 4, from: ['customer-6'], priceCents: 2500 },
     ],
   },
 ];
+
+/** SCREAM-271: the notes owned from the start of every Story run. */
+export const FREE_NOTE_IDS: string[] = POWER_UP_TREES.flatMap((t) => t.notes.filter((n) => n.free).map((n) => n.id));
