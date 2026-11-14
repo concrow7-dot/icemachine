@@ -172,12 +172,20 @@ export const ORDER_PICTURE_CHANCE = 0.5;
  */
 export const ORDER_SIZE_WEIGHTS = [15, 30, 30, 12, 8, 5];
 
-/** The tip countdown: starts when the order is hidden and runs this many seconds. */
+/** The tip countdown: starts when the order is hidden and runs this many seconds (SCREAM-303: without the power-up; the game reads tipCountdownSeconds in Sale.ts). */
 export const TIP_COUNTDOWN_SECONDS = 40;
 
 /** Tip percentage for each 10-second step of the countdown: 20% within 10 s, then 15%, 10%, 5%, then none. */
 export const TIP_STEP_SECONDS = 10;
 export const TIP_PERCENT_STEPS = [20, 15, 10, 5];
+/**
+ * SCREAM-303 (PO, November 14): with the Service With A Smile power-up, "25% is the first tip
+ * number. It also extends the time you can get a tip. It should still countdown to 5%, then 0":
+ * one more 10-second step at the top, so 50 seconds in all.
+ */
+export const SMILE_TIP_PERCENT_STEPS = [25, 20, 15, 10, 5];
+/** SCREAM-303 (PO: "$15"). */
+export const SMILE_PRICE_CENTS = 1500;
 
 /** A customer at the window waits this long, from when the conversation starts, before leaving. */
 export const WINDOW_PATIENCE_SECONDS = 60;

@@ -141,6 +141,12 @@ const { chromium } = require('playwright');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_ice_cream.png' });
   await press('b');
+  ice = await noteAt('service-with-a-smile');
+  await page.mouse.click(ice[0], ice[1]); await wait(150);
+  check('SCREAM-303: the Customer tree\'s top note is Service With A Smile, $15', await big(), 'true | SERVICE WITH A SMILE | Tips start at 25%, not 20%, and you get 10 more seconds to earn one. | $15.00 | BUY | button=true');
+  await page.mouse.move(5, 300); await wait(100);
+  await page.screenshot({ path: outDir + '/hub_cork_note_smile.png' });
+  await press('b');
   let spot = await noteAt('customer-6');
   await page.mouse.move(spot[0], spot[1]); await wait(150);
   check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'CUSTOMER 6 false');
@@ -230,6 +236,11 @@ const { chromium } = require('playwright');
   if ((await scenes()) === 'Truck,Hud') { await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); }
   else { await sc('Cooler', '(s.scene.restart(), true)'); await wait(400); }
   check('...opened again, the clipboard offers SpongePop too', await sc('Cooler', "s.offered.map(f => f.id).join()"), 'eclair,spongepop');
+  // ---- SCREAM-303: Service With A Smile: tips start at 25% and the countdown is 10 s longer ----
+  check('SCREAM-303: without the power-up the tip steps are 20, 15, 10, 5', await ev('e.tipSteps.join()'), '20,15,10,5');
+  await ev("(e.changeMoney(1500, 'Test', false), true)");
+  check('...the note is a top note of its tree: it can be bought with $15 and nothing else owned first', (await ev("e.powerUpStatus('service-with-a-smile')")) + ' ' + (await ev("e.powerUpStatus('customer-3')")), 'ok locked');
+  check('...bought at home: 25% first, five steps', (await ev("e.buyPowerUp('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
   check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('truck-3'))"), 'ok');
@@ -259,6 +270,7 @@ const { chromium } = require('playwright');
   await page.keyboard.up('ArrowUp');
   check('...running empty a second time the same evening ends it, as before', (await ev('e.endedOutOfGas')) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('GasCan'))), 'true false');
   check('...and tomorrow the can is full again', await page.evaluate(() => { const g = window.__game.registry; const s = g.get('story'); return s.newEvening ? (s.powerUps.includes('temp-gas-can') && s.newEvening().gasCanFull) : null; }), true);
+  check('SCREAM-303: the power-up is in tonight\'s notes, which the run keeps when the day ends (SCREAM-296)', (await ev("e.powerUps.includes('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();

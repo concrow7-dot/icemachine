@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 110 — Service With A Smile: a power-up that starts tips at 25% and gives 10 more seconds to earn one (2026-11-14)
+
+**Decision (Jira SCREAM-303, under SCREAM-78, PO, November 14):** "The next powerup I want to add is increased tips under customer. Lets go with a 5% increase. So 25% is the first tip number. It also extends the time you can get a tip. It should still countdown to 5%, then 0." So the second real power-up is the top item of the cork board's Customer tree: **Service With A Smile** (his name), $15, bought once. With it the tip counts down 25%, 20%, 15%, 10%, 5%, then nothing: one more 10-second step at the top, 50 seconds in all (he confirmed that reading). Its picture is his sketch: a jar with TIPS on it and a plus at its top right ("Tip jar plus, the increased tips power-up (sketch, November 14)" in Personal Notes).
+
+**Options considered:** one extra 10-second step at 25% (chosen); every step 5% higher over the same 40 seconds; a longer countdown with the same four steps.
+
+**Why (product owner's rationale):** "Early in the game a player will want to increase their revenue. Tips is a good way to do that."
+
+**Engineering's calls (proposals):**
+
+- Kept for the Story run and bought at home before setting off, like the other power-ups. Story only (the board is Story's).
+- A hard-to-find customer's 4 times tip (067) multiplies the new, higher tip.
+- The tip bar at the window and at the cooler shows the five steps; the cooler's side labels read 25% to 5%. The bar is dark green on the first step, light green in the middle and amber on the last, as before.
+- Asking again, a mistake or an overcharge still loses the whole tip.
+- The note reads "Tips start at 25%, not 20%, and you get 10 more seconds to earn one." The picture is engineering's drawing of his sketch, in the gas can's style, until he draws his own.
+- It replaces the dummy note CUSTOMER 1 (top left); the dummy under it hangs from it.
+
 ## 109 — The ice creams are power-ups: Story starts with only the Chocolate Eclair, and an eclair over $2.50 isn't ordered (2026-11-13)
 
 **Decision (Jira SCREAM-271, under SCREAM-78, PO, November 12 and 13):** "Lock all ice creams, except chocolate eclair. Need to be purchased to be unlocked." On November 13: "I'm going to have the ice creams be powerups. So they will be unlocked by paying a one time fee, just like the other powers. So lets not completely remove the ice creams, just have them in the power ups menu." So in Story the cooler's clipboard offers only the Chocolate Eclair. The other ice creams are notes on the cork board, in a tree of their own (ICE CREAM), bought once for $15 each, top down: Chocolate Eclair (yours from the start), SpongePop, Lil Explorer Pop, Cookie Ice Cream Sandwich, then a split into two ice creams not decided yet (his sketch, "Power-up trees (notepad, November 13)" in Personal Notes; "Those are tbd, just make them ? for now, like the others"). He also asked for a note that "the average person won't accept the ice cream over $2.50", and for that to be built now: in Story, customers leave a Chocolate Eclair priced over $2.50 out of their order, and its note says so.

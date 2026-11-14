@@ -5,7 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS } from '../config/tuning';
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -46,7 +46,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { FREE_NOTE_IDS, GAS_CAN_ID, iceCreamNoteId, POWER_UP_TREES, storyRefuseAboveCents } from '../config/powerUps';
+import { FREE_NOTE_IDS, GAS_CAN_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 
 /** SCREAM-296: every note on the cork board. */
@@ -606,6 +606,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return FREE_NOTE_IDS.includes(id) || this.powerUpsOwned.includes(id);
   }
 
+  /** SCREAM-303: tonight's tip steps: 25% first and 10 seconds longer once Service With A Smile is owned. */
+  get tipSteps(): readonly number[] {
+    return this.powerUpsOwned.includes(SMILE_ID) ? SMILE_TIP_PERCENT_STEPS : TIP_PERCENT_STEPS;
+  }
+
   /** SCREAM-271: the ice creams the clipboard offers tonight, in the order of FLAVOURS. */
   get unlockedFlavours(): FlavourId[] {
     return FLAVOURS.map((f) => f.id).filter((id) => this.flavourUnlocked(id));
@@ -820,6 +825,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, (f) => this.refuseAboveCents(f)), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
+    this.saleNow.tipSteps = this.tipSteps; // SCREAM-303
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;

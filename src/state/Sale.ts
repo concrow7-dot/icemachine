@@ -3,7 +3,6 @@ import {
   ORDER_SHOW_SECONDS,
   ORDER_SIZE_WEIGHTS,
   REFUSE_ABOVE_CENTS,
-  TIP_COUNTDOWN_SECONDS,
   TIP_PERCENT_STEPS,
   TIP_STEP_SECONDS,
   WINDOW_PATIENCE_SECONDS,
@@ -90,10 +89,15 @@ export function orderTotalCents(order: readonly OrderLine[], slots: readonly Rea
 }
 
 /** Tip percentage after this many seconds of the countdown: 20, 15, 10, 5, then 0 (PO, doc 12 Q29). */
-export function tipPercentAt(seconds: number): number {
-  if (seconds >= TIP_COUNTDOWN_SECONDS) return 0;
+export function tipPercentAt(seconds: number, steps: readonly number[] = TIP_PERCENT_STEPS): number {
+  if (seconds >= tipCountdownSeconds(steps)) return 0;
   const step = Math.floor(Math.max(0, seconds) / TIP_STEP_SECONDS);
-  return TIP_PERCENT_STEPS[step] ?? 0;
+  return steps[step] ?? 0;
+}
+
+/** SCREAM-303: how long the tip countdown runs for these steps (10 seconds each: 40, or 50 with the power-up). */
+export function tipCountdownSeconds(steps: readonly number[] = TIP_PERCENT_STEPS): number {
+  return steps.length * TIP_STEP_SECONDS;
 }
 
 /**
@@ -102,6 +106,8 @@ export function tipPercentAt(seconds: number): number {
  */
 export class Sale {
   phase: SalePhase = 'ordering';
+  /** SCREAM-303: the tip on offer for each 10-second step (the Service With A Smile power-up has one more, at 25%). */
+  tipSteps: readonly number[] = TIP_PERCENT_STEPS;
   outcome: SaleOutcome | null = null;
   /** Ice creams picked at the cooler, per slot, not yet handed over. */
   readonly bag: number[];
@@ -213,7 +219,7 @@ export class Sale {
   tipPercent(nowMs: number): number {
     const seconds = this.countdownSeconds(nowMs);
     if (seconds === null || this.askedAgain || this.retryUsed || this.repriceUsed) return 0;
-    return tipPercentAt(seconds);
+    return tipPercentAt(seconds, this.tipSteps);
   }
 
   /** True while the order is showing in the bubble. */

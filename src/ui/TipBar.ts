@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
-import { TIP_COUNTDOWN_SECONDS, TIP_PERCENT_STEPS } from '../config/tuning';
+import { TIP_PERCENT_STEPS } from '../config/tuning';
+import { tipCountdownSeconds } from '../state/Sale';
 import type { EveningState } from '../state/EveningState';
 import { MARKER_FONT } from './flavourArt';
 
@@ -29,6 +30,7 @@ export class TipBar {
   private readonly fill: Phaser.GameObjects.Rectangle;
   private readonly label: Phaser.GameObjects.Text;
   private readonly jar: boolean;
+  private readonly steps: readonly number[];
   private readonly tall: boolean;
   /** How tall the green stands above the cup with the whole tip on offer (test hook). */
   readonly fullHeight: number = BILLS_H;
@@ -45,7 +47,9 @@ export class TipBar {
    * (x, y) the middle of its base: it empties from the top down as the tip shrinks.
    */
   /** `tall`: the bar that shrinks with the tip (SCREAM-281), `barHeight` px when full (SCREAM-284: the window's is the jar's height). */
-  constructor(scene: Phaser.Scene, x: number, y: number, jar = false, tall = false, barHeight = TALL_H) {
+  /** `steps`: tonight's tip steps (SCREAM-303: five with the Service With A Smile power-up). */
+  constructor(scene: Phaser.Scene, x: number, y: number, jar = false, tall = false, barHeight = TALL_H, steps: readonly number[] = TIP_PERCENT_STEPS) {
+    this.steps = steps;
     this.jar = jar;
     this.tall = jar && tall;
     if (jar) {
@@ -59,8 +63,8 @@ export class TipBar {
         const top = -JAR_H + 6 - fullH;
         track.fillStyle(0x2b1d10, 0.12).fillRect(-barW / 2, top, barW, fullH);
         track.lineStyle(2, 0x2b1d10, 0.55).strokeRect(-barW / 2, top, barW, fullH);
-        const zone = fullH / TIP_PERCENT_STEPS.length;
-        TIP_PERCENT_STEPS.forEach((percent, n) => {
+        const zone = fullH / steps.length;
+        steps.forEach((percent, n) => {
           if (n > 0) track.lineStyle(2, 0x2b1d10, 0.55).lineBetween(-barW / 2 - 4, top + n * zone, barW / 2 + 8, top + n * zone);
           if (fullH < ZONE_LABELS_FROM) return;
           const label = scene.add
@@ -135,13 +139,14 @@ export class TipBar {
       return;
     }
     this.container.setVisible(true);
-    const fraction = Math.max(0, 1 - seconds / TIP_COUNTDOWN_SECONDS);
+    const fraction = Math.max(0, 1 - seconds / tipCountdownSeconds(this.steps));
     const percent = sale.tipPercent(evening.nowMs);
     if (this.jar) this.fill.setDisplaySize(JAR_W - 12, Math.max(1, this.fullHeight * fraction));
     else this.fill.setDisplaySize(WIDTH * fraction, HEIGHT);
     // Greener for a bigger tip; grey once it's gone (asked again, a mistake, or out of time).
-    const top = TIP_PERCENT_STEPS[0] ?? 20;
-    const colour = percent === 0 ? 0x8a8a8a : percent >= top ? 0x2e7d32 : percent >= top / 2 ? 0x7cb342 : 0xf9a825;
+    // SCREAM-303: by place in the countdown, so 25% and 20% are the first two greens whatever the top is.
+    const place = this.steps.indexOf(percent);
+    const colour = percent === 0 ? 0x8a8a8a : place === 0 ? 0x2e7d32 : place < this.steps.length - 1 ? 0x7cb342 : 0xf9a825;
     // The cup's bills stay bill-green while there's a tip, grey once it's gone.
     // SCREAM-281: the tall bar changes colour with the tip, like the old bar across the top.
     this.fill.setFillStyle(this.jar && !this.tall ? (percent === 0 ? 0x8a8a8a : 0x9ad48c) : colour);
