@@ -177,6 +177,8 @@ export class DriveScene extends Phaser.Scene {
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
+  /** SCREAM-304: the truck has moved since it came back out of the pump, still in the bay. */
+  private pumpMovedInBay = false;
   /** SCREAM-171, 185, 190: the uncle driving the truck and walking home, in the guided tutorial (scenes/uncleDrive.ts). */
   private uncle?: UncleDrive;
   /** The leg he's driving now, if any (tests read these). */
@@ -197,6 +199,8 @@ export class DriveScene extends Phaser.Scene {
   /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
   private homeBay!: Phaser.GameObjects.Rectangle;
   private homeArmed = false;
+  /** SCREAM-304: the truck has moved since it came back out of home, still in the driveway spot. */
+  private homeMovedInBay = false;
   /** SCREAM-145: counts the truck's laps of this map's roundabout (null if it has none). */
   private laps: LapCounter | null = null;
   /** SCREAM-145: the lap count. PO (November 9): never shown, it would give the secret away; tests read it. */
@@ -313,6 +317,7 @@ export class DriveScene extends Phaser.Scene {
         .setDepth(4),
     );
     this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
+    this.pumpMovedInBay = false;
     // SCREAM-54 (PO, November 2): Home's driveway, a marked spot on the road outside home
     // (where each evening starts). Stopping in it like a customer pickup opens the cooler to restock.
     // SCREAM-145: away from home (Story, in Foley Stadium) there's no driveway: home is back through the roundabout.
@@ -324,6 +329,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(4)
       .setVisible(!this.evening.awayFromHome);
     this.homeArmed = this.pickupOverlap(this.homeBay) === 0;
+    this.homeMovedInBay = false;
     const ring = ringOf(this.map.roads);
     this.laps = ring && this.evening.mapsJoined ? new LapCounter(ring, RING_LAPS) : null;
     this.switchingMap = false;
@@ -1283,12 +1289,30 @@ export class DriveScene extends Phaser.Scene {
   private checkPump(): void {
     const overlap = Math.max(0, ...this.pumpBays.map((b) => this.pickupOverlap(b)));
     if (!this.pumpArmed) {
-      if (overlap === 0) this.pumpArmed = true;
-      return;
+      if (overlap === 0 || this.movedThenStopped('pump')) this.pumpArmed = true;
+      else return;
     }
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     this.leaving = true;
     this.scene.start(SceneKeys.Pump);
+  }
+
+  /**
+   * SCREAM-304 (PO, November 14): just back out of home or the pump and still in its spot,
+   * the player shouldn't have to drive out and back in to go in again. In Story, once the
+   * truck has moved and then stopped again inside the spot, it counts as pulling in. Driving
+   * out still re-arms it as before. Quick play is unchanged (decision 076).
+   */
+  private movedThenStopped(place: 'home' | 'pump'): boolean {
+    if (!getStory(this)) return false;
+    const key = place === 'home' ? 'homeMovedInBay' : 'pumpMovedInBay';
+    if (this.speed !== 0) {
+      this[key] = true;
+      return false;
+    }
+    if (!this[key]) return false;
+    this[key] = false;
+    return true;
   }
 
   /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock. */
@@ -1303,8 +1327,8 @@ export class DriveScene extends Phaser.Scene {
     }
     const overlap = this.pickupOverlap(this.homeBay);
     if (!this.homeArmed) {
-      if (overlap === 0) this.homeArmed = true;
-      return;
+      if (overlap === 0 || this.movedThenStopped('home')) this.homeArmed = true;
+      else return;
     }
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     if (!this.evening.startRestock()) return;
