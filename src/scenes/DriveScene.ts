@@ -1014,11 +1014,20 @@ export class DriveScene extends Phaser.Scene {
       const acrossX = -ty * across;
       const acrossY = tx * across;
       if (Math.abs(along) > 0.01) {
+        // SCREAM-194 (playtest round 2): past a parked car, the sideways ease is never more than
+        // the truck moved this frame. At a creep (a fraction of a pixel a frame) a 2 or 3 px ease
+        // was a shove sideways, many times faster than the truck was going.
+        const easeLimit = hit === 'car' ? Math.min(3, distance) : 3;
         for (const ease of [0, 1, 2, 3, -1, -2, -3]) {
           const sx = tx * along + acrossX * ease;
           const sy = ty * along + acrossY * ease;
           if (!this.obstacleAt(x + sx, y + sy)) {
-            slide = [sx, sy];
+            if (Math.abs(ease) <= easeLimit) slide = [sx, sy];
+            else {
+              // Too far to ease in one frame: slip sideways as far as it moved, and go on next frame.
+              const side = Math.sign(ease) * easeLimit;
+              if (!this.obstacleAt(x + acrossX * side, y + acrossY * side)) slide = [acrossX * side, acrossY * side];
+            }
             break;
           }
         }
