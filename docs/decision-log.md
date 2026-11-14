@@ -17,7 +17,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - The tip bar at the window and at the cooler shows the five steps; the cooler's side labels read 25% to 5%. The bar is dark green on the first step, light green in the middle and amber on the last, as before.
 - Asking again, a mistake or an overcharge still loses the whole tip.
 - The note reads "Tips start at 25%, not 20%, and you get 10 more seconds to earn one." The picture is engineering's drawing of his sketch, in the gas can's style, until he draws his own.
-- It replaces the dummy note CUSTOMER 1 (top left); the dummy under it hangs from it.
+- It is the Customer tree's only top note, in the middle (the PO, testing, November 14: "Lets make it so service with a smile is the only first option under the customer tree."). The two dummies under it both hang from it; the old second top note was removed, so the tree has 8 notes and the dummies are renumbered CUSTOMER 2 to 8.
 
 ## 109 — The ice creams are power-ups: Story starts with only the Chocolate Eclair, and an eclair over $2.50 isn't ordered (2026-11-13)
 

@@ -140,7 +140,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // SCREAM-303 (PO, November 14): the second real power-up, the Customer tree's top item.
       {
         id: SMILE_ID,
-        col: 0,
+        col: 1,
         row: 0,
         from: [],
         priceCents: SMILE_PRICE_CENTS,
@@ -148,14 +148,14 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Tips start at 25%, not 20%, and you get 10 more seconds to earn one.',
         logo: 'tip-jar',
       },
-      { id: 'customer-2', col: 2, row: 0, from: [], priceCents: 500 },
-      { id: 'customer-3', col: 0, row: 1, from: [SMILE_ID], priceCents: 1000 },
-      { id: 'customer-4', col: 2, row: 1, from: ['customer-2'], priceCents: 1000 },
-      { id: 'customer-5', col: 1, row: 2, from: ['customer-3', 'customer-4'], priceCents: 1500 },
-      { id: 'customer-6', col: 1, row: 3, from: ['customer-5'], priceCents: 2000 },
-      { id: 'customer-7', col: 0, row: 4, from: ['customer-6'], priceCents: 2500 },
-      { id: 'customer-8', col: 1, row: 4, from: ['customer-6'], priceCents: 2500 },
-      { id: 'customer-9', col: 2, row: 4, from: ['customer-6'], priceCents: 2500 },
+      // SCREAM-303 (PO, November 14): "service with a smile is the only first option under the customer tree".
+      { id: 'customer-2', col: 0, row: 1, from: [SMILE_ID], priceCents: 1000 },
+      { id: 'customer-3', col: 2, row: 1, from: [SMILE_ID], priceCents: 1000 },
+      { id: 'customer-4', col: 1, row: 2, from: ['customer-2', 'customer-3'], priceCents: 1500 },
+      { id: 'customer-5', col: 1, row: 3, from: ['customer-4'], priceCents: 2000 },
+      { id: 'customer-6', col: 0, row: 4, from: ['customer-5'], priceCents: 2500 },
+      { id: 'customer-7', col: 1, row: 4, from: ['customer-5'], priceCents: 2500 },
+      { id: 'customer-8', col: 2, row: 4, from: ['customer-5'], priceCents: 2500 },
     ],
   },
 ];

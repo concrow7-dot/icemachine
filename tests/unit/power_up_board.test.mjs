@@ -36,13 +36,13 @@ test('the arrow keys move to the nearest note that way', () => {
 test('...and cross from one tree to the next', () => {
   assert.equal(nextNote(notes, 'truck-6', 'right'), 'icecream-explorer');
   assert.equal(nextNote(notes, 'icecream-explorer', 'left'), 'truck-6');
-  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'customer-5');
+  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'customer-4');
 });
 
 test('...and stay put at the edge of the board', () => {
   assert.equal(nextNote(notes, 'truck-4', 'left'), 'truck-4');
   assert.equal(nextNote(notes, 'temp-gas-can', 'up'), 'temp-gas-can');
-  assert.equal(nextNote(notes, 'customer-9', 'down'), 'customer-9');
+  assert.equal(nextNote(notes, 'customer-8', 'down'), 'customer-8');
 });
 
 test('every note can be reached with the arrow keys from the first one', () => {
@@ -96,4 +96,10 @@ test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair, $
   assert.match(tree.notes[0].description, /won't pay more than \$2\.50/);
   assert.equal(storyRefuseAboveCents('eclair'), 250);
   assert.equal(storyRefuseAboveCents('cookie'), 400);
+});
+
+test('SCREAM-303: Service With A Smile is the only top note of the Customer tree, in the middle', () => {
+  const tops = notes.filter((n) => n.tree === 2 && n.from.length === 0).map((n) => n.id);
+  assert.deepEqual(tops, ['service-with-a-smile']);
+  assert.deepEqual(notes.filter((n) => n.from.includes('service-with-a-smile')).map((n) => n.id), ['customer-2', 'customer-3']);
 });
