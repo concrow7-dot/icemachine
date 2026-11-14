@@ -68,10 +68,11 @@ const { chromium } = require('playwright');
 
   // ---- Restart, with "Are you sure?" ----
   await press('Escape');
-  check('SCREAM-206: the menu reads Resume, End Evening, Restart Evening, Quit To Title, Key Bindings', await sc('Pause', "s.items.map(t => t.text.replace(/[<>]/g, '').trim()).join(', ')"), 'Resume, End Evening, Restart Evening, Quit To Title, Key Bindings');
-  // SCREAM-206: the Key Bindings page (last in the menu, so the other options keep their places).
-  await press('ArrowDown', 4);
-  check('SCREAM-206: ↓ x4 highlights Key Bindings', await sc('Pause', 's.items[s.selected].text.replace(/[<>]/g, "").trim()'), 'Key Bindings');
+  check('SCREAM-206: the menu reads Resume, End Evening, Restart Evening, Key Bindings, Quit To Title (Quick play: nothing to save)', await sc('Pause', "s.items.map(t => t.text.replace(/[<>]/g, '').trim()).join(', ')"), 'Resume, End Evening, Restart Evening, Key Bindings, Quit To Title');
+  check('...the items sit in the middle, between PAUSED and the hint line', await sc('Pause', '(() => { const mid = (s.items[0].y + s.items[s.items.length - 1].y) / 2; const title = s.children.list.find(o => o.text === "PAUSED"); return Math.abs(mid - ((title.y + 17) + (s.hint.y - 7)) / 2) <= 6; })()'), true);
+  // SCREAM-206: the Key Bindings page (fourth; quitting is last).
+  await press('ArrowDown', 3);
+  check('SCREAM-206: ↓ x3 highlights Key Bindings', await sc('Pause', 's.items[s.selected].text.replace(/[<>]/g, "").trim()'), 'Key Bindings');
   await press('Enter');
   check('SCREAM-206: Key Bindings opens over the menu, which waits', (await status('KeyBindings')) + ' ' + (await status('Pause')), 'running paused');
   check('...the evening behind stays frozen', (await status('Sales')) + ' ' + (await status('Hud')), 'paused paused');
@@ -85,7 +86,7 @@ const { chromium } = require('playwright');
   check('...← turns back to page 1', await sc('KeyBindings', 's.page'), 0);
   await press('Escape');
   check('SCREAM-206: Esc closes the page: the pause menu is back', (await status('KeyBindings')) + ' ' + (await status('Pause')) + ' ' + (await status('Sales')), 'off running paused');
-  await press('ArrowDown'); // from Key Bindings round to Resume
+  await press('ArrowDown', 2); // from Key Bindings, past the last item, round to Resume
   await press('ArrowDown', 2);
   check('↓ ↓ highlights Restart evening', await sc('Pause', 's.selected'), 2);
   await press('Enter');
@@ -109,7 +110,7 @@ const { chromium } = require('playwright');
   check('...and the restarted evening saved no high score', await scoresSaved(), 0);
 
   // ---- Quit ----
-  await wait(500); await press('Escape'); await press('ArrowDown', 3); await press('Enter');
+  await wait(500); await press('Escape'); await press('ArrowUp'); await press('Enter'); // ↑ from Resume wraps to the last item
   check('Quit asks "Are you sure?"', /Quit to the title screen\?/.test(await sc('Pause', 's.prompt.text')), true);
   await press('y'); await wait(400);
   check('Y: title screen, every evening screen stopped', await scenes(), 'Title');
