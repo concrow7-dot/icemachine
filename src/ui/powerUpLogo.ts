@@ -79,6 +79,8 @@ export function addPowerUpLogo(
       g.lineBetween(0, 0, Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
     }
     g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
+  } else if (tree === 'calculator') {
+    drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
     drawSpeakerHorn(g, size, grey);
   } else {
@@ -309,4 +311,41 @@ export function drawSpeakerHorn(g: Phaser.GameObjects.Graphics, size: number, gr
   g.fillStyle(inside, 1).fillEllipse((79 - 50) * u, 0, 10 * u, 66 * u);
   g.fillStyle(body, 1).fillCircle((81 - 50) * u, 0, 4.5 * u);
   g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle((81 - 50) * u, 0, 4.5 * u);
+}
+
+/**
+ * SCREAM-317: the Calculator. The PO's reference was a photo of a dark desk calculator with a
+ * solar strip and two red keys. An original drawing in the gas can's style: a dark body, a pale
+ * display, a strip above it, a grid of keys with the top-left two red and the right column
+ * lighter. No brand, no writing.
+ */
+export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0x8a8a8a : 0x3f4247;
+  const lcd = grey ? 0xdadada : 0xcfe3cf;
+  const solar = grey ? 0xb0b0b0 : 0xe3c08a;
+  const key = grey ? 0xa8a8a8 : 0x5c6066;
+  const red = grey ? 0xbdbdbd : 0xd8332a;
+  const side = grey ? 0xc4c4c4 : 0x8d949b;
+  const line = Math.max(2, 5 * u);
+  const X = (x: number) => (x - 50) * u;
+  g.fillStyle(body, 1).fillRoundedRect(X(18), X(4), 64 * u, 92 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(18), X(4), 64 * u, 92 * u, 8 * u);
+  g.fillStyle(0xffffff, grey ? 0.15 : 0.18).fillRect(X(23), X(10), 3 * u, 80 * u);
+  // The solar strip and the display.
+  g.fillStyle(solar, 1).fillRect(X(52), X(11), 22 * u, 7 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(52), X(11), 22 * u, 7 * u);
+  g.fillStyle(lcd, 1).fillRect(X(27), X(22), 46 * u, 18 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(27), X(22), 46 * u, 18 * u);
+  // Four rows of four keys.
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const colour = row === 0 && col < 2 ? red : col === 3 ? side : key;
+      const kx = X(27 + col * 12);
+      const ky = X(47 + row * 11.5);
+      g.fillStyle(colour, 1).fillRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
+      g.lineStyle(Math.max(1, 2 * u), ink, 1).strokeRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
+    }
+  }
 }

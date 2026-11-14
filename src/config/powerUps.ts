@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -45,6 +45,9 @@ export const TROT_ID = 'trot';
 
 /** SCREAM-81: the Upgrade Speaker note (the music reaches 10% further). */
 export const SPEAKER_ID = 'upgrade-speaker';
+
+/** SCREAM-317: the Calculator note (+ − × ÷ = on the window's price pad). */
+export const CALCULATOR_ID = 'calculator';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -197,8 +200,18 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Increase the reach of the speaker by 10%.',
         logo: 'speaker',
       },
-      { id: 'customer-3', col: 2, row: 1, from: [SMILE_ID], priceCents: 1000 },
-      { id: 'customer-4', col: 1, row: 2, from: [SPEAKER_ID, 'customer-3'], priceCents: 1500 },
+      // SCREAM-317 (PO, November 14): the right note under Service With A Smile.
+      {
+        id: CALCULATOR_ID,
+        col: 2,
+        row: 1,
+        from: [SMILE_ID],
+        priceCents: CALCULATOR_PRICE_CENTS,
+        name: 'CALCULATOR',
+        description: 'Get a calculator to use at the sales window.',
+        logo: 'calculator',
+      },
+      { id: 'customer-4', col: 1, row: 2, from: [SPEAKER_ID, CALCULATOR_ID], priceCents: 1500 },
       { id: 'customer-5', col: 1, row: 3, from: ['customer-4'], priceCents: 2000 },
       { id: 'customer-6', col: 0, row: 4, from: ['customer-5'], priceCents: 2500 },
       { id: 'customer-7', col: 1, row: 4, from: ['customer-5'], priceCents: 2500 },

@@ -146,7 +146,7 @@ const { chromium } = require('playwright');
   check('SCREAM-303: the Customer tree\'s top note is Service With A Smile, $15', await big(), 'true | SERVICE WITH A SMILE | Tips start at 25%, not 20%, and you get 10 more seconds to earn one. | $15.00 | BUY | button=true');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_smile.png' });
-  check('...it is the Customer tree\'s only top note (PO), in the middle, and both notes under it hang from it', await pu("s.notes.filter(n => n.tree === 2 && n.from.length === 0).map(n => n.id).join() + ' ' + s.notes.filter(n => n.from.includes('service-with-a-smile')).map(n => n.id).join() + ' ' + (s.notes.find(n => n.id === 'service-with-a-smile').x === 790)"), 'service-with-a-smile upgrade-speaker,customer-3 true');
+  check('...it is the Customer tree\'s only top note (PO), in the middle, and both notes under it hang from it', await pu("s.notes.filter(n => n.tree === 2 && n.from.length === 0).map(n => n.id).join() + ' ' + s.notes.filter(n => n.from.includes('service-with-a-smile')).map(n => n.id).join() + ' ' + (s.notes.find(n => n.id === 'service-with-a-smile').x === 790)"), 'service-with-a-smile upgrade-speaker,calculator true');
   // SCREAM-81 (PO, November 14): the left note under it is Upgrade Speaker, $30.
   await press('b');
   ice = await noteAt('upgrade-speaker');
@@ -154,6 +154,13 @@ const { chromium } = require('playwright');
   check('SCREAM-81: Upgrade Speaker, $30, under Service With A Smile', await big(), 'true | UPGRADE SPEAKER | Increase the reach of the speaker by 10%. | $30.00 | SERVICE WITH A SMILE Required | button=false');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_speaker.png' });
+  // SCREAM-317 (PO, November 14): the right note under it is Calculator, $30.
+  await press('b');
+  ice = await noteAt('calculator');
+  await page.mouse.click(ice[0], ice[1]); await wait(150);
+  check('SCREAM-317: Calculator, $30, under Service With A Smile', await big(), 'true | CALCULATOR | Get a calculator to use at the sales window. | $30.00 | SERVICE WITH A SMILE Required | button=false');
+  await page.mouse.move(5, 300); await wait(100);
+  await page.screenshot({ path: outDir + '/hub_cork_note_calculator.png' });
   await press('b');
   let spot = await noteAt('customer-5');
   await page.mouse.move(spot[0], spot[1]); await wait(150);
@@ -272,7 +279,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-303: Service With A Smile: tips start at 25% and the countdown is 10 s longer ----
   check('SCREAM-303: without the power-up the tip steps are 20, 15, 10, 5', await ev('e.tipSteps.join()'), '20,15,10,5');
   await ev("(e.changeMoney(1500, 'Test', false), true)");
-  check('...the note is a top note of its tree: it can be bought with $15 and nothing else owned first', (await ev("e.powerUpStatus('service-with-a-smile')")) + ' ' + (await ev("e.powerUpStatus('customer-3')")), 'ok locked');
+  check('...the note is a top note of its tree: it can be bought with $15 and nothing else owned first', (await ev("e.powerUpStatus('service-with-a-smile')")) + ' ' + (await ev("e.powerUpStatus('calculator')")), 'ok locked');
   check('...bought at home: 25% first, five steps', (await ev("e.buyPowerUp('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
