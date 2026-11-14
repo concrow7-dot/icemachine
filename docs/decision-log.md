@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 101 — Story burns gas 5% faster (2026-11-13)
+
+**Decision (Jira SCREAM-298, under SCREAM-7, PO, November 13):** "increase the rate that gas burns by 5%".
+
+**Options considered:** the burn rate times 1.05 (chosen: engineering's reading of "by 5%"); 5 points more of the tank per evening.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask: why 5%, and what he saw in play.)*
+
+**Engineering's calls (proposals):**
+
+- Story's truck already burned gas 1.3 times as fast as Quick play's (074); it is now 1.3 x 1.05 = 1.365 times. A full tank goes about 23,500 px in Story (it was about 24,700).
+- Story only (076), the uncle's evening included, since it uses Story's truck. Quick play is unchanged.
+- The Temporary Gas Can (099) still pours in a fifth of a tank, which now goes 5% less far too.
+
 ## 100 — Story starts with $25, not $50 (2026-11-13)
 
 **Decision (Jira SCREAM-294, under SCREAM-78, PO, November 12):** Story's starting money (the uncle's $50, decision 046) becomes $25. The $600 bike stays as it is. Story only (076); Quick play keeps its $50.

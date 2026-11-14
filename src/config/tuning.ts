@@ -407,8 +407,11 @@ export const STORY_COOLER_HALF_COVERED = true;
  */
 export const STORY_COOLER_COLUMNS = 2;
 export const STORY_COOLER_ROWS = 3;
-/** Story burns gas this many times as fast. */
-export const STORY_FUEL_BURN_FACTOR = 1.3;
+/**
+ * Story burns gas this many times as fast.
+ * SCREAM-298 (PO, November 13): "increase the rate that gas burns by 5%": 1.3 becomes 1.3 x 1.05.
+ */
+export const STORY_FUEL_BURN_FACTOR = 1.3 * 1.05;
 /**
  * PO, November 12: "when player runs out, then should start with 1/3 tank now": after an evening
  * that ended out of gas, the next Story day starts with this much (it was the 1/6 above).
