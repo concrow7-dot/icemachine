@@ -133,7 +133,7 @@ const { chromium } = require('playwright');
   check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'icecream-explorer / LIL EXPLORER POP');
   let ice = await noteAt('icecream-eclair');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('SCREAM-271: the Chocolate Eclair is yours from the start, with its price note and no $0.00', await big(), "true | CHOCOLATE ECLAIR | Owned from the start. The average person won't pay more than $2.50 for one. | Owned | button=false");
+  check('SCREAM-271: the Chocolate Eclair is yours from the start, with its price note and no $0.00', await big(), "true | CHOCOLATE ECLAIR | Owned from the start. If you have these stocked in your cooler, every customer will buy an extra ice cream. The average person won't pay more than $2.50 for one. | Owned | button=false");
   await press('b');
   ice = await noteAt('icecream-spongepop');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
