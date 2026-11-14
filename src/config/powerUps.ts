@@ -81,6 +81,7 @@ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 /** SCREAM-135: what an ice cream does besides selling, told on its note (Story only). */
 const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
   spongepop: 'Kids who order one tip 10% more.', // SCREAM-313; engineering's wording
+  explorer: 'The further from home, the bigger the tip.', // SCREAM-312; the PO's words (November 14)
 };
 
 function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {

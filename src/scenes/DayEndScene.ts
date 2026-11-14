@@ -70,7 +70,9 @@ export class DayEndScene extends Phaser.Scene {
     ];
     // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
     if (b.powerUpsCents > 0) rows.push(['Power-ups', -b.powerUpsCents, '#ff9c9c']);
-    // SCREAM-313 (PO, November 14): what SpongePops earned gets its own row, under Tips, only when there was any.
+    // SCREAM-313 and SCREAM-312 (PO, November 14): what SpongePops earned and exploration tips each get
+    // their own row, under Tips, only when there was any.
+    if (b.explorationCents > 0) rows.splice(2, 0, ['Exploration tips', b.explorationCents, '#c8f7c5']);
     if (b.spongePopCents > 0) rows.splice(2, 0, ['SpongePop tips', b.spongePopCents, '#c8f7c5']);
     const rowGap = rows.length > 5 ? 23 : ROW_GAP;
     // Each row past six pushes the line and everything under it down by a row.

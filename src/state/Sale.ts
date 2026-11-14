@@ -375,6 +375,8 @@ export class Sale {
 
   /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
   tipFactor = 1;
+  /** SCREAM-312: the exploration tip paid with this sale, in cents (Lil Explorer Pops, Story only). */
+  explorationTipCents = 0;
   /** SCREAM-313: the extra tip points a SpongePop brings to this sale (10 for a kid who ordered one). */
   spongePopPoints = 0;
   /** SCREAM-313: the part of the tip the SpongePop earned, in cents (set when paid). */

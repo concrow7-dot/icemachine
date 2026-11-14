@@ -354,7 +354,7 @@ export class SalesScene extends Phaser.Scene {
     this.typed = '';
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
-    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0);
+    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0, this.evening.sale?.explorationTipCents ?? 0);
   }
 
   /**
@@ -363,12 +363,14 @@ export class SalesScene extends Phaser.Scene {
    * take turns under the price: each appears, then scrolls up behind the price to make room for
    * the next ("the tips should scroll behind the overall price after they have appeared").
    */
-  private celebrate(priceCents: number, tipCents: number, spongePopCents = 0): void {
+  private celebrate(priceCents: number, tipCents: number, spongePopCents = 0, explorationCents = 0): void {
     const plainTip = tipCents - spongePopCents;
     const lines: { text: string; colour: string; size: number }[] = [
       { text: plainTip > 0 ? `+${formatMoney(plainTip)} TIP` : 'No tip', colour: plainTip > 0 ? '#1d5c8c' : '#8a6a4a', size: 44 },
     ];
     if (spongePopCents > 0) lines.push({ text: `+${formatMoney(spongePopCents)} SPONGEPOP TIP`, colour: '#c2185b', size: 30 });
+    // SCREAM-312 (PO, November 14): the exploration tip is its own line, after the tip.
+    if (explorationCents > 0) lines.push({ text: `+${formatMoney(explorationCents)} EXPLORATION TIP`, colour: '#6a3d9a', size: 30 });
     this.flashLines(priceCents, lines);
   }
 
