@@ -30,7 +30,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 - The list is built from the scenes' key handlers and kept in one file, `src/config/keyBindings.ts`; the page and the "How To Drive" pop-up (SCREAM-207) both read it. Twelve groups: driving, in the truck, the cooler, the sales window, filling an order, the gas pump, the cork board, the end of the day, the title screen, the uncle, the pause menu, the high scores. Debug keys (Shift + a number) are left out, as the ticket says.
 - The groups are packed onto pages of at most 17 lines (6 pages today), turned with the arrow keys, W A S D, the mouse wheel or the Previous and Next buttons. Esc, B, Backspace or the Back button returns to the pause menu. Nothing scrolls, so no screen is cut off.
-- "Key Bindings" is the last item on the menu, so Resume, End Evening, Restart Evening and Quit To Title keep their places. It is on every pause menu (the uncle's evening and the high score screen too).
+- "Key Bindings" is the last item on the menu, so Resume, End Evening, Restart Evening and Quit To Title keep their places. It is on the pause menu of every evening (the uncle's too), but not on the one the high score screen opens while it asks for initials: the evening is over there, and the warning line sits where a third option would go.
 - Text follows doc 15's style (Title Case, "Or" between two keys).
 
 ## 103 — Starting Story: pictures are loaded ahead and screens fade, so the loading screen no longer flashes (2026-11-13)

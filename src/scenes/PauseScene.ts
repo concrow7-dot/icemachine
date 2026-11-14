@@ -26,7 +26,8 @@ const CHOICES: { id: Choice; label: string }[] = [
  * SCREAM-181 (PO, November 6): Esc on the high score screen (while it asks for initials) opens
  * this menu too, with a warning. The evening is over there, so there is nothing to restart.
  */
-const RESULTS_CHOICES = CHOICES.filter((c) => c.id !== 'restart' && c.id !== 'end');
+// SCREAM-206: no Key Bindings here either (the evening is over, and the warning sits where a third option would).
+const RESULTS_CHOICES = CHOICES.filter((c) => c.id !== 'restart' && c.id !== 'end' && c.id !== 'keys');
 /** SCREAM-290: not while the uncle is running his evening (skipping him first gives it back). */
 const UNCLE_CHOICES = CHOICES.filter((c) => c.id !== 'end');
 export const HIGH_SCORE_WARNING = "Quitting won't save your high score.";
