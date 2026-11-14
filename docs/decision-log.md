@@ -20,6 +20,7 @@ The PO's answers (November 13): Story only; its own tree; "Prices will be differ
 - An unlock lasts for the Story run, like the other power-ups, and is bought at home before setting off.
 - Customers only ever order what is in the cooler, so set orders (042) use what is unlocked without a new rule.
 - A saved run that already has other ice creams in its cooler keeps them and can sell them; it can't restock them until they are bought.
+- The eclair's opened note shows no price (the PO, testing, November 14: "Lets remove the $0.00. It makes it seem like you paid for it already, or that the ice cream should cost that much money."); it says only "Yours".
 - The two "?" notes are dummies at $15 that do nothing, like the other dummy notes.
 - The sandwich keeps its name in the game (Cookie Ice Cream Sandwich; the sketch says "Choc. Chip Sandwich").
 - The effects in the PO's reason (new customers, better tips, better price acceptance) are not built here: SCREAM-272 and SCREAM-135.

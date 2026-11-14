@@ -299,6 +299,12 @@ export class PowerUpsScene extends Phaser.Scene {
       .setOrigin(0.5);
     big.add([name, description, price]);
     this.bigTexts = [note.name, note.description, formatMoney(note.priceCents)];
+    // SCREAM-271 (PO, November 14): a note that was never for sale (the Chocolate Eclair) shows no
+    // price: "$0.00" "makes it seem like you paid for it already, or that the ice cream should cost that much".
+    if (note.priceCents === 0) {
+      price.setVisible(false);
+      this.bigTexts = [note.name, note.description];
+    }
 
     this.buyButton = null;
     const buttonY = top + 320;
