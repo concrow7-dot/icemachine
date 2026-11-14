@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 107 — The rotary hint comes from the third regular served twice (2026-11-13)
+
+**Decision (Jira SCREAM-299, under SCREAM-11, PO, November 13):** the hint about the roundabout (050) is given later. The PO: "When the player successfully completes an order with a regular it should count as the first interaction with a regular. The player should then successfully complete 2 transactions with 3 regulars." So: a paid sale to a regular counts as one; once three different regulars have each been served twice in the Story run, the third of them tells the trick. Before, the second regular served twice told it.
+
+**Options considered:** the third regular served twice (chosen); the second (050, as it was).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- It replaces the old trigger (the PO said "build" on that reading). Story only, as the hint always was; still once per run, still not counting the uncle's guided sale.
+- The count is over the whole run, read from the saved visits, so a regular served once on Monday and once on Tuesday counts. (Before, the "second regular" was counted within one evening only: a small bug, fixed here.)
+- A saved run where two regulars have already been served twice, and the hint already given, keeps it.
+- The number is one setting, `ROTARY_HINT_REGULARS`.
+
 ## 106 — Creeping past a parked car, the truck is no longer shoved sideways (2026-11-13)
 
 **Decision (Jira SCREAM-194, under SCREAM-7; from playtest round 2, Andrew P, doc 19; PO, November 13: "go ahead"):** at a creep, a parked car no longer pushes the truck sideways. The truck slips round the car's corner no faster sideways than it is moving, or stops against the car if it is too far in.

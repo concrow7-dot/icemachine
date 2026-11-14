@@ -179,18 +179,20 @@ const { chromium } = require('playwright');
     e.saleNow = null; e.servingNow = null;
     return (s.toldAboutRotary ? 'told' : 'quiet') + '|' + s.line;
   }, [id, tip]);
-  const regulars = await ev("e.residents.all.filter(p => p.resident.likelihood >= 0.5).map(p => p.resident.id).slice(0, 3).join(',')");
-  const [r1, r2, r3] = regulars.split(',');
+  const regulars = await ev("e.residents.all.filter(p => p.resident.likelihood >= 0.5).map(p => p.resident.id).slice(0, 4).join(',')");
+  const [r1, r2, r3, r4] = regulars.split(',');
   const sometimes = await ev("e.residents.all.find(p => p.resident.likelihood > 0 && p.resident.likelihood < 0.5).resident.id");
   check('Rotary hint: first visits say nothing', (await serve(r1)).split('|')[0] + ' ' + (await serve(r2)).split('|')[0] + ' ' + (await serve(sometimes)).split('|')[0], 'quiet quiet quiet');
   check('...visits are counted per person', await ev(`e.visits['${r1}'] + ' ' + e.visits['${sometimes}']`), '1 1');
   check('...the first regular served twice says nothing', (await serve(r1)).split('|')[0], 'quiet');
   check('...a sometimes buyer served twice says nothing (not a regular)', (await serve(sometimes)).split('|')[0], 'quiet');
-  const told = await serve(r2);
-  check('...the second regular served twice tells the trick, after the thanks', /^told\|Thanks! Psst, .*Highland Street three times/.test(told), true);
-  check('...once per run: a third regular served twice says nothing', (await serve(r3)) && (await serve(r3)).split('|')[0], 'quiet');
+  check('SCREAM-299: the second regular served twice says nothing now', (await serve(r2)).split('|')[0], 'quiet');
+  check('...a regular served a third time does not count twice', (await serve(r1)).split('|')[0], 'quiet');
+  const told = (await serve(r3)) && (await serve(r3));
+  check('SCREAM-299: the third regular served twice tells the trick, after the thanks', /^told\|Thanks! Psst, .*Highland Street three times/.test(told), true);
+  check('...once per run: a fourth regular served twice says nothing', (await serve(r4)) && (await serve(r4)).split('|')[0], 'quiet');
   check('...and no big-regular hint on top of it in the same breath', /Here's a hint/.test(told), false);
-  check('...marked as given', (await ev('e.rotaryHintGiven')) + ' ' + (await ev('e.secondVisits.join(",")')), 'true ' + r1 + ',' + r2 + ',' + r3);
+  check('...marked as given', (await ev('e.rotaryHintGiven')) + ' ' + (await ev('e.secondVisits.join(",")')), 'true ' + r1 + ',' + r2 + ',' + r3 + ',' + r4);
 
   // ---- SCREAM-247: customers mention their own schedule after a paid sale (stand-in sales; Story's Day 1 is a Monday) ----
   const sched = (id, chance = 1, opts = {}) => page.evaluate(async ([id, chance, opts]) => {
@@ -292,7 +294,7 @@ const { chromium } = require('playwright');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
   check('HUD says Tuesday', /Tuesday/.test(await hudClock()), true);
   check('Day 2 (Tuesday): people ticked for Tuesday are the likelier ones', await ev(`(() => { const R = e.residents.constructor; return e.residents.all.every(p => (R.scheduleFactor(p.resident, { day: 2, seed: 1 }) > 1) === p.resident.days.includes(1)); })()`), true);
-  check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '2 true true 4');
+  check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '3 true true 5');
   check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
   check('Schedule lines (063): everyone keeps the same lines on day 2 as on day 1', await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Sched);
   check('Neighbour lines: the street says the same about everyone on day 2 as on day 1', await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Neighbours);

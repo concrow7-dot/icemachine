@@ -551,6 +551,8 @@ export const PORTAL_VOLUME = 0.1;
  * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
  * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
  */
+/** SCREAM-299 (decision 107, PO, November 13): the rotary hint comes when this many regulars have each been served twice in the Story run. */
+export const ROTARY_HINT_REGULARS = 3;
 export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
 
 // ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
