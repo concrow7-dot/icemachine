@@ -453,8 +453,8 @@ const { chromium } = require('playwright');
 
   // ---- Quitting a Story run from the pause menu ----
   await press('Enter'); await wait(300); await press('Enter'); await wait(300);
-  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150);
-  check('Quit prompt says Continue picks up at the start of this evening', /Continue picks up at\s+the start of this evening/.test(await texts('Pause')), true);
+  await press('Escape'); await wait(200); await press('ArrowUp'); await press('Enter'); await wait(150); // ↑ from Resume wraps to the last item
+  check('Story: the last item is Save And Quit, and it warns the game only saves at night', (await sc('Pause', "s.items[s.items.length - 1].text.replace(/[<>]/g, '').trim()")) + ' ' + /Save and quit\?\s+The game only saves at night\./.test(await texts('Pause')), 'Save And Quit true');
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
   await press('y'); await wait(300);
   check('Quit: title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
@@ -496,7 +496,7 @@ const { chromium } = require('playwright');
   await press('o'); await wait(300);
   await press('Enter'); await wait(300); // past the intro
   check('...O: a new run at day 1 with $25, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 2500 none');
-  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150); await press('y'); await wait(300);
+  await press('Escape'); await wait(200); await press('ArrowUp'); await press('Enter'); await wait(150); await press('y'); await wait(300);
 
   // ---- SCREAM-94: reaching the bike's price gets a victory lap ----
   await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300);
