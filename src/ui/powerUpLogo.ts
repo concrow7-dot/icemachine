@@ -208,24 +208,33 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
   const coatFar = grey ? 0x9a9a9a : 0x8f5a2f;
   const hair = grey ? 0x7d7d7d : 0x4a2c17;
   const hoof = grey ? 0x6f6f6f : 0x2a2622;
-  // A leg: a thick outlined line through its joints, with a hoof at the end.
+  // A leg: an outlined line through its joints (hip or shoulder, knee or hock, fetlock, hoof),
+  // thick at the top and thin at the hoof. PO (03:05): the outline matches Gitty Up's truck.
+  // PO (03:08): "more motion", not "stiff and blocky": every leg bends at its joints and tapers.
   const leg = (colour: number, pts: [number, number][]) => {
     const v = pts.map(([x, y]) => P(x, y));
-    // PO (03:05): the lines should match Gitty Up's truck: the outline is half a line each side.
-    const w = 7 * u;
-    g.lineStyle(w + line, ink, 1).strokePoints(v, false, false);
-    for (const p of v) g.fillStyle(ink, 1).fillCircle(p.x, p.y, (w + line) / 2);
-    g.lineStyle(w, colour, 1).strokePoints(v, false, false);
-    for (const p of v) g.fillStyle(colour, 1).fillCircle(p.x, p.y, w / 2);
+    const widths = v.map((_, k) => (9 - (4.5 * k) / (v.length - 1)) * u);
+    for (const pass of [0, 1]) {
+      const extra = pass === 0 ? line : 0;
+      const c = pass === 0 ? ink : colour;
+      for (let k = 0; k < v.length - 1; k++) {
+        g.lineStyle(widths[k] + extra, c, 1).lineBetween(v[k].x, v[k].y, v[k + 1].x, v[k + 1].y);
+        g.fillStyle(c, 1).fillCircle(v[k].x, v[k].y, (widths[k] + extra) / 2);
+        g.fillStyle(c, 1).fillCircle(v[k + 1].x, v[k + 1].y, (widths[k] + extra) / 2);
+      }
+    }
+    // The hoof, pointing the way the last bone points.
     const end = v[v.length - 1];
-    g.fillStyle(hoof, 1).fillRect(end.x - 4.5 * u, end.y, 9 * u, 5 * u);
+    const before = v[v.length - 2];
+    const dir = new Phaser.Math.Vector2(end.x - before.x, end.y - before.y).normalize();
+    g.fillStyle(hoof, 1).fillCircle(end.x + dir.x * 2 * u, end.y + dir.y * 2 * u, 3.6 * u);
   };
   // PO's sketch (November 14, 03:03, "Trot horse 2" in Personal Notes): facing right, the head held
   // high on an upright neck, a long tail hanging down, one back leg stretched far behind, a front
   // leg reaching forward, and the other two tucked under.
   // The legs on the far side, darker, tucked under.
-  leg(coatFar, [[36, 58], [37, 72], [45, 84]]);
-  leg(coatFar, [[60, 60], [61, 72], [55, 84]]);
+  leg(coatFar, [[37, 57], [45, 66], [38, 75], [45, 83]]);
+  leg(coatFar, [[61, 58], [60, 70], [55, 78], [52, 87]]);
   // The long tail, hanging down from the rump.
   poly(hair, [[24, 40], [13, 47], [8, 64], [10, 80], [17, 76], [18, 60], [25, 50]]);
   // The body, the upright neck and the head (facing right).
@@ -240,6 +249,6 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
   g.fillStyle(ink, 1).fillCircle((80 - 50) * u, (16 - 50) * u, 2.6 * u);
   g.fillStyle(ink, 1).fillCircle((91 - 50) * u, (25 - 50) * u, 1.6 * u);
   // The legs on the near side: the back one stretched far behind, the front one reaching forward.
-  leg(coat, [[28, 56], [17, 72], [9, 87]]);
-  leg(coat, [[66, 58], [77, 70], [86, 84]]);
+  leg(coat, [[29, 55], [27, 66], [16, 73], [8, 85]]);
+  leg(coat, [[66, 57], [78, 61], [83, 72], [91, 76]]);
 }
