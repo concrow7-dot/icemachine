@@ -5,7 +5,7 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
@@ -93,9 +93,10 @@ function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
     col: 1,
     row,
     from: first || !before ? [] : [iceCreamNoteId(before.id)],
-    priceCents: first ? 0 : ICE_CREAM_UNLOCK_CENTS,
+    priceCents: first ? 0 : ICE_CREAM_UNLOCK_PRICES[flavour] ?? ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
-    description: [first ? 'Owned from the start.' : 'Stock it and customers order it.', ICE_CREAM_EFFECTS[flavour], limit].filter(Boolean).join(' '),
+    // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
+    description: [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour], limit].filter(Boolean).join(' '),
     logo: flavour,
     flavour,
     free: first,
