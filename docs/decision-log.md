@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 114 — The power-up card says "Owned" instead of "Yours" (2026-11-14)
+
+**Decision (Jira SCREAM-308, under SCREAM-78, PO, November 14):** on the power-up detail screen (a cork board note opened bigger), "change the word \"Yours\" to \"Owned\"", and "Yours" no longer appears anywhere on that screen.
+
+**Options considered:** "Owned" (chosen); keeping "Yours".
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Chocolate Eclair's description also said "Yours from the start."; since the ticket says no "Yours" on that screen, it now reads "Owned from the start." The PO can ask for other wording.
+- Story only (the screen only exists in Story).
+
 ## 113 — Trot: a power-up that makes the truck creep at 18 px/s instead of 12 with no key held (2026-11-14)
 
 **Decision (Jira SCREAM-310, under SCREAM-78, PO, November 14):** the second of the two Truck power-ups, on the right side: "called "Trot" "Increase the speed of the truck as it rolls without any gas pedal pushed."" "The roll should be the creep speed", "So when the player isn't hitting gas, the speed is slightly increase[d]". It replaces the dummy note under the Temporary Gas Can on the right (TRUCK 3), $20 ("Lets go with $20"). With it, Story's creep goes from 12 to 18 px/s (engineering suggested 18, Story's creep before the November 12 cut; he agreed). Its picture was first his sketch of someone leaning back in a lounge chair with their feet up ("Feet up for trot"; "Trot icon (notepad, November 14)" in Personal Notes); testing, he changed it: "For trot I want to change it to a more cartoonish version of" a trotting horse outline icon on Flaticon. So it is a cartoon horse at a trot, redrawn from his own sketches of one ("Here's a slight horse idea change", then "Here is the horse I'm looking for"; "Trot horse" and "Trot horse 2 (notepad, November 14)" in Personal Notes). After a few rounds on the horse alone (thinner lines to match Gitty Up's truck; legs with "more motion"), he changed the idea: "I want to change the idea to a horse drawn carriage", and "I dont like the horse so redo that". So the picture is a small red coach on a big and a small wheel, pulled to the right by a newly drawn horse (one smooth shape on four tapered legs).

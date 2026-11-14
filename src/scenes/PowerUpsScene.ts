@@ -253,7 +253,7 @@ export class PowerUpsScene extends Phaser.Scene {
 
   /** What the opened note says under its price when there is no button to press. */
   private reason(note: PlacedNote, status: BuyStatus): string {
-    if (status === 'owned') return 'Yours';
+    if (status === 'owned') return 'Owned';
     if (status === 'away') return 'Buy at home, before you set off';
     if (status === 'locked') {
       const names = note.from.map((id) => this.notes.find((n) => n.id === id)?.name ?? id);
@@ -357,7 +357,7 @@ export class PowerUpsScene extends Phaser.Scene {
     this.detailName.setText(note.name);
     // The card has one line: a long description is cut short there (the opened note has all of it).
     this.detailText.setText(note.description.length > 58 ? `${note.description.slice(0, 55).trimEnd()}...` : note.description);
-    this.detailStatus.setText(status === 'owned' ? 'Yours' : formatMoney(note.priceCents)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
+    this.detailStatus.setText(status === 'owned' ? 'Owned' : formatMoney(note.priceCents)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
     if (this.open) this.drawBig(note);
   }
 }
