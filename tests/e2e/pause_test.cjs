@@ -68,7 +68,24 @@ const { chromium } = require('playwright');
 
   // ---- Restart, with "Are you sure?" ----
   await press('Escape');
-  check('SCREAM-290: the menu reads Resume, End Evening, Restart Evening, Quit To Title', await sc('Pause', "s.items.map(t => t.text.replace(/[<>]/g, '').trim()).join(', ')"), 'Resume, End Evening, Restart Evening, Quit To Title');
+  check('SCREAM-206: the menu reads Resume, End Evening, Restart Evening, Quit To Title, Key Bindings', await sc('Pause', "s.items.map(t => t.text.replace(/[<>]/g, '').trim()).join(', ')"), 'Resume, End Evening, Restart Evening, Quit To Title, Key Bindings');
+  // SCREAM-206: the Key Bindings page (last in the menu, so the other options keep their places).
+  await press('ArrowDown', 4);
+  check('SCREAM-206: ↓ x4 highlights Key Bindings', await sc('Pause', 's.items[s.selected].text.replace(/[<>]/g, "").trim()'), 'Key Bindings');
+  await press('Enter');
+  check('SCREAM-206: Key Bindings opens over the menu, which waits', (await status('KeyBindings')) + ' ' + (await status('Pause')), 'running paused');
+  check('...the evening behind stays frozen', (await status('Sales')) + ' ' + (await status('Hud')), 'paused paused');
+  check('...page 1 lists the driving keys', await sc('KeyBindings', "s.lines.includes('Q: Park Brake (When Stopped)') && s.lines.includes('↑ Or W: Gas')"), true);
+  check('...there is more than one page', await sc('KeyBindings', 's.pages.length > 1'), true);
+  await page.screenshot({ path: outDir + '/key_bindings_1.png' });
+  await press('ArrowRight');
+  check('...→ turns to page 2, which has lines too', (await sc('KeyBindings', 's.page')) + ' ' + (await sc('KeyBindings', 's.lines.length > 3')), '1 true');
+  check('...every group of keys is on some page', await sc('KeyBindings', "s.pages.flat().length"), 12);
+  await press('ArrowLeft');
+  check('...← turns back to page 1', await sc('KeyBindings', 's.page'), 0);
+  await press('Escape');
+  check('SCREAM-206: Esc closes the page: the pause menu is back', (await status('KeyBindings')) + ' ' + (await status('Pause')) + ' ' + (await status('Sales')), 'off running paused');
+  await press('ArrowDown'); // from Key Bindings round to Resume
   await press('ArrowDown', 2);
   check('↓ ↓ highlights Restart evening', await sc('Pause', 's.selected'), 2);
   await press('Enter');

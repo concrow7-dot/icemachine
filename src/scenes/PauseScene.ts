@@ -10,7 +10,7 @@ import { showLoadingWhileLoading } from './LoadingScene';
 // reaches the results screen).
 // SCREAM-181: the high score screen opens it as well while it is asking for initials.
 
-type Choice = 'resume' | 'end' | 'restart' | 'quit';
+type Choice = 'resume' | 'end' | 'restart' | 'quit' | 'keys';
 
 const CHOICES: { id: Choice; label: string }[] = [
   { id: 'resume', label: 'Resume' },
@@ -18,6 +18,8 @@ const CHOICES: { id: Choice; label: string }[] = [
   { id: 'end', label: 'End Evening' },
   { id: 'restart', label: 'Restart Evening' },
   { id: 'quit', label: 'Quit To Title' },
+  // SCREAM-206 (decision 104): last, so the other options keep their places.
+  { id: 'keys', label: 'Key Bindings' },
 ];
 
 /**
@@ -85,7 +87,7 @@ export class PauseScene extends Phaser.Scene {
 
     this.items = this.choices.map((c, i) =>
       this.add
-        .text(width / 2, height / 2 - 40 + i * (this.choices.length > 3 ? 38 : 48), c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
+        .text(width / 2, height / 2 - 40 + i * (this.choices.length > 4 ? 34 : this.choices.length > 3 ? 38 : 48), c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -169,11 +171,19 @@ export class PauseScene extends Phaser.Scene {
   private choose(): void {
     const choice = this.choices[this.selected]?.id ?? 'resume';
     if (choice === 'resume') this.resume();
+    else if (choice === 'keys') this.showKeyBindings();
     else {
       this.confirming = choice;
       this.answer = 1;
       this.refresh();
     }
+  }
+
+  /** SCREAM-206: the Key Bindings page opens over the menu, which waits until it closes. */
+  private showKeyBindings(): void {
+    this.scene.pause();
+    this.scene.launch(SceneKeys.KeyBindings, { opener: SceneKeys.Pause });
+    this.scene.bringToTop(SceneKeys.KeyBindings);
   }
 
   /** Enter or a click on Yes / No. */
