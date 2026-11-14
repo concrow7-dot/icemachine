@@ -7,10 +7,12 @@
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
 import { ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS } from './tuning';
 
-export type PowerUpTreeId = 'truck' | 'icecream' | 'speaker' | 'sales';
+// SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
+// and customer"): Speaker is part of Truck now, and Sales became Customer.
+export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'gas-can' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -127,35 +129,20 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     ],
   },
   {
-    id: 'speaker',
-    name: 'SPEAKER',
-    string: 0x2f9e44,
-    paper: 0xc9efc0,
-    notes: [
-      { id: 'speaker-1', col: 1, row: 0, from: [], priceCents: 500 },
-      { id: 'speaker-2', col: 1, row: 1, from: ['speaker-1'], priceCents: 1000 },
-      { id: 'speaker-3', col: 0, row: 2, from: ['speaker-2'], priceCents: 1500 },
-      { id: 'speaker-4', col: 2, row: 2, from: ['speaker-2'], priceCents: 1500 },
-      { id: 'speaker-5', col: 0, row: 3, from: ['speaker-3'], priceCents: 2000 },
-      { id: 'speaker-6', col: 2, row: 3, from: ['speaker-4'], priceCents: 2000 },
-      { id: 'speaker-7', col: 1, row: 4, from: ['speaker-5', 'speaker-6'], priceCents: 2500 },
-    ],
-  },
-  {
-    id: 'sales',
-    name: 'SALES',
+    id: 'customer',
+    name: 'CUSTOMER',
     string: 0xb23aa8,
     paper: 0xf6cdea,
     notes: [
-      { id: 'sales-1', col: 0, row: 0, from: [], priceCents: 500 },
-      { id: 'sales-2', col: 2, row: 0, from: [], priceCents: 500 },
-      { id: 'sales-3', col: 0, row: 1, from: ['sales-1'], priceCents: 1000 },
-      { id: 'sales-4', col: 2, row: 1, from: ['sales-2'], priceCents: 1000 },
-      { id: 'sales-5', col: 1, row: 2, from: ['sales-3', 'sales-4'], priceCents: 1500 },
-      { id: 'sales-6', col: 1, row: 3, from: ['sales-5'], priceCents: 2000 },
-      { id: 'sales-7', col: 0, row: 4, from: ['sales-6'], priceCents: 2500 },
-      { id: 'sales-8', col: 1, row: 4, from: ['sales-6'], priceCents: 2500 },
-      { id: 'sales-9', col: 2, row: 4, from: ['sales-6'], priceCents: 2500 },
+      { id: 'customer-1', col: 0, row: 0, from: [], priceCents: 500 },
+      { id: 'customer-2', col: 2, row: 0, from: [], priceCents: 500 },
+      { id: 'customer-3', col: 0, row: 1, from: ['customer-1'], priceCents: 1000 },
+      { id: 'customer-4', col: 2, row: 1, from: ['customer-2'], priceCents: 1000 },
+      { id: 'customer-5', col: 1, row: 2, from: ['customer-3', 'customer-4'], priceCents: 1500 },
+      { id: 'customer-6', col: 1, row: 3, from: ['customer-5'], priceCents: 2000 },
+      { id: 'customer-7', col: 0, row: 4, from: ['customer-6'], priceCents: 2500 },
+      { id: 'customer-8', col: 1, row: 4, from: ['customer-6'], priceCents: 2500 },
+      { id: 'customer-9', col: 2, row: 4, from: ['customer-6'], priceCents: 2500 },
     ],
   },
 ];

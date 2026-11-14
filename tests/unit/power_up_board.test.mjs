@@ -7,10 +7,10 @@ const { POWER_UP_TREES, FREE_NOTE_IDS, storyRefuseAboveCents } = await game('con
 
 const notes = placeNotes(POWER_UP_TREES);
 
-test('SCREAM-267, SCREAM-271: four trees, Truck, Ice Cream, Speaker and Sales, left to right', () => {
-  assert.deepEqual(POWER_UP_TREES.map((t) => t.name), ['TRUCK', 'ICE CREAM', 'SPEAKER', 'SALES']);
-  const middles = [0, 1, 2, 3].map((t) => notes.filter((n) => n.tree === t).reduce((s, n) => s + n.x, 0));
-  assert.ok(middles[0] < middles[1] && middles[1] < middles[2] && middles[2] < middles[3]);
+test('SCREAM-267, SCREAM-271: three trees, Truck, Ice Cream and Customer, left to right', () => {
+  assert.deepEqual(POWER_UP_TREES.map((t) => t.name), ['TRUCK', 'ICE CREAM', 'CUSTOMER']);
+  const middles = [0, 1, 2].map((t) => notes.filter((n) => n.tree === t).reduce((s, n) => s + n.x, 0));
+  assert.ok(middles[0] < middles[1] && middles[1] < middles[2]);
 });
 
 test('every note has its own place, and hangs only from notes above it in its own tree', () => {
@@ -36,13 +36,13 @@ test('the arrow keys move to the nearest note that way', () => {
 test('...and cross from one tree to the next', () => {
   assert.equal(nextNote(notes, 'truck-6', 'right'), 'icecream-explorer');
   assert.equal(nextNote(notes, 'icecream-explorer', 'left'), 'truck-6');
-  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'speaker-3');
+  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'customer-5');
 });
 
 test('...and stay put at the edge of the board', () => {
   assert.equal(nextNote(notes, 'truck-4', 'left'), 'truck-4');
   assert.equal(nextNote(notes, 'temp-gas-can', 'up'), 'temp-gas-can');
-  assert.equal(nextNote(notes, 'sales-9', 'down'), 'sales-9');
+  assert.equal(nextNote(notes, 'customer-9', 'down'), 'customer-9');
 });
 
 test('every note can be reached with the arrow keys from the first one', () => {
@@ -59,7 +59,7 @@ test('every note can be reached with the arrow keys from the first one', () => {
 });
 
 test('SCREAM-296: every note has a name and a price', () => {
-  assert.equal(notes.find((n) => n.id === 'speaker-3').name, 'SPEAKER 3');
+  assert.equal(notes.find((n) => n.id === 'customer-3').name, 'CUSTOMER 3');
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && (n.priceCents > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 

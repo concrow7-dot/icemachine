@@ -14,7 +14,7 @@ The PO's answers (November 13): Story only; its own tree; "Prices will be differ
 
 **Engineering's calls (proposals):**
 
-- The board gains a fourth tree (TRUCK, ICE CREAM, SPEAKER, SALES). The sketch's own three names (Truck, Ice Cream, Customer) wait for the PO to say the rename is decided.
+- The board's trees are now TRUCK, ICE CREAM and CUSTOMER (the PO, after seeing the first build: "I reworked the skill map so its only the three, truck, ice cream and customer"). The Speaker tree's dummy notes are removed (Speaker is a line in his Truck column) and the Sales tree's dummies are renamed Customer; the notes in Truck and Customer are still dummies, not yet the lists on his sketch. A saved run that bought a Speaker or Sales dummy loses nothing that did anything.
 - The sketch's last two shapes (a circle, then a box, under the two "?" notes) are left off: the board has room for 5 rows. They come back when the board is laid out again or the ice creams are named.
 - The $2.50 limit is the Chocolate Eclair's, for every customer ("average person": nobody pays more yet). The other three keep the old $4.00 limit until SCREAM-272 sets theirs; each note states its ice cream's limit. Quick play keeps $4.00 for all four.
 - An unlock lasts for the Story run, like the other power-ups, and is bought at home before setting off.
