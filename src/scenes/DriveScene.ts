@@ -30,8 +30,9 @@ import {
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
   RING_LAPS,
+  HOW_TO_DRIVE_DELAY_MS,
 } from '../config/tuning';
-import { getEvening, SceneKeys, showGasCan } from '../flow';
+import { getEvening, getStory, SceneKeys, showGasCan, showHowToDrive } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
 import { UNCLE_URL } from '../ui/smoothPixels';
@@ -41,7 +42,7 @@ import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { gasStations } from '../config/gasStation';
 import type { AutoRoute } from '../state/AutoRoute';
-import type { UncleLeg } from '../state/Tutorial';
+import { TutorialEvents, type UncleLeg } from '../state/Tutorial';
 import { UncleDrive, UNCLE_WALKER_KEY } from './uncleDrive';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
@@ -463,6 +464,34 @@ export class DriveScene extends Phaser.Scene {
       this.portal?.close();
     }
 
+    // SCREAM-207: the player's first time at the wheel gets the "How To Drive" pop-up. Skipping the
+    // uncle while he drives hands over the wheel in this very scene, so that is watched for too.
+    this.showHowToDriveWhenTheirs();
+    const uncle = this.evening.tutorial;
+    if (uncle && !uncle.skipped) {
+      const onChanged = () => {
+        if (uncle.skipped) this.showHowToDriveWhenTheirs();
+      };
+      uncle.on(TutorialEvents.Changed, onChanged);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => uncle.off(TutorialEvents.Changed, onChanged));
+    }
+  }
+
+  /**
+   * SCREAM-207 (decision 105): Story's Day 1, once, when the player (not the uncle) has the wheel:
+   * a short pop-up with the keys. It stops the game until it is closed, and starts the player's driving.
+   */
+  private showHowToDriveWhenTheirs(): void {
+    const evening = this.evening;
+    const story = getStory(this);
+    if (!story || story.day !== 1 || evening.howToDriveShown) return;
+    const uncle = evening.tutorial;
+    if (uncle && !uncle.skipped && uncle.step !== 'done') return; // he still has the wheel (or his evening isn't over)
+    evening.howToDriveShown = true;
+    this.time.delayedCall(HOW_TO_DRIVE_DELAY_MS, () => {
+      if (this.leaving || !this.scene.isActive()) return;
+      showHowToDrive(this);
+    });
   }
 
   /** SCREAM-208: out of gas: the truck stops where it is while the HUD says it needed a tow. */

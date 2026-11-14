@@ -635,6 +635,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private gasCanReady = false;
   private gasCansPoured = 0;
 
+  /** SCREAM-207: the "How To Drive" pop-up has been shown this evening (it shows once, on Day 1's first drive). */
+  howToDriveShown = false;
+
   /** True while tonight's can is still full. */
   get gasCanFull(): boolean {
     return this.gasCanReady;
