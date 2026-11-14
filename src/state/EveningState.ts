@@ -233,8 +233,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * step with the stock counts (`coolerSlots`) by syncCells().
    */
   private readonly coolerCells: (FlavourId | null)[] = [];
-  /** SCREAM-204: what tonight's truck can do (Story's is weaker than Quick play's). */
-  readonly spec: TruckSpec;
+  /** SCREAM-204: what tonight's truck can do (Story's is weaker than Quick play's). SCREAM-309: and the power-ups that change it. */
+  private truckNow!: TruckSpec;
+  get spec(): TruckSpec {
+    return this.truckNow;
+  }
   /** During a sale: each ice cream in the bag and the square it came from, so it can go back there. */
   private bagCells: { cell: number; slot: number }[] = [];
 
@@ -283,12 +286,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.homeMapId = mapId;
     this.story = carry?.story;
     this.opensAtHub = !!carry?.story && carry.story.day >= 2 && !this.tutorial; // SCREAM-307
-    this.spec = truckSpec(!!carry?.story);
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
+    this.truckNow = truckSpec(!!carry?.story, this.powerUpsOwned);
     this.gasCanReady = this.powerUpsOwned.includes(GAS_CAN_ID); // SCREAM-122: full again every day
     this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
@@ -635,6 +638,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!note || this.powerUpStatus(id) !== 'ok') return false;
     this.powerUpsOwned.push(id);
     if (id === GAS_CAN_ID) this.gasCanReady = true; // it comes full
+    this.truckNow = truckSpec(!!this.story, this.powerUpsOwned); // SCREAM-309: a power-up may change the truck
     this.powerUpsSpentCents += note.priceCents;
     this.changeMoney(-note.priceCents, 'Power-up');
     return true;

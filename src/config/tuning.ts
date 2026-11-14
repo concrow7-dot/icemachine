@@ -429,6 +429,14 @@ export const STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR = 0.5;
  * TRUCK_COAST_KEEP, about 10 s).
  */
 export const STORY_TRUCK_ROLL_SECONDS = 4;
+/**
+ * SCREAM-309 (PO, November 14): the Gitty Up power-up: "Increase acceleration by 10%. The truck still
+ * is heavy, so don't expect much." The truck speeds up this many times as fast (accelerationSeconds
+ * divided by it: Story's 10 s from a stop to top speed becomes about 9.1 s).
+ */
+export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
+/** SCREAM-309 (PO: "Lets go with $20"). */
+export const GITTY_UP_PRICE_CENTS = 2000;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**

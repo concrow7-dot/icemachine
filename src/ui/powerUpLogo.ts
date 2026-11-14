@@ -65,6 +65,8 @@ export function addPowerUpLogo(
     g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
   } else if (tree === 'gas-can') {
     drawGasCan(g, size, grey);
+  } else if (tree === 'gitty-up') {
+    drawGittyUp(g, size, grey);
   } else if (tree === 'truck') {
     // A wheel: tyre, hubcap and five spokes.
     g.fillStyle(colour(0x33302c), 1).fillCircle(0, 0, r);
@@ -131,4 +133,44 @@ export function drawGasCan(g: Phaser.GameObjects.Graphics, size: number, grey: b
   poly(yellow, [[34, 54], [66, 54], [66, 88], [34, 88]]);
   g.fillStyle(ink, 1).fillCircle(0, (76 - 50) * u, 6 * u);
   g.fillTriangle((44 - 50) * u, (74 - 50) * u, (56 - 50) * u, (74 - 50) * u, 0, (60 - 50) * u);
+}
+
+/**
+ * SCREAM-309: Gitty Up, from the PO's sketch (Personal Notes, November 14): a box truck pulling
+ * away to the left, with a puff of exhaust behind it. Drawn like the gas can, on a 100 x 100 grid.
+ */
+export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const circle = (colour: number, x: number, y: number, r: number) => {
+    g.fillStyle(colour, 1).fillCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(line, ink, 1).strokeCircle((x - 50) * u, (y - 50) * u, r * u);
+  };
+  // The puff of exhaust behind the truck.
+  const puff = grey ? 0xd6d6d6 : 0xe6e2da;
+  circle(puff, 86, 68, 8);
+  circle(puff, 92, 56, 7);
+  circle(puff, 82, 54, 7);
+  g.lineStyle(line, ink, 1).lineBetween((70 - 50) * u, (70 - 50) * u, (78 - 50) * u, (66 - 50) * u);
+  // The ground.
+  g.lineStyle(line, ink, 1).lineBetween((2 - 50) * u, (88 - 50) * u, (74 - 50) * u, (88 - 50) * u);
+  // The truck: a low cab at the front (left) with a sloping windscreen, then the box.
+  poly(grey ? 0xeeeeee : 0xfff8ec, [[4, 76], [4, 56], [16, 52], [24, 32], [72, 28], [72, 76]]);
+  g.fillStyle(grey ? 0xc4c4c4 : 0xf29bbd, 1).fillRect((30 - 50) * u, (56 - 50) * u, 42 * u, 7 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween((30 - 50) * u, (32 - 50) * u, (30 - 50) * u, (76 - 50) * u);
+  poly(grey ? 0xcfcfcf : 0x9fd8f2, [[17, 50], [25, 36], [30, 36], [30, 50]]);
+  // The wheels.
+  const tyre = grey ? 0x7d7d7d : 0x2a2622;
+  const hub = grey ? 0xd0d0d0 : 0xcfd6dc;
+  for (const x of [20, 58]) {
+    circle(tyre, x, 78, 10);
+    g.fillStyle(hub, 1).fillCircle((x - 50) * u, (78 - 50) * u, 4 * u);
+  }
 }
