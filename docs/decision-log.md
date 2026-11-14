@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 106 — Creeping past a parked car, the truck is no longer shoved sideways (2026-11-13)
+
+**Decision (Jira SCREAM-194, under SCREAM-7; from playtest round 2, Andrew P, doc 19; PO, November 13: "go ahead"):** at a creep, a parked car no longer pushes the truck sideways. The truck slips round the car's corner no faster sideways than it is moving, or stops against the car if it is too far in.
+
+**Options considered:** limit the sideways ease to how far the truck moved that frame (chosen); stop dead on any touch at a creep (the truck would stick on every corner); leave it.
+
+**Why (product owner's rationale):** not given beyond approving the ticket from the playtest. *(Placeholder: engineering will ask.)*
+
+**What was wrong (engineering):** when the truck touches something, the game lets it ease up to 3 px sideways in one frame to get by (made for the curb's 2 px steps, and for passing a car at speed, SCREAM-115). At speed the truck moves 5 px or more a frame, so 3 px sideways is a glance. At a creep it moves a fraction of a pixel a frame (Story's roll is 12 px a second, a fifth of a pixel), so the same 3 px was a jump 15 times faster than the truck was going. Reproduced on the test track with two cars 50 px apart.
+
+**Engineering's calls (proposals):**
+
+- Only parked cars change. The curb keeps its 3 px ease, so the truck doesn't stick on the curb's steps at low speed.
+- At 3 px a frame or more (180 px a second, about a third of top speed) nothing changes.
+- Both maps and both modes: it is a driving bug, not a feature (076's "Story only" is for new features).
+
 ## 105 — "How To Drive" is a pop-up the first time the player has the wheel (2026-11-13)
 
 **Decision (Jira SCREAM-207, under SCREAM-5, PO, November 13: "go ahead"):** when the uncle finishes driving and hands over the wheel, a "How To Drive" pop-up shows the driving keys; the player closes it to start driving. The title screen's HOW TO DRIVE box was already removed (087), and the full list of keys is the pause menu's Key Bindings page (104).

@@ -99,6 +99,36 @@ const { TRACK } = require('./track.cjs');
   await place(700, 220, 'right', 547); await hold('ArrowUp', 1200);
   check('Damage can take cash below zero', await cash(), -900);
 
+  // ---- SCREAM-194: creeping past a parked car, the truck is not shoved sideways ----
+  // Two cars with a 50 px gap on the y = 180 road; the truck (42 wide) creeps in 2 px too high, so its
+  // corner meets the upper car. It may ease round the corner, but no faster sideways than it is going forward.
+  {
+    await drive(`(${TRACK}, s.cars = [{ x: 870, y: 140, angle: 0, halfLength: 27, halfWidth: 16 }, { x: 870, y: 222, angle: 0, halfLength: 27, halfWidth: 16 }], true)`);
+    // Story's creep (12 px/s, a fifth of a pixel a frame), where the old 2 px ease was ten times the truck's speed.
+    const realCreep = await ev('e.spec.creepSpeed');
+    const creep = 12;
+    await ev('(e.spec.creepSpeed = 12, true)');
+    const c194 = await cash();
+    await place(770, 175, 'right', creep);
+    const run = await page.evaluate(() => new Promise((done) => {
+      const s = window.__game.scene.getScene('Drive');
+      const t0 = performance.now(); let last = { x: s.truck.x, y: s.truck.y }; let maxSide = 0;
+      const tick = () => {
+        const dx = Math.abs(s.truck.x - last.x), dy = Math.abs(s.truck.y - last.y);
+        if (dy > maxSide) maxSide = dy;
+        last = { x: s.truck.x, y: s.truck.y };
+        if (performance.now() - t0 < 5000) requestAnimationFrame(tick);
+        else done({ maxSide: Math.round(maxSide * 100) / 100, y: Math.round(s.truck.y * 10) / 10, x: Math.round(s.truck.x) });
+      };
+      requestAnimationFrame(tick);
+    }));
+    near('SCREAM-194: creeping into a parked car\'s corner: never shoved sideways (px in one frame)', run.maxSide, 0.05, 0.9);
+    near('...it eases clear of the car and carries on past it', run.x, 795, 2000);
+    near('...into the gap (2 px down, no more than 3)', run.y, 176.5, 178.2);
+    check('...and a creep costs nothing', c194 - (await cash()), 0);
+    await ev(`(e.spec.creepSpeed = ${realCreep}, true)`);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();
