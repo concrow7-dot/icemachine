@@ -85,3 +85,15 @@ test('SCREAM-309: Gitty Up makes the truck speed up 10% faster, and changes noth
   for (const k of Object.keys(weak)) if (k !== 'accelerationSeconds') assert.equal(gitty[k], weak[k], k);
   assert.deepEqual(truckSpec(true, ['temp-gas-can']), weak, 'other power-ups leave the truck alone');
 });
+
+test('SCREAM-310: Trot raises Story\'s creep from 12 to 18 px/s; the roll from top speed still takes 4 s', () => {
+  const weak = truckSpec(true);
+  const trot = truckSpec(true, ['temp-gas-can', 'trot']);
+  assert.ok(Math.abs(weak.creepSpeed - 12) < 1e-9);
+  assert.ok(Math.abs(trot.creepSpeed - 18) < 1e-9);
+  const rollSeconds = (sp) => (Math.log(sp.creepSpeed / sp.topSpeed) / Math.log(sp.coastKeep)) * t.TRUCK_COAST_KEEP_SECONDS;
+  assert.ok(Math.abs(rollSeconds(trot) - 4) < 1e-6);
+  for (const k of Object.keys(weak)) if (!['creepSpeed', 'coastKeep'].includes(k)) assert.equal(trot[k], weak[k], k);
+  const both = truckSpec(true, ['temp-gas-can', 'gitty-up', 'trot']);
+  assert.deepEqual([both.creepSpeed, both.accelerationSeconds], [trot.creepSpeed, truckSpec(true, ['gitty-up']).accelerationSeconds], 'the two add up');
+});

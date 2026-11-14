@@ -65,13 +65,13 @@ test('SCREAM-296: every note has a name and a price', () => {
 
 test('SCREAM-296: when a note can be bought', () => {
   const top = notes.find((n) => n.id === 'temp-gas-can');
-  const below = notes.find((n) => n.id === 'truck-5'); // hangs from truck-2 and truck-3
+  const below = notes.find((n) => n.id === 'truck-5'); // hangs from Gitty Up and Trot
   assert.equal(buyStatus(top, [], top.priceCents, true), 'ok');
   assert.equal(buyStatus(top, [], top.priceCents - 1, true), 'poor', 'a cent short');
   assert.equal(buyStatus(top, [], 99999, false), 'away', 'not at home');
   assert.equal(buyStatus(top, ['temp-gas-can'], 0, false), 'owned', 'owned wins over everything');
   assert.equal(buyStatus(below, ['temp-gas-can'], 99999, true), 'locked', 'neither note above is owned');
-  assert.equal(buyStatus(below, ['temp-gas-can', 'truck-3'], 99999, true), 'ok', 'one of the notes above is enough');
+  assert.equal(buyStatus(below, ['temp-gas-can', 'trot'], 99999, true), 'ok', 'one of the notes above is enough');
   assert.equal(buyStatus(below, [], 0, false), 'locked', 'locked is said before away or poor');
 });
 
@@ -87,7 +87,14 @@ test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own
   const gitty = notes.find((n) => n.id === 'gitty-up');
   assert.deepEqual([gitty.tree, gitty.name, gitty.priceCents, gitty.logo, gitty.from], [0, 'GITTY UP', 2000, 'gitty-up', ['temp-gas-can']]);
   assert.match(gitty.description, /10%/);
-  assert.deepEqual(notes.find((n) => n.id === 'truck-5').from, ['gitty-up', 'truck-3']);
+  assert.deepEqual(notes.find((n) => n.id === 'truck-5').from, ['gitty-up', 'trot']);
+});
+
+test('SCREAM-310: Trot is the right note under the gas can, $20, with its own name and picture', () => {
+  const trot = notes.find((n) => n.id === 'trot');
+  assert.deepEqual([trot.tree, trot.name, trot.priceCents, trot.logo, trot.from], [0, 'TROT', 2000, 'trot', ['temp-gas-can']]);
+  assert.match(trot.description, /without any gas pedal/);
+  assert.deepEqual(notes.find((n) => n.id === 'truck-6').from, ['trot']);
 });
 
 test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair, $15 each', () => {

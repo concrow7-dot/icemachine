@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 113 — Trot: a power-up that makes the truck creep at 18 px/s instead of 12 with no key held (2026-11-14)
+
+**Decision (Jira SCREAM-310, under SCREAM-78, PO, November 14):** the second of the two Truck power-ups, on the right side: "called "Trot" "Increase the speed of the truck as it rolls without any gas pedal pushed."" "The roll should be the creep speed", "So when the player isn't hitting gas, the speed is slightly increase[d]". It replaces the dummy note under the Temporary Gas Can on the right (TRUCK 3), $20 ("Lets go with $20"). With it, Story's creep goes from 12 to 18 px/s (engineering suggested 18, Story's creep before the November 12 cut; he agreed). Its picture was first his sketch of someone leaning back in a lounge chair with their feet up ("Feet up for trot"; "Trot icon (notepad, November 14)" in Personal Notes); testing, he changed it: "For trot I want to change it to a more cartoonish version of" a trotting horse outline icon on Flaticon. So it is a cartoon horse at a trot, redrawn from his own sketches of one ("Here's a slight horse idea change", then "Here is the horse I'm looking for"; "Trot horse" and "Trot horse 2 (notepad, November 14)" in Personal Notes). After a few rounds on the horse alone (thinner lines to match Gitty Up's truck; legs with "more motion"), he changed the idea: "I want to change the idea to a horse drawn carriage", and "I dont like the horse so redo that". So the picture is a small red coach on a big and a small wheel, pulled to the right by a newly drawn horse (one smooth shape on four tapered legs).
+
+**Options considered:** 18 px/s, 50% faster (chosen); 15 px/s (25%); about 13 px/s (10%, like Gitty Up).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- What is measured from the creep follows the new one: the park brake (Q) still works at a creep; turns get twice as wide only above the new creep (SCREAM-280); the roll down from top speed still takes about 4 seconds, ending at 18.
+- Reverse is unchanged. Gitty Up and Trot together each do their own part.
+- Kept for the Story run, like the other power-ups. Story only. A save that bought the old TRUCK 3 dummy gets nothing.
+- The note's text is his description as written. The carriage and horse are engineering's own drawing in the gas can's style, not a copy of the Flaticon icon, which would need a credit to its author. The coach's colours (red body, dark red roof, cream wheels) are engineering's.
+
 ## 112 — Gitty Up: a power-up that makes the truck speed up 10% faster (2026-11-14)
 
 **Decision (Jira SCREAM-309, under SCREAM-78, PO, November 14):** the next power-ups are in the Truck tree; on the left side, "called "Gitty Up" "Increase acceleration by 10%. The truck still is heavy, so don't expect much."" It replaces the dummy note under the Temporary Gas Can on the left (TRUCK 2), $20 ("Lets go with $20"). Its picture is his sketch: a box truck pulling away with a puff of exhaust ("Truck for acceleration"; "Gitty Up icon (notepad, November 14)" in Personal Notes). With it, Story's truck takes about 9.1 seconds from a stop to top speed instead of 10.

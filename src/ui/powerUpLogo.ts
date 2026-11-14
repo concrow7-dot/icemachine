@@ -67,6 +67,8 @@ export function addPowerUpLogo(
     drawGasCan(g, size, grey);
   } else if (tree === 'gitty-up') {
     drawGittyUp(g, size, grey);
+  } else if (tree === 'trot') {
+    drawTrot(g, size, grey);
   } else if (tree === 'truck') {
     // A wheel: tyre, hubcap and five spokes.
     g.fillStyle(colour(0x33302c), 1).fillCircle(0, 0, r);
@@ -184,4 +186,97 @@ export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: 
     circle(tyre, x, 78, 10);
     g.fillStyle(hub, 1).fillCircle((x - 50) * u, (78 - 50) * u, 4 * u);
   }
+}
+
+/**
+ * SCREAM-310: Trot. The PO (November 14, 03:13): "I want to change the idea to a horse drawn
+ * carriage." A small carriage (a coach body on a big and a small wheel) pulled to the right by the
+ * horse from his sketches ("Trot horse 2" in Personal Notes). Engineering's own drawing, in the gas
+ * can's style, on a 100 x 100 grid. (Before: someone with their feet up, then a horse alone.)
+ */
+export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const wheel = (x: number, y: number, r: number) => {
+    g.fillStyle(grey ? 0xe2e2e2 : 0xf3e2b8, 1).fillCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(line, ink, 1).strokeCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(Math.max(1, 2 * u), ink, 1);
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI + 0.4;
+      g.lineBetween((x - 50 - Math.cos(a) * r) * u, (y - 50 - Math.sin(a) * r) * u, (x - 50 + Math.cos(a) * r) * u, (y - 50 + Math.sin(a) * r) * u);
+    }
+    g.fillStyle(ink, 1).fillCircle((x - 50) * u, (y - 50) * u, 2.5 * u);
+  };
+  // The shaft from the carriage to the horse, and the reins from the driver's seat.
+  g.lineStyle(line, ink, 1).lineBetween((36 - 50) * u, (68 - 50) * u, (68 - 50) * u, (66 - 50) * u);
+  g.lineStyle(Math.max(1, 2 * u), ink, 1).lineBetween((40 - 50) * u, (44 - 50) * u, (90 - 50) * u, (52 - 50) * u);
+  // The carriage: a coach body with a roof and a window, the driver's seat in front.
+  poly(grey ? 0xb5b5b5 : 0xc23b2e, [[4, 44], [34, 44], [34, 60], [30, 68], [8, 68], [4, 60]]);
+  poly(grey ? 0x8f8f8f : 0x7d2219, [[2, 38], [36, 38], [34, 44], [4, 44]]);
+  poly(grey ? 0xdcdcdc : 0xd8f1ff, [[10, 48], [22, 48], [22, 58], [10, 58]]);
+  poly(grey ? 0x8f8f8f : 0x7d2219, [[34, 50], [42, 50], [42, 56], [34, 56]]);
+  wheel(13, 76, 13);
+  wheel(34, 80, 9);
+  // The horse, smaller, in front.
+  drawHorse(g, size * 0.58, grey, 22 * u, 16 * u, line * 0.75);
+  g.y -= 13 * u; // the picture sits low on its grid: centre it on the note
+}
+
+/**
+ * SCREAM-310: the carriage's horse, centred on (ox, oy), outlined `line` thick. The PO (03:13):
+ * "I dont like the horse so redo that": one smooth shape (body, neck and head together) on four
+ * tapered legs at a trot, facing right, not the jointed horse from before.
+ */
+function drawHorse(g: Phaser.GameObjects.Graphics, size: number, grey: boolean, ox: number, oy: number, line: number): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const P = (x: number, y: number) => new Phaser.Math.Vector2(ox + (x - 50) * u, oy + (y - 50) * u);
+  const shape = (colour: number, v: Phaser.Math.Vector2[]) => {
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const poly = (colour: number, pts: [number, number][]) => shape(colour, pts.map(([x, y]) => P(x, y)));
+  const coat = grey ? 0xb5b5b5 : 0xb7743f;
+  const coatFar = grey ? 0x9a9a9a : 0x8f5a2f;
+  const hair = grey ? 0x7d7d7d : 0x4a2c17;
+  const hoof = grey ? 0x6f6f6f : 0x2a2622;
+  // A leg: a tapered shape along its joints, 13 wide at the top and 8 at the hoof.
+  const leg = (colour: number, pts: [number, number][]) => {
+    const c = pts.map(([x, y]) => P(x, y));
+    const left: Phaser.Math.Vector2[] = [];
+    const right: Phaser.Math.Vector2[] = [];
+    c.forEach((p, k) => {
+      const a = c[Math.max(0, k - 1)];
+      const b = c[Math.min(c.length - 1, k + 1)];
+      const n = new Phaser.Math.Vector2(-(b.y - a.y), b.x - a.x).normalize();
+      const w = ((13 - (5 * k) / (c.length - 1)) * u) / 2;
+      left.push(new Phaser.Math.Vector2(p.x + n.x * w, p.y + n.y * w));
+      right.push(new Phaser.Math.Vector2(p.x - n.x * w, p.y - n.y * w));
+    });
+    shape(colour, [...left, ...right.reverse()]);
+    const end = c[c.length - 1];
+    g.fillStyle(hoof, 1).fillCircle(end.x, end.y, 3.6 * u);
+  };
+  // The far legs (darker), then the near ones; the body covers their tops.
+  leg(coatFar, [[64, 56], [61, 72], [56, 87]]);
+  leg(coatFar, [[34, 54], [43, 70], [40, 87]]);
+  leg(coat, [[28, 52], [21, 68], [11, 82]]);
+  leg(coat, [[68, 54], [81, 61], [83, 75]]);
+  // The tail, flowing back.
+  poly(hair, [[23, 41], [9, 43], [2, 56], [9, 59], [15, 50], [25, 50]]);
+  // The body, neck and head in one shape.
+  poly(coat, [
+    [70, 12], [72, 4], [77, 11], [88, 20], [94, 28], [90, 34], [80, 29], [76, 31], [75, 44], [75, 55],
+    [64, 62], [40, 61], [25, 58], [20, 48], [24, 40], [40, 37], [56, 38], [63, 26],
+  ]);
+  // The mane and the eye.
+  poly(hair, [[59, 30], [68, 12], [73, 12], [66, 31]]);
+  g.fillStyle(ink, 1).fillCircle(ox + (82 - 50) * u, oy + (19 - 50) * u, 3 * u);
 }
