@@ -453,8 +453,8 @@ const { chromium } = require('playwright');
 
   // ---- Quitting a Story run from the pause menu ----
   await press('Enter'); await wait(300); await press('Enter'); await wait(300);
-  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150);
-  check('Quit prompt says Continue picks up at the start of this evening', /Continue picks up at\s+the start of this evening/.test(await texts('Pause')), true);
+  await press('Escape'); await wait(200); await press('ArrowUp'); await press('Enter'); await wait(150); // ↑ from Resume wraps to the last item
+  check('Story: the last item is Save And Quit, and it warns the game only saves at night', (await sc('Pause', "s.items[s.items.length - 1].text.replace(/[<>]/g, '').trim()")) + ' ' + /Save and quit\?\s+The game only saves at night\./.test(await texts('Pause')), 'Save And Quit true');
   check('...and fits inside the pause box', await sc('Pause', 's.prompt.width <= 410'), true);
   await press('y'); await wait(300);
   check('Quit: title, Story run cleared', (await scenes()) + ' ' + (await story('r')), 'Title null');
@@ -496,7 +496,7 @@ const { chromium } = require('playwright');
   await press('o'); await wait(300);
   await press('Enter'); await wait(300); // past the intro
   check('...O: a new run at day 1 with $25, old save gone', (await story('r.day')) + ' ' + (await ev('e.moneyCents')) + ' ' + (await saved()), '1 2500 none');
-  await press('Escape'); await wait(200); await press('ArrowDown', 3); await press('Enter'); await wait(150); await press('y'); await wait(300);
+  await press('Escape'); await wait(200); await press('ArrowUp'); await press('Enter'); await wait(150); await press('y'); await wait(300);
 
   // ---- SCREAM-94: reaching the bike's price gets a victory lap ----
   await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300);
@@ -598,7 +598,7 @@ const { chromium } = require('playwright');
   {
     const flow = (call) => page.evaluate(`(async () => { const f = await import('/src/flow.js'); const s = window.__game.scene.getScenes(true)[0]; ${call}; return true; })()`);
     const running = (key) => page.evaluate((k) => window.__game.scene.isActive(k) && !window.__game.scene.isPaused(k), key);
-    await page.evaluate(() => localStorage.removeItem('icemachine.howtodrive.off.v1')); // the suites switch the pop-up off; this block wants it
+    await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // the suites switch the pop-up off; this block wants it, as a first-time player
     await flow('f.startStory(s, false)');
     await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
     await until(async () => (await scenes()).includes('Cooler')); await wait(1000);
@@ -618,6 +618,14 @@ const { chromium } = require('playwright');
     check('...it shows once an evening', await ev('e.howToDriveShown'), true);
     await page.evaluate(() => window.__game.scene.getScene('Drive').scene.start('Drive')); await wait(1800);
     check('...a second drive the same evening: no pop-up', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')), 'false true');
+    // PO, November 13: only the first time playing. A new Story in the same browser doesn't show it again.
+    check('...and the browser remembers it was shown', await page.evaluate(() => localStorage.getItem('icemachine.howtodrive.seen.v1')), '1');
+    await flow('f.startStory(s, false)');
+    await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
+    await until(async () => (await scenes()).includes('Cooler')); await wait(300);
+    await ev('(e.lockPrep(), true)');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Drive')); await wait(2000);
+    check('...a new Story later: Day 1\'s first drive has no pop-up', (await page.evaluate(() => window.__game.registry.get('story').day)) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')), '1 false true');
     await page.evaluate(() => localStorage.setItem('icemachine.howtodrive.off.v1', '1'));
   }
 

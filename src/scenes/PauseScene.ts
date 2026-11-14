@@ -17,10 +17,15 @@ const CHOICES: { id: Choice; label: string }[] = [
   // SCREAM-290 (PO, November 12): "If its 7:30 and I am out of stock. I may just want to end the evening."
   { id: 'end', label: 'End Evening' },
   { id: 'restart', label: 'Restart Evening' },
-  { id: 'quit', label: 'Quit To Title' },
-  // SCREAM-206 (decision 104): last, so the other options keep their places.
+  // SCREAM-206 (decision 104).
   { id: 'keys', label: 'Key Bindings' },
+  // PO, November 13 (testing PR #213): quitting is the last item. In Story it reads
+  // "Save And Quit" (SAVE_AND_QUIT); Quick play and the high score screen have nothing to save.
+  { id: 'quit', label: 'Quit To Title' },
 ];
+export const SAVE_AND_QUIT = 'Save And Quit';
+/** PO, November 13: the items sit in the middle of the space between PAUSED and the hint line. */
+const ITEMS_CENTRE_Y = 8;
 
 /**
  * SCREAM-181 (PO, November 6): Esc on the high score screen (while it asks for initials) opens
@@ -74,7 +79,10 @@ export class PauseScene extends Phaser.Scene {
         return false;
       }
     })();
-    this.choices = this.fromResults ? RESULTS_CHOICES : uncle ? UNCLE_CHOICES : CHOICES;
+    const base = this.fromResults ? RESULTS_CHOICES : uncle ? UNCLE_CHOICES : CHOICES;
+    // Story saves (at night), so its last item says so; not on the high score screen (that one warns the score is lost).
+    const story = !this.fromResults && !!getStory(this);
+    this.choices = base.map((c) => (c.id === 'quit' && story ? { ...c, label: SAVE_AND_QUIT } : c));
     this.warning = null;
     this.selected = 0;
     this.confirming = null;
@@ -86,9 +94,12 @@ export class PauseScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, 420, 300, 0x1f2a44).setStrokeStyle(3, 0x8a9bb3);
     this.add.text(width / 2, height / 2 - 110, 'PAUSED', { fontFamily: 'monospace', fontSize: '34px', color: '#ffe8a3' }).setOrigin(0.5);
 
+    const gap = this.choices.length > 4 ? 34 : this.choices.length > 3 ? 38 : 48;
+    // The high score screen's warning sits under its two items, so those stay a little higher.
+    const firstY = height / 2 + (this.fromResults ? -16 : ITEMS_CENTRE_Y) - ((this.choices.length - 1) * gap) / 2;
     this.items = this.choices.map((c, i) =>
       this.add
-        .text(width / 2, height / 2 - 40 + i * (this.choices.length > 4 ? 34 : this.choices.length > 3 ? 38 : 48), c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
+        .text(width / 2, firstY + i * gap, c.label, { fontFamily: 'monospace', fontSize: '24px', color: INK })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -225,7 +236,10 @@ export class PauseScene extends Phaser.Scene {
     if (this.confirming === 'quit' && this.fromResults) {
       this.prompt.setText("Quit to the title screen?\nYour high score won't be saved.");
     } else if (this.confirming === 'quit') {
-      this.prompt.setText(getStory(this) ? 'Quit to the title screen?\nContinue picks up at\nthe start of this evening.' : "Quit to the title screen?\nThis evening won't count.");
+      // PO, November 13: Save And Quit warns that the game only saves at night (when a day ends).
+      const run = getStory(this);
+      const lost = run && run.day === 1 ? "Nothing is saved yet:\ntonight will be lost." : 'Continue starts\nthis evening again.';
+      this.prompt.setText(run ? `Save and quit?\nThe game only saves at night.\n${lost}` : "Quit to the title screen?\nThis evening won't count.");
     }
     this.answers.forEach((t, i) => {
       const on = i === this.answer;

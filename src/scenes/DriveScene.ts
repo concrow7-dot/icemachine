@@ -478,8 +478,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   /**
-   * SCREAM-207 (decision 105): Story's Day 1, once, when the player (not the uncle) has the wheel:
-   * a short pop-up with the keys. It stops the game until it is closed, and starts the player's driving.
+   * SCREAM-207 (decision 105): Story's Day 1, when the player (not the uncle) has the wheel: a short
+   * pop-up with the keys. Only the first time playing (PO, November 13): showHowToDrive remembers it in the browser. It stops the game until it is closed, and starts the player's driving.
    */
   private showHowToDriveWhenTheirs(): void {
     const evening = this.evening;

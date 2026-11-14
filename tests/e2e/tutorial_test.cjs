@@ -148,7 +148,7 @@ const { chromium } = require('playwright');
   // ---- Restart keeps the map; Quit then Quick play goes back to Worcester ----
   await press('Escape'); await press('ArrowDown', 2); await press('Enter'); await press('y'); await wait(500);
   check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
-  await press('Escape'); await press('ArrowDown', 3); await press('Enter'); await press('y'); await wait(500);
+  await press('Escape'); await press('ArrowUp'); await press('Enter'); await press('y'); await wait(500); // ↑ from Resume wraps to the last item
   check('Quit: title screen', await scenes(), 'Title');
   await press('Enter'); await wait(400);
   check('Quick Play: back on Worcester with its 160 residents', (await ev('e.mapId')) + ' ' + (await ev('e.residents.all.length')), 'worcester 160');
@@ -353,7 +353,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_home.png' });
   await page.mouse.click(600, 300); await wait(300);
   check('Click: his last words', (await sc('UncleIntro', 's.shown')) + ' ' + (await scenes()), 'Good luck, kiddo. UncleIntro,Hud');
-  await page.evaluate(() => localStorage.removeItem('icemachine.howtodrive.off.v1')); // SCREAM-207: the suites switch the pop-up off; here it is wanted
+  await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // SCREAM-207: the suites switch the pop-up off; here it is wanted
   await page.mouse.click(600, 300);
   await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
   await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);

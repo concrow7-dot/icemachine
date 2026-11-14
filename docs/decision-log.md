@@ -34,6 +34,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - It lists the same seven driving keys as the Key Bindings page (one list, `DRIVING_KEYS`), and one line pointing to Pause > Key Bindings.
 - SCREAM-207 asked to ship in the same PR as SCREAM-206 so the controls never vanished from the title before the page existed. The title's box went on November 12 (087), so they are two PRs, stacked: merge 206 first.
 
+**The PO's change while testing PR #214 (November 13):** "Only show the driving instructions the first time playing." The pop-up now shows once per player: the game remembers in the browser that it has been shown, and a later New Story does not show it again. (Before, every new Story's Monday showed it.) His reason: not given yet. *(Placeholder: engineering will ask.)* Engineering's call: "the first time playing" is per browser, like the saved Story and the high scores; clearing the browser's data shows it once more. Someone who played before this change sees it once, on their next new Story's Monday.
+
 ## 104 — Pause menu: a Key Bindings page listing every key (2026-11-13)
 
 **Decision (Jira SCREAM-206, under SCREAM-5, PO, November 13: "go ahead"):** the pause menu gets a Key Bindings option. It opens a page that lists every key a player can press, grouped by screen. This is the one place a player can always look up the controls now that the title screen's HOW TO DRIVE box is gone (087).
@@ -46,7 +48,15 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 - The list is built from the scenes' key handlers and kept in one file, `src/config/keyBindings.ts`; the page and the "How To Drive" pop-up (SCREAM-207) both read it. Twelve groups: driving, in the truck, the cooler, the sales window, filling an order, the gas pump, the cork board, the end of the day, the title screen, the uncle, the pause menu, the high scores. Debug keys (Shift + a number) are left out, as the ticket says.
 - The groups are packed onto pages of at most 17 lines (6 pages today), turned with the arrow keys, W A S D, the mouse wheel or the Previous and Next buttons. Esc, B, Backspace or the Back button returns to the pause menu. Nothing scrolls, so no screen is cut off.
-- "Key Bindings" is the last item on the menu, so Resume, End Evening, Restart Evening and Quit To Title keep their places. It is on the pause menu of every evening (the uncle's too), but not on the one the high score screen opens while it asks for initials: the evening is over there, and the warning line sits where a third option would go.
+- "Key Bindings" is on the pause menu of every evening (the uncle's too), but not on the one the high score screen opens while it asks for initials: the evening is over there, and the warning line sits where a third option would go.
+
+**The PO's changes while testing PR #213 (November 13, with a screenshot of the menu):** "Vertically center the menu items. Quit to Title should be the last item. Change Quit to Title to Save and Quit. After save and Quit: Warning that it only saves at night." So the menu reads Resume, End Evening, Restart Evening, Key Bindings, Save And Quit, in the middle of the box between PAUSED and the hint line, and Save And Quit asks "Save and quit? The game only saves at night." before leaving. His reason: not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls on those changes (proposals):**
+
+- "Save And Quit" is Story's wording. Quick play and the high score screen keep "Quit To Title": nothing is saved there, and the high score screen's warning says the score is lost.
+- "At night" is read as: the game saves when a day ends. The question's last line says what that means now: "Continue starts this evening again.", or on Monday, before any save exists, "Nothing is saved yet: tonight will be lost."
+- The warning is the question asked after choosing Save And Quit (Yes / No), not a notice on the title screen afterwards.
 - Text follows doc 15's style (Title Case, "Or" between two keys).
 
 ## 103 — Starting Story: pictures are loaded ahead and screens fade, so the loading screen no longer flashes (2026-11-13)
