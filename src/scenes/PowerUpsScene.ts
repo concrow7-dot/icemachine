@@ -257,7 +257,8 @@ export class PowerUpsScene extends Phaser.Scene {
     if (status === 'away') return 'Buy at home, before you set off';
     if (status === 'locked') {
       const names = note.from.map((id) => this.notes.find((n) => n.id === id)?.name ?? id);
-      return `Buy ${names.join(' or ')} first`;
+      // PO, November 14 (testing SCREAM-310): "[POWER UP NAME] Required" instead of "Buy ... first".
+      return `${names.join(' or ')} Required`;
     }
     return '';
   }
