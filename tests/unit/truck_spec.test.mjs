@@ -76,3 +76,12 @@ test('SCREAM-269, SCREAM-291: with the halves covered, the left two columns of t
   assert.equal(coolerCellOpen(true, -1), false);
   assert.equal(coolerCellOpen(false, 48), false);
 });
+
+test('SCREAM-309: Gitty Up makes the truck speed up 10% faster, and changes nothing else', () => {
+  const weak = truckSpec(true);
+  const gitty = truckSpec(true, ['temp-gas-can', 'gitty-up']);
+  assert.ok(Math.abs(gitty.accelerationSeconds - weak.accelerationSeconds / 1.1) < 1e-9);
+  assert.ok(Math.abs(gitty.accelerationSeconds - 10 / 1.1) < 1e-9, "Story's 10 s becomes about 9.1 s");
+  for (const k of Object.keys(weak)) if (k !== 'accelerationSeconds') assert.equal(gitty[k], weak[k], k);
+  assert.deepEqual(truckSpec(true, ['temp-gas-can']), weak, 'other power-ups leave the truck alone');
+});

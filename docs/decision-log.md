@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 112 — Gitty Up: a power-up that makes the truck speed up 10% faster (2026-11-14)
+
+**Decision (Jira SCREAM-309, under SCREAM-78, PO, November 14):** the next power-ups are in the Truck tree; on the left side, "called "Gitty Up" "Increase acceleration by 10%. The truck still is heavy, so don't expect much."" It replaces the dummy note under the Temporary Gas Can on the left (TRUCK 2), $20 ("Lets go with $20"). Its picture is his sketch: a box truck pulling away with a puff of exhaust ("Truck for acceleration"; "Gitty Up icon (notepad, November 14)" in Personal Notes). With it, Story's truck takes about 9.1 seconds from a stop to top speed instead of 10.
+
+**Options considered:** acceleration times 1.1 (chosen: 10 s becomes 9.1 s); 10% fewer seconds to top speed (9.0 s).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "10% more acceleration" is read as speeding up 1.1 times as fast. Only the gas: reverse, braking and top speed are unchanged.
+- The first power-up that changes the truck: `evening.spec` is now built from the mode and the power-ups owned tonight, and rebuilt when one is bought, so it works the same evening it is bought (at home, before setting off) and every evening after.
+- Kept for the Story run, like the other power-ups. Story only (the board is Story's). A save that bought the old TRUCK 2 dummy gets nothing.
+- The note's text is his description as written. The picture is engineering's drawing of his sketch, in the gas can's style. Testing, he asked for the truck to lean back more, "like a big truck will do": its body tilts back 9 degrees on the rear wheel, both wheels on the ground.
+
 ## 111 — From the second night, a Story evening opens at the truck screen, not the cooler (2026-11-14)
 
 **Decision (Jira SCREAM-307, under SCREAM-78, PO, November 14):** "From now on, on the second night. The player should start not at the cooler, but at the truck screen. That way they can decide to go to the powerups or the cooler screen first." So from Day 2 on (Continue and Restart Evening included), a Story evening opens at the truck screen with the cooler highlighted. Day 1 (the uncle's evening, or On My Own) and Quick play still open at the cooler (#66).

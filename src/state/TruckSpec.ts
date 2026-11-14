@@ -1,5 +1,7 @@
+import { GITTY_UP_ID } from '../config/powerUps';
 import {
   COOLER_CAPACITY,
+  GITTY_UP_ACCELERATION_FACTOR,
   CRATE_SIDE,
   FUEL_TANK_PX,
   MUSIC_RING_RADIUS,
@@ -68,15 +70,21 @@ export interface TruckSpec {
   readonly fuelTankPx: number;
 }
 
-/** The truck for an evening: `weak` is Story's starting truck. */
-export function truckSpec(weak: boolean): TruckSpec {
+/**
+ * The truck for an evening: `weak` is Story's starting truck. `powerUps` are the cork board's notes
+ * owned tonight (SCREAM-309: the first power-ups that change the truck).
+ */
+export function truckSpec(weak: boolean, powerUps: readonly string[] = []): TruckSpec {
+  const has = (id: string) => powerUps.includes(id);
   const halfCovered = weak && STORY_COOLER_HALF_COVERED;
   const topSpeed = weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED;
   const creepSpeed = weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED;
   return {
     weak,
     topSpeed,
-    accelerationSeconds: weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS,
+    accelerationSeconds:
+      (weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS) /
+      (has(GITTY_UP_ID) ? GITTY_UP_ACCELERATION_FACTOR : 1),
     brakingSeconds: weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS,
     creepSpeed,
     // Story: from top speed down to the creep in STORY_TRUCK_ROLL_SECONDS.
