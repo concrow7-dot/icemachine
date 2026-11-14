@@ -190,6 +190,18 @@ export const SMILE_TIP_PERCENT_STEPS = [25, 20, 15, 10, 5];
  * tips this many percentage points more at every step ("10 points more": 30%, 25%, 20%, 15%).
  */
 export const SPONGEPOP_KID_TIP_POINTS = 10;
+
+/**
+ * SCREAM-312 (PO, November 14; decision 117): the Lil Explorer Pop's exploration tip, paid in
+ * cash for each Explorer Pop sold in Story, growing with the straight-line distance from home.
+ * On the home map (Elm Park): $0 at home up to $1.00 at the roundabout. On the other map (Foley
+ * Stadium): $1.50 at the roundabout you arrive at (Newton Square), up to $5.00 at the farthest
+ * customer, and on beyond that if there were anyone. In $0.10 steps.
+ */
+export const EXPLORATION_HOME_MAX_CENTS = 100;
+export const EXPLORATION_AWAY_START_CENTS = 150;
+export const EXPLORATION_AWAY_FARTHEST_CENTS = 500;
+export const EXPLORATION_STEP_CENTS = 10;
 /** SCREAM-303 (PO: "$15"). */
 export const SMILE_PRICE_CENTS = 1500;
 

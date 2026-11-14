@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale, type OrderLine } from './Sale';
+import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
@@ -154,6 +155,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private damageTotalCents = 0;
   private salesTotalCents = 0;
   private tipsTotalCents = 0;
+  /** SCREAM-312: exploration tips tonight (their own row on the end-of-day screen). */
+  private explorationTotalCents = 0;
   /** SCREAM-93: the most paid for one order tonight, price plus tip. */
   private largestSaleTotalCents = 0;
   private stockSpentCents = 0;
@@ -654,11 +657,28 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return true;
   }
 
+  /**
+   * SCREAM-312 (PO, November 14): in Story, each Lil Explorer Pop in a paid order earns an
+   * exploration tip that grows with the straight-line distance from home. Paid even when the
+   * customer leaves no normal tip. Measured at the customer's pickup square (where the truck is).
+   */
+  private payExplorationTip(sale: Sale): void {
+    const pops = sale.order.filter((line) => line.flavour === 'explorer').reduce((n, line) => n + line.count, 0);
+    const at = this.servingNow?.pickup;
+    if (!this.story || pops === 0 || !at) return;
+    const cents = pops * explorationTipCents(this.mapId, this.homeMapId, at[0], at[1]);
+    if (cents <= 0) return;
+    sale.explorationTipCents = cents;
+    this.explorationTotalCents += cents;
+    this.changeMoney(cents, 'Exploration tip');
+  }
+
   /** Tonight's breakdown for the results screen (#16). */
-  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
+  get breakdown(): { salesCents: number; tipsCents: number; explorationCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
     return {
       salesCents: this.salesTotalCents,
       tipsCents: this.tipsTotalCents,
+      explorationCents: this.explorationTotalCents, // SCREAM-312
       stockCents: this.stockSpentCents,
       gasCents: this.gasSpentCents,
       damageCents: this.damageTotalCents,
@@ -920,7 +940,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.salesTotalCents += sale.outcome.priceCents;
       if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
       this.tipsTotalCents += sale.outcome.tipCents;
-      this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
+      this.payExplorationTip(sale); // SCREAM-312
+      this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents + sale.explorationTipCents);
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145
       if (sale.outcome.tipCents > 0 && !sale.toldAboutRotary) this.maybeHint(sale);

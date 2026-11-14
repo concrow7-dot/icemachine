@@ -370,6 +370,8 @@ export class Sale {
 
   /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
   tipFactor = 1;
+  /** SCREAM-312: the exploration tip paid with this sale, in cents (Lil Explorer Pops, Story only). */
+  explorationTipCents = 0;
 
   /** SCREAM-248: the neighbour this customer told the player about (resident id), or null. */
   neighbourAbout: string | null = null;

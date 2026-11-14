@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 117 — The Lil Explorer Pop's exploration tip (2026-11-14)
+
+**Decision (Jira SCREAM-312, under SCREAM-78, PO, November 14):** "Explorer pop. when sold, gives you money for the distance from home you are. Almost like a tip. except the further away the more the \"tip\". Call it the exploration tip." His answers: measured in a **straight line**; in Elm Park from **$0 at home to $1.00 at the roundabout**, in **$0.10 steps**; in Foley Stadium from **$1.50 at Newton Square** up to **$5.00 at the farthest customer** ("I'd be willing to have the far corner ... be $5", then moved to the farthest customer so it can be earned), growing with no cap; **paid even with no normal tip**; **one per Explorer Pop** ("You get three of the tips"); **its own row** on the end-of-day screen ("I like having it be its own row").
+
+**Options considered:** straight line (chosen) or distance by road; tip percentage points, or cash up to $1 or $2 (he chose cash, his own amounts); in Foley Stadium growing (chosen), capped, or Elm Park only; $5 at the far corner or at the farthest customer (chosen); one per sale or one per Explorer Pop (chosen).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Measured at the customer's pickup square (where the truck stops). Rounded down to the $0.10 step, so the next 10 cents is earned by going a little further. Foley Stadium in $0.10 steps too.
+- Paid only on a paid sale (not after a refusal, a wrong order or an overcharge).
+- At the window it flashes after the tip: "+$1.60 EXPLORATION TIP" in purple, a little smaller.
+- The end-of-day and run-stats screens show "Exploration tips" under Tips, only when there were any; with seven rows the line and everything under it move down a row. It counts towards the night's largest sale.
+- The note says "Sell one far from home for an exploration tip: the further, the bigger." (engineering's wording).
+- Story only (decision 076). Old saves start the run's exploration total at $0.
+
 ## 116 — SpongePop: a kid whose order includes one tips 10 points more (2026-11-14)
 
 **Decision (Jira SCREAM-313, under SCREAM-78, PO, November 14):** "I want the spongepop to increase tips by children by 10%". Asked what that means, he chose **10 percentage points more** (not 1.1 times), and **only when the kid's order includes a SpongePop**. So a quick tip goes 30%, 25%, 20%, 15% instead of 20%, 15%, 10%, 5%. The first ice cream with an effect of its own (SCREAM-135).

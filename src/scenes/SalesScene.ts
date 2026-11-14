@@ -350,14 +350,14 @@ export class SalesScene extends Phaser.Scene {
     this.typed = '';
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
-    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents);
+    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.explorationTipCents ?? 0);
   }
 
   /** PO, doc 08 Q16: the payment flashes on screen, then the tip. */
-  private celebrate(priceCents: number, tipCents: number): void {
-    const flash = (text: string, y: number, colour: string, delay: number) => {
+  private celebrate(priceCents: number, tipCents: number, explorationCents = 0): void {
+    const flash = (text: string, y: number, colour: string, delay: number, size = 44) => {
       const t = this.add
-        .text(330, y, text, { fontFamily: 'monospace', fontSize: '44px', color: colour, fontStyle: 'bold' })
+        .text(330, y, text, { fontFamily: 'monospace', fontSize: `${size}px`, color: colour, fontStyle: 'bold' })
         .setOrigin(0.5)
         .setStroke('#ffffff', 6)
         .setAlpha(0)
@@ -376,6 +376,8 @@ export class SalesScene extends Phaser.Scene {
     };
     flash(`+${formatMoney(priceCents)}`, 300, '#2e7d32', 0);
     flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'No tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
+    // SCREAM-312 (PO, November 14): the exploration tip is its own line, after the tip.
+    if (explorationCents > 0) flash(`+${formatMoney(explorationCents)} EXPLORATION TIP`, 416, '#6a3d9a', TIP_FLASH_DELAY_MS * 2, 30);
   }
 
   private driveOff(): void {
