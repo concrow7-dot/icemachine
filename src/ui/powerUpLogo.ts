@@ -161,11 +161,22 @@ export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: 
   g.lineStyle(line, ink, 1).lineBetween((70 - 50) * u, (70 - 50) * u, (78 - 50) * u, (66 - 50) * u);
   // The ground.
   g.lineStyle(line, ink, 1).lineBetween((2 - 50) * u, (88 - 50) * u, (74 - 50) * u, (88 - 50) * u);
-  // The truck: a low cab at the front (left) with a sloping windscreen, then the box.
-  poly(grey ? 0xeeeeee : 0xfff8ec, [[4, 76], [4, 56], [16, 52], [24, 32], [72, 28], [72, 76]]);
-  g.fillStyle(grey ? 0xc4c4c4 : 0xf29bbd, 1).fillRect((30 - 50) * u, (56 - 50) * u, 42 * u, 7 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween((30 - 50) * u, (32 - 50) * u, (30 - 50) * u, (76 - 50) * u);
-  poly(grey ? 0xcfcfcf : 0x9fd8f2, [[17, 50], [25, 36], [30, 36], [30, 50]]);
+  // The truck: a low cab at the front (left) with a sloping windscreen, then the box. The PO
+  // (November 14, 02:36): leaning back more, "like a big truck will do": the body tilts back on
+  // its rear wheel as it pulls away; the wheels stay on the ground.
+  const tilt = (9 * Math.PI) / 180;
+  const [cx, cy] = [58, 78];
+  const T = (x: number, y: number): [number, number] => [
+    cx + (x - cx) * Math.cos(tilt) - (y - cy) * Math.sin(tilt),
+    cy + (x - cx) * Math.sin(tilt) + (y - cy) * Math.cos(tilt),
+  ];
+  const tilted = (colour: number, pts: [number, number][]) => poly(colour, pts.map(([x, y]) => T(x, y)));
+  tilted(grey ? 0xeeeeee : 0xfff8ec, [[4, 72], [4, 54], [16, 50], [24, 30], [72, 26], [72, 72]]);
+  const stripe = [T(30, 54), T(72, 54), T(72, 61), T(30, 61)].map(([x, y]) => P(x, y));
+  g.fillStyle(grey ? 0xc4c4c4 : 0xf29bbd, 1).fillPoints(stripe, true);
+  const [d0, d1] = [T(30, 30), T(30, 72)];
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween((d0[0] - 50) * u, (d0[1] - 50) * u, (d1[0] - 50) * u, (d1[1] - 50) * u);
+  tilted(grey ? 0xcfcfcf : 0x9fd8f2, [[17, 48], [25, 34], [30, 34], [30, 48]]);
   // The wheels.
   const tyre = grey ? 0x7d7d7d : 0x2a2622;
   const hub = grey ? 0xd0d0d0 : 0xcfd6dc;
