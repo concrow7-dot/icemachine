@@ -32,7 +32,7 @@ const { chromium } = require('playwright');
   check('Tutorial already played: Story asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
   check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
-  check('...Day 1 of 5, with $50', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/5 5000');
+  check('...Day 1 of 5, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/5 2500');
   check('...with its own 40 residents (sheet 23)', await ev('e.residents.all.length + " " + e.residents.all.every(p => p.resident.id.startsWith("T"))'), '40 true');
 
   // ---- On the road ----
@@ -234,7 +234,7 @@ const { chromium } = require('playwright');
   const giftBefore = await ev('e.moneyCents');
   check('With the uncle the cash starts empty (SCREAM-191)', giftBefore, 0);
   await page.mouse.click(600, 80); await wait(400);
-  check('Click: Buy Stock, outlined, and the $50 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started. | on 5000');
+  check('Click: Buy Stock, outlined, and the $25 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $25 on the truck for you to get started. | on 2500');
   await page.screenshot({ path: outDir + '/uncle_cooler_gift.png' });
   await page.screenshot({ path: outDir + '/uncle_buy.png' });
   await press('+', 4); await press('Enter'); await wait(700);
@@ -339,7 +339,7 @@ const { chromium } = require('playwright');
   check('...he pays: none of it on your gas bill, $20 of gas in', ((await ev('e.breakdown.gasCents')) === 0) + ' ' + (Math.abs((await ev('e.fuel')) - fuelBefore - 2 / 3) < 0.01), 'true true');
   // ---- SCREAM-185: the uncle drives home ----
   check('Gas bought: he drives home, saying to come home for stock', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')) + ' | ' + (await uncle()), "Drive,Hud home toHome | Return home to fill up on stock when you need.");
-  check('...no more cash from him (the $50 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);
+  check('...no more cash from him (the $25 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);
   check('...no steering, nobody else comes out', (await ev('e.tutorial.uncleDriving')) + ' ' + (await ev('e.residents.hearingOff')), 'true true');
   const homeAt = Date.now();
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro'), null, { timeout: 25000 });
@@ -401,7 +401,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game.scene.isActive('Cooler'), null, { timeout: 5000 }); await wait(500);
   check('X in the truck: straight to the cooler, his part over', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await ev('e.tutorial.skipped')), 'Cooler,Hud done true');
   check('...he says goodbye in the small box', await uncle(), "Alright, you've got this. Good luck, kiddo.");
-  check('...his $50 handed over anyway', await ev('e.moneyCents'), 5000);
+  check('...his $25 handed over anyway', await ev('e.moneyCents'), 2500);
   check('...and the tutorial counts as finished', await page.evaluate(() => localStorage.getItem('icemachine.tutorial.done.v1')), '1');
   check('...no outline left behind at the cooler', await sc('Cooler', '(g => !g || !g.visible)(s.children.getByName("uncle-pointer"))'), true);
   await page.screenshot({ path: outDir + '/uncle_skipped_cooler.png' });

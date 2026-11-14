@@ -14,8 +14,9 @@ export const STARTING_CASH_CENTS = 5000;
 /**
  * SCREAM-19 (PO, October 31): Story mode starts with set cash; cash and stock then carry over.
  * SCREAM-205 (PO, November 8): the uncle's $50 (was $100). With the uncle on Day 1 it arrives with his line at the cooler.
+ * SCREAM-294 (PO, November 12): $25. The $600 bike stays. Quick play keeps its $50 above.
  */
-export const STORY_START_CASH_CENTS = 5000;
+export const STORY_START_CASH_CENTS = 2500;
 
 /**
  * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run was 3 evenings.
@@ -303,8 +304,11 @@ export const FUEL_CENT_STEP = 50;
 /** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
 export const UNCLE_GAS_CENTS = 2000;
 
-/** SCREAM-185 (PO, November 6): "I left $50 on the truck for you." */
-export const UNCLE_LEFT_CENTS = 5000;
+/**
+ * SCREAM-185 (PO, November 6): "I left $50 on the truck for you."
+ * SCREAM-294: what he leaves is Story's starting money, so it is $25 now (his line says the same).
+ */
+export const UNCLE_LEFT_CENTS = STORY_START_CASH_CENTS;
 
 /**
  * How far a full tank goes, in px of driving. PO: a full evening of driving uses

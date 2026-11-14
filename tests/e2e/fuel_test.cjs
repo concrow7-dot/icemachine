@@ -226,7 +226,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   // SCREAM-205: a new Story asks about the uncle (O: on my own), then the intro.
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300); await press('Enter'); await wait(300);
-  check('Story day 1: $50 and a quarter tank (SCREAM-205)', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '5000 0.25');
+  check('Story day 1: $25 and a quarter tank (SCREAM-205)', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '2500 0.25');
   await press('+', 2); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');

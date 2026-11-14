@@ -132,6 +132,8 @@ const { chromium } = require('playwright');
   let spot = await noteAt('sales-6');
   await page.mouse.move(spot[0], spot[1]); await wait(150);
   check('...pointing at a note marks it', (await pu('s.detailName.text')) + ' ' + (await pu('s.open')), 'SALES 6 false');
+  // SCREAM-294: Story starts with $25 now, so the test adds $25 to afford the two notes it buys below.
+  await page.evaluate(() => window.__game.registry.get('evening').changeMoney(2500, 'Test', false)); await wait(100);
   const cash = await cashNow();
   await page.mouse.click(spot[0], spot[1]); await wait(150);
   check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first, with no button', await big(), 'true | SALES 6 | A dummy power-up. It does nothing yet. | $20.00 | Buy SALES 5 first | button=false');
