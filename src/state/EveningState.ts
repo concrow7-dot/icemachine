@@ -5,7 +5,7 @@ import { generateOrder, orderTotalCents, Sale } from './Sale';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE } from '../config/tuning';
+  GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -350,12 +350,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   readonly visits: Record<string, number>;
   rotaryHintGiven: boolean;
-  /** SCREAM-145: the regulars who have been served a second time, in order (the second one tells). */
+  /** SCREAM-145: the regulars served a second time this evening, in order (tests read it). */
   readonly secondVisits: string[] = [];
 
   /**
-   * SCREAM-145 (PO, November 9): counts a paid sale, and on a regular's second visit, if they're the
-   * second regular to get there this run, they pass on the way to the other neighbourhood.
+   * SCREAM-145 (PO, November 9): counts a paid sale, and on a regular's second visit they may pass
+   * on the way to the other neighbourhood. SCREAM-299 (PO, November 13): "The player should then
+   * successfully complete 2 transactions with 3 regulars": the third regular of the run to be
+   * served twice tells (it was the second). Counted over the whole run, from `visits`.
    */
   private countVisit(sale: Sale): void {
     const person = this.servingNow;
@@ -365,7 +367,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.visits[id] = (this.visits[id] ?? 0) + 1;
     if (this.visits[id] !== 2 || this.residents.kindOf(person.resident) !== 'regular') return;
     this.secondVisits.push(id);
-    if (this.rotaryHintGiven || this.secondVisits.length !== 2) return;
+    if (this.rotaryHintGiven) return;
+    const servedTwice = this.residents.all.filter((p) => (this.visits[p.resident.id] ?? 0) >= 2 && this.residents.kindOf(p.resident) === 'regular').length;
+    if (servedTwice < ROTARY_HINT_REGULARS) return;
     this.rotaryHintGiven = true;
     sale.addRotaryHint(ROTARY_HINT_LINE);
   }
