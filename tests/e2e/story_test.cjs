@@ -79,6 +79,8 @@ const { chromium } = require('playwright');
   check('...a right click does not begin', await scenes(), 'StoryIntro');
   await page.mouse.click(480, 270); await wait(300);
   check('...a left click: day 1 starts at the cooler', (await scenes()).startsWith('Cooler'), true);
+  check('SCREAM-243: title to New Bike screen to cooler without the loading screen', await page.evaluate(() => Number(window.__game.registry.get('loadingShown')) || 0), 0);
+  check('...and the cooler fades in', await sc('Cooler', 's.cameras.main.fadeEffect.isRunning || s.cameras.main.fadeEffect.isComplete'), true);
   check('SCREAM-297: the shut lids are drawn above the grey covered halves', await sc('Cooler', "(() => { const d = (n) => s.children.list.filter(o => o.name === n).map(o => o.depth); const lids = d('cooler-lid'), halves = d('covered-half'); return lids.length + ' ' + halves.length + ' ' + (Math.min(...lids) > Math.max(...halves)); })()"), '2 3 true');
   check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
   check('Story starts with $25', await ev('e.moneyCents'), 2500);
@@ -596,7 +598,9 @@ const { chromium } = require('playwright');
   await page.goto(`http://127.0.0.1:${port}/index.html?debug`);
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const [dx, dy] = await optionAt('Quick Play');
-  await page.mouse.click(dx, dy); await wait(400);
+  await page.mouse.click(dx, dy);
+  // SCREAM-243: right after the page opens, Quick play may wait a moment for pictures still loading.
+  await page.waitForFunction(() => window.__game.scene.isActive('Hud'), null, { timeout: 5000 }); await wait(400);
   check('?debug: the debug hint shows only Shift+3: end evening', await sc('Hud', 's.debugText && s.debugText.text'), 'DEBUG Shift+3: End Evening');
   check('...and starts right of the clock', await sc('Hud', 's.debugText.x > s.clockText.x + s.clockText.width'), true);
 

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { counterOn } from '../state/Counter';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
+import { fadeTo, loadStoryAhead } from './loadAhead';
 import { loadStory } from '../state/StorySave';
 import { tutorialDone } from '../state/Tutorial';
 import { loadHighScores } from '../state/HighScores';
@@ -88,6 +89,8 @@ export class TitleScene extends Phaser.Scene {
     });
 
     this.starting = false;
+    // SCREAM-243: while the title is up, fetch what a Story's first screens need.
+    loadStoryAhead(this, !tutorialDone());
     this.selected = 0;
     this.confirming = false;
     this.asking = 'story';
@@ -204,11 +207,14 @@ export class TitleScene extends Phaser.Scene {
   private start(id: Mode): void {
     this.starting = true;
     if (id === 'continue') {
-      if (!continueStory(this)) {
-        this.starting = false; // The save vanished (storage cleared): stay on the title.
-        this.scene.restart();
-      }
-    } else startEvening(this);
+      // SCREAM-243: a short fade into the game.
+      fadeTo(this, [SceneKeys.Cooler, SceneKeys.Hud], () => {
+        if (!continueStory(this)) {
+          this.starting = false; // The save vanished (storage cleared): stay on the title.
+          this.scene.restart();
+        }
+      });
+    } else fadeTo(this, [], () => startEvening(this), false); // Quick play: no fade; it only waits for pictures still loading
   }
 
   /** SCREAM-205: a new Story. The first time, the uncle's evening is Day 1; after that, ask. */
@@ -220,7 +226,8 @@ export class TitleScene extends Phaser.Scene {
 
   private startNewStory(withUncle: boolean): void {
     this.starting = true;
-    startStory(this, withUncle);
+    // SCREAM-243: a short fade to the credits (With Uncle) or the New Bike screen (On My Own).
+    fadeTo(this, withUncle ? [SceneKeys.TutorialCrawl, SceneKeys.Hud] : [SceneKeys.StoryIntro], () => startStory(this, withUncle));
   }
 
   /** SCREAM-169: after a first full play, the uncle's steps can be skipped. */
@@ -228,6 +235,7 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.confirming = true;
     this.asking = 'uncle';
+    loadStoryAhead(this, true); // SCREAM-243: his credits, in case the answer is With Uncle
     this.confirmGroup = [
       this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
       this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),

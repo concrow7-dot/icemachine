@@ -28,6 +28,12 @@ import { addUnclePointer } from '../ui/unclePointer';
 const COOLER_KEY = 'cooler-inside';
 const COOLER_URL = 'assets/interior/cooler-inside.png';
 
+/** Queues the cooler's pictures that aren't loaded yet (its own preload, and SCREAM-243's loading ahead). */
+export function loadCoolerArt(scene: Phaser.Scene): void {
+  if (!scene.textures.exists(COOLER_KEY)) scene.load.image(COOLER_KEY, COOLER_URL);
+  loadFlavourArt(scene);
+}
+
 /** Screen positions; the "shared" ones match draw_cooler.py. */
 const COOLER_LAYOUT = {
   /** Shared: the freezer's dark opening. */
@@ -104,8 +110,7 @@ export class CoolerScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (!this.textures.exists(COOLER_KEY)) this.load.image(COOLER_KEY, COOLER_URL);
-    loadFlavourArt(this);
+    loadCoolerArt(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
 

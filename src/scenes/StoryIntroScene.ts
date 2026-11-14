@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { BIKE_PRICE_CENTS, STORY_DAYS, STORY_START_CASH_CENTS } from '../config/tuning';
 import { SceneKeys, startStoryEvening } from '../flow';
+import { fadeTo, loadStoryAhead } from './loadAhead';
 import { formatMoney } from '../util/format';
 
 // SCREAM-18 (PO, October 31): the story's intro, a plain text screen for now.
@@ -33,6 +34,7 @@ export class StoryIntroScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
     this.leaving = false;
+    loadStoryAhead(this); // SCREAM-243: normally all loaded at the title already
     this.add.text(width / 2, 70, 'THE NEW BIKE', { fontFamily: MONO, fontSize: '36px', color: '#ffe8a3' }).setOrigin(0.5);
     this.add
       .text(width / 2, 250, introText(), { fontFamily: MONO, fontSize: '22px', color: '#d6deeb', align: 'center', lineSpacing: 10 })
@@ -50,7 +52,8 @@ export class StoryIntroScene extends Phaser.Scene {
     const begin = () => {
       if (this.leaving) return;
       this.leaving = true;
-      startStoryEvening(this);
+      // SCREAM-243: a short fade into the game.
+      fadeTo(this, [SceneKeys.Cooler, SceneKeys.Hud], () => startStoryEvening(this));
     };
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 0) begin();
