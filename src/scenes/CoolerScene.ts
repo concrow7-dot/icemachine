@@ -111,6 +111,13 @@ export class CoolerScene extends Phaser.Scene {
     super(SceneKeys.Cooler);
   }
 
+  /** SCREAM-307: opened from the driver's seat with nothing stocked: say so at once. */
+  private warnOnOpen = false;
+
+  init(data: { warnEmpty?: boolean }): void {
+    this.warnOnOpen = !!data?.warnEmpty;
+  }
+
   preload(): void {
     loadCoolerArt(this);
     showLoadingWhileLoading(this); // SCREAM-75
@@ -180,6 +187,7 @@ export class CoolerScene extends Phaser.Scene {
 
     this.refresh();
     this.openLids();
+    if (this.warnOnOpen) this.warnEmpty(); // SCREAM-307
   }
 
   // ---- The clipboard ----
@@ -461,6 +469,13 @@ export class CoolerScene extends Phaser.Scene {
       if (leaving) return;
       // At home (SCREAM-54) the player may drive off without buying (out of cash, say).
       if (!this.locked && !this.restocking && this.evening.stockLeft === 0) {
+        // SCREAM-307: an evening that opened at the hub can go back there with nothing bought (the
+        // clock still waiting), to look at the cork board first.
+        if (this.evening.opensAtHub && !this.evening.isClockRunning) {
+          leaving = true;
+          returnToTruck(this, 'cooler', false);
+          return;
+        }
         this.warnEmpty();
         return;
       }

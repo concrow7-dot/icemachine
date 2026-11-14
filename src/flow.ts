@@ -105,7 +105,9 @@ function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   if (evening.tutorial) count('tutorial-started', 'tutorial'); // SCREAM-201
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
   // SCREAM-169, 176: with the uncle, it opens with the credits, then him in the truck (the clock still waiting).
-  from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);
+  // SCREAM-307: in Story from the second night it opens at the truck screen instead (cooler highlighted).
+  if (evening.opensAtHub) from.scene.start(SceneKeys.Truck, { station: 'cooler' });
+  else from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 
@@ -204,9 +206,10 @@ export function getEvening(scene: Phaser.Scene): EveningState {
 export type Station = 'menu' | 'cooler' | 'driver' | 'window';
 
 /** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66). */
-export function returnToTruck(from: Phaser.Scene, station: Station): void {
+export function returnToTruck(from: Phaser.Scene, station: Station, startClock = true): void {
   const evening = getEvening(from);
-  evening.startClock();
+  // SCREAM-307: coming back from the cork board, or from an empty cooler before setting off, leaves it waiting.
+  if (startClock) evening.startClock();
   // SCREAM-171: in the guided tutorial, after Buy Stock the uncle has a word in the truck, then
   // walks to the cab and drives (UncleIntroScene, then the drive scene).
   if (evening.tutorial?.legToDrive === 'toRegular' && !evening.isPrepLocked) {
