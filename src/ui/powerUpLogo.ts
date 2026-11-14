@@ -211,22 +211,22 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
   // A leg: a thick outlined line through its joints, with a hoof at the end.
   const leg = (colour: number, pts: [number, number][]) => {
     const v = pts.map(([x, y]) => P(x, y));
-    const w = 8 * u;
+    const w = 6 * u;
     g.lineStyle(w + line * 2, ink, 1).strokePoints(v, false, false);
     for (const p of v) g.fillStyle(ink, 1).fillCircle(p.x, p.y, w / 2 + line);
     g.lineStyle(w, colour, 1).strokePoints(v, false, false);
     for (const p of v) g.fillStyle(colour, 1).fillCircle(p.x, p.y, w / 2);
     const end = v[v.length - 1];
-    g.fillStyle(hoof, 1).fillCircle(end.x, end.y + 1.5 * u, 5 * u);
+    g.fillStyle(hoof, 1).fillRect(end.x - 4.5 * u, end.y, 9 * u, 5 * u);
   };
   // The legs on the far side, darker: the front one straight down, the back one lifted.
-  leg(coatFar, [[40, 56], [40, 72], [40, 86]]);
-  leg(coatFar, [[70, 56], [78, 68], [72, 78]]);
+  leg(coatFar, [[38, 54], [38, 70], [37, 84]]);
+  leg(coatFar, [[74, 54], [83, 65], [78, 76]]);
   // The tail.
   poly(hair, [[76, 40], [90, 44], [96, 60], [88, 58], [80, 48]]);
   // The body, the neck and the head (facing left).
-  g.fillStyle(coat, 1).fillEllipse((56 - 50) * u, (50 - 50) * u, 48 * u, 26 * u);
-  g.lineStyle(line, ink, 1).strokeEllipse((56 - 50) * u, (50 - 50) * u, 48 * u, 26 * u);
+  g.fillStyle(coat, 1).fillEllipse((57 - 50) * u, (48 - 50) * u, 52 * u, 24 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((57 - 50) * u, (48 - 50) * u, 52 * u, 24 * u);
   poly(coat, [[34, 48], [24, 24], [36, 16], [46, 42]]);
   poly(coat, [[24, 24], [12, 32], [9, 38], [16, 42], [28, 34], [36, 20], [30, 14]]);
   poly(coat, [[30, 16], [32, 5], [38, 15]]);
@@ -236,6 +236,6 @@ export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boo
   g.fillStyle(ink, 1).fillCircle((25 - 50) * u, (26 - 50) * u, 2.6 * u);
   g.fillStyle(ink, 1).fillCircle((13 - 50) * u, (36 - 50) * u, 1.6 * u);
   // The legs on the near side: the front one lifted, the back one straight down.
-  leg(coat, [[38, 58], [30, 68], [36, 76]]);
-  leg(coat, [[66, 58], [68, 72], [70, 86]]);
+  leg(coat, [[36, 56], [27, 66], [33, 75]]);
+  leg(coat, [[70, 56], [72, 70], [73, 84]]);
 }
