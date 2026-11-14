@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 113 — Trot: a power-up that makes the truck creep at 18 px/s instead of 12 with no key held (2026-11-14)
+
+**Decision (Jira SCREAM-310, under SCREAM-78, PO, November 14):** the second of the two Truck power-ups, on the right side: "called "Trot" "Increase the speed of the truck as it rolls without any gas pedal pushed."" "The roll should be the creep speed", "So when the player isn't hitting gas, the speed is slightly increase[d]". It replaces the dummy note under the Temporary Gas Can on the right (TRUCK 3), $20 ("Lets go with $20"). With it, Story's creep goes from 12 to 18 px/s (engineering suggested 18, Story's creep before the November 12 cut; he agreed). Its picture is his sketch: someone leaning back in a lounge chair with their feet up on a footstool ("Feet up for trot"; "Trot icon (notepad, November 14)" in Personal Notes).
+
+**Options considered:** 18 px/s, 50% faster (chosen); 15 px/s (25%); about 13 px/s (10%, like Gitty Up).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- What is measured from the creep follows the new one: the park brake (Q) still works at a creep; turns get twice as wide only above the new creep (SCREAM-280); the roll down from top speed still takes about 4 seconds, ending at 18.
+- Reverse is unchanged. Gitty Up and Trot together each do their own part.
+- Kept for the Story run, like the other power-ups. Story only. A save that bought the old TRUCK 3 dummy gets nothing.
+- The note's text is his description as written. The picture is engineering's drawing of his sketch, in the gas can's style.
+
 ## 112 — Gitty Up: a power-up that makes the truck speed up 10% faster (2026-11-14)
 
 **Decision (Jira SCREAM-309, under SCREAM-78, PO, November 14):** the next power-ups are in the Truck tree; on the left side, "called "Gitty Up" "Increase acceleration by 10%. The truck still is heavy, so don't expect much."" It replaces the dummy note under the Temporary Gas Can on the left (TRUCK 2), $20 ("Lets go with $20"). Its picture is his sketch: a box truck pulling away with a puff of exhaust ("Truck for acceleration"; "Gitty Up icon (notepad, November 14)" in Personal Notes). With it, Story's truck takes about 9.1 seconds from a stop to top speed instead of 10.

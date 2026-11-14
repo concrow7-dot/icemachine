@@ -437,6 +437,14 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
 export const GITTY_UP_PRICE_CENTS = 2000;
+/**
+ * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
+ * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
+ * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
+ */
+export const TROT_CREEP_FACTOR = 1.5;
+/** SCREAM-310 (PO: "Lets go with $20"). */
+export const TROT_PRICE_CENTS = 2000;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**

@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS } from './tuning';
+import { GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'tip-jar' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -39,6 +39,9 @@ export const SMILE_ID = 'service-with-a-smile';
 
 /** SCREAM-309: the Gitty Up note (the truck speeds up 10% faster). */
 export const GITTY_UP_ID = 'gitty-up';
+
+/** SCREAM-310: the Trot note (the truck creeps faster with no key held). */
+export const TROT_ID = 'trot';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -124,10 +127,20 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: "Increase acceleration by 10%. The truck still is heavy, so don't expect much.",
         logo: 'gitty-up',
       },
-      { id: 'truck-3', col: 2, row: 1, from: [GAS_CAN_ID], priceCents: 1000 },
+      // SCREAM-310 (PO, November 14): the right note under the gas can.
+      {
+        id: TROT_ID,
+        col: 2,
+        row: 1,
+        from: [GAS_CAN_ID],
+        priceCents: TROT_PRICE_CENTS,
+        name: 'TROT',
+        description: 'Increase the speed of the truck as it rolls without any gas pedal pushed.',
+        logo: 'trot',
+      },
       { id: 'truck-4', col: 0, row: 2, from: [GITTY_UP_ID], priceCents: 1500 },
-      { id: 'truck-5', col: 1, row: 2, from: [GITTY_UP_ID, 'truck-3'], priceCents: 1500 },
-      { id: 'truck-6', col: 2, row: 2, from: ['truck-3'], priceCents: 1500 },
+      { id: 'truck-5', col: 1, row: 2, from: [GITTY_UP_ID, TROT_ID], priceCents: 1500 },
+      { id: 'truck-6', col: 2, row: 2, from: [TROT_ID], priceCents: 1500 },
       { id: 'truck-7', col: 1, row: 3, from: ['truck-5'], priceCents: 2000 },
       { id: 'truck-8', col: 0, row: 4, from: ['truck-7'], priceCents: 2500 },
       { id: 'truck-9', col: 2, row: 4, from: ['truck-7'], priceCents: 2500 },

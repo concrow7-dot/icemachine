@@ -267,12 +267,15 @@ const { chromium } = require('playwright');
   check('...bought at home: 25% first, five steps', (await ev("e.buyPowerUp('service-with-a-smile')")) + ' ' + (await ev('e.tipSteps.join()')), 'true 25,20,15,10,5');
   // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
-  check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('truck-3'))"), 'ok');
+  check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('trot'))"), 'ok');
+  check('SCREAM-310: Trot bought at home: tonight\'s creep goes from 12 to 18 px/s', (await ev('Math.round(e.spec.creepSpeed)')) + ' ' + (await ev("e.buyPowerUp('trot')")) + ' ' + (await ev('Math.round(e.spec.creepSpeed)')), '12 true 18');
   await press('+'); await press('Enter');
   await until(async () => (await scenes()) === 'Truck,Hud');
   await press('ArrowRight'); await press('Enter');
   await until(async () => (await scenes()) === 'Drive,Hud');
-  check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('truck-3')")) + ' ' + (await ev("e.buyPowerUp('truck-3')")), 'away false');
+  check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('truck-6')")) + ' ' + (await ev("e.buyPowerUp('truck-6')")), 'away false');
+  await page.keyboard.down('ArrowUp'); await wait(300); await page.keyboard.up('ArrowUp'); await wait(2000);
+  check('SCREAM-310: with Trot, after a tap of the gas the truck creeps on at 18 px/s with no key held', await page.evaluate(() => Math.round(Math.abs(window.__game.scene.getScene('Drive').speed))), 18);
   await ev('(e.fuelLeft = 0.004, true)');
   await page.keyboard.down('ArrowUp');
   const popped = await until(() => page.evaluate(() => window.__game.scene.isActive('GasCan')), 8000);
