@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 115 — Home and the pump: go in again without driving out of the spot first (2026-11-14)
+
+**Decision (Jira SCREAM-304, under SCREAM-7, PO, November 14):** after visiting home or the gas station, "the only way to go in again is to drive out of the entry rectangle and back in. That is a pointless detour." A truck that stays in the spot is offered the way back in.
+
+**Options considered:** move a little and stop again inside the spot to go back in (chosen, engineering's proposal); a new key and on-screen prompt while the truck sits in the spot; going back in straight away when stopped (rejected: the truck comes out stopped in the spot, so it would reopen at once).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Going in works the way it always has, by stopping in the spot: no new key, prompt or wording. After a visit, once the truck has moved and then stopped again inside the spot, it goes in. This answers the ticket's two questions: nothing shows straight away, and there is no new wording.
+- Works every time; driving out and back in still works; rolling through doesn't count (the truck must stop).
+- Story only, per decision 076; Quick play unchanged. The PO can ask for both modes.
+- No key changes, so `keyBindings.ts` is unchanged.
+
 ## 114 — The power-up card says "Owned" instead of "Yours" (2026-11-14)
 
 **Decision (Jira SCREAM-308, under SCREAM-78, PO, November 14):** on the power-up detail screen (a cork board note opened bigger), "change the word \"Yours\" to \"Owned\"", and "Yours" no longer appears anywhere on that screen.
