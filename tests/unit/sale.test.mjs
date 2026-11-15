@@ -105,14 +105,18 @@ test("SCREAM-313: the SpongePop's part of a kid's tip is worked out on its own",
   assert.deepEqual(sale(60000), [0, 0], 'no tip: nothing from the SpongePop either');
 });
 
-test('SCREAM-315: with an eclair in the cooler, the order gets one more Chocolate Eclair', async () => {
-  const { withExtraEclair } = await game('state/Sale');
+test('SCREAM-315 / SCREAM-354: with an eclair in the cooler, the order gets one more ice cream of any kind they would buy', async () => {
+  const { withExtraIceCream } = await game('state/Sale');
   const limit = (f) => (f === 'eclair' ? 250 : 300);
-  const slots = (eclairs, price = 200) => [{ flavour: 'eclair', quantity: eclairs, priceCents: price }, { flavour: 'spongepop', quantity: 5, priceCents: 300 }];
-  assert.deepEqual(withExtraEclair([{ slot: 1, flavour: 'spongepop', count: 2 }], slots(3), limit), [{ slot: 0, flavour: 'eclair', count: 1 }, { slot: 1, flavour: 'spongepop', count: 2 }], 'a new eclair line, first like the cooler');
-  assert.deepEqual(withExtraEclair([{ slot: 0, flavour: 'eclair', count: 2 }], slots(3), limit), [{ slot: 0, flavour: 'eclair', count: 3 }], 'one more on the eclair line');
-  assert.deepEqual(withExtraEclair([{ slot: 0, flavour: 'eclair', count: 3 }], slots(3), limit), [{ slot: 0, flavour: 'eclair', count: 3 }], 'no eclair left beyond the order: unchanged');
-  assert.deepEqual(withExtraEclair([{ slot: 1, flavour: 'spongepop', count: 1 }], slots(0), limit), [{ slot: 1, flavour: 'spongepop', count: 1 }], 'no eclairs in the cooler: unchanged');
-  assert.deepEqual(withExtraEclair([{ slot: 1, flavour: 'spongepop', count: 1 }], slots(3, 275), limit), [{ slot: 1, flavour: 'spongepop', count: 1 }], 'eclairs priced over $2.50: unchanged');
-  assert.deepEqual(withExtraEclair([], slots(3), limit), [{ slot: 0, flavour: 'eclair', count: 1 }], 'an empty order becomes just the eclair');
+  const slots = (eclairs, price = 200, sponges = 5, spongePrice = 300) => [{ flavour: 'eclair', quantity: eclairs, priceCents: price }, { flavour: 'spongepop', quantity: sponges, priceCents: spongePrice }];
+  const first = () => 0, last = () => 0.99;
+  const sponge2 = [{ slot: 1, flavour: 'spongepop', count: 2 }];
+  assert.deepEqual(withExtraIceCream(sponge2, slots(3), first, limit), [{ slot: 0, flavour: 'eclair', count: 1 }, { slot: 1, flavour: 'spongepop', count: 2 }], 'the extra can be an eclair: a new line, first like the cooler');
+  assert.deepEqual(withExtraIceCream(sponge2, slots(3), last, limit), [{ slot: 1, flavour: 'spongepop', count: 3 }], 'or one more of something else: not an eclair');
+  assert.deepEqual(withExtraIceCream([{ slot: 0, flavour: 'eclair', count: 3 }], slots(3), first, limit), [{ slot: 0, flavour: 'eclair', count: 3 }, { slot: 1, flavour: 'spongepop', count: 1 }], 'every eclair is in the order already: any eclair counts, the extra is something else');
+  assert.deepEqual(withExtraIceCream([{ slot: 1, flavour: 'spongepop', count: 1 }], slots(0), first, limit), [{ slot: 1, flavour: 'spongepop', count: 1 }], 'no eclairs in the cooler: unchanged');
+  assert.deepEqual(withExtraIceCream([{ slot: 1, flavour: 'spongepop', count: 1 }], slots(3, 275), first, limit), [{ slot: 1, flavour: 'spongepop', count: 2 }], 'eclairs priced over $2.50 still count; the extra is one they would pay for');
+  assert.deepEqual(withExtraIceCream([{ slot: 0, flavour: 'eclair', count: 1 }], slots(1, 200, 5, 325), first, limit), [{ slot: 0, flavour: 'eclair', count: 1 }], 'nothing left they would buy: unchanged');
+  assert.deepEqual(withExtraIceCream([{ slot: 0, flavour: 'eclair', count: 3 }, { slot: 1, flavour: 'spongepop', count: 5 }], slots(3), first, limit).reduce((n, l) => n + l.count, 0), 8, 'the whole cooler is in the order: unchanged');
+  assert.deepEqual(withExtraIceCream([], slots(3), first, limit), [{ slot: 0, flavour: 'eclair', count: 1 }], 'an empty order becomes just the extra one');
 });

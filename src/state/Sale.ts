@@ -80,21 +80,29 @@ export function generateOrder(
 
 /**
  * SCREAM-315 (PO, November 14): "If at least one of these are in the cooler, the customer will
- * buy one more ice cream than they would have", and the extra one is a Chocolate Eclair. Adds one
- * eclair to the order when one is left in the cooler beyond those already ordered, at a price they
- * would pay. An order that was empty (everything else too dear) becomes just the eclair.
+ * buy one more ice cream than they would have". SCREAM-354 (PO, November 15): "customers are
+ * buying an extra ice cream, even if they aren't buying an eclair. If the eclair is in the cooler,
+ * they buy an extra ice cream": the extra one is "Any ice cream they'd buy", and one eclair in the
+ * cooler is enough, even one the customer is already buying ("any eclair counts").
+ *
+ * So: with at least one Chocolate Eclair in the cooler, the order gets one more ice cream, of any
+ * kind that has one left beyond the order at a price they would pay (each kind as likely as the
+ * next). Nothing like that left: the order is unchanged. An empty order becomes just the extra one.
  */
-export function withExtraEclair(
+export function withExtraIceCream(
   order: readonly OrderLine[],
   slots: readonly Readonly<CoolerSlot>[],
+  random: () => number = Math.random,
   refuseAbove: (flavour: FlavourId) => number = () => REFUSE_ABOVE_CENTS,
 ): OrderLine[] {
+  if (!slots.some((s) => s.flavour === 'eclair' && s.quantity > 0)) return [...order];
   const ordered = (slot: number) => order.filter((line) => line.slot === slot).reduce((n, line) => n + line.count, 0);
-  const slot = slots.findIndex((s, i) => s.flavour === 'eclair' && s.priceCents <= refuseAbove('eclair') && s.quantity > ordered(i));
-  if (slot < 0) return [...order];
+  const choices = slots.map((s, i) => (s.quantity > ordered(i) && s.priceCents <= refuseAbove(s.flavour) ? i : -1)).filter((i) => i >= 0);
+  if (choices.length === 0) return [...order];
+  const slot = choices[Math.floor(random() * choices.length)] ?? choices[0]!;
   const line = order.find((l) => l.slot === slot);
   if (line) return order.map((l) => (l === line ? { ...l, count: l.count + 1 } : l));
-  return [...order, { slot, flavour: 'eclair' as FlavourId, count: 1 }].sort((a, b) => a.slot - b.slot);
+  return [...order, { slot, flavour: slots[slot]!.flavour, count: 1 }].sort((a, b) => a.slot - b.slot);
 }
 
 /** "2 Chocolate Eclair, 1 SpongePop" */
