@@ -1317,7 +1317,7 @@ export class DriveScene extends Phaser.Scene {
     return true;
   }
 
-  /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock. */
+  /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock (Story: the truck screen, SCREAM-319). */
   private checkHome(): void {
     // SCREAM-185: not while the uncle drives home, or as the truck screen fades in.
     if (this.uncleLeg || this.arrivingHome) return;
@@ -1335,7 +1335,9 @@ export class DriveScene extends Phaser.Scene {
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     if (!this.evening.startRestock()) return;
     this.leaving = true;
-    this.scene.start(SceneKeys.Cooler);
+    // SCREAM-319: in Story the truck screen opens (cooler, cork board, DRIVE), not the cooler.
+    if (this.evening.homeOpensTruck) this.scene.start(SceneKeys.Truck, { station: 'cooler' });
+    else this.scene.start(SceneKeys.Cooler);
   }
 
   /**
