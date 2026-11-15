@@ -675,30 +675,39 @@ export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey:
 }
 
 /**
- * SCREAM-341: Better Mirrors. Engineering's own picture (the PO's sketches give the name only): a
- * truck's wing mirror on its arm, with a little customer and a "!" showing in the glass.
+ * SCREAM-341: Better Mirrors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a tall truck mirror with a rounder one across its middle, an arrow pointing up in
+ * the top glass and one pointing down in the bottom, and three brackets on its right side.
  */
 export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
   const shell = grey ? 0xb4b4b4 : 0x8a9096;
   const glass = grey ? 0xe6e6e6 : 0xcfeaf7;
-  const skin = grey ? 0xcfcfcf : 0xf2c79b;
-  const shirt = grey ? 0xa8a8a8 : 0xe0564a;
+  const round = grey ? 0xf2f2f2 : 0xe8f7ff;
+  const arrow = grey ? 0x9a9a9a : 0xff4f9a;
   const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
   const X = (v: number) => (v - 50) * u;
-  // The arm to the truck's door (off to the right), then the mirror's shell and glass.
-  g.fillStyle(shell, 1).fillRect(X(70), X(44), 26 * u, 8 * u);
-  g.lineStyle(line, ink, 1).strokeRect(X(70), X(44), 26 * u, 8 * u);
-  g.fillStyle(shell, 1).fillRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
-  g.lineStyle(line, ink, 1).strokeRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
-  g.fillStyle(glass, 1).fillRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
-  // A customer in the glass: head and shoulders, bottom left.
-  g.fillStyle(shirt, 1).fillRect(X(22), X(64), 22 * u, 18 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(22), X(64), 22 * u, 18 * u);
-  g.fillStyle(skin, 1).fillCircle(X(33), X(54), 10 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(X(33), X(54), 10 * u);
-  // The "!" beside them.
-  g.fillStyle(ink, 1).fillRect(X(50), X(28), 7 * u, 22 * u).fillRect(X(50), X(55), 7 * u, 7 * u);
+  // The three brackets to the truck's door, on the right.
+  for (const y of [30, 46, 60]) {
+    g.fillStyle(shell, 1).fillRect(X(64), X(y), 16 * u, 6 * u);
+    g.lineStyle(thin, ink, 1).strokeRect(X(64), X(y), 16 * u, 6 * u);
+  }
+  // The tall mirror, then the rounder one across its middle.
+  g.fillStyle(glass, 1).fillRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.fillStyle(round, 1).fillRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  // An arrow up in the top glass, an arrow down in the bottom glass.
+  const block = (tipY: number, dir: 1 | -1) => {
+    const pts = [
+      [45, tipY], [56, tipY + dir * 11], [49.5, tipY + dir * 11], [49.5, tipY + dir * 21], [40.5, tipY + dir * 21], [40.5, tipY + dir * 11], [34, tipY + dir * 11],
+    ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+    g.fillStyle(arrow, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+  };
+  block(11, 1);
+  block(89, -1);
 }
+

@@ -17,7 +17,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - The marker is a round badge with the customer's head and a pink pointer toward them. It keeps clear of the gas dial, the key hints and the song's name, and goes when the customer is on screen, served or gone home.
 - Place: the Customer 7 dummy's spot (fourth row, under the Handy Notebook); Customer 8 and 9 hang from it. Price: $50.
 - The note's words: "A marker at the edge of the screen points at each customer on their way to you."
-- The picture is engineering's own: a wing mirror with a customer and a "!" in the glass.
+- The picture: engineering's own at first (a wing mirror with a customer and a "!" in the glass); then he sent his sketch (02:58) and it was redrawn from it: a tall truck mirror with a rounder one across its middle, an arrow up and an arrow down, and three brackets on its side.
 
 ## 145 — More Space for Scream: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
 
