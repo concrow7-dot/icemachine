@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 127 — Train Off The Tracks: top speed +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-80, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "1. Train off the tracks. Max Velocity increased by 10%", under Gitty Up. Asked, he set the price at **$30** (like the second Customer row). Owned, the truck's top speed is x 1.1 (`TRAIN_TOP_SPEED_FACTOR`).
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's left third-row note (was Truck 4). Note text "Max velocity increased by 10%."
+- The roll down from top speed still takes STORY_TRUCK_ROLL_SECONDS (`coastKeep` follows the new top speed).
+- Picture: an original little red engine tipped off its rail (`drawTrainOffTracks`), from his sketch.
+- SCREAM-80 (the old "faster truck" upgrade, November 1) was rewritten for it.
+
 ## 126 — Debug key: Shift+9 adds $50 (2026-11-14)
 
 **Decision (Jira SCREAM-324, PO, November 14):** "For testing. I want to add the ability for me to add money to my wallet on any screen. Lets say +$50. Unless you have a reason against it, lets have the key be \"Shift + 5\"". Shift+5 already shows the loading screen (SCREAM-75), so he chose **Shift+9**. The $50 **only changes cash**: tonight's profit and the end-of-day rows don't count it.

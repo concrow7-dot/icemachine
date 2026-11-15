@@ -79,6 +79,8 @@ export function addPowerUpLogo(
       g.lineBetween(0, 0, Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
     }
     g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
+  } else if (tree === 'train-off-tracks') {
+    drawTrainOffTracks(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -347,5 +349,48 @@ export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, gre
       g.fillStyle(colour, 1).fillRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
       g.lineStyle(Math.max(1, 2 * u), ink, 1).strokeRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
     }
+  }
+}
+
+/**
+ * SCREAM-80: Train Off The Tracks. From the PO's sketch (something sliding off a line): a little red
+ * engine tipped off its rail, jumping forward, with speed lines behind. Original drawing.
+ */
+export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const red = grey ? 0xb8b8b8 : 0xd8402e;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const gold = grey ? 0xcccccc : 0xf2c14e;
+  const line = Math.max(2, 5 * u);
+  // Tipped 16 degrees nose-up, centred a little above the middle.
+  const a = Phaser.Math.DegToRad(-16);
+  const cx = 52, cy = 44;
+  const P = (x: number, y: number) => {
+    const dx = x - cx, dy = y - cy;
+    return new Phaser.Math.Vector2((cx + dx * Math.cos(a) - dy * Math.sin(a) - 50) * u, (cy + dx * Math.sin(a) + dy * Math.cos(a) - 50) * u);
+  };
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  // The rail it left: a line with sleepers, along the bottom.
+  g.lineStyle(line, ink, 1).lineBetween(-46 * u, 40 * u, 40 * u, 40 * u);
+  for (const x of [-38, -22, -6, 10, 26]) g.lineBetween(x * u, 34 * u, (x + 6) * u, 46 * u);
+  // Speed lines behind.
+  g.lineStyle(Math.max(1.5, 3.5 * u), ink, 1);
+  for (const [y, l] of [[30, 16], [44, 22], [58, 14]] as const) g.lineBetween((6 - 50) * u, (y - 50) * u, (6 + l - 50) * u, (y - 50) * u);
+  // The engine: cab at the back, boiler, chimney, buffer.
+  poly(red, [[26, 30], [44, 30], [44, 60], [26, 60]]);
+  poly(dark, [[22, 26], [48, 26], [48, 31], [22, 31]]);
+  poly(red, [[44, 40], [80, 40], [80, 60], [44, 60]]);
+  poly(dark, [[64, 28], [72, 28], [72, 40], [64, 40]]);
+  poly(gold, [[80, 44], [87, 44], [87, 56], [80, 56]]);
+  poly(0xffffff, [[30, 35], [40, 35], [40, 44], [30, 44]]);
+  for (const x of [34, 56, 72]) {
+    const c = P(x, 63);
+    g.fillStyle(dark, 1).fillCircle(c.x, c.y, 7 * u);
+    g.lineStyle(line, ink, 1).strokeCircle(c.x, c.y, 7 * u);
   }
 }
