@@ -6,7 +6,7 @@ import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  BASS_SOMETIMES_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
+  BASS_SOMETIMES_FACTOR, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -160,6 +160,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private tipsTotalCents = 0;
   /** SCREAM-312: exploration tips tonight (their own row on the end-of-day screen). */
   private explorationTotalCents = 0;
+  /** SCREAM-334: how much longer the steering is reversed (left is right), in ms of driving. 0 = normal. */
+  steeringReversedMs = 0;
+  get steeringReversed(): boolean {
+    return this.steeringReversedMs > 0;
+  }
+  /** SCREAM-334: called by the driving view each frame the player is driving: runs the driving-only timers down. */
+  driveTick(deltaMs: number): void {
+    if (this.steeringReversedMs > 0) this.steeringReversedMs = Math.max(0, this.steeringReversedMs - deltaMs);
+  }
   /** SCREAM-313: the part of tonight's tips that SpongePops earned (their own row on the end-of-day screen). */
   private spongePopTotalCents = 0;
   /** SCREAM-93: the most paid for one order tonight, price plus tip. */
@@ -284,6 +293,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     notebook?: readonly NotebookEntry[];
   }, mapId: MapId = 'worcester', guided = false) {
     super();
+    // SCREAM-334: an ice cream made for Story has no slot in Quick play's cooler (Quick play is unchanged).
+    if (!carry?.story) {
+      for (let i = this.coolerSlots.length - 1; i >= 0; i--) if (getFlavour(this.coolerSlots[i].flavour).storyOnly) this.coolerSlots.splice(i, 1);
+    }
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
     // SCREAM-187 (PO, November 6): "I left $50 on the truck for you to get started." (once)
     const run = this.tutorial;
@@ -645,7 +658,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * ice cream's note is bought on the cork board. Quick play has them all.
    */
   flavourUnlocked(flavour: FlavourId): boolean {
-    if (!this.story) return true;
+    // SCREAM-334: an ice cream made for Story's cork board is never on Quick play's clipboard.
+    if (!this.story) return !getFlavour(flavour).storyOnly;
     const id = iceCreamNoteId(flavour);
     return FREE_NOTE_IDS.includes(id) || this.powerUpsOwned.includes(id);
   }
@@ -928,6 +942,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.saleNow = new Sale(order, this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
+    // SCREAM-334 (PO): a sale with a Two Ball Lou Ball pays double the tip, once, however many are in the order.
+    if (this.story && order.some((line) => line.flavour === 'louball')) {
+      this.saleNow.louBall = true;
+      this.saleNow.tipFactor *= LOU_BALL_TIP_FACTOR;
+    }
     this.saleNow.tipSteps = this.saleTipSteps(this.saleNow.order, customer); // SCREAM-303, SCREAM-313
     this.saleNow.spongePopPoints = this.spongePopPoints(this.saleNow.order, customer);
     this.lastSalePhase = this.saleNow.phase;
@@ -1007,6 +1026,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.tipsTotalCents += sale.outcome.tipCents - sponge;
       this.spongePopTotalCents += sponge;
       this.payExplorationTip(sale); // SCREAM-312
+      // SCREAM-334: ...and the steering is reversed for 10 seconds of driving (a second sale starts them again).
+      if (sale.louBall) this.steeringReversedMs = LOU_BALL_REVERSED_SECONDS * 1000;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents + sale.explorationTipCents);
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145

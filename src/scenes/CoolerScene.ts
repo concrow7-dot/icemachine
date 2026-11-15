@@ -46,8 +46,10 @@ const COOLER_LAYOUT = {
   /** The clipboard's paper, and the centres of its flavour rows. */
   paper: { left: 24, right: 224 },
   rowY: [152, 214, 276, 338],
+  /** SCREAM-334: with more than four ice creams unlocked the rows sit closer: the first row's centre and the step. */
+  compactRows: { first: 140, step: 42, height: 40 },
   /** Today's Menu: the cards' size, where they start, and the gap between them. */
-  card: { w: 156, h: 160, top: 334, firstLeft: 262, gap: 18 },
+  card: { w: 156, h: 160, top: 334, firstLeft: 262, gap: 18, maxCards: 4 },
 };
 const LID_OPEN_MS = 600;
 /** How long the lids stay shut before opening, so the player sees them. */
@@ -55,6 +57,16 @@ const LID_WAIT_MS = 250;
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
 const UNPAID = 0xffcf33;
+
+/**
+ * SCREAM-334: Today's Menu has room for `full` cards at full size. With more, every card is
+ * scaled down (and the gaps with it) so the row is as wide as `full` cards were.
+ */
+export function menuCardFit(count: number, w: number, gap: number, full: number): { scale: number; gap: number } {
+  if (count <= full) return { scale: 1, gap };
+  const scale = (full * w + (full - 1) * gap) / (count * w + (count - 1) * gap);
+  return { scale, gap: gap * scale };
+}
 
 type Focus = { area: 'clipboard'; row: number } | { area: 'menu'; index: number };
 
@@ -72,6 +84,8 @@ export class CoolerScene extends Phaser.Scene {
   private locked = false;
   /** SCREAM-54: at the cooler after pulling into Home's driveway; leaving goes back to the road. */
   private restocking = false;
+  /** The clipboard rows' centres tonight (SCREAM-334: closer together with more than four ice creams). */
+  private rowYs: readonly number[] = [];
   private buyButton?: Phaser.GameObjects.Text;
   /** SCREAM-323: RETURN TO TRUCK, bottom left (Story; test hook). */
   returnButton?: Phaser.GameObjects.Text;
@@ -224,39 +238,44 @@ export class CoolerScene extends Phaser.Scene {
     this.add
       .text(middle, 104, 'Available Ice Cream', { fontFamily: MARKER_FONT, fontSize: '19px', color: INK })
       .setOrigin(0.5);
-    this.rowHighlight = this.add.rectangle(middle, rowY[0] ?? 0, paper.right - paper.left - 6, 56, 0xffe066, 0.55);
-
     // SCREAM-271: in Story the clipboard lists only the ice creams unlocked so far.
     this.offered = FLAVOURS.filter((f) => this.evening.flavourUnlocked(f.id));
+    // SCREAM-334: a fifth and sixth ice cream fit by putting the rows closer together.
+    const compact = this.offered.length > rowY.length;
+    const { first, step, height } = COOLER_LAYOUT.compactRows;
+    this.rowYs = compact ? this.offered.map((_, row) => first + row * step) : rowY;
+    const rowH = compact ? height : 56;
+    this.rowHighlight = this.add.rectangle(middle, this.rowYs[0] ?? 0, paper.right - paper.left - 6, rowH, 0xffe066, 0.55);
     this.offered.forEach((flavour, row) => {
-      const y = rowY.at(row) ?? 0;
+      const y = this.rowYs.at(row) ?? 0;
       // SCREAM-144 (PO, November 3): no picture on the left; name and price left-aligned, the add picture on the right.
       const textLeft = paper.left + 12;
+      const lowerY = y + (compact ? 13 : 16);
       this.add
-        .text(textLeft, y - 14, flavour.name, {
+        .text(textLeft, y - (compact ? 7 : 14), flavour.name, {
           fontFamily: 'monospace',
-          fontSize: '13px',
+          fontSize: compact ? '11px' : '13px',
           fontStyle: 'bold',
           color: INK,
           wordWrap: { width: 132 },
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
-      this.add.text(textLeft, y + 16, `${formatMoney(flavour.costCents)} each`, {
+      this.add.text(textLeft, lowerY, `${formatMoney(flavour.costCents)} each`, {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: compact ? '11px' : '12px',
         color: '#5a4636',
       }).setOrigin(0, 0.5);
       // How many of this flavour are in the cooler.
       this.rowCounts.push(
         this.add
-          .text(paper.right - 52, y + 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#5a4636' })
+          .text(paper.right - 52, lowerY, '', { fontFamily: 'monospace', fontSize: compact ? '11px' : '12px', color: '#5a4636' })
           .setOrigin(1, 0.5),
       );
       if (!this.locked) {
         // The whole row picks one; so does its + button.
         const hit = this.add
-          .rectangle(middle, y, paper.right - paper.left - 6, 56, 0xffffff, 0.001)
+          .rectangle(middle, y, paper.right - paper.left - 6, rowH, 0xffffff, 0.001)
           .setInteractive({ useHandCursor: true });
         hit.on('pointerdown', () => {
           this.focus = { area: 'clipboard', row };
@@ -265,7 +284,7 @@ export class CoolerScene extends Phaser.Scene {
         this.makeAddButton(paper.right - 26, y, flavour.id, () => {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
-        });
+        }, compact ? 0.72 : 1);
       }
     });
 
@@ -448,18 +467,18 @@ export class CoolerScene extends Phaser.Scene {
    * SCREAM-133 (PO, November 2): the clipboard's add button is the ice cream's picture with a
    * "+" badge on it that gently pulses. It grows a little under the mouse and bounces when it adds one.
    */
-  private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void): void {
-    const picture = addFlavourIcon(this, 0, 0, flavour, 1.4);
-    const badge = this.add.container(15, -20, [
+  private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void, size = 1): void {
+    const picture = addFlavourIcon(this, 0, 0, flavour, 1.4 * size);
+    const badge = this.add.container(15 * size, -20 * size, [
       this.add.circle(0, 0, 8, 0x2e7d32).setStrokeStyle(2, 0xffffff),
       this.add.text(0, -1, '+', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
     ]);
     this.tweens.add({ targets: badge, scale: 1.25, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const button = this.add.container(x, y, [picture, badge]).setName(`add-${flavour}`);
     // A zone for the click area (a container's own hit area sits off-centre).
-    const hit = this.add.zone(x - 22, y - 27, 44, 54).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    hit.on('pointerover', () => picture.setScale(1.55));
-    hit.on('pointerout', () => picture.setScale(1.4));
+    const hit = this.add.zone(x - 22, y - 27 * size, 44, 54 * size).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => picture.setScale(1.55 * size));
+    hit.on('pointerout', () => picture.setScale(1.4 * size));
     hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       onClick();
@@ -669,7 +688,7 @@ export class CoolerScene extends Phaser.Scene {
   }
 
   private refresh(): void {
-    const { rowY, cell, card: cardSize } = COOLER_LAYOUT;
+    const { cell, card: cardSize } = COOLER_LAYOUT;
     const total = this.order.total;
     this.title.setText(
       (this.locked ? 'THE COOLER  (stock is set for tonight)' : this.restocking ? 'THE COOLER  –  RESTOCK AT HOME' : 'THE COOLER  –  PREP') +
@@ -682,7 +701,7 @@ export class CoolerScene extends Phaser.Scene {
       this.rowCounts.at(row)?.setText(count > 0 ? `x${count}` : '');
     });
     this.rowHighlight.setVisible(this.focus.area === 'clipboard' && !this.locked);
-    if (this.focus.area === 'clipboard') this.rowHighlight.setY(rowY.at(this.focus.row) ?? 0);
+    if (this.focus.area === 'clipboard') this.rowHighlight.setY(this.rowYs.at(this.focus.row) ?? 0);
 
     // The crates, and the outline round the one new picks go into.
     const cells = this.order.cells;
@@ -710,11 +729,13 @@ export class CoolerScene extends Phaser.Scene {
       this.focus = visible.length > 0 ? { area: 'menu', index: visible.length - 1 } : { area: 'clipboard', row: 0 };
     }
     this.emptyMenu.setVisible(visible.length === 0);
+    // SCREAM-334: more than four cards are drawn smaller so they all fit across the wall.
+    const fit = menuCardFit(visible.length, cardSize.w, cardSize.gap, cardSize.maxCards);
     this.cards.forEach((card) => card.container.setVisible(false));
     visible.forEach((card, n) => {
       const slot = this.order.slots.find((s) => s.flavour === card.flavour);
       if (!slot) return;
-      card.container.setVisible(true).setPosition(cardSize.firstLeft + n * (cardSize.w + cardSize.gap), cardSize.top);
+      card.container.setVisible(true).setScale(fit.scale).setPosition(cardSize.firstLeft + n * (cardSize.w * fit.scale + fit.gap), cardSize.top);
       card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
       const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.

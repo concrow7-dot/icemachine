@@ -70,13 +70,13 @@ export const REFUSE_ABOVE_CENTS = 400;
  * (SCREAM-272 will set the others.)
  */
 // PO, November 14 (testing SCREAM-313 and 312): "I want the price people are willing to pay to be both be $3."
-export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300 };
+export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300, louball: 300 };
 /** SCREAM-271: the ice cream Story starts with; every other one is bought on the cork board. */
 export const STORY_FIRST_FLAVOUR = 'eclair';
 /** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
 export const ICE_CREAM_UNLOCK_CENTS = 1500;
 /** PO, November 14 (testing SCREAM-313 and 312): SpongePop's note costs $20 and the Lil Explorer Pop's $25. Others keep ICE_CREAM_UNLOCK_CENTS. */
-export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500 };
+export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500, louball: 3000 };
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
@@ -655,3 +655,13 @@ export const GAS_CAN_FILL = 1 / 5;
 /** How long the game stops while the can shows, in ms, and how many times it pulses. */
 export const GAS_CAN_POP_MS = 1500;
 export const GAS_CAN_PULSES = 3;
+
+/**
+ * SCREAM-334 (PO, November 14 sketch and November 15 answers; decision 138): the Two Ball Lou
+ * Ball. "Tip is Double. Controls are reversed for 10 seconds." Every Story sale that includes one
+ * pays double the tip, and afterwards the steering is swapped (left is right) for 10 seconds of
+ * driving. The note costs $30, one costs $2.00, and customers pay up to $3.00 (he first said $3.75, then, November 15: "The two ball and the drum can be sold for $3")
+ * (ICE_CREAM_UNLOCK_PRICES, flavours.ts, STORY_REFUSE_ABOVE_CENTS).
+ */
+export const LOU_BALL_TIP_FACTOR = 2;
+export const LOU_BALL_REVERSED_SECONDS = 10;

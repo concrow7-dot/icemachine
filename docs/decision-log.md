@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 138 — The Two Ball Lou Ball: double the tip, then the steering is reversed for 10 seconds, $30 (2026-11-15)
+
+**Decision (Jira SCREAM-334, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under SpongePop: "1 Two Ball Screwball. Tip is Double. Controls are reversed for 10 seconds. In game description: 'High upside, crazy downside.'" Asked, he chose: the effect happens on **"Each sale with one"**; **"Steering only"** is reversed (left and right swap; gas and brake stay); the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: told that "Two Ball Screwball" is close to a real product's name, he asked "are the two brands something we shouldn't use?" and then chose **"two ball lou ball"**. The picture is his own sketch; he sent a second one ("Let's switch to this design"): a slanted cone cup, a lid that says "Lou" and "II", two gumballs in the point.
+
+**Later the same night (01:14 to 01:18):** with a photo of a real cup of ice, "It should look more like this" and "Make sure to include the two balls at the bottom of the cone": the picture was redrawn as a clear plastic cone cup of cherry ice with a rimmed lid (still "Lou" and "II", our own lettering) and bigger gumballs in the point. And "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
+
+**At 01:58,** with a close-up sketch of the cup's rim: "I want the edges to meet" and "Remove lou and I": the lid is plain, with no lettering, and the cup's sides run straight from the two ends of the lid's oval. At 02:00, with a sketch of a long flat oval: "Still too circular": the lid is drawn as a long flat oval, tilted up to the right.
+
+**Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Reversed: steering only (chosen), everything, or gas and brake only. Note price: $30 (chosen), $40, or $25 like the Explorer Pop. Name: keep "Two Ball Screwball", or a parody name (chosen, his own).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The double is on the whole sale's tip, once, however many are in the order; the flash after the sale says DOUBLE TIP. No tip earned, nothing to double.
+- The 10 seconds run in the driving view only (not at the window, the truck screen, the pump or the pause menu), and a countdown at the top of the road view says STEERING REVERSED. A second Lou Ball sale starts the 10 seconds again; it doesn't add up.
+- Story only: the ice cream is marked `storyOnly`, so Quick play's clipboard never offers it.
+- With a fifth ice cream the cooler screen had no room: the clipboard's rows sit closer together when more than four ice creams are unlocked, and Today's Menu draws its cards smaller when more than four are stocked.
+- A new test suite, `icecreams`, covers this and the Drum Cone.
+
 ## 137 — The Ice Cream tree: SpongePop and the Lil Explorer Pop side by side, the sandwich on a fourth row (2026-11-15)
 
 **Decision (Jira SCREAM-333, under SCREAM-78, PO, November 14, notepad sketch "Ice cream tree, third row (notepad, November 14)" in Personal Notes):** "Note: Change Sponge + Explorer to be next to each other." His drawing: one note at the top, two under it side by side, and one more under each of those. So the tree is now: the Chocolate Eclair at the top; SpongePop (left) and the Lil Explorer Pop (right) under it, each on its own string; a third-row note under each (dummies until SCREAM-334 and SCREAM-335 are built); the Cookie Ice Cream Sandwich in the middle of a fourth row. Asked where the sandwich and the two "?" notes go (the sketch has no spot for them), he chose **"A fourth row"**: the sandwich in the middle of row 4, unlocked by either third-row note; the two old "?" notes removed.
