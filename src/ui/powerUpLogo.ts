@@ -87,6 +87,8 @@ export function addPowerUpLogo(
     drawSteamEngine(g, size, grey);
   } else if (tree === 'back-it-up') {
     drawBackItUp(g, size, grey);
+  } else if (tree === 'more-junk') {
+    drawMoreJunk(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -632,4 +634,40 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
   g.lineStyle(Math.max(3, 7 * u), red, 1);
   for (const x of [6, 20]) g.lineBetween(X(x + 12), X(40), X(x), X(52)).lineBetween(X(x), X(52), X(x + 12), X(64));
   g.lineBetween(X(36), X(47), X(46), X(47)).lineBetween(X(36), X(57), X(46), X(57));
+}
+
+/**
+ * SCREAM-25: More Space for Scream. The PO's sketch (Personal Notes, "Pictures for the next
+ * power-ups", November 15): a freezer with its top door swung open to the left: ice creams on
+ * the shelves inside and on the door, and a handle on the closed part below.
+ */
+export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shell = grey ? 0xdcdcdc : 0xe9f4fb;
+  const inside = grey ? 0x9a9a9a : 0x2b4a6b;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number, stroke = line) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(stroke, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  const pops = grey ? [0xcfcfcf, 0xbdbdbd, 0xd6d6d6, 0xc6c6c6] : [0xf4d35e, 0xf28ca0, 0x8b5a3c, 0x9fd3a7];
+  // The closed part below, with its handle.
+  box(shell, 44, 46, 44, 48);
+  g.fillStyle(grey ? 0xb4b4b4 : 0x8a9096, 1).fillRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  g.lineStyle(thin, ink, 1).strokeRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  // The open top: dark inside, a shelf, and four ice creams.
+  box(inside, 44, 10, 44, 36);
+  g.lineStyle(thin, ink, 1).lineBetween(X(44), X(28), X(88), X(28));
+  box(pops[0] ?? 0, 50, 14, 13, 12, thin);
+  box(pops[1] ?? 0, 69, 14, 13, 12, thin);
+  box(pops[2] ?? 0, 50, 32, 13, 12, thin);
+  box(pops[3] ?? 0, 69, 32, 13, 12, thin);
+  // Its door, swung open to the left, with two more on the door's shelf.
+  g.fillStyle(shell, 1).fillRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  box(pops[1] ?? 0, 11, 19, 11, 14, thin);
+  box(pops[0] ?? 0, 26, 19, 11, 14, thin);
 }

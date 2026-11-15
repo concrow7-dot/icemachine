@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 145 — More Space for Scream: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
+
+**Decision (Jira SCREAM-25, under SCREAM-78, PO, November 15 notepad sketches):** under "Truck upgrade:" he wrote "Cooler size", and named it: "Cooler Size - 'More Junk'". Asked how much it should open up, he wrote his own answer: "The two slots in a row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot". After seeing it built (02:40) he renamed it: "Change "more Junk" to "More Space for Scream"". Once bought, each of Story's three crates has a fourth row of two open squares: 18 ice creams become 24. Story only (decision 076). This is the old "bigger cooler" ticket, rewritten.
+
+**Options considered:** engineering offered: uncover the rest of one crate; uncover all three; add a fourth crate. He chose none of them and described the bottom row instead. (Engineering's question wrongly said the cooler held 24; it holds 18.)
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The name sits on two lines on the opened note (MORE SPACE / FOR SCREAM), like the other long names. The code's id stays `more-junk`.
+- Place: the Truck 8 dummy's spot (fifth row, left, under Back It Up). Price: $50.
+- Bought at home or before DRIVE, the new squares can be filled straight away.
+- The right half of every crate stays covered, for later notes.
+- The note's words: "More room in the cooler: a new bottom row opens in every crate."
+- The picture: engineering's own at first (a crate of ice creams with a green plus); then he sent his sketch (02:58) and it was redrawn from it: a freezer with its top door swung open, ice creams on the shelves and the door.
+
 ## 144 — Back It Up: the truck reverses faster, $40 (2026-11-15)
 
 **Decision (Jira SCREAM-340, under SCREAM-78, PO, November 15 notepad sketches "Next power-ups, truck and customer" and "Names for the next power-ups"):** under "Truck upgrade:" he wrote "Reverse speed", and named it: "Reverse Speed - 'Back it up'". A new note on the Truck tree; once bought, the truck's top speed in reverse is higher. Story only (decision 076).

@@ -138,3 +138,13 @@ test('SCREAM-340: Back It Up raises the top reverse speed by half and changes no
   // Quick play's truck never owns a note, so it is unchanged.
   assert.equal(truckSpec(false).reverseSpeed, truckSpec(false, []).reverseSpeed);
 });
+
+test('SCREAM-25: More Space for Scream opens a fourth row of two squares in each crate: 18 becomes 24', () => {
+  const plain = truckSpec(true);
+  const junk = truckSpec(true, ['more-junk']);
+  assert.deepEqual([plain.coolerColumns, plain.coolerRows, plain.coolerCapacity], [2, 3, 18]);
+  assert.deepEqual([junk.coolerColumns, junk.coolerRows, junk.coolerCapacity], [2, 4, 24]);
+  for (const k of Object.keys(plain)) if (!['coolerRows', 'coolerCapacity'].includes(k)) assert.equal(junk[k], plain[k], k);
+  // Quick play's cooler is whole already.
+  assert.equal(truckSpec(false, ['more-junk']).coolerCapacity, 48);
+});

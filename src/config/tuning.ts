@@ -684,3 +684,12 @@ export const DRUM_CONE_SOLO_SECONDS = 30;
  */
 export const BACK_IT_UP_PRICE_CENTS = 4000;
 export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
+
+/**
+ * SCREAM-25 (PO, November 15, notepad sketches: "Truck upgrade: Cooler size", named "More Junk", then (02:40) "Change \"more Junk\" to \"More Space for Scream\""):
+ * the More Space for Scream note (Truck tree, fifth row). His answer on how much it opens: "The two slots in a
+ * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
+ * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
+ */
+export const MORE_JUNK_PRICE_CENTS = 5000;
+export const MORE_JUNK_EXTRA_ROWS = 1;
