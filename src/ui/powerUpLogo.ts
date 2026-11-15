@@ -85,6 +85,8 @@ export function addPowerUpLogo(
     drawBrakeDisc(g, size, grey);
   } else if (tree === 'steam-engine') {
     drawSteamEngine(g, size, grey);
+  } else if (tree === 'back-it-up') {
+    drawBackItUp(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -598,4 +600,36 @@ export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: b
   box(tiles[0], 31, 22, 17, 17, thin);
   box(tiles[1], 52, 22, 17, 17, thin);
   box(tiles[2], 31, 45, 24, 28, thin);
+}
+
+/**
+ * SCREAM-340: Back It Up. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): the truck seen from the side, with "<<=" behind it: two arrowheads and two
+ * dashes pointing backwards.
+ */
+export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xdcdcdc : 0x8fd6c4;
+  const glass = grey ? 0xf0f0f0 : 0xd8f1ff;
+  const red = grey ? 0x9a9a9a : 0xd9412b;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // The truck, facing right: a tall box, a window at the front, a bumper line and one big wheel.
+  box(body, 50, 22, 40, 44);
+  box(glass, 68, 30, 16, 14);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(76), X(30), X(76), X(44));
+  g.lineStyle(line, ink, 1).lineBetween(X(46), X(66), X(96), X(66));
+  g.fillStyle(dark, 1).fillCircle(X(76), X(68), 10 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(76), X(68), 10 * u);
+  g.fillStyle(grey ? 0xe0e0e0 : 0xffffff, 1).fillCircle(X(76), X(68), 3.5 * u);
+  // "<<=" behind it: two arrowheads, then two dashes up against the truck.
+  g.lineStyle(Math.max(3, 7 * u), red, 1);
+  for (const x of [6, 20]) g.lineBetween(X(x + 12), X(40), X(x), X(52)).lineBetween(X(x), X(52), X(x + 12), X(64));
+  g.lineBetween(X(36), X(47), X(46), X(47)).lineBetween(X(36), X(57), X(46), X(57));
 }

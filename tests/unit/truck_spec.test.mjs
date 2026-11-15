@@ -129,3 +129,12 @@ test('SCREAM-326, SCREAM-336: Steam Engine doubles the roll speed Trot gives (12
   assert.equal(r(['trot', 'steam-engine']), 50.4);
   assert.ok(truckSpec(true, ['trot', 'steam-engine']).creepSpeed < truckSpec(true).topSpeed / 2);
 });
+
+test('SCREAM-340: Back It Up raises the top reverse speed by half and changes nothing else', () => {
+  const plain = truckSpec(true, ['trot']);
+  const back = truckSpec(true, ['trot', 'back-it-up']);
+  assert.ok(Math.abs(back.reverseSpeed - plain.reverseSpeed * 1.5) < 1e-9);
+  for (const k of Object.keys(plain)) if (k !== 'reverseSpeed') assert.equal(back[k], plain[k], k);
+  // Quick play's truck never owns a note, so it is unchanged.
+  assert.equal(truckSpec(false).reverseSpeed, truckSpec(false, []).reverseSpeed);
+});

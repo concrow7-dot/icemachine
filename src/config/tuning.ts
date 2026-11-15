@@ -675,3 +675,12 @@ export const LOU_BALL_REVERSED_SECONDS = 10;
  */
 export const DRUM_CONE_RADIUS_FACTOR = 1.1;
 export const DRUM_CONE_SOLO_SECONDS = 30;
+
+/**
+ * SCREAM-340 (PO, November 15, notepad sketches: "Truck upgrade: Reverse speed", named "Back it up"):
+ * the Back It Up note (Truck tree, fourth row, under Brakes Made This Century). The price and the
+ * strength are engineering's proposals; the strength isn't shown (decision 132). Story's top reverse
+ * speed goes from about 46 to about 68 px/s.
+ */
+export const BACK_IT_UP_PRICE_CENTS = 4000;
+export const BACK_IT_UP_REVERSE_FACTOR = 1.5;

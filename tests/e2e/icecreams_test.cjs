@@ -140,6 +140,13 @@ const { chromium } = require('playwright');
   check('...when the 30 seconds run out the tune is back, the ring is its own size and the countdown goes', (await music('m.drumSolo')) + ' ' + (await ev('e.drumSolo')) + ' ' + (await drive('s.drumLabel.visible')) + ' ' + (await drive('Math.round(s.ring.radius) === Math.round(' + (await ev('e.truckNow.musicRadius')) + ')')) + ' ' + (await drive('s.songLabel.text !== "♪ Drum Solo"')), 'false false false true true');
   check('...a sale with both: double tip, reversed steering and the drum solo together', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const before = e.coolerSlots.map(s => s.quantity); e.coolerSlots.forEach(s => { s.quantity = s.flavour === 'louball' || s.flavour === 'drumcone' ? 1 : 0; }); let sale; for (let i = 0; i < 40 && !(sale && sale.louBall && sale.drumCone); i++) { sale = e.startSale(); e.saleNow = null; e.setCustomerWaiting(false); } e.coolerSlots.forEach((s, i) => { s.quantity = before[i]; }); return sale.louBall + ' ' + sale.drumCone + ' ' + sale.tipFactor; }), 'true true 2');
 
+  // ---- SCREAM-340: Back It Up ----
+  {
+    const before = await ev('e.spec.reverseSpeed');
+    await page.evaluate(async () => { const { truckSpec } = await import('/src/state/TruckSpec.js'); const e = window.__game.registry.get('evening'); e.powerUpsOwned.push('back-it-up'); e.truckNow = truckSpec(true, e.powerUps); });
+    check('SCREAM-340: with Back It Up the truck\'s top reverse speed is half as much again', Math.round((await ev('e.spec.reverseSpeed')) / before * 100) / 100, 1.5);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();
