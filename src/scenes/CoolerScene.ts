@@ -159,7 +159,9 @@ export class CoolerScene extends Phaser.Scene {
         width / 2,
         516,
         this.locked
-          ? 'Stock and prices were locked when you left for the road.'
+          ? this.evening.isPeeking
+            ? 'Just looking: stock is bought and prices are set at home.' // SCREAM-321
+            : 'Stock and prices were locked when you left for the road.'
           : this.restocking
             ? 'Restocking at home: the clock is running. Bought stock can be added to, not returned.'
             : !this.evening.isClockRunning && this.evening.clockWaitsForDrive

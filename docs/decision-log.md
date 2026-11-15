@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 125 — Story: Tab looks inside the truck, slow or stopped (2026-11-14)
+
+**Decision (Jira SCREAM-321, PO, November 14):** "I want to make it so a player can see inside the truck at any time. If the player is at very low speed, they can hit "Tab" and they will go to the inside truck view. They can see inventory at this time, but not purchase it. They can see powerups but not purchase them." Asked: very low speed means **creeping or stopped** (roll speed or slower; the truck stops when you go in); the clock **keeps running**; the cooler is **look only** (no buying, no price changes).
+
+**Options considered:** fully stopped only; the clock pausing inside; prices changeable on the road. He chose the first option each time.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076), once the truck has set off. Faster than roll speed (`spec.creepSpeed` + 1 px/s), Tab does nothing, with no message.
+- From the truck screen, DRIVE, Tab or B goes back on the road where the truck stopped. The window still works if a customer is waiting.
+- The cooler's line says "Just looking: stock is bought and prices are set at home."; the board's says "Buy it at home".
+- Customers keep walking and the music keeps playing while inside (as on any stop off the road, SCREAM-114 / 118).
+- `EveningState.startPeek` / `isPeeking`; the Drive scene ends the look when it starts. Tab is captured so the browser doesn't move its focus.
+
 ## 124 — Story: power-ups can be bought at home at any time (2026-11-14)
 
 **Decision (Jira SCREAM-320, PO, November 14):** "I want the player to be able to purchase powerups while at home at any time." The cork board sells before setting off and on every later stop at home (SCREAM-319 opens the truck screen there). Before, only before setting off (decision 073).

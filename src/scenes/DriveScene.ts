@@ -261,6 +261,7 @@ export class DriveScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
+    this.evening.endPeek(); // SCREAM-321: back on the road (DRIVE, Tab, B or a sale), the look inside is over
     this.speed = 0;
     this.hitCooldownUntil = 0;
     this.scraping = false;
@@ -434,9 +435,11 @@ export class DriveScene extends Phaser.Scene {
       if (event.key === 'q' || event.key === 'Q') this.toggleParkBrake();
       if (event.key === 'm' || event.key === 'M') this.showSong(this.music.toggleMute() ? 'Music off (M)' : (this.music.song?.title ?? ''));
       if (event.key === 'n' || event.key === 'N') this.music.skip();
+      if (event.key === 'Tab') this.peekInside();
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir && !this.held.includes(dir)) this.held.push(dir);
     });
+    keyboard?.addCapture('TAB'); // SCREAM-321: Tab looks inside, it doesn't move the browser's focus
     keyboard?.on('keyup', (event: KeyboardEvent) => {
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir) this.held = this.held.filter((d) => d !== dir);
@@ -498,6 +501,20 @@ export class DriveScene extends Phaser.Scene {
       if (this.leaving || !this.scene.isActive()) return;
       showHowToDrive(this);
     });
+  }
+
+  /**
+   * SCREAM-321 (PO, November 14): Tab at roll speed or slower opens the truck screen to look at the
+   * cooler and the power-ups (nothing bought). The truck stops; the clock keeps running. Faster, or
+   * in the middle of something else, Tab does nothing.
+   */
+  peekInside(): void {
+    if (this.leaving || this.uncleLeg || this.arrivingHome || !this.scene.isActive()) return;
+    if (Math.abs(this.speed) > this.evening.spec.creepSpeed + 1) return;
+    if (!this.evening.startPeek()) return;
+    this.speed = 0;
+    this.leaving = true;
+    this.scene.start(SceneKeys.Truck, { station: 'cooler' });
   }
 
   /** SCREAM-208: out of gas: the truck stops where it is while the HUD says it needed a tow. */
