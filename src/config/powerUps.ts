@@ -163,7 +163,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID],
         priceCents: TRAIN_PRICE_CENTS,
         name: 'TRAIN OFF THE TRACKS',
-        description: 'Max velocity increased by 10%.',
+        description: 'Max velocity increased by 15%.',
         logo: 'train-off-tracks',
       },
       { id: 'truck-5', col: 1, row: 2, from: [GITTY_UP_ID, TROT_ID], priceCents: 1500 },

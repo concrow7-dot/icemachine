@@ -4,7 +4,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 127 — Train Off The Tracks: top speed +10%, $30 (2026-11-14)
 
-**Decision (Jira SCREAM-80, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "1. Train off the tracks. Max Velocity increased by 10%", under Gitty Up. Asked, he set the price at **$30** (like the second Customer row). Owned, the truck's top speed is x 1.1 (`TRAIN_TOP_SPEED_FACTOR`).
+**Decision (Jira SCREAM-80, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "1. Train off the tracks. Max Velocity increased by 10%", under Gitty Up. Asked, he set the price at **$30** (like the second Customer row). Owned, the truck's top speed is x 1.1 (`TRAIN_TOP_SPEED_FACTOR`). **While testing (22:50):** "Lets increase the max velocity by 5 on train off the tracks": read as 5 more points, so **15%** (x 1.15), and the note says 15%.
 
 **Options considered:** $25 or $40 each.
 
