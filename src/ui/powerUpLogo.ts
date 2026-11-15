@@ -91,6 +91,8 @@ export function addPowerUpLogo(
     drawMoreJunk(g, size, grey);
   } else if (tree === 'mirror') {
     drawMirror(g, size, grey);
+  } else if (tree === 'sneaker') {
+    drawSneaker(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -698,4 +700,33 @@ export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: b
   g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(X(33), X(54), 10 * u);
   // The "!" beside them.
   g.fillStyle(ink, 1).fillRect(X(50), X(28), 7 * u, 22 * u).fillRect(X(50), X(55), 7 * u, 7 * u);
+}
+
+/**
+ * SCREAM-342: Speedy Neighbors. Engineering's own picture (the PO's sketches give the name only): a
+ * running shoe with speed lines behind it.
+ */
+export function drawSneaker(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shoe = grey ? 0xd0d0d0 : 0xff7a59;
+  const sole = grey ? 0xf0f0f0 : 0xffffff;
+  const stripe = grey ? 0xa8a8a8 : 0xffd23f;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const P = (pts: number[][]) => pts.map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+  // Speed lines behind the heel.
+  g.lineStyle(Math.max(2, 5 * u), ink, 1);
+  g.lineBetween(X(2), X(40), X(22), X(40)).lineBetween(X(6), X(54), X(20), X(54)).lineBetween(X(2), X(68), X(18), X(68));
+  // The shoe's upper: heel at the left, toe at the right.
+  const upper = P([[26, 30], [44, 26], [52, 44], [78, 52], [94, 60], [96, 72], [26, 72]]);
+  g.fillStyle(shoe, 1).fillPoints(upper, true);
+  g.lineStyle(line, ink, 1).strokePoints(upper, true, true);
+  // A stripe on its side, the laces, then the sole.
+  const band = P([[38, 68], [50, 46], [58, 48], [48, 68]]);
+  g.fillStyle(stripe, 1).fillPoints(band, true);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokePoints(band, true, true);
+  g.lineBetween(X(56), X(42), X(62), X(50)).lineBetween(X(63), X(45), X(69), X(53));
+  g.fillStyle(sole, 1).fillRect(X(24), X(70), 74 * u, 10 * u);
+  g.lineStyle(line, ink, 1).strokeRect(X(24), X(70), 74 * u, 10 * u);
 }

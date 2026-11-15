@@ -269,6 +269,15 @@ def read_csv():
             if not person.get('days'):
                 bad('Hard to find needs at least one ticked day')
             person['hardToFind'] = True
+        # SCREAM-342 (PO, November 15): an optional "Fast" column: Yes = a kid who is fast and
+        # follows the truck anywhere (other kids give up after a while). Kids only.
+        fast = (r.get('Fast') or '').strip().lower()
+        if fast not in ('', 'yes', 'no'):
+            bad('Fast must be Yes or blank')
+        if fast == 'yes':
+            if age != 'kid':
+                bad('Fast is for kids only')
+            person['fast'] = True
         out.append(person)
     return out
 
@@ -517,7 +526,8 @@ def place(m, people, index):
                     **({'hinted': True} if p.get('hinted') else {}),
                     **({'days': p['days']} if 'days' in p else {}),
                     **({'hours': p['hours']} if 'hours' in p else {}),
-                    **({'hardToFind': True} if p.get('hardToFind') else {})})
+                    **({'hardToFind': True} if p.get('hardToFind') else {}),
+                    **({'fast': True} if p.get('fast') else {})})
     return out
 
 

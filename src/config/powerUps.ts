@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { getFlavour, type FlavourId } from './flavours';
-import { BACK_IT_UP_PRICE_CENTS, MIRRORS_PRICE_CENTS, MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { BACK_IT_UP_PRICE_CENTS, SPEEDY_PRICE_CENTS, MIRRORS_PRICE_CENTS, MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'back-it-up' | 'more-junk' | 'mirror' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'back-it-up' | 'more-junk' | 'mirror' | 'sneaker' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -77,6 +77,9 @@ export const MORE_JUNK_ID = 'more-junk';
 
 /** SCREAM-341: the Better Mirrors note (Customer tree, fourth row): markers at the screen edge for customers on their way. */
 export const MIRRORS_ID = 'better-mirrors';
+
+/** SCREAM-342: the Speedy Neighbors note (Customer tree, fifth row): most customers run after the truck faster. */
+export const SPEEDY_ID = 'speedy-neighbors';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -367,7 +370,18 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'A marker at the edge of the screen points at each customer on their way to you.',
         logo: 'mirror',
       },
-      { id: 'customer-8', col: 0, row: 4, from: [MIRRORS_ID], priceCents: 2500 },
+      // SCREAM-342 (PO, November 15, notepad sketches): "Customers chasing - Speedy Neighbors". It
+      // takes the Customer 8 dummy's place (engineering's proposal; the sketches give no place).
+      {
+        id: SPEEDY_ID,
+        col: 0,
+        row: 4,
+        from: [MIRRORS_ID],
+        priceCents: SPEEDY_PRICE_CENTS,
+        name: 'SPEEDY NEIGHBORS',
+        description: 'Most customers run after the truck faster.',
+        logo: 'sneaker',
+      },
       { id: 'customer-9', col: 2, row: 4, from: [MIRRORS_ID], priceCents: 2500 },
     ],
   },

@@ -65,6 +65,9 @@ test('SCREAM-296: every note has a name and a price', () => {
   // SCREAM-341: Customer 7 is Better Mirrors now, under the Handy Notebook.
   const mirrors = notes.find((n) => n.id === 'better-mirrors');
   assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 5000, ['handy-notebook'], 'mirror']);
+  // SCREAM-342: Customer 8 is Speedy Neighbors now, under Better Mirrors.
+  const speedy = notes.find((n) => n.id === 'speedy-neighbors');
+  assert.deepEqual([speedy.name, speedy.priceCents, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', 6000, ['better-mirrors'], 'sneaker', 'Most customers run after the truck faster.']);
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && (n.priceCents > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 

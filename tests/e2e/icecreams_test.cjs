@@ -44,6 +44,7 @@ const { chromium } = require('playwright');
   check('Quick play: the clipboard offers the four old ice creams only', (await scenes()) + ' ' + (await sc('Cooler', "s.offered.map(f => f.id).join()")), 'Cooler,Hud eclair,spongepop,explorer,cookie');
   check('...and its cooler has no slot for them', await ev("e.slots.map(s => s.flavour).join()"), 'eclair,spongepop,explorer,cookie');
   check('...and the Story ice creams are not unlocked there', await ev("['louball','drumcone'].map(f => e.flavourUnlocked(f)).join()"), 'false,false');
+  check('SCREAM-342: Quick play has no chasing rules: everyone keeps following at the old speed', await ev("e.residents.chaseRules + ' ' + e.residents.runSpeedOf(e.residents.all[0].resident) + ' ' + e.residents.chaseSecondsOf(e.residents.all[0].resident)"), 'false 37 Infinity');
   check('SCREAM-343: Quick play\'s menu is not capped: the eclair goes past $2.50', await sc('Cooler', "(() => { s.order.addOne('eclair'); for (let i = 0; i < 8; i++) s.order.changePrice('eclair', 25); const p = s.order.slots[0].priceCents; for (let i = 0; i < 8; i++) s.order.changePrice('eclair', -25); s.order.removeOne('eclair'); s.refresh(); return p; })()"), 400);
 
   // ---- Story, On My Own: the board ----
@@ -179,6 +180,31 @@ const { chromium } = require('playwright');
     check('...only customers on their way have one', await drive('[...s.mirrorMarkers.values()].filter(m => m.visible).length') <= await ev("e.residents.all.filter(p => p.customer === 'running' || p.customer === 'waiting').length"), true);
     await drive(`(() => { const e = window.__game.registry.get('evening'); const p = e.residents.all[${far}]; s.truck.setPosition(p.x + 60, p.y + 40); s.speed = 0; return true; })()`); await wait(2600);
     check('...when the customer is on screen the marker goes', await marker('m.visible'), false);
+  }
+
+  // ---- SCREAM-342: Story's chasing rules, and Speedy Neighbors ----
+  {
+    // One customer of a kind sets off after a truck that stays far away; time is stepped by hand.
+    const chase = (kind, seconds) => page.evaluate(([kind, seconds]) => {
+      const e = window.__game.registry.get('evening'); const res = e.residents; res.hearingOff = true;
+      const is = { adult: r => !r.kid, slowKid: r => r.kid && !r.fast, fastKid: r => r.kid && r.fast }[kind];
+      const p = res.all.find(q => q.customer === 'none' && is(q.resident) && !q.resident.hardToFind);
+      const ring = { x: p.x + 5000, y: p.y + 5000, radius: 1, open: false };
+      res.wantIceCream(p);
+      let t = 0, path = 0, x = p.x, y = p.y;
+      while (t < seconds - 1e-6 && p.customer === 'running') { res.update(0.1, ring); t += 0.1; path += Math.hypot(p.x - x, p.y - y); x = p.x; y = p.y; }
+      return p.customer + ' after ' + Math.round(t) + ' s at ' + Math.round(path / t) + ' px/s';
+    }, [kind, seconds]);
+    check('SCREAM-342: Story has the chasing rules on, and four fast kids in Elm Park', (await ev('e.residents.chaseRules')) + ' ' + (await ev("e.residents.all.filter(p => p.resident.fast).map(p => p.resident.id).join()")), 'true T007,T011,T017,T027');
+    const gaveUp = await ev('e.residents.chaseGiveUps');
+    check('...an adult follows the truck for 30 seconds, then goes home', await chase('adult', 60), 'done after 30 s at 37 px/s');
+    check('...a slower kid gives up after 20 seconds', await chase('slowKid', 60), 'done after 20 s at 37 px/s');
+    check('...a fast kid is quicker and is still following after a minute', await chase('fastKid', 60), 'running after 60 s at 56 px/s');
+    check('...the two who gave up are counted', (await ev('e.residents.chaseGiveUps')) - gaveUp, 2);
+    await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.powerUpsOwned.push('speedy-neighbors'); for (const people of e.residentsByMap.values()) people.speedyFactor = e.speedyFactor; });
+    check('SCREAM-342: with Speedy Neighbors an adult goes after the truck faster (still 30 seconds)', await chase('adult', 60), 'done after 30 s at 46 px/s');
+    check('...so does a fast kid', await chase('fastKid', 20), 'running after 20 s at 69 px/s');
+    check('...the slower kids are not: that is the "most"', await chase('slowKid', 60), 'done after 20 s at 37 px/s');
   }
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);

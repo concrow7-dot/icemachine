@@ -48,7 +48,8 @@ import {
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
 import { MAX_PRICE_CENTS } from '../config/tuning';
-import { MIRRORS_ID } from '../config/powerUps';
+import { MIRRORS_ID, SPEEDY_ID } from '../config/powerUps';
+import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
@@ -396,6 +397,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
       people.sometimesFactor = this.bassFactor; // SCREAM-329
+      people.chaseRules = !!this.story && !this.tutorial; // SCREAM-342: Story's chasing rules, not in the uncle's evening
+      people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
       this.residentsByMap.set(id, people);
     }
@@ -747,6 +750,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     addNotebookEntry(this.notebook, { day: this.story.day, who, text });
   }
 
+  /** SCREAM-342: Speedy Neighbors: how much faster most customers go after the truck (1 without the note). */
+  get speedyFactor(): number {
+    return this.powerUpsOwned.includes(SPEEDY_ID) ? SPEEDY_SPEED_FACTOR : 1;
+  }
+
   /** SCREAM-341: Better Mirrors is owned: the road shows a marker for each customer on their way who is off screen. */
   get hasBetterMirrors(): boolean {
     return this.powerUpsOwned.includes(MIRRORS_ID);
@@ -765,6 +773,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (id === GAS_CAN_ID) this.gasCanReady = true; // it comes full
     this.truckNow = truckSpec(!!this.story, this.powerUpsOwned); // SCREAM-309: a power-up may change the truck
     if (id === BASS_ID) for (const people of this.residentsByMap.values()) people.sometimesFactor = this.bassFactor; // SCREAM-329: from now on
+    if (id === SPEEDY_ID) for (const people of this.residentsByMap.values()) people.speedyFactor = this.speedyFactor; // SCREAM-342: from now on
     this.powerUpsSpentCents += note.priceCents;
     this.changeMoney(-note.priceCents, 'Power-up');
     return true;
