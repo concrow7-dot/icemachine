@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 126 — Debug key: Shift+9 adds $50 (2026-11-14)
+
+**Decision (Jira SCREAM-324, PO, November 14):** "For testing. I want to add the ability for me to add money to my wallet on any screen. Lets say +$50. Unless you have a reason against it, lets have the key be \"Shift + 5\"". Shift+5 already shows the loading screen (SCREAM-75), so he chose **Shift+9**. The $50 **only changes cash**: tonight's profit and the end-of-day rows don't count it.
+
+**Options considered:** Shift+5 with the loading-screen preview moved to Shift+9; counting the $50 as income (like Shift+1).
+
+**Why (product owner's rationale):** for testing (his words); the rest _to ask_ if wanted.
+
+**Engineering's calls (proposals):**
+
+- In the HUD with the other debug keys, so it works on every evening screen in both modes (not the title, end-of-day or results screens). Not shown on screen or on the Key Bindings page, like the other debug keys.
+- `EveningState.debugAddCash` raises the evening's starting cash with the cash. A "+$50.00 Debug" pop-up shows.
+
 ## 125 — Story: Tab looks inside the truck, slow or stopped (2026-11-14)
 
 **Decision (Jira SCREAM-321, PO, November 14):** "I want to make it so a player can see inside the truck at any time. If the player is at very low speed, they can hit "Tab" and they will go to the inside truck view. They can see inventory at this time, but not purchase it. They can see powerups but not purchase them." Asked: very low speed means **creeping or stopped** (roll speed or slower; the truck stops when you go in); the clock **keeps running**; the cooler is **look only** (no buying, no price changes).

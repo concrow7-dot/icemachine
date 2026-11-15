@@ -137,7 +137,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private ended = false;
   /** SCREAM-119: the evening ended because the tank ran empty. */
   private ranOutOfGas = false;
-  private readonly startCashCents: number;
+  private startCashCents: number;
   /** SCREAM-191: the uncle's $50 is still to come (guided tutorial, before his line at the cooler). */
   private uncleGiftPending = false;
   private cashCents: number;
@@ -578,6 +578,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (this.ended) return;
     this.cashCents += cents;
     this.emit(EveningEvents.MoneyChanged, cents, this.cashCents, label, popup);
+  }
+
+  /**
+   * Debug (Shift+9, SCREAM-324; PO, November 14): "add money to my wallet on any screen ... +$50".
+   * Only the cash changes: the starting cash rises with it, so tonight's profit doesn't count it.
+   */
+  debugAddCash(cents: number): void {
+    if (this.ended) return;
+    this.startCashCents += cents;
+    this.changeMoney(cents, 'Debug');
   }
 
   // ---- Damage (#10) ----
