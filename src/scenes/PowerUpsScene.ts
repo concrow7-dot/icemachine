@@ -254,7 +254,7 @@ export class PowerUpsScene extends Phaser.Scene {
   /** What the opened note says under its price when there is no button to press. */
   private reason(note: PlacedNote, status: BuyStatus): string {
     if (status === 'owned') return 'Owned';
-    if (status === 'away') return 'Buy at home, before you set off';
+    if (status === 'away') return 'Buy it at home'; // SCREAM-320: any home stop, not only before setting off
     if (status === 'locked') {
       const names = note.from.map((id) => this.notes.find((n) => n.id === id)?.name ?? id);
       // PO, November 14 (testing SCREAM-310): "[POWER UP NAME] Required" instead of "Buy ... first".

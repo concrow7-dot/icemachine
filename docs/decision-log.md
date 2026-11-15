@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 124 — Story: power-ups can be bought at home at any time (2026-11-14)
+
+**Decision (Jira SCREAM-320, PO, November 14):** "I want the player to be able to purchase powerups while at home at any time." The cork board sells before setting off and on every later stop at home (SCREAM-319 opens the truck screen there). Before, only before setting off (decision 073).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Away from home (the Tab view, SCREAM-321) the notes can be seen, not bought; the line says "Buy it at home" (was "Buy at home, before you set off").
+- A truck power-up bought on a home stop works from the moment the truck drives off again.
+- `EveningState.atHome` is true before setting off and while `isRestocking`.
+
 ## 123 — Story: a home stop opens the truck screen (2026-11-14)
 
 **Decision (Jira SCREAM-319, PO, November 14):** "When the player pulls into home, or the player hits tab, it should be on the truck screen, not the cooler screen." Stopping in home's driveway spot (SCREAM-54) opens the truck screen: the cooler (restock, as before), the cork board and DRIVE. The Tab half is SCREAM-321 (decision 125).
