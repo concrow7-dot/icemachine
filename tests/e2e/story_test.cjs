@@ -245,6 +245,21 @@ const { chromium } = require('playwright');
   check('...no more than 1 a night (SCREAM-275; was 4)', (await sched(allWeek, 1, { said: 1, heard: 'clear' })).said, false);
   const forced = await sched(allWeek, 0, { said: 1, force: true, heard: 'clear' });
   check('...Shift+7 (debug) forces one on the next paid sale, once', forced.said + ' ' + forced.force, 'true false');
+  // ---- SCREAM-245: the Handy Notebook writes down what customers say at the window (the same stand-in sales) ----
+  check('SCREAM-245: without the notebook nothing is written down', await ev("e.hasNotebook + ' ' + e.notebook.length"), 'false 0');
+  const nbWas = await ev('JSON.stringify([e.paidSales, e.scheduleLinesSaid, e.hintChance])');
+  await ev("(e.powerUpsOwned.push('handy-notebook'), true)");
+  const kevName = await ev("e.residents.all.find(p => p.resident.id === 'T034').resident.name");
+  const nb1 = await sched(allWeek, 0, { said: 1, force: true, heard: 'clear' });
+  check('...with it, what a customer says about their week is written down: the day, who, and their words without the thanks', await ev('JSON.stringify(e.notebook)'), JSON.stringify([{ day: 1, who: kevName, text: nb1.line.replace(/^Thanks! /, '') }]));
+  const nb2 = await sched(ordinary, 1, { said: 0, share: 1, heard: 'clear', told: 'clear' });
+  check('...and what they say about a neighbour', (await ev('e.notebook.length')) + ' ' + (await ev('e.notebook[1].text')), '2 ' + nb2.line.replace(/^Thanks! /, ''));
+  await ev("(e.servingNow = e.residents.all.find(p => p.resident.id === 'T005'), e.hintsGiven.length = 0, e.lastHintAtSale = -Infinity, true)");
+  const nb3 = await hint(3);
+  check('...and a hint about a big regular', (await ev('e.notebook.length')) + ' ' + (await ev('e.notebook[2].text')), '3 ' + nb3.split('|')[1].replace(/^Thanks! /, ''));
+  check('...the run keeps it when the day ends, like the power-ups', await page.evaluate(() => { const g = window.__game.registry; const run = g.get('story'), e = g.get('evening'); const was = run.notebook; run.notebook = e.notebook.map(x => ({ ...x })); const next = run.newEvening().notebook.length; run.notebook = was; return next; }), 3);
+  await ev("(e.servingNow = null, e.hintsGiven.length = 0, e.lastHintAtSale = -Infinity, e.notebook.length = 0, e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('handy-notebook'), 1), e.scheduleLinesHeard.length = 0, e.neighboursToldAbout.length = 0, true)");
+  await ev(`(([paid, said, chance]) => { e.paidSales = paid; e.scheduleLinesSaid = said; e.hintChance = chance; return true; })(${nbWas})`);
   // ---- SCREAM-249: hours of the evening (Drake Maye, T036, is only home after 7) ----
   check('Hours: at the start of the evening (5 PM) Drake Maye is not home; at 7 he is', await ev("(() => { const r = e.residents, d = r.all.find(p => p.resident.id === 'T036').resident; const now = r.homeNow(d); const real = r.nowMinutes; r.nowMinutes = () => 1141; const later = r.homeNow(d); r.nowMinutes = real; return Math.round(real()) + ' ' + now + ' ' + later; })()"), '1020 false true');
   check('...everyone without hours is home all evening', await ev("e.residents.all.filter(p => !p.resident.hours).every(p => e.residents.homeNow(p.resident))"), true);

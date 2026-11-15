@@ -47,8 +47,9 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
+import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
+import { addNotebookEntry, type NotebookEntry } from './Notebook';
 
 /** SCREAM-296: every note on the cork board. */
 const POWER_UP_NOTES = placeNotes(POWER_UP_TREES);
@@ -279,6 +280,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     uncleGas?: boolean;
     /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
     powerUps?: readonly string[];
+    /** SCREAM-245: Story only: what the Handy Notebook holds so far this run. */
+    notebook?: readonly NotebookEntry[];
   }, mapId: MapId = 'worcester', guided = false) {
     super();
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
@@ -305,6 +308,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
+    this.notebook = (carry?.notebook ?? []).map((e) => ({ ...e })); // SCREAM-245
     this.truckNow = truckSpec(!!carry?.story, this.powerUpsOwned);
     this.gasCanReady = this.powerUpsOwned.includes(GAS_CAN_ID); // SCREAM-122: full again every day
     this.mapsJoined = !!carry?.story && !this.tutorial;
@@ -398,6 +402,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (servedTwice < ROTARY_HINT_REGULARS) return;
     this.rotaryHintGiven = true;
     sale.addRotaryHint(ROTARY_HINT_LINE);
+    this.writeDown(ROTARY_HINT_LINE); // SCREAM-245
   }
 
   /** SCREAM-145: true while the truck is away from the map home is on. */
@@ -673,6 +678,21 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** SCREAM-271: the most a customer pays for one of these tonight before leaving it out of the order. */
   refuseAboveCents(flavour: FlavourId): number {
     return this.story ? storyRefuseAboveCents(flavour) : REFUSE_ABOVE_CENTS;
+  }
+
+  /** SCREAM-245: the Handy Notebook's entries, oldest first (kept for the whole Story run). */
+  readonly notebook: NotebookEntry[];
+
+  /** SCREAM-245: the Handy Notebook is owned: hints are written down, and it sits in the truck to be read. */
+  get hasNotebook(): boolean {
+    return this.powerUpsOwned.includes(NOTEBOOK_ID);
+  }
+
+  /** SCREAM-245: with the notebook, writes down what the customer at the window just said (a hint of any kind). */
+  private writeDown(text: string): void {
+    const who = this.servingNow?.resident.name;
+    if (!this.hasNotebook || !this.story || !who) return;
+    addNotebookEntry(this.notebook, { day: this.story.day, who, text });
   }
 
   /** SCREAM-329: how much more the some-days people's Likelihood counts with Speaker with Heavier Bass (Story only: notes are). */
@@ -1018,6 +1038,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.forceHint = false;
     const pick = choices[Math.floor(Math.random() * choices.length)].resident;
     sale.addHint(pick.id, this.hintFor.get(pick.id)!);
+    this.writeDown(this.hintFor.get(pick.id)!); // SCREAM-245
     this.hintsGiven.push(pick.id);
     this.lastHintAtSale = this.paidSales;
   }
@@ -1060,10 +1081,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.forceNeighbourLine = false;
     if (aboutNeighbour) {
       sale.addNeighbourLine(neighbour!.about, neighbour!.text);
+      this.writeDown(neighbour!.text); // SCREAM-245
       this.neighboursToldAbout.push(neighbour!.about);
       this.scheduleLinesHeard.push(neighbour!.id);
     } else {
       sale.addScheduleLine(own!.text);
+      this.writeDown(own!.text); // SCREAM-245
       this.scheduleLinesHeard.push(own!.id);
     }
     this.scheduleLinesSaid += 1;

@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 134 — Handy Notebook: hints given by customers are written down, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-245, under SCREAM-78, PO):** first raised in the November 10 customers brainstorm: without the notebook, remembering what customers tell you is the point; the notebook is the power-up that takes that work away. On November 14 his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes) made it note 2, in the middle, joined to both the speaker and the calculator: "2 Handy NoteBook - Hints given by customers are written down." "Notebook should be a new clickable item in the truck view." Asked which lines go in, he chose all three kinds (hints about big regulars, what customers say about their own week, what they say about neighbours) and added: "all of the hints that customers say at the window are added to the notebook." Asked the price and how it unlocks: "$40, need either".
+
+**Options considered:** which lines: all three kinds (chosen), big-regular hints only, or hints and own week without neighbours. Unlock: after the speaker or the calculator (chosen), or only with both. Price $40 (chosen) or $45.
+
+**Why (product owner's rationale):** _to ask_ (November 10's is above: remembering is the work the notebook takes away).
+
+**Engineering's calls (proposals):**
+
+- Only hints heard after buying it are written down. Each entry has the day ("Tuesday Day 2"), who said it and their words without the "Thanks!". The same words from the same person are not written twice. The regular's line about the rotary is written down too.
+- It hangs under the tip jar in the truck view (the green cup on the shelf by the window), and only once it is owned. The PO chose the spot while testing: "Lets have notebook hang under the tip jar." (the first build hung it on the side door). How it looks is engineering's placeholder until he draws it.
+- Opened, it is a full-screen pad: newest first, four to a page, ← → to turn the page, B to go back. Reading only, so it also opens while looking inside from the road (Tab).
+- It lasts for the whole Story run and is saved with it at the end of each day, like the power-ups (Restart Evening gives back the notebook the evening started with). A new Story starts with an empty one.
+- SCREAM-245 (the November 10 ticket) was rewritten for it rather than making a duplicate.
+- Story only (decision 076).
+
 ## 133 — Speaker with Heavier Bass: the some-days people come out more often, $40 (2026-11-14)
 
 **Decision (Jira SCREAM-329, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes): "1 Speaker with Heavier Bass - more likely to get customers in their home", drawn under the speaker with a guitar and music notes as the picture. Asked which chance goes up, he chose the **some-days people**; asked the price, "$40".
