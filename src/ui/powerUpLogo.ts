@@ -609,13 +609,15 @@ export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: b
 }
 
 /**
- * SCREAM-340: Back It Up. Engineering's own picture (the PO's sketch gives the name only): the back
- * of a truck with its two red lights, and a thick arrow under it pointing backwards.
+ * SCREAM-340: Back It Up. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): the truck seen from the side, with "<<=" behind it: two arrowheads and two
+ * dashes pointing backwards.
  */
 export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const body = grey ? 0xdcdcdc : 0xfff3d6;
+  const body = grey ? 0xdcdcdc : 0x8fd6c4;
+  const glass = grey ? 0xf0f0f0 : 0xd8f1ff;
   const red = grey ? 0x9a9a9a : 0xd9412b;
   const dark = grey ? 0x8a8a8a : 0x3d3f44;
   const line = Math.max(2, 5 * u);
@@ -624,109 +626,127 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
     g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
     g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
   };
-  // Wheels, then the truck's back: body, door line, bumper, two lights.
-  box(dark, 26, 50, 10, 12);
-  box(dark, 64, 50, 10, 12);
-  box(body, 22, 8, 56, 44);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(50), X(8), X(50), X(52));
-  box(dark, 18, 50, 64, 6);
-  box(red, 26, 38, 9, 8);
-  box(red, 65, 38, 9, 8);
-  // The arrow, pointing down (backwards, seen from behind the truck).
-  const arrow = [
-    [42, 62], [58, 62], [58, 78], [70, 78], [50, 97], [30, 78], [42, 78],
-  ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
-  g.fillStyle(red, 1).fillPoints(arrow, true);
-  g.lineStyle(line, ink, 1).strokePoints(arrow, true, true);
+  // The truck, facing right: a tall box, a window at the front, a bumper line and one big wheel.
+  box(body, 50, 22, 40, 44);
+  box(glass, 68, 30, 16, 14);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(76), X(30), X(76), X(44));
+  g.lineStyle(line, ink, 1).lineBetween(X(46), X(66), X(96), X(66));
+  g.fillStyle(dark, 1).fillCircle(X(76), X(68), 10 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(76), X(68), 10 * u);
+  g.fillStyle(grey ? 0xe0e0e0 : 0xffffff, 1).fillCircle(X(76), X(68), 3.5 * u);
+  // "<<=" behind it: two arrowheads, then two dashes up against the truck.
+  g.lineStyle(Math.max(3, 7 * u), red, 1);
+  for (const x of [6, 20]) g.lineBetween(X(x + 12), X(40), X(x), X(52)).lineBetween(X(x), X(52), X(x + 12), X(64));
+  g.lineBetween(X(36), X(47), X(46), X(47)).lineBetween(X(36), X(57), X(46), X(57));
 }
 
 /**
- * SCREAM-25: More Junk. Engineering's own picture (the PO's sketches give the name only): an open
- * cooler crate with ice creams standing in it, and a green plus at its top right.
+ * SCREAM-25: More Space for Scream. The PO's sketch (Personal Notes, "Pictures for the next
+ * power-ups", November 15): a freezer with its top door swung open to the left: ice creams on
+ * the shelves inside and on the door, and a handle on the closed part below.
  */
 export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const crate = grey ? 0xdcdcdc : 0xbfe3f5;
-  const deep = grey ? 0xb4b4b4 : 0x7fbfe0;
+  const shell = grey ? 0xdcdcdc : 0xe9f4fb;
+  const inside = grey ? 0x9a9a9a : 0x2b4a6b;
   const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
   const X = (v: number) => (v - 50) * u;
-  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+  const box = (colour: number, x: number, y: number, w: number, h: number, stroke = line) => {
     g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
-    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(stroke, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
   };
-  // Three ice creams on sticks, standing up out of the crate.
-  const pops: [number, number][] = [[22, grey ? 0xcfcfcf : 0xf4d35e], [40, grey ? 0xbdbdbd : 0x8b5a3c], [58, grey ? 0xd6d6d6 : 0xf28ca0]];
-  for (const [x, colour] of pops) {
-    box(grey ? 0xe2e2e2 : 0xe8c98f, x + 5, 40, 4, 16);
-    box(colour, x, 14, 14, 30);
-  }
-  // The crate: back lip, front, and a band.
-  box(deep, 8, 50, 76, 8);
-  box(crate, 12, 56, 68, 34);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(72), X(80), X(72));
-  // The plus, top right.
-  const px = X(86);
-  const py = X(22);
-  const arm = 11 * u;
-  g.lineStyle(Math.max(3, 9 * u), grey ? 0x8a8a8a : 0x2e9e44, 1);
-  g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
+  const pops = grey ? [0xcfcfcf, 0xbdbdbd, 0xd6d6d6, 0xc6c6c6] : [0xf4d35e, 0xf28ca0, 0x8b5a3c, 0x9fd3a7];
+  // The closed part below, with its handle.
+  box(shell, 44, 46, 44, 48);
+  g.fillStyle(grey ? 0xb4b4b4 : 0x8a9096, 1).fillRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  g.lineStyle(thin, ink, 1).strokeRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  // The open top: dark inside, a shelf, and four ice creams.
+  box(inside, 44, 10, 44, 36);
+  g.lineStyle(thin, ink, 1).lineBetween(X(44), X(28), X(88), X(28));
+  box(pops[0] ?? 0, 50, 14, 13, 12, thin);
+  box(pops[1] ?? 0, 69, 14, 13, 12, thin);
+  box(pops[2] ?? 0, 50, 32, 13, 12, thin);
+  box(pops[3] ?? 0, 69, 32, 13, 12, thin);
+  // Its door, swung open to the left, with two more on the door's shelf.
+  g.fillStyle(shell, 1).fillRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  box(pops[1] ?? 0, 11, 19, 11, 14, thin);
+  box(pops[0] ?? 0, 26, 19, 11, 14, thin);
 }
 
 /**
- * SCREAM-341: Better Mirrors. Engineering's own picture (the PO's sketches give the name only): a
- * truck's wing mirror on its arm, with a little customer and a "!" showing in the glass.
+ * SCREAM-341: Better Mirrors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a tall truck mirror with a rounder one across its middle, an arrow pointing up in
+ * the top glass and one pointing down in the bottom, and three brackets on its right side.
  */
 export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
   const shell = grey ? 0xb4b4b4 : 0x8a9096;
   const glass = grey ? 0xe6e6e6 : 0xcfeaf7;
-  const skin = grey ? 0xcfcfcf : 0xf2c79b;
-  const shirt = grey ? 0xa8a8a8 : 0xe0564a;
+  const round = grey ? 0xf2f2f2 : 0xe8f7ff;
+  const arrow = grey ? 0x9a9a9a : 0xff4f9a;
   const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
   const X = (v: number) => (v - 50) * u;
-  // The arm to the truck's door (off to the right), then the mirror's shell and glass.
-  g.fillStyle(shell, 1).fillRect(X(70), X(44), 26 * u, 8 * u);
-  g.lineStyle(line, ink, 1).strokeRect(X(70), X(44), 26 * u, 8 * u);
-  g.fillStyle(shell, 1).fillRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
-  g.lineStyle(line, ink, 1).strokeRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
-  g.fillStyle(glass, 1).fillRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
-  // A customer in the glass: head and shoulders, bottom left.
-  g.fillStyle(shirt, 1).fillRect(X(22), X(64), 22 * u, 18 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(22), X(64), 22 * u, 18 * u);
-  g.fillStyle(skin, 1).fillCircle(X(33), X(54), 10 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(X(33), X(54), 10 * u);
-  // The "!" beside them.
-  g.fillStyle(ink, 1).fillRect(X(50), X(28), 7 * u, 22 * u).fillRect(X(50), X(55), 7 * u, 7 * u);
+  // The three brackets to the truck's door, on the right.
+  for (const y of [30, 46, 60]) {
+    g.fillStyle(shell, 1).fillRect(X(64), X(y), 16 * u, 6 * u);
+    g.lineStyle(thin, ink, 1).strokeRect(X(64), X(y), 16 * u, 6 * u);
+  }
+  // The tall mirror, then the rounder one across its middle.
+  g.fillStyle(glass, 1).fillRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.fillStyle(round, 1).fillRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  // An arrow up in the top glass, an arrow down in the bottom glass.
+  const block = (tipY: number, dir: 1 | -1) => {
+    const pts = [
+      [45, tipY], [56, tipY + dir * 11], [49.5, tipY + dir * 11], [49.5, tipY + dir * 21], [40.5, tipY + dir * 21], [40.5, tipY + dir * 11], [34, tipY + dir * 11],
+    ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+    g.fillStyle(arrow, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+  };
+  block(11, 1);
+  block(89, -1);
 }
 
 /**
- * SCREAM-342: Speedy Neighbors. Engineering's own picture (the PO's sketches give the name only): a
- * running shoe with speed lines behind it.
+ * SCREAM-342: Speedy Neighbors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a laced-up high-top shoe with a round toe, and a feathered wing rising from each
+ * side of its ankle.
  */
 export function drawSneaker(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
   const shoe = grey ? 0xd0d0d0 : 0xff7a59;
-  const sole = grey ? 0xf0f0f0 : 0xffffff;
-  const stripe = grey ? 0xa8a8a8 : 0xffd23f;
+  const white = grey ? 0xf0f0f0 : 0xffffff;
   const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
   const X = (v: number) => (v - 50) * u;
   const P = (pts: number[][]) => pts.map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
-  // Speed lines behind the heel.
-  g.lineStyle(Math.max(2, 5 * u), ink, 1);
-  g.lineBetween(X(2), X(40), X(22), X(40)).lineBetween(X(6), X(54), X(20), X(54)).lineBetween(X(2), X(68), X(18), X(68));
-  // The shoe's upper: heel at the left, toe at the right.
-  const upper = P([[26, 30], [44, 26], [52, 44], [78, 52], [94, 60], [96, 72], [26, 72]]);
+  // The two wings first (the shoe's ankle covers where they join): three feather tips each.
+  const wing = (m: (x: number) => number) => {
+    const pts = P([[m(44), 46], [m(30), 40], [m(12), 30], [m(4), 12], [m(16), 18], [m(16), 4], [m(27), 14], [m(31), 2], [m(40), 16], [m(46), 34]]);
+    g.fillStyle(white, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+    g.lineBetween(X(m(18)), X(20), X(m(34)), X(36)).lineBetween(X(m(28)), X(16), X(m(39)), X(32));
+  };
+  wing((x) => x);
+  wing((x) => 100 - x);
+  // The shoe: a tall ankle, the foot out to the right, a round white toe and a white sole.
+  const upper = P([[36, 40], [62, 40], [63, 62], [76, 66], [90, 76], [90, 86], [34, 86]]);
   g.fillStyle(shoe, 1).fillPoints(upper, true);
   g.lineStyle(line, ink, 1).strokePoints(upper, true, true);
-  // A stripe on its side, the laces, then the sole.
-  const band = P([[38, 68], [50, 46], [58, 48], [48, 68]]);
-  g.fillStyle(stripe, 1).fillPoints(band, true);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokePoints(band, true, true);
-  g.lineBetween(X(56), X(42), X(62), X(50)).lineBetween(X(63), X(45), X(69), X(53));
-  g.fillStyle(sole, 1).fillRect(X(24), X(70), 74 * u, 10 * u);
-  g.lineStyle(line, ink, 1).strokeRect(X(24), X(70), 74 * u, 10 * u);
+  g.fillStyle(white, 1).fillCircle(X(82), X(79), 8 * u);
+  g.lineStyle(thin, ink, 1).strokeCircle(X(82), X(79), 8 * u);
+  g.fillStyle(white, 1).fillRect(X(32), X(84), 60 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRect(X(32), X(84), 60 * u, 8 * u);
+  // The ankle's opening and the laces: two crosses down the front.
+  g.fillStyle(grey ? 0x9a9a9a : 0x7a3b2a, 1).fillEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, ink, 1).strokeEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, white, 1);
+  for (const y of [48, 58]) g.lineBetween(X(50), X(y), X(60), X(y + 8)).lineBetween(X(60), X(y), X(50), X(y + 8));
 }

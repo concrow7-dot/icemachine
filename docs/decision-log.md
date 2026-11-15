@@ -20,7 +20,7 @@ So, in Story: an adult follows the truck for 30 seconds and then goes home; a fa
 - Someone who gives up walks home and is done for the evening, like a customer who waited too long at the curb.
 - The uncle's evening and Quick play keep the old behaviour (everyone the same speed, nobody gives up while following).
 - Place: the Customer 8 dummy's spot (fifth row, left, under Better Mirrors). Price: $60. The note's words: "Most customers run after the truck faster."
-- The picture is engineering's own: a running shoe with speed lines.
+- The picture: engineering's own at first (a running shoe with speed lines); then he sent his sketch (02:58) and it was redrawn from it: a laced-up high-top shoe with a wing on each side of its ankle.
 - This overlaps SCREAM-257 (customers walk at a speed that fits their age): look at whether it is still needed.
 
 ## 146 — Better Mirrors: markers at the screen's edge for customers on their way, $50 (2026-11-15)
@@ -38,11 +38,11 @@ So, in Story: an adult follows the truck for 30 seconds and then goes home; a fa
 - The marker is a round badge with the customer's head and a pink pointer toward them. It keeps clear of the gas dial, the key hints and the song's name, and goes when the customer is on screen, served or gone home.
 - Place: the Customer 7 dummy's spot (fourth row, under the Handy Notebook); Customer 8 and 9 hang from it. Price: $50.
 - The note's words: "A marker at the edge of the screen points at each customer on their way to you."
-- The picture is engineering's own: a wing mirror with a customer and a "!" in the glass.
+- The picture: engineering's own at first (a wing mirror with a customer and a "!" in the glass); then he sent his sketch (02:58) and it was redrawn from it: a tall truck mirror with a rounder one across its middle, an arrow up and an arrow down, and three brackets on its side.
 
-## 145 — More Junk: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
+## 145 — More Space for Scream: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
 
-**Decision (Jira SCREAM-25, under SCREAM-78, PO, November 15 notepad sketches):** under "Truck upgrade:" he wrote "Cooler size", and named it: "Cooler Size - 'More Junk'". Asked how much it should open up, he wrote his own answer: "The two slots in a row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot". Once bought, each of Story's three crates has a fourth row of two open squares: 18 ice creams become 24. Story only (decision 076). This is the old "bigger cooler" ticket, rewritten.
+**Decision (Jira SCREAM-25, under SCREAM-78, PO, November 15 notepad sketches):** under "Truck upgrade:" he wrote "Cooler size", and named it: "Cooler Size - 'More Junk'". Asked how much it should open up, he wrote his own answer: "The two slots in a row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot". After seeing it built (02:40) he renamed it: "Change "more Junk" to "More Space for Scream"". Once bought, each of Story's three crates has a fourth row of two open squares: 18 ice creams become 24. Story only (decision 076). This is the old "bigger cooler" ticket, rewritten.
 
 **Options considered:** engineering offered: uncover the rest of one crate; uncover all three; add a fourth crate. He chose none of them and described the bottom row instead. (Engineering's question wrongly said the cooler held 24; it holds 18.)
 
@@ -50,11 +50,12 @@ So, in Story: an adult follows the truck for 30 seconds and then goes home; a fa
 
 **Engineering's calls (proposals):**
 
+- The name sits on two lines on the opened note (MORE SPACE / FOR SCREAM), like the other long names. The code's id stays `more-junk`.
 - Place: the Truck 8 dummy's spot (fifth row, left, under Back It Up). Price: $50.
 - Bought at home or before DRIVE, the new squares can be filled straight away.
 - The right half of every crate stays covered, for later notes.
 - The note's words: "More room in the cooler: a new bottom row opens in every crate."
-- The picture is engineering's own: an open crate of ice creams with a green plus.
+- The picture: engineering's own at first (a crate of ice creams with a green plus); then he sent his sketch (02:58) and it was redrawn from it: a freezer with its top door swung open, ice creams on the shelves and the door.
 
 ## 144 — Back It Up: the truck reverses faster, $40 (2026-11-15)
 
@@ -70,7 +71,7 @@ So, in Story: an adult follows the truck for 30 seconds and then goes home; a fa
 - Price: $40 (the third row is $30).
 - Strength: top reverse speed x 1.5 (Story's about 46 px/s to about 68). How quickly it picks up is unchanged. Not shown on the note (decision 132).
 - The note's words: "Increase the speed of the truck in reverse."
-- The picture is engineering's own: the back of a truck with a red arrow pointing backwards.
+- The picture: engineering's own at first (the back of a truck with a red arrow); then he sent his sketch (02:58) and it was redrawn from it: the truck from the side with "<<=" behind it.
 
 ## 143 — Ice cream notes show what the ice cream costs to stock, with a space between paragraphs (2026-11-15)
 
