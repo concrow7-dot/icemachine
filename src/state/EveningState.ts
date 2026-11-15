@@ -48,6 +48,7 @@ import {
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
 import { MAX_PRICE_CENTS } from '../config/tuning';
+import { MIRRORS_ID } from '../config/powerUps';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
@@ -744,6 +745,11 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const who = this.servingNow?.resident.name;
     if (!this.hasNotebook || !this.story || !who) return;
     addNotebookEntry(this.notebook, { day: this.story.day, who, text });
+  }
+
+  /** SCREAM-341: Better Mirrors is owned: the road shows a marker for each customer on their way who is off screen. */
+  get hasBetterMirrors(): boolean {
+    return this.powerUpsOwned.includes(MIRRORS_ID);
   }
 
   /** SCREAM-329: how much more the some-days people's Likelihood counts with Speaker with Heavier Bass (Story only: notes are). */

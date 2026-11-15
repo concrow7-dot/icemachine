@@ -693,3 +693,19 @@ export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
  */
 export const MORE_JUNK_PRICE_CENTS = 5000;
 export const MORE_JUNK_EXTRA_ROWS = 1;
+
+/**
+ * SCREAM-341 (PO, November 15, notepad sketches: "Better Mirrors: indicator for customers, show
+ * exact customer"; asked what the player should see, he chose edge markers): the Better Mirrors note
+ * (Customer tree, fourth row, under the Handy Notebook). With it, each customer on their way to the
+ * truck who is off screen has a round marker at the screen's edge, with their face, pointing at them.
+ * The price and the marker's sizes (px on the map, before the camera's zoom) are engineering's proposals.
+ */
+export const MIRRORS_PRICE_CENTS = 5000;
+export const MIRROR_MARKER_RADIUS = 13;
+export const MIRROR_MARKER_MARGIN = 24;
+/** Extra room kept clear at the top (song name, credit) and bottom (key hints, park brake) of the road view, map px. */
+export const MIRROR_MARKER_TOP_EXTRA = 13;
+export const MIRROR_MARKER_BOTTOM_EXTRA = 58;
+/** The gas dial's corner (bottom left of the road view), map px wide and high: markers stay above it. */
+export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
