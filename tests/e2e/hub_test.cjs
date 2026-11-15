@@ -292,6 +292,12 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()) === 'Drive,Hud');
   check('SCREAM-81: ...and the ring drawn round the truck is the bigger one', await page.evaluate(() => Math.round(window.__game.scene.getScene('Drive').ring.radius * 10) / 10), 181.5);
   check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('truck-6')")) + ' ' + (await ev("e.buyPowerUp('truck-6')")), 'away false');
+  // SCREAM-320 (PO, November 14): "purchase powerups while at home at any time": a home stop later in the evening.
+  check('SCREAM-320: ...away from home the board says to buy it at home', await ev("e.powerUpStatus('calculator')"), 'away');
+  await ev("(e.changeMoney(3000, 'Test', false), e.startRestock(), true)");
+  check('SCREAM-320: on a home stop after setting off, notes can be bought again', (await ev("e.powerUpStatus('calculator')")) + ' ' + (await ev("e.buyPowerUp('calculator')")) + ' ' + (await ev("e.powerUpStatus('calculator')")), 'ok true owned');
+  await ev('(e.endRestock(), true)');
+  check('SCREAM-320: ...back on the road, not any more', await ev("e.powerUpStatus('customer-4')"), 'away');
   await page.keyboard.down('ArrowUp'); await wait(300); await page.keyboard.up('ArrowUp'); await wait(2000);
   check('SCREAM-310: with Trot, after a tap of the gas the truck creeps on at 18 px/s with no key held', await page.evaluate(() => Math.round(Math.abs(window.__game.scene.getScene('Drive').speed))), 18);
   await ev('(e.fuelLeft = 0.004, true)');

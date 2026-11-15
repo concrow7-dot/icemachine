@@ -607,9 +607,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.powerUpsOwned;
   }
 
-  /** 073: power-ups are bought at home. For now that is before first setting off (a restock stop opens only the cooler). */
+  /**
+   * 073: power-ups are bought at home. SCREAM-320 (PO, November 14): "I want the player to be able
+   * to purchase powerups while at home at any time": before setting off, and on every home stop.
+   */
   get atHome(): boolean {
-    return !this.prepLocked && !this.ended;
+    return (!this.prepLocked || this.restockingNow) && !this.ended;
   }
 
   /** Whether the cork board's note can be bought now, and if not, why. */
