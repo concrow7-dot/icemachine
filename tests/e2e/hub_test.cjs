@@ -249,6 +249,12 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()) === 'Truck,Hud');
   // ---- SCREAM-307: from the second night the evening opens at the truck screen ----
   check('SCREAM-307: Continue on day 2 opens at the truck screen, cooler highlighted, clock waiting', (await scenes()) + ' ' + (await sel()) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').isClockRunning)), 'Truck,Hud cooler false');
+  // SCREAM-324 (PO, November 14): Shift+9 adds $50 on any evening screen; profit doesn't count it.
+  const cash9 = await page.evaluate(() => window.__game.registry.get('evening').moneyCents);
+  const profit9 = await page.evaluate(() => window.__game.registry.get('evening').profitCents);
+  await page.keyboard.down('Shift'); await page.keyboard.press('Digit9'); await page.keyboard.up('Shift'); await wait(150);
+  check('SCREAM-324: Shift+9 on the truck screen adds $50 to the cash, not to the profit', await page.evaluate(([c, p]) => { const e = window.__game.registry.get('evening'); return (e.moneyCents - c) + ' ' + (e.profitCents - p); }, [cash9, profit9]), '5000 0');
+  await page.evaluate((c) => { const e = window.__game.registry.get('evening'); e.changeMoney(c - e.moneyCents, 'Test', false); }, cash9); await wait(100);
   await press('ArrowRight'); await press('ArrowRight');
   check('...the board can be picked first', await sel(), 'menu');
   await press('Enter'); await until(async () => (await scenes()) === 'PowerUps,Hud');
