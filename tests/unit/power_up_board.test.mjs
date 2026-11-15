@@ -78,7 +78,7 @@ test('SCREAM-296: when a note can be bought', () => {
 test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own name and picture', () => {
   const can = notes.find((n) => n.id === 'temp-gas-can');
   assert.deepEqual([can.tree, can.number, can.name, can.priceCents, can.logo], [0, 1, 'TEMPORARY GAS CAN', 1500, 'gas-can']);
-  assert.match(can.description, /fifth of a tank/);
+  assert.match(can.description, /a splash to get you going/);
   const dummy = notes.find((n) => n.id === 'truck-8');
   assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 8', 'truck', ['truck-7']]);
 });
@@ -86,7 +86,7 @@ test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own
 test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own name and picture', () => {
   const gitty = notes.find((n) => n.id === 'gitty-up');
   assert.deepEqual([gitty.tree, gitty.name, gitty.priceCents, gitty.logo, gitty.from], [0, 'GITTY UP', 2000, 'gitty-up', ['temp-gas-can']]);
-  assert.match(gitty.description, /10%/);
+  assert.match(gitty.description, /Increase acceleration\./);
   assert.deepEqual(notes.find((n) => n.id === 'brakes-made-this-century').from, ['gitty-up', 'trot']);
 });
 
@@ -121,17 +121,17 @@ test('SCREAM-303: Service With A Smile is the only top note of the Customer tree
   assert.deepEqual([calc.name, calc.priceCents, calc.description], ['CALCULATOR', 3000, 'Get a calculator to use at the sales window.']);
   // SCREAM-81: the left one is Upgrade Speaker, $30.
   const speaker = notes.find((n) => n.id === 'upgrade-speaker');
-  assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 3000, 'Increase the reach of the speaker by 10%.']);
+  assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 3000, 'Increase the reach of the speaker.']);
 });
 
 test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $30', () => {
   const n = notes.find((x) => x.id === 'train-off-the-tracks');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased by 5%.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased.']);
 });
 
 test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $30; Truck 7 hangs from it', () => {
   const n = notes.find((x) => x.id === 'brakes-made-this-century');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better. 5% increase.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better.']);
   assert.deepEqual(notes.find((x) => x.id === 'truck-7').from, ['brakes-made-this-century']);
 });
 
