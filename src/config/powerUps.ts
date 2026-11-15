@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { BASS_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -51,6 +51,9 @@ export const BASS_ID = 'heavier-bass';
 
 /** SCREAM-245: the Handy Notebook note (Customer tree, third row): hints given by customers are written down. */
 export const NOTEBOOK_ID = 'handy-notebook';
+
+/** SCREAM-330: the This Century Register note (Customer tree, third row): click the ice creams and the price adds up. */
+export const REGISTER_ID = 'this-century-register';
 
 /** SCREAM-317: the Calculator note (+ − × ÷ = on the window's price pad). */
 export const CALCULATOR_ID = 'calculator';
@@ -280,8 +283,18 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Hints given by customers are written down.',
         logo: 'notepad',
       },
-      // The sketch's note 3 (SCREAM-330) is a dummy until its ticket; the rest mirror the Truck tree.
-      { id: 'customer-6', col: 2, row: 2, from: [CALCULATOR_ID], priceCents: 1500 },
+      // SCREAM-330 (PO, November 14, the same sketch): note 3, under the calculator.
+      {
+        id: REGISTER_ID,
+        col: 2,
+        row: 2,
+        from: [CALCULATOR_ID],
+        priceCents: REGISTER_PRICE_CENTS,
+        name: 'THIS CENTURY REGISTER',
+        description: 'Click the icons of the ice cream to calculate price.',
+        logo: 'tablet',
+      },
+      // The rest mirror the Truck tree: dummies until their tickets.
       { id: 'customer-7', col: 1, row: 3, from: [NOTEBOOK_ID], priceCents: 2000 },
       { id: 'customer-8', col: 0, row: 4, from: ['customer-7'], priceCents: 2500 },
       { id: 'customer-9', col: 2, row: 4, from: ['customer-7'], priceCents: 2500 },

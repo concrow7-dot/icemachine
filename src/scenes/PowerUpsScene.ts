@@ -295,8 +295,9 @@ export class PowerUpsScene extends Phaser.Scene {
     // SCREAM-325 (PO, November 14, testing): a long four-word name ("BRAKES MADE THIS CENTURY") ran off
     // the note: "Make this two lines, two words a line."
     const words = note.name.split(' ');
-    const twoLines = note.name.length > 20 && words.length === 4;
-    const shown = twoLines ? `${words[0]} ${words[1]}\n${words[2]} ${words[3]}` : note.name;
+    // SCREAM-330: a three-word one ("THIS CENTURY REGISTER") too, two words then one.
+    const twoLines = note.name.length > 20 && (words.length === 4 || words.length === 3);
+    const shown = twoLines ? `${words[0]} ${words[1]}\n${words.slice(2).join(' ')}` : note.name;
     const name = this.add
       .text(x, top + (twoLines ? 164 : 158), shown, { fontFamily: MARKER_FONT, fontSize: note.name.length > 12 ? '24px' : '30px', color: INK, align: 'center' })
       .setOrigin(0.5);

@@ -434,7 +434,44 @@ const { chromium } = require('playwright');
   await ev("(e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('calculator'), 1), true)");
   await serveNow(); await tick(5100);
   check('...without it, the pad is the plain one again', await sc('Sales', 's.sum === null && !s.calculator.keys.has("+")'), true);
+  check('SCREAM-330: ...and without the register there is no tablet at "How much?"', await sc('Sales', 's.register === null'), true);
   await press('b'); await wait(300);
+
+  // ---- SCREAM-330: This Century Register: click the ice creams and the price adds up (only bought in Story; set here) ----
+  // PO, November 14, testing: "The tablet should replace the calculator".
+  // The suite is nearly a whole evening long by now: wind the clock back so the checks after this one still have their evening.
+  await ev('(e.elapsedMs = Math.min(e.elapsedMs, 120000), true)');
+  await ev("(e.powerUpsOwned.push('calculator', 'this-century-register'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }]); await tick(5100);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-330: with the register, "How much?" shows a tablet in the calculator\'s place: the pad is gone, and so is the mini price menu (PO)', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.register.container.visible + " " + s.calculator.container.visible + " " + s.priceCard.visible + " " + (s.register.container.x === s.calculator.container.x)')), 'pricing true false false true');
+  check('...a tile per ice cream on the menu, and CLEAR and CHARGE', await sc('Sales', '[...s.register.tiles.keys()].join() + " " + [...s.register.keys.keys()].join()'), (await ev('e.slots.filter(s => s.quantity > 0 || e.sale.order.some(l => l.flavour === s.flavour)).map(s => s.flavour).join()')) + ' C,CHARGE');
+  const at = (what) => sc('Sales', `(r => [s.register.container.x + r.x, s.register.container.y + r.y])(s.register.${what})`);
+  const tile = await at('tiles.get("eclair")');
+  const eachR = await ev('e.slots[0].priceCents');
+  await page.mouse.click(tile[0], tile[1]); await wait(150);
+  check('...a click on an ice cream puts its price on the tablet', await sc('Sales', 's.register.display.text + " " + s.register.counts.get("eclair")'), (eachR / 100).toFixed(2) + ' 1');
+  await page.mouse.click(tile[0], tile[1]); await wait(150);
+  check('...a second click adds another: the total, and a 2 on the tile', await sc('Sales', 's.register.display.text + " " + s.register.counts.get("eclair")'), (eachR * 2 / 100).toFixed(2) + ' 2');
+  await page.mouse.move(5, 300); await page.screenshot({ path: outDir + '/sale_register.png' });
+  const clear = await at('keys.get("C")');
+  await page.mouse.click(clear[0], clear[1]); await wait(150);
+  check('...CLEAR empties the total and the counts', await sc('Sales', 's.register.display.text + " " + s.register.counts.size'), '0 0');
+  await page.mouse.click(tile[0], tile[1]); await wait(100);
+  await page.keyboard.type('7'); await wait(100);
+  check('...there is no pad to type on: a number key changes nothing', await sc('Sales', 's.register.display.text'), (eachR / 100).toFixed(2));
+  await press('Delete'); await wait(100);
+  check('...Delete clears too', await sc('Sales', 's.register.display.text'), '0');
+  await press('Enter'); await wait(150);
+  check('...nothing rung up: CHARGE does nothing', await ev('e.sale.phase'), 'pricing');
+  await page.mouse.click(tile[0], tile[1]); await wait(100); await page.mouse.click(tile[0], tile[1]); await wait(100);
+  const cReg = await cash();
+  const chargeKey = await at('keys.get("CHARGE")');
+  await page.mouse.click(chargeKey[0], chargeKey[1]); await wait(200);
+  check('...CHARGE charges what the register added up', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.priceCents')), 'paid ' + eachR * 2);
+  check('...the money is in the till', (await cash()) - cReg >= eachR * 2, true);
+  await press('Enter'); await wait(300);
+  await ev("(e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('calculator'), 2), true)");
 
   // ---- Debug keys moved to Shift ----
   const c7 = await cash();

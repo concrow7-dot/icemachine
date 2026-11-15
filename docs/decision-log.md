@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 135 — This Century Register: click the ice creams and the price adds up, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-330, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes), note 3, under the calculator: "3 This century register - Click the icons of the Ice Cream to calculate price." "Player clicks on which item and they add up automatically." He had crossed out "Register should be a tablet with the "Today Menu" shown." Price: "$40". Asked where the icons should be, he first chose a tablet beside the pad (the calculator pad staying). Seeing that built (the tablet sat in the mini Today's Menu's place), he changed it: **"The tablet should replace the calculator"**. So with the register the pad is gone and the tablet sits where it was. Then, seeing that: **"One the tablet powerup is bought, lets remove the price menu."** So the mini Today's Menu is not taped to the glass while the register is owned: the tablet's tiles show each price.
+
+**Options considered:** a tablet beside the pad (first choice, built, then dropped); a tablet that replaces the number pad (chosen after seeing the first); no tablet, with Today's Menu itself clickable. Price $40 (chosen) or $45.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The tablet shows the total at the top, a tile per ice cream on the menu (picture, name, price), then CLEAR and CHARGE.
+- A click adds one of that ice cream (click twice for two); a small orange number on the tile counts the clicks. CLEAR (or Delete or Backspace) empties the total and the counts. Enter still charges.
+- With no number keys, the price is always the sum of what was clicked: no typing a different price while the register is owned.
+- The player still has to remember the order: the register only adds up.
+- A three-word name over 20 letters sits on two lines on the opened note (THIS CENTURY / REGISTER), like the four-word ones.
+- The picture is his sketch: a tablet with ice cream tiles. No brand.
+- Story only (decision 076).
+
 ## 134 — Handy Notebook: hints given by customers are written down, $40 (2026-11-14)
 
 **Decision (Jira SCREAM-245, under SCREAM-78, PO):** first raised in the November 10 customers brainstorm: without the notebook, remembering what customers tell you is the point; the notebook is the power-up that takes that work away. On November 14 his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes) made it note 2, in the middle, joined to both the speaker and the calculator: "2 Handy NoteBook - Hints given by customers are written down." "Notebook should be a new clickable item in the truck view." Asked which lines go in, he chose all three kinds (hints about big regulars, what customers say about their own week, what they say about neighbours) and added: "all of the hints that customers say at the window are added to the notebook." Asked the price and how it unlocks: "$40, need either".

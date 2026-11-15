@@ -68,6 +68,15 @@ export class CalcSum {
     this.op = null;
   }
 
+  /**
+   * SCREAM-330: This Century Register rings up one ice cream: its price is added to whatever
+   * the pad shows (a sum in the middle is worked out first).
+   */
+  addItem(cents: number): void {
+    this.equals();
+    this.total = (this.total ?? 0) + cents;
+  }
+
   /** The number on the display. */
   display(): string {
     if (this.typed !== '') return this.typed;

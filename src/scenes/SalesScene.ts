@@ -1,14 +1,15 @@
 import * as Phaser from 'phaser';
 import { drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
-import { getFlavour } from '../config/flavours';
+import { getFlavour, type FlavourId } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
 import type { ResidentNow } from '../state/Residents';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
-import { Calculator, type CalculatorKey } from '../ui/Calculator';
+import { Calculator, CALCULATOR_HEIGHT, CALCULATOR_SUMS_WIDTH, type CalculatorKey } from '../ui/Calculator';
 import { CalcSum, type CalcOp } from '../state/CalcSum';
-import { CALCULATOR_ID } from '../config/powerUps';
+import { CALCULATOR_ID, REGISTER_ID } from '../config/powerUps';
+import { RegisterTablet } from '../ui/RegisterTablet';
 import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
 import { loadResidentSheet } from '../ui/residentLook';
@@ -101,6 +102,8 @@ export class SalesScene extends Phaser.Scene {
   private typed = '';
   /** SCREAM-317: with the Calculator power-up, the pad adds up (+ − × ÷ =); null without it (test hook). */
   sum: CalcSum | null = null;
+  /** SCREAM-330: with This Century Register, a tablet of ice creams to click in place of the calculator pad (PO); null without it (test hook). */
+  register: RegisterTablet | null = null;
 
   constructor() {
     super(SceneKeys.Sales);
@@ -182,8 +185,15 @@ export class SalesScene extends Phaser.Scene {
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
     // SCREAM-317: with the Calculator power-up the pad is a column wider, on the right; the digits stay put.
-    this.sum = this.evening.powerUps.includes(CALCULATOR_ID) ? new CalcSum() : null;
-    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key), !!this.sum).setVisible(false);
+    // SCREAM-330 (PO, November 14: "The tablet should replace the calculator"): with This Century Register the
+    // pad is never shown; the tablet sits in its place and adds up with the same sum.
+    const hasCalculator = this.evening.powerUps.includes(CALCULATOR_ID);
+    const hasRegister = this.evening.powerUps.includes(REGISTER_ID);
+    this.sum = hasCalculator || hasRegister ? new CalcSum() : null;
+    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key), hasCalculator).setVisible(false);
+    this.register = hasRegister
+      ? new RegisterTablet(this, CALC_X, CALC_Y, CALCULATOR_SUMS_WIDTH, CALCULATOR_HEIGHT, (flavour) => this.ringUp(flavour), (key) => this.pressKey(key)).setVisible(false)
+      : null;
 
     // Below the window, centred, where GO TO THE COOLER sits (ICE-14, ICE-15). Shows once the
     // sale is over, paid or not; the hint still says sorry when the ice cream ends up free.
@@ -298,6 +308,7 @@ export class SalesScene extends Phaser.Scene {
       // Typed like a calculator (SCREAM-12); the number pad's keys arrive as the same characters.
       if (key === 'c' || key === 'C') this.returnToCooler();
       else if (key === 'r' || key === 'R') this.askAgain(); // SCREAM-285
+      else if (this.register && (key === 'Backspace' || key === 'Delete')) this.pressKey('C'); // SCREAM-330: no pad to type on: both clear
       else if (key === 'Backspace') this.pressKey('BACK');
       else if (key === 'Delete') this.pressKey('C');
       else if (key === 'Enter') this.pressKey('CHARGE');
@@ -319,7 +330,23 @@ export class SalesScene extends Phaser.Scene {
     if (!this.evening.sale?.askAgain(this.evening.nowMs)) return;
     this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
     this.typed = '';
+    this.clearSum();
+    this.refresh();
+  }
+
+  /** SCREAM-317, SCREAM-330: empties the pad's sum and the register's counts. */
+  private clearSum(): void {
     this.sum?.clear();
+    this.register?.clearCounts();
+  }
+
+  /** SCREAM-330: a click on an ice cream on the register adds one of it to the total (test hook). */
+  ringUp(flavour: FlavourId): void {
+    if (this.evening.sale?.phase !== 'pricing' || !this.sum || !this.register) return;
+    const slot = this.evening.slots.find((s) => s.flavour === flavour);
+    if (!slot) return;
+    this.sum.addItem(slot.priceCents);
+    this.register.count(flavour);
     this.refresh();
   }
 
@@ -327,7 +354,7 @@ export class SalesScene extends Phaser.Scene {
   private returnToCooler(): void {
     if (!this.evening.sale?.backToCooler()) return;
     this.typed = ''; // a price already typed is cleared (PO)
-    this.sum?.clear();
+    this.clearSum();
     this.scene.start(SceneKeys.Fill);
   }
 
@@ -351,9 +378,12 @@ export class SalesScene extends Phaser.Scene {
       this.charge();
       return;
     }
-    if (this.sum) {
+    if (this.register) {
+      // SCREAM-330: the register has no number keys: only CLEAR (and CHARGE, above).
+      if (key === 'C') this.clearSum();
+    } else if (this.sum) {
       // SCREAM-317: the Calculator power-up's pad.
-      if (key === 'C') this.sum.clear();
+      if (key === 'C') this.clearSum();
       else if (key === 'BACK') this.sum.back();
       else if (key === '=') this.sum.equals();
       else if (key === '+' || key === '-' || key === '*' || key === '/') this.sum.operator(key as CalcOp);
@@ -372,7 +402,7 @@ export class SalesScene extends Phaser.Scene {
       return;
     }
     this.typed = '';
-    this.sum?.clear();
+    this.clearSum();
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
     if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0, this.evening.sale?.explorationTipCents ?? 0);
@@ -463,6 +493,11 @@ export class SalesScene extends Phaser.Scene {
     this.scene.start(SceneKeys.Drive);
   }
 
+  /** The ice creams on the mini Today's Menu (and on the register): each flavour in the cooler, or in this order. */
+  private menuRows(sale: NonNullable<EveningState['sale']>) {
+    return this.evening.slots.filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour));
+  }
+
   /**
    * SCREAM-125: the prices, as a mini Today's Menu taped to the glass: each flavour in the
    * cooler (or in this order) with its picture and its price in marker, like the cooler's board.
@@ -470,7 +505,7 @@ export class SalesScene extends Phaser.Scene {
   private drawMenuCard(): void {
     const sale = this.evening.sale;
     if (!sale) return;
-    const rows = this.evening.slots.filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour));
+    const rows = this.menuRows(sale);
     const rowH = 26;
     const h = 34 + rows.length * rowH + 6;
     const { w } = MENU_CARD;
@@ -568,10 +603,15 @@ export class SalesScene extends Phaser.Scene {
     this.showLine(sale);
 
     const pricing = sale.phase === 'pricing';
-    if (pricing) this.drawMenuCard();
-    this.priceCard.setVisible(pricing);
+    // SCREAM-330 (PO, November 15: "One the tablet powerup is bought, lets remove the price menu"): the
+    // tablet's tiles already show each price, so the mini Today's Menu is not taped up with the register.
+    if (pricing && !this.register) this.drawMenuCard();
+    this.priceCard.setVisible(pricing && !this.register);
     this.calculator.show(this.sum ? this.sum.display() : this.typed, this.sum?.op ?? null);
-    this.calculator.setVisible(pricing);
+    // SCREAM-330 (PO): the register's tablet replaces the calculator pad.
+    if (pricing && this.register) this.register.show(this.menuRows(sale).map((s) => ({ flavour: s.flavour, priceCents: s.priceCents })), this.sum?.display() ?? '0');
+    this.register?.setVisible(pricing);
+    this.calculator.setVisible(pricing && !this.register);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
     this.offeringNext = sale.phase === 'over' && !!this.nextCustomer();
@@ -592,7 +632,7 @@ export class SalesScene extends Phaser.Scene {
     }
     if (pricing) {
       // Shortened to make room for C (the line was as wide as the screen).
-      hint = `Type The Price   Enter: Charge   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
+      hint = `${this.register ? 'Click The Ice Creams' : 'Type The Price'}   Enter: Charge   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
     }
     if (sale.phase === 'over') {
       hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';
