@@ -5,6 +5,7 @@ import { LOAD_AHEAD_LOADING_AFTER_MS, SCREEN_FADE_MS } from '../config/tuning';
 import { STORY_MAP } from '../state/StoryRun';
 import { loadTruckInterior } from '../ui/truckInterior';
 import { loadCoolerArt } from './CoolerScene';
+import { loadBikeArt } from './StoryIntroScene';
 import { loadCreditsArt } from './TutorialCrawlScene';
 import { loadUncleArt } from './UncleIntroScene';
 
@@ -24,6 +25,7 @@ import { loadUncleArt } from './UncleIntroScene';
  */
 export function loadStoryAhead(scene: Phaser.Scene, withUncle = false): void {
   loadCoolerArt(scene);
+  loadBikeArt(scene); // SCREAM-242: the New Bike screen's picture
   loadTruckInterior(scene);
   if (withUncle) {
     loadCreditsArt(scene, MAPS[STORY_MAP]);
