@@ -8,7 +8,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Later the same night (01:14 to 01:18):** with a photo of a real cup of ice, "It should look more like this" and "Make sure to include the two balls at the bottom of the cone": the picture was redrawn as a clear plastic cone cup of cherry ice with a rimmed lid (still "Lou" and "II", our own lettering) and bigger gumballs in the point. And "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
 
-**At 01:58,** with a close-up sketch of the cup's rim: "I want the edges to meet" and "Remove lou and I": the lid is now a plain disc with no lettering, and the cup's sides run straight from the two ends of the lid's oval.
+**At 01:58,** with a close-up sketch of the cup's rim: "I want the edges to meet" and "Remove lou and I": the lid is plain, with no lettering, and the cup's sides run straight from the two ends of the lid's oval. At 02:00, with a sketch of a long flat oval: "Still too circular": the lid is drawn as a long flat oval, tilted up to the right.
 
 **Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Reversed: steering only (chosen), everything, or gas and brake only. Note price: $30 (chosen), $40, or $25 like the Explorer Pop. Name: keep "Two Ball Screwball", or a parody name (chosen, his own).
 
