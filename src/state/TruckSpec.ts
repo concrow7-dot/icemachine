@@ -86,7 +86,7 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
   const topSpeed = (weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED) * (has(TRAIN_ID) ? TRAIN_TOP_SPEED_FACTOR : 1);
   // SCREAM-310: Trot raises the creep (Story's 12 px/s to 18). The roll down from top speed still
   // takes STORY_TRUCK_ROLL_SECONDS, ending at the new creep; turns widen above it (SCREAM-280).
-  const creepSpeed = (weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED) * (has(TROT_ID) ? TROT_CREEP_FACTOR : 1) * (has(STEAM_ID) ? STEAM_CREEP_FACTOR : 1); // SCREAM-326: Steam Engine
+  const creepSpeed = (weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED) * (1 + (has(TROT_ID) ? TROT_CREEP_FACTOR - 1 : 0) + (has(STEAM_ID) ? STEAM_CREEP_FACTOR - 1 : 0)); // SCREAM-326: Steam Engine adds Trot's step again
   return {
     weak,
     topSpeed,
