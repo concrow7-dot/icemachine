@@ -19,7 +19,8 @@ export function modesUnlocked(): boolean {
 const LOCK_NOTE = "Play Story's first day to unlock Quick Play.";
 import { formatMoney } from '../util/format';
 import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
-import { weekdayName } from '../state/Residents';
+import { dayText } from '../state/Residents';
+import { STORY_DAYS } from '../config/tuning';
 
 // Issue #4: title screen. Placeholder text until art direction (#17) is decided.
 // SCREAM-53 (PO, October 30, after playtest feedback): no difficulty choice;
@@ -100,7 +101,7 @@ export class TitleScene extends Phaser.Scene {
     this.options = save
       ? [
           { id: 'quick', label: 'Quick Play' },
-          { id: 'continue', label: `Continue Story: ${weekdayName(save.day)}, ${formatMoney(save.cashCents)}` },
+          { id: 'continue', label: `Continue Story: ${dayText(save.day, STORY_DAYS)}, ${formatMoney(save.cashCents)}` },
           { id: 'story', label: 'New Story' },
         ]
       : [
