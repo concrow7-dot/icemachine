@@ -113,43 +113,36 @@ def cookie():
 
 
 def louball():
-    """SCREAM-334 (the PO's second sketch, November 15, "Lets switch to this design", then "It
-    should look more like this" with a photo of a cup of ice, and "Make sure to include the two
-    balls at the bottom of the cone"): a clear plastic cone cup lying on a slant, point down to
-    the left, full of cherry ice; a flat round lid with a rim that says "Lou" with "II" under
-    it (our own lettering, no real product's label); two gumballs side by side in the point."""
+    """SCREAM-334. The PO's sketches and words, November 15: a cone cup on a slant with two
+    gumballs in the point; "It should look more like this" (a photo of a cup of ice); "Make sure
+    to include the two balls at the bottom of the cone"; then, with a close-up sketch of the
+    rim, "I want the edges to meet" (the cup's sides run straight from the two ends of the
+    lid's oval, no overhang) and "Remove lou and I" (a plain lid, no lettering)."""
     img, d, R = frame(4)
     ink = (60, 34, 30, 255)
-    blue = (40, 70, 160, 255)
     plastic = (236, 226, 230, 255)
-    # The cup: a long smooth cone from the lid down to a rounded point, bottom left.
-    d.polygon([(7, 10), (25, 16), (8, 35), (3, 35), (1, 32), (1, 29)], fill=ink)
+    # The lid's oval: its two ends are where the cup's sides start.
+    lid = [7, 1, 26, 14]
+    left_end, right_end = (7, 8), (26, 8)
+    # The cup: straight sides from the oval's ends down to a rounded point, bottom left.
+    d.polygon([left_end, right_end, (9, 35), (4, 35), (1, 32), (1, 28)], fill=ink)
     # Clear plastic wall, then the cherry ice inside it, with a shine down one side.
-    d.polygon([(8, 12), (23, 17), (7, 34), (4, 34), (2, 32), (2, 30)], fill=plastic)
-    d.polygon([(9, 13), (22, 18), (10, 31), (6, 27)], fill=(226, 60, 88, 255))
-    d.polygon([(10, 14), (14, 15), (8, 26), (7, 25)], fill=(246, 122, 140, 255))
-    d.polygon([(19, 18), (21, 18), (11, 30), (10, 30)], fill=(190, 40, 70, 255))
-    # The two balls at the bottom of the cone, side by side, big enough to read.
+    d.polygon([(8, 9), (24, 9), (8, 34), (5, 34), (2, 32), (2, 28)], fill=plastic)
+    d.polygon([(9, 10), (23, 10), (11, 30), (6, 27)], fill=(226, 60, 88, 255))
+    d.polygon([(10, 12), (13, 12), (8, 25), (7, 24)], fill=(246, 122, 140, 255))
+    d.polygon([(20, 13), (22, 12), (12, 29), (11, 29)], fill=(190, 40, 70, 255))
+    # The two balls at the bottom of the cone, side by side.
     d.ellipse([2, 27, 8, 33], fill=ink)
     d.ellipse([3, 28, 7, 32], fill=(70, 150, 240, 255))
     d.ellipse([7, 24, 13, 30], fill=ink)
     d.ellipse([8, 25, 12, 29], fill=(250, 214, 70, 255))
     R(4, 29, 1, 1, (210, 232, 255, 255))
     R(9, 26, 1, 1, (255, 248, 200, 255))
-    # The lid: a flat disc seen from above, with a raised rim.
-    d.ellipse([4, 0, 27, 16], fill=ink)
-    d.ellipse([5, 1, 26, 15], fill=(214, 216, 226, 255))
-    d.ellipse([6, 2, 25, 14], fill=(252, 250, 244, 255))
-    # "LOU" in 3 x 5 pixel letters...
-    x, y = 9, 4
-    R(x, y, 1, 5, blue); R(x, y + 4, 3, 1, blue)                                   # L
-    x += 4
-    R(x, y, 1, 5, blue); R(x + 2, y, 1, 5, blue); R(x, y, 3, 1, blue); R(x, y + 4, 3, 1, blue)  # O
-    x += 4
-    R(x, y, 1, 5, blue); R(x + 2, y, 1, 5, blue); R(x, y + 4, 3, 1, blue)          # U
-    # ...and "II" under it, to the right, with its bars top and bottom.
-    R(15, 10, 5, 1, blue); R(15, 13, 5, 1, blue)
-    R(16, 10, 1, 4, blue); R(18, 10, 1, 4, blue)
+    # The lid: a plain flat disc with a rim, drawn over the top of the cup so the edges meet.
+    d.ellipse(lid, fill=ink)
+    d.ellipse([lid[0] + 1, lid[1] + 1, lid[2] - 1, lid[3] - 1], fill=(214, 216, 226, 255))
+    d.ellipse([lid[0] + 2, lid[1] + 2, lid[2] - 2, lid[3] - 2], fill=(252, 250, 244, 255))
+    d.arc([lid[0] + 4, lid[1] + 3, lid[2] - 6, lid[3] - 5], 180, 300, fill=(255, 255, 255, 255))
     return img
 
 
