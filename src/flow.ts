@@ -205,11 +205,12 @@ export function getEvening(scene: Phaser.Scene): EveningState {
 /** Stations inside the truck (issue #7). */
 export type Station = 'menu' | 'cooler' | 'driver' | 'window';
 
-/** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66). */
+/** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66), except in Story (SCREAM-318: DRIVE does). */
 export function returnToTruck(from: Phaser.Scene, station: Station, startClock = true): void {
   const evening = getEvening(from);
   // SCREAM-307: coming back from the cork board, or from an empty cooler before setting off, leaves it waiting.
-  if (startClock) evening.startClock();
+  // SCREAM-318: in Story it waits for DRIVE whatever the station.
+  if (startClock && !evening.clockWaitsForDrive) evening.startClock();
   // SCREAM-171: in the guided tutorial, after Buy Stock the uncle has a word in the truck, then
   // walks to the cab and drives (UncleIntroScene, then the drive scene).
   if (evening.tutorial?.legToDrive === 'toRegular' && !evening.isPrepLocked) {
