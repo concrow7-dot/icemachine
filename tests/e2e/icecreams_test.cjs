@@ -42,7 +42,12 @@ const { chromium } = require('playwright');
   // ---- Quick play never offers a Story ice cream ----
   await page.click('canvas'); await press('Enter'); await wait(400);
   check('Quick play: the clipboard offers the four old ice creams only', (await scenes()) + ' ' + (await sc('Cooler', "s.offered.map(f => f.id).join()")), 'Cooler,Hud eclair,spongepop,explorer,cookie');
+<<<<<<< HEAD
   check('...and the Story ice creams are not unlocked there', await ev("['louball','drumcone'].map(f => e.flavourUnlocked(f)).join()"), 'false,false');
+=======
+  check('...and its cooler has no slot for them', await ev("e.slots.map(s => s.flavour).join()"), 'eclair,spongepop,explorer,cookie');
+  check('...and the Story ice creams are not unlocked there', await ev("['louball'].map(f => e.flavourUnlocked(f)).join()"), 'false');
+>>>>>>> feature/SCREAM-334-two-ball-lou-ball
 
   // ---- Story, On My Own: the board ----
   await flow('f.startStory(s, false)');
