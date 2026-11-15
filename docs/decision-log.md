@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 132 — Power-up notes don't give exact numbers (2026-11-14)
+
+**Decision (Jira SCREAM-328, PO, November 14):** "I want to remove all the hints on the powerups that give the exact information on the powerups. For example, 10% or 5%". The notes say what a power-up does, not by how much.
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):** the new wording: Gitty Up "Increase acceleration. The truck still is heavy, so don't expect much."; Train Off The Tracks "Max velocity increased."; Brakes Made This Century "Brakes are better."; Upgrade Speaker "Increase the reach of the speaker."; Service With A Smile "Tips start higher, and you get more time to earn one."; SpongePop "Kids who order one tip more."; Temporary Gas Can "... a splash to get you going. ...". The ice creams' price line ("won't pay more than $3.00") stays: it is a price to set, not a strength. The effects don't change.
+
 ## 131 — The HUD and Continue Story show the weekday and the day count (2026-11-14)
 
 **Decision (Jira SCREAM-327, PO, November 14):** "I want to add it so that on the saved game and at the top of the screen on the hud, the count of days and day of the week appear. So: Tuesday Day 2/10 is an example". On November 10 (SCREAM-221 / 232) the HUD had been cut to the weekday alone; the count is back now that Story is 10 days.

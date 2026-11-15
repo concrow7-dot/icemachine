@@ -94,9 +94,10 @@ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
  * The sketch's last two shapes (a circle, then a box) wait for a taller board: it has 5 rows.
  */
 /** SCREAM-135: what an ice cream does besides selling, told on its note (Story only). */
+// SCREAM-328 (PO, November 14): no note says exactly how strong it is ("For example, 10% or 5%").
 const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
   eclair: 'If you have these stocked in your cooler, every customer will buy an extra ice cream.', // SCREAM-315; the PO's words
-  spongepop: 'Kids who order one tip 10% more.', // SCREAM-313; engineering's wording
+  spongepop: 'Kids who order one tip more.', // SCREAM-313; engineering's wording
   explorer: 'The further from home, the bigger the tip.', // SCREAM-312; the PO's words (November 14)
 };
 
@@ -136,7 +137,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [],
         priceCents: 1500,
         name: 'TEMPORARY GAS CAN',
-        description: 'Run out of gas and it pours itself in: a fifth of a tank. Full again every day.',
+        description: 'Run out of gas and it pours itself in: a splash to get you going. Full again every day.',
         logo: 'gas-can',
       },
       // SCREAM-309 (PO, November 14): the left note under the gas can.
@@ -147,7 +148,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GAS_CAN_ID],
         priceCents: GITTY_UP_PRICE_CENTS,
         name: 'GITTY UP',
-        description: "Increase acceleration by 10%. The truck still is heavy, so don't expect much.",
+        description: "Increase acceleration. The truck still is heavy, so don't expect much.",
         logo: 'gitty-up',
       },
       // SCREAM-310 (PO, November 14): the right note under the gas can.
@@ -169,7 +170,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID],
         priceCents: TRAIN_PRICE_CENTS,
         name: 'TRAIN OFF THE TRACKS',
-        description: 'Max velocity increased by 5%.',
+        description: 'Max velocity increased.',
         logo: 'train-off-tracks',
       },
       // SCREAM-325 (PO, November 14, notepad sketch): the Truck tree's third row.
@@ -180,7 +181,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID, TROT_ID],
         priceCents: BRAKES_PRICE_CENTS,
         name: 'BRAKES MADE THIS CENTURY',
-        description: 'Brakes are better. 10% increase.',
+        description: 'Brakes are better.',
         logo: 'brake-disc',
       },
       // SCREAM-326 (PO, November 14, notepad sketch): the Truck tree's third row.
@@ -224,7 +225,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [],
         priceCents: SMILE_PRICE_CENTS,
         name: 'SERVICE WITH A SMILE',
-        description: 'Tips start at 25%, not 20%, and you get 10 more seconds to earn one.',
+        description: 'Tips start higher, and you get more time to earn one.',
         logo: 'tip-jar',
       },
       // SCREAM-303 (PO, November 14): "service with a smile is the only first option under the customer tree".
@@ -236,7 +237,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [SMILE_ID],
         priceCents: SPEAKER_PRICE_CENTS,
         name: 'UPGRADE SPEAKER',
-        description: 'Increase the reach of the speaker by 10%.',
+        description: 'Increase the reach of the speaker.',
         logo: 'speaker',
       },
       // SCREAM-317 (PO, November 14): the right note under Service With A Smile.
