@@ -64,6 +64,7 @@ export const KEY_GROUPS: readonly KeyGroup[] = [
       ['Backspace', 'Erase One Digit'],
       ['Delete', 'Clear The Price'],
       ['+ - * / =', 'Add Up The Price (With The Calculator)'],
+      ['Click An Ice Cream', 'Add Its Price (With The Register)'],
       ['Enter', 'Charge'],
       ['Enter Or Space', 'Next Customer (When The Sale Is Over)'],
       ['B', 'Drive Off'],

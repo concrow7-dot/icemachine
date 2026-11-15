@@ -67,3 +67,28 @@ test('back takes off a digit; C clears everything', () => {
   c.clear();
   assert.deepEqual([c.display(), c.op, c.total], ['0', null, null]);
 });
+
+test('SCREAM-330: the register rings up ice creams: each adds its price to what the pad shows', () => {
+  const sum = new CalcSum();
+  sum.addItem(250);
+  sum.addItem(250);
+  sum.addItem(300);
+  assert.equal(sum.display(), '8.00');
+  assert.equal(sum.chargeCents(), 800);
+  // In the middle of a sum, the sum is worked out first.
+  const mid = new CalcSum();
+  for (const k of ['1', '.', '5']) mid.digit(k);
+  mid.operator('+');
+  mid.digit('2');
+  mid.addItem(250);
+  assert.equal(mid.display(), '6.00');
+  assert.equal(mid.op, null);
+  // The pad still works afterwards: + 1 = one dollar more.
+  mid.operator('+');
+  mid.digit('1');
+  assert.equal(mid.chargeCents(), 700);
+  // C clears it.
+  mid.clear();
+  mid.addItem(300);
+  assert.equal(mid.display(), '3.00');
+});

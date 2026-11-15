@@ -93,6 +93,8 @@ export function addPowerUpLogo(
     drawBassGuitar(g, size, grey);
   } else if (tree === 'notepad') {
     drawNotepad(g, size, grey);
+  } else if (tree === 'tablet') {
+    drawTablet(g, size, grey);
   } else {
     // A coin with a dollar sign.
     g.fillStyle(colour(0xb8860b), 1).fillCircle(0, 0, r);
@@ -559,4 +561,41 @@ export function drawNotepad(g: Phaser.GameObjects.Graphics, size: number, grey: 
     const c = P(26 + i * 10.5, 15);
     g.lineStyle(thin, ink, 1).strokeEllipse(c.x, c.y, 6 * u, 13 * u);
   }
+}
+
+/**
+ * SCREAM-330: This Century Register. The PO's sketch (Personal Notes, "Customer power-ups, third
+ * row", November 14): a tablet leaning to the right, a slot at the top, two small squares and a
+ * bigger one on its screen (the ice creams to click). Drawn like the gas can: flat colour, a
+ * thick dark outline. No brand.
+ */
+export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0x9a9a9a : 0x3f4247;
+  const screen = grey ? 0xe2e2e2 : 0xeaf3fa;
+  const tiles = grey ? [0xc8c8c8, 0xb8b8b8, 0xd2d2d2] : [0xf7a8c4, 0x8fd0f0, 0xffd66b];
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const lean = 0.12; // leaning right, as he drew it
+  const P = (x: number, y: number) => {
+    const dx = x - 50;
+    const dy = y - 50;
+    return new Phaser.Math.Vector2((dx * Math.cos(lean) - dy * Math.sin(lean)) * u, (dx * Math.sin(lean) + dy * Math.cos(lean)) * u);
+  };
+  const box = (colour: number, x: number, y: number, w: number, h: number, width: number) => {
+    const pts = [P(x, y), P(x + w, y), P(x + w, y + h), P(x, y + h)];
+    g.fillStyle(colour, 1).fillPoints(pts, true);
+    g.lineStyle(width, ink, 1).strokePoints(pts, true, true);
+  };
+  box(body, 20, 4, 60, 92, line);
+  box(screen, 27, 16, 46, 66, thin);
+  // The slot at the top and the button at the bottom.
+  g.lineStyle(thin, grey ? 0xd0d0d0 : 0x9aa3ad, 1).lineBetween(P(43, 10).x, P(43, 10).y, P(57, 10).x, P(57, 10).y);
+  const button = P(50, 89);
+  g.fillStyle(grey ? 0xd0d0d0 : 0x9aa3ad, 1).fillCircle(button.x, button.y, 3 * u);
+  // The ice creams to click: two small tiles, then a bigger one.
+  box(tiles[0], 31, 22, 17, 17, thin);
+  box(tiles[1], 52, 22, 17, 17, thin);
+  box(tiles[2], 31, 45, 24, 28, thin);
 }
