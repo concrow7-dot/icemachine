@@ -1,0 +1,56 @@
+// SCREAM-245 (PO, November 14): the Handy Notebook. "Hints given by customers are written down."
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { game } from './game.mjs';
+
+const { addNotebookEntry, notebookPages, readNotebook, NOTEBOOK_MAX_ENTRIES } = await game('state/Notebook');
+const { POWER_UP_TREES } = await game('config/powerUps');
+const { placeNotes, buyStatus } = await game('state/PowerUpBoard');
+const { NOTEBOOK_ENTRIES_PER_PAGE } = await game('config/tuning');
+
+test('SCREAM-245: Handy Notebook is the Customer tree\'s middle third-row note, $40, unlocked by the speaker OR the calculator (PO: "need either")', () => {
+  const n = placeNotes(POWER_UP_TREES).find((x) => x.id === 'handy-notebook');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'HANDY NOTEBOOK', 4000, 'notepad', ['upgrade-speaker', 'calculator'], 'Hints given by customers are written down.']);
+  assert.equal(buyStatus(n, ['service-with-a-smile'], 4000, true), 'locked');
+  assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'ok');
+  assert.equal(buyStatus(n, ['service-with-a-smile', 'calculator'], 4000, true), 'ok');
+  assert.equal(buyStatus(n, ['service-with-a-smile', 'calculator'], 3999, true), 'poor');
+});
+
+test('entries are written at the end, with the day and who said it', () => {
+  const book = [];
+  assert.equal(addNotebookEntry(book, { day: 1, who: 'Big Kev', text: 'See you tomorrow!' }), true);
+  assert.equal(addNotebookEntry(book, { day: 2, who: 'Mary Poppsicles', text: ' I\'m home Mondays. ' }), true);
+  assert.deepEqual(book, [{ day: 1, who: 'Big Kev', text: 'See you tomorrow!' }, { day: 2, who: 'Mary Poppsicles', text: 'I\'m home Mondays.' }]);
+});
+
+test('the same words from the same person are not written twice; the same words from someone else are', () => {
+  const book = [{ day: 1, who: 'Big Kev', text: 'See you tomorrow!' }];
+  assert.equal(addNotebookEntry(book, { day: 3, who: 'Big Kev', text: 'See you tomorrow!' }), false);
+  assert.equal(addNotebookEntry(book, { day: 3, who: 'Pizza Joe', text: 'See you tomorrow!' }), true);
+  assert.equal(addNotebookEntry(book, { day: 3, who: 'Pizza Joe', text: '   ' }), false, 'nothing said');
+  assert.equal(book.length, 2);
+});
+
+test('pages: newest first, a few to a page, and one empty page when nothing is written', () => {
+  assert.deepEqual(notebookPages([], NOTEBOOK_ENTRIES_PER_PAGE), [[]]);
+  const book = [];
+  for (let i = 1; i <= NOTEBOOK_ENTRIES_PER_PAGE + 1; i++) addNotebookEntry(book, { day: 1, who: 'A', text: `line ${i}` });
+  const pages = notebookPages(book, NOTEBOOK_ENTRIES_PER_PAGE);
+  assert.equal(pages.length, 2);
+  assert.equal(pages[0][0].text, `line ${NOTEBOOK_ENTRIES_PER_PAGE + 1}`);
+  assert.deepEqual(pages[1].map((e) => e.text), ['line 1']);
+});
+
+test('a full notebook drops its oldest entry', () => {
+  const book = [];
+  for (let i = 0; i < NOTEBOOK_MAX_ENTRIES + 3; i++) addNotebookEntry(book, { day: 1, who: 'A', text: `line ${i}` });
+  assert.equal(book.length, NOTEBOOK_MAX_ENTRIES);
+  assert.equal(book[0].text, 'line 3');
+});
+
+test('reading a save: only real entries are kept; a save from before the notebook has none', () => {
+  assert.deepEqual(readNotebook(undefined), []);
+  assert.deepEqual(readNotebook('nope'), []);
+  assert.deepEqual(readNotebook([{ day: 2, who: 'Big Kev', text: 'Hi' }, { day: 0, who: 'x', text: 'y' }, { day: 2, who: 5, text: 'y' }, null, { day: 2, who: 'x', text: '' }]), [{ day: 2, who: 'Big Kev', text: 'Hi' }]);
+});

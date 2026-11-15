@@ -3,6 +3,7 @@ import { getEvening, getStory, pauseEvening, SceneKeys, type Station } from '../
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
+import { drawNotepad } from '../ui/powerUpLogo';
 
 // Issue #7: the truck interior hub, like the Backyard Baseball treehouse.
 // SCREAM-57: the PO's coloured drawing of the inside of the truck (from his pen
@@ -50,6 +51,14 @@ export const ZONES: Zone[] = [
     points: [290, 108, 672, 108, 672, 392, 362, 392, 362, 282, 290, 282],
     tag: { x: 481, y: 140 },
   },
+  // SCREAM-245 (PO, November 14: "Notebook should be a new clickable item in the truck view"): the
+  // Handy Notebook hangs on the side door once it is owned. Where it hangs is engineering's proposal.
+  {
+    id: 'notebook',
+    name: 'NOTEBOOK',
+    points: [702, 308, 764, 308, 764, 384, 702, 384],
+    tag: { x: 733, y: 290 },
+  },
   {
     id: 'window',
     name: 'WINDOW',
@@ -57,6 +66,9 @@ export const ZONES: Zone[] = [
     tag: { x: 880, y: 200 },
   },
 ];
+
+/** SCREAM-245: where the Handy Notebook hangs (the middle of its picture) and how big it is drawn. */
+export const NOTEBOOK_AT = { x: 733, y: 348, size: 58 };
 
 export class TruckScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -83,7 +95,16 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
 
+    // SCREAM-245: the notebook itself, on a nail in the side door (only once it is owned).
+    if (this.evening.hasNotebook) {
+      const pad = this.add.graphics().setPosition(NOTEBOOK_AT.x, NOTEBOOK_AT.y);
+      pad.lineStyle(2, OUTLINE, 1).lineBetween(-12, -24, 0, -38).lineBetween(12, -24, 0, -38);
+      pad.fillStyle(OUTLINE, 1).fillCircle(0, -38, 3);
+      drawNotepad(pad, NOTEBOOK_AT.size, false);
+    }
+
     for (const zone of ZONES) {
+      if (!this.isAvailable(zone.id) && zone.id === 'notebook') continue; // nothing to click until it is owned
       // A screen-sized invisible zone whose clickable area is just the traced outline.
       const shape = this.add
         .zone(0, 0, width, height)
@@ -151,6 +172,7 @@ export class TruckScene extends Phaser.Scene {
 
   /** The window can only be used while a customer is waiting (PO decision on #7). */
   private isAvailable(id: Station): boolean {
+    if (id === 'notebook') return this.evening.hasNotebook; // SCREAM-245
     return id !== 'window' || this.evening.customerWaiting;
   }
 
@@ -186,6 +208,7 @@ export class TruckScene extends Phaser.Scene {
       else pauseEvening(this);
     }
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
+    if (id === 'notebook') this.scene.start(SceneKeys.Notebook); // SCREAM-245: reading only
     if (id === 'driver') {
       // SCREAM-307: from the hub with nothing stocked yet, the cooler opens with its warning
       // instead (the truck can't set off empty, as the cooler already said, #66).

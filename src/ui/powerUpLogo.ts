@@ -91,6 +91,8 @@ export function addPowerUpLogo(
     drawSpeakerHorn(g, size, grey);
   } else if (tree === 'bass-guitar') {
     drawBassGuitar(g, size, grey);
+  } else if (tree === 'notepad') {
+    drawNotepad(g, size, grey);
   } else {
     // A coin with a dollar sign.
     g.fillStyle(colour(0xb8860b), 1).fillCircle(0, 0, r);
@@ -513,4 +515,48 @@ export function drawBassGuitar(g: Phaser.GameObjects.Graphics, size: number, gre
   note(86, 50, 1);
   note(70, 8 + 12, 0.8);
   note(90, 12 + 12, 0.7);
+}
+
+/**
+ * SCREAM-245: the Handy Notebook. The PO's sketch (Personal Notes, "Customer power-ups, third
+ * row", November 14): a spiral notepad leaning to the left, rings along the top, three wavy lines
+ * of writing. Drawn like the gas can: flat colour, a thick dark outline. The truck view draws the
+ * same picture where the notebook hangs (TruckScene).
+ */
+export function drawNotepad(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const paper = grey ? 0xe2e2e2 : 0xfff8d6;
+  const cover = grey ? 0xb0b0b0 : 0x2884d6;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const lean = -0.14; // leaning left, as he drew it
+  const P = (x: number, y: number) => {
+    const dx = x - 50;
+    const dy = y - 50;
+    return new Phaser.Math.Vector2((dx * Math.cos(lean) - dy * Math.sin(lean)) * u, (dx * Math.sin(lean) + dy * Math.cos(lean)) * u);
+  };
+  // The back cover peeking out, then the page.
+  const back = [P(24, 20), P(82, 20), P(82, 94), P(24, 94)];
+  g.fillStyle(cover, 1).fillPoints(back, true);
+  g.lineStyle(line, ink, 1).strokePoints(back, true, true);
+  const page = [P(18, 16), P(76, 16), P(76, 90), P(18, 90)];
+  g.fillStyle(paper, 1).fillPoints(page, true);
+  g.lineStyle(line, ink, 1).strokePoints(page, true, true);
+  // Three wavy lines of writing.
+  g.lineStyle(thin, ink, 1);
+  for (const y of [40, 56, 72]) {
+    g.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const p = P(26 + i * 7, y + (i % 2 === 0 ? -2 : 2));
+      if (i === 0) g.moveTo(p.x, p.y);
+      else g.lineTo(p.x, p.y);
+    }
+    g.strokePath();
+  }
+  // The rings along the top.
+  for (let i = 0; i < 5; i++) {
+    const c = P(26 + i * 10.5, 15);
+    g.lineStyle(thin, ink, 1).strokeEllipse(c.x, c.y, 6 * u, 13 * u);
+  }
 }

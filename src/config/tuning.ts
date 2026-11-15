@@ -572,6 +572,12 @@ export const HINT_FIRST_AFTER_SALES = 3;
 export const HINT_GAP_SALES = 4;
 /** At most this many hints in an evening. */
 export const HINT_MAX_PER_EVENING = 2;
+/**
+ * SCREAM-245 (PO, November 14): the Handy Notebook, $40 (his answer). Every hint a customer says
+ * at the window is written down once it is owned. How many fit on a page of it.
+ */
+export const NOTEBOOK_PRICE_CENTS = 4000;
+export const NOTEBOOK_ENTRIES_PER_PAGE = 4;
 
 // ---- Customers mention their own schedule (SCREAM-247) ----
 // PO, November 10 (decision 064): now and then a customer leaving the window says something

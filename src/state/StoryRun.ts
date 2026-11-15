@@ -4,6 +4,7 @@ import { BIKE_PRICE_CENTS, FUEL_STORY_MIN_START, FUEL_STORY_OUT_OF_GAS_START, FU
 import type { MapId } from '../config/maps';
 import { EveningState, type CoolerSlot } from './EveningState';
 import { clearStorySave, saveStory, type StorySave } from './StorySave';
+import type { NotebookEntry } from './Notebook';
 
 // SCREAM-19 (PO, October 31): Story mode. Several evenings in a row; the cash
 // and the ice cream left in the cooler carry from one evening to the next
@@ -71,6 +72,8 @@ export class StoryRun {
   uncleGasUsed = false;
   /** SCREAM-296: the power-ups owned when tonight started (note ids). Bought with the run's cash; kept for the rest of the run. */
   powerUps: string[] = [];
+  /** SCREAM-245: what the Handy Notebook held when tonight started (so Restart Evening gives tonight's back). */
+  notebook: NotebookEntry[] = [];
   /** Set once the run is over (the last day ended, or out of money). */
   outcome: DayOutcome | null = null;
   /** SCREAM-18: the whole run's takings, for the end-of-run stats. */
@@ -93,6 +96,7 @@ export class StoryRun {
       this.rotaryHintGiven = save.rotaryHintGiven ?? false;
       this.uncleGasUsed = save.uncleGasUsed ?? false;
       this.powerUps = [...(save.powerUps ?? [])];
+      this.notebook = (save.notebook ?? []).map((e) => ({ ...e }));
       if (save.seed !== undefined) this.seed = save.seed;
     }
   }
@@ -110,6 +114,7 @@ export class StoryRun {
         rotaryHintGiven: this.rotaryHintGiven,
         uncleGas: !this.uncleGasUsed,
         powerUps: this.powerUps,
+        notebook: this.notebook,
       },
       STORY_MAP,
       this.withUncle && this.day === 1,
@@ -133,6 +138,7 @@ export class StoryRun {
     this.rotaryHintGiven = evening.rotaryHintGiven;
     if (evening.uncleGasUsed) this.uncleGasUsed = true;
     this.powerUps = [...evening.powerUps]; // SCREAM-296
+    this.notebook = evening.notebook.map((e) => ({ ...e })); // SCREAM-245
     const b = evening.breakdown;
     this.totals = {
       salesCents: this.totals.salesCents + b.salesCents,
@@ -160,6 +166,7 @@ export class StoryRun {
         rotaryHintGiven: this.rotaryHintGiven,
         uncleGasUsed: this.uncleGasUsed,
         powerUps: this.powerUps,
+        notebook: this.notebook,
       });
     } else {
       this.outcome = result;

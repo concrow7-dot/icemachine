@@ -2,6 +2,7 @@ import { FLAVOURS, type FlavourId } from '../config/flavours';
 import type { CoolerSlot } from './EveningState';
 import type { RunTotals } from './StoryRun';
 import { FUEL_STORY_START } from '../config/tuning';
+import { readNotebook, type NotebookEntry } from './Notebook';
 
 // SCREAM-17 (PO, October 31): Story mode is saved in the browser, the same way
 // high scores are (decision 004): no accounts, and clearing the browser's data
@@ -30,6 +31,8 @@ export type StorySave = {
   uncleGasUsed?: boolean;
   /** SCREAM-296: the power-ups owned (the cork board's note ids). Saves from before it have none. */
   powerUps?: string[];
+  /** SCREAM-245: the Handy Notebook's entries (oldest first). Saves from before it have none. */
+  notebook?: NotebookEntry[];
 };
 
 /**
@@ -80,6 +83,7 @@ export function loadStory(): StorySave | null {
       rotaryHintGiven: data.rotaryHintGiven === true,
       uncleGasUsed: data.uncleGasUsed === true,
       powerUps: Array.isArray(data.powerUps) ? data.powerUps.filter((id): id is string => typeof id === 'string') : undefined,
+      notebook: readNotebook(data.notebook),
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),
