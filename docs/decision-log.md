@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 153 — Chocolate Eclair: the extra ice cream can be any ice cream, and one eclair in the cooler is enough (2026-11-15)
+
+**Decision (Jira SCREAM-354, under SCREAM-78, PO, November 15, 17:39; changes decision 118):** "For the chocolate eclair. I want to make sure that customers are buying an extra ice cream, even if they aren't buying an eclair. If the eclair is in the cooler, they buy an extra ice cream." Told that the extra one was always an eclair (his November 14 choice), he chose: the extra is "Any ice cream they'd buy"; and when every eclair in the cooler is already in the customer's order, "Yes, any eclair counts".
+
+So, in Story: when the cooler holds at least one Chocolate Eclair as a customer steps up, their order gets one more ice cream, of any kind they would pay for that has one left beyond their order.
+
+**Options considered:** the extra: any ice cream they'd buy (chosen), one more of what they ordered, or keep it an eclair. With no spare eclair: any eclair counts (chosen), or a spare eclair is needed (as it was).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Each kind of ice cream that qualifies is as likely as the next to be the extra one.
+- If nothing qualifies (everything left is already in the order, or priced over its limit), the order is as it was.
+- The eclair's own price no longer matters: it only has to be in the cooler.
+- Unchanged from decision 118: everyone, set order sizes included (Big Kev's 7 becomes 8); nothing extra is shown; the uncle's evening too; Story only.
+
 ## 152 — Big Kev's street is Haviland Street; the sheet's Street column is what the game uses (2026-11-15)
 
 **Decision (Jira SCREAM-353, under SCREAM-11, PO, November 15, 17:23):** "I want to move where the character big Kev lives. I just want to change the street name to haviland st. Since that is where I find him all the time."
