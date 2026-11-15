@@ -81,6 +81,8 @@ export function addPowerUpLogo(
     g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
   } else if (tree === 'train-off-tracks') {
     drawTrainOffTracks(g, size, grey);
+  } else if (tree === 'brake-disc') {
+    drawBrakeDisc(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -393,4 +395,36 @@ export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number,
     g.fillStyle(dark, 1).fillCircle(c.x, c.y, 7 * u);
     g.lineStyle(line, ink, 1).strokeCircle(c.x, c.y, 7 * u);
   }
+}
+
+/**
+ * SCREAM-325: Brakes Made This Century. From the PO's sketch (a disc): a shiny brake disc with its
+ * drilled holes and hub, and a red caliper gripping its edge. Original drawing.
+ */
+export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const disc = grey ? 0xc4c4c4 : 0xc9d1d8;
+  const hub = grey ? 0x9e9e9e : 0x7d8791;
+  const red = grey ? 0xb0b0b0 : 0xd8332a;
+  const line = Math.max(2, 5 * u);
+  const cx = -6 * u;
+  g.fillStyle(disc, 1).fillCircle(cx, 0, 40 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 40 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 0.5).strokeCircle(cx, 0, 30 * u);
+  for (let i = 0; i < 8; i++) {
+    const t = (i / 8) * Math.PI * 2;
+    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 23 * u, Math.sin(t) * 23 * u, 2.6 * u);
+  }
+  g.fillStyle(hub, 1).fillCircle(cx, 0, 14 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 14 * u);
+  for (let i = 0; i < 5; i++) {
+    const t = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 7.5 * u, Math.sin(t) * 7.5 * u, 2 * u);
+  }
+  g.fillStyle(0xffffff, grey ? 0.2 : 0.45).fillEllipse(cx - 20 * u, -18 * u, 14 * u, 7 * u);
+  // The caliper: a rounded block over the right edge.
+  g.fillStyle(red, 1).fillRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
+  g.fillStyle(0xffffff, grey ? 0.2 : 0.4).fillRect(27 * u, -15 * u, 4 * u, 22 * u);
 }

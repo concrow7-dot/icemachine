@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
-import { TRAIN_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'train-off-tracks' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -51,6 +51,9 @@ export const CALCULATOR_ID = 'calculator';
 
 /** SCREAM-80: the Train Off The Tracks note (Truck tree, third row). */
 export const TRAIN_ID = 'train-off-the-tracks';
+
+/** SCREAM-325: the Brakes Made This Century note (Truck tree, third row). */
+export const BRAKES_ID = 'brakes-made-this-century';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -166,9 +169,19 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Max velocity increased by 10%.',
         logo: 'train-off-tracks',
       },
-      { id: 'truck-5', col: 1, row: 2, from: [GITTY_UP_ID, TROT_ID], priceCents: 1500 },
+      // SCREAM-325 (PO, November 14, notepad sketch): the Truck tree's third row.
+      {
+        id: BRAKES_ID,
+        col: 1,
+        row: 2,
+        from: [GITTY_UP_ID, TROT_ID],
+        priceCents: BRAKES_PRICE_CENTS,
+        name: 'BRAKES MADE THIS CENTURY',
+        description: 'Brakes are better. 10% increase.',
+        logo: 'brake-disc',
+      },
       { id: 'truck-6', col: 2, row: 2, from: [TROT_ID], priceCents: 1500 },
-      { id: 'truck-7', col: 1, row: 3, from: ['truck-5'], priceCents: 2000 },
+      { id: 'truck-7', col: 1, row: 3, from: [BRAKES_ID], priceCents: 2000 },
       { id: 'truck-8', col: 0, row: 4, from: ['truck-7'], priceCents: 2500 },
       { id: 'truck-9', col: 2, row: 4, from: ['truck-7'], priceCents: 2500 },
     ],

@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 128 — Brakes Made This Century: brakes +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-325, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "2. Brakes made this Century. Brakes are better. 10% increase.", under both Gitty Up and Trot. Asked, he set the price at **$30** (like the second Customer row). Owned, braking time is divided by 1.1 (`BRAKES_FACTOR`).
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's middle third-row note (was Truck 5), under Gitty Up or Trot; Truck 7 now hangs from it.
+- "10% better" read as braking time / 1.1 (like Gitty Up's acceleration).
+- Picture: an original brake disc with a red caliper (`drawBrakeDisc`), from his sketch.
+- SCREAM-87 (steering, brakes and turning) keeps steering and turning.
+
 ## 127 — Train Off The Tracks: top speed +10%, $30 (2026-11-14)
 
 **Decision (Jira SCREAM-80, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "1. Train off the tracks. Max Velocity increased by 10%", under Gitty Up. Asked, he set the price at **$30** (like the second Customer row). Owned, the truck's top speed is x 1.1 (`TRAIN_TOP_SPEED_FACTOR`).

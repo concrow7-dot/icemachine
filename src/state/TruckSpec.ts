@@ -1,7 +1,8 @@
-import { TRAIN_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
+import { TRAIN_ID, BRAKES_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
 import {
   COOLER_CAPACITY,
   GITTY_UP_ACCELERATION_FACTOR,
+  BRAKES_FACTOR,
   TRAIN_TOP_SPEED_FACTOR,
   SPEAKER_RADIUS_FACTOR,
   TROT_CREEP_FACTOR,
@@ -91,7 +92,8 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     accelerationSeconds:
       (weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS) /
       (has(GITTY_UP_ID) ? GITTY_UP_ACCELERATION_FACTOR : 1),
-    brakingSeconds: weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS,
+    // SCREAM-325: Brakes Made This Century, braking 10% better.
+    brakingSeconds: (weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS) / (has(BRAKES_ID) ? BRAKES_FACTOR : 1),
     creepSpeed,
     // Story: from top speed down to the creep in STORY_TRUCK_ROLL_SECONDS.
     coastKeep: weak ? (creepSpeed / topSpeed) ** (TRUCK_COAST_KEEP_SECONDS / STORY_TRUCK_ROLL_SECONDS) : TRUCK_COAST_KEEP,
