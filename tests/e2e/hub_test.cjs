@@ -216,7 +216,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/hub_cork_note_poor.png' });
   await press('Enter');
   check('...and Enter buys nothing', (await cashNow()) + ' ' + (await pu("s.status('train-off-the-tracks')")), '300 poor');
-  await page.evaluate((c) => { const e = window.__game.registry.get('evening'); e.changeMoney(c - e.moneyCents, 'Test', false); }, cash - 3500); await wait(100);
+  await page.evaluate((c) => { const e = window.__game.registry.get('evening'); e.changeMoney(c - e.moneyCents, 'Test', false); }, Math.max(cash - 3500, 3000)); await wait(100);
   check('...with the cash back, the same note can be bought', (await pu('s.status()')) + ' ' + (await pu('!!s.buyButton')), 'ok true');
   const c0 = await clockAt(); await wait(600);
   check('SCREAM-318: ...the clock waits at the board until DRIVE (Story)', (await clockAt()) === c0, true);
