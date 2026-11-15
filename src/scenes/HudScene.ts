@@ -12,7 +12,7 @@ import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
 import { markTutorialDone, skipUncle } from '../state/Tutorial';
 import { count } from '../state/Counter';
-import { weekdayName } from '../state/Residents';
+import { dayText } from '../state/Residents';
 
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
@@ -49,7 +49,8 @@ export class HudScene extends Phaser.Scene {
     const story = getStory(this);
     // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
     // SCREAM-221 / SCREAM-232 (PO, November 10): just the weekday ("leave it at the day of the week"); Story starts on a Monday.
-    this.dayLabel = story ? `   ${weekdayName(story.day)}` : '';
+    // SCREAM-327 (PO, November 14): the count is back beside it: "Tuesday Day 2/10".
+    this.dayLabel = story ? `   ${dayText(story.day, story.days)}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);

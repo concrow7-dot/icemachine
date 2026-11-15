@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 131 — The HUD and Continue Story show the weekday and the day count (2026-11-14)
+
+**Decision (Jira SCREAM-327, PO, November 14):** "I want to add it so that on the saved game and at the top of the screen on the hud, the count of days and day of the week appear. So: Tuesday Day 2/10 is an example". On November 10 (SCREAM-221 / 232) the HUD had been cut to the weekday alone; the count is back now that Story is 10 days.
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- One function, `dayText(day, days)` in `state/Residents.ts`, writes it for both places.
+- The end-of-day screen keeps its own wording ("END OF TUESDAY").
+
 ## 130 — Story is 10 days: Monday to Friday twice (2026-11-14)
 
 **Decision (Jira SCREAM-322, PO, November 14):** "making the story 10 days long. Monday through friday for day 1-5 and 6-10". Asked: the bike **stays $600**; after Friday (day 5) **skip straight to Monday** (day 6); customers' schedules are **the same both weeks**. Before, 5 days (decision 046).
