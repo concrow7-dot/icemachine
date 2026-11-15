@@ -605,13 +605,15 @@ export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: b
 }
 
 /**
- * SCREAM-340: Back It Up. Engineering's own picture (the PO's sketch gives the name only): the back
- * of a truck with its two red lights, and a thick arrow under it pointing backwards.
+ * SCREAM-340: Back It Up. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): the truck seen from the side, with "<<=" behind it: two arrowheads and two
+ * dashes pointing backwards.
  */
 export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const body = grey ? 0xdcdcdc : 0xfff3d6;
+  const body = grey ? 0xdcdcdc : 0x8fd6c4;
+  const glass = grey ? 0xf0f0f0 : 0xd8f1ff;
   const red = grey ? 0x9a9a9a : 0xd9412b;
   const dark = grey ? 0x8a8a8a : 0x3d3f44;
   const line = Math.max(2, 5 * u);
@@ -620,20 +622,18 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
     g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
     g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
   };
-  // Wheels, then the truck's back: body, door line, bumper, two lights.
-  box(dark, 26, 50, 10, 12);
-  box(dark, 64, 50, 10, 12);
-  box(body, 22, 8, 56, 44);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(50), X(8), X(50), X(52));
-  box(dark, 18, 50, 64, 6);
-  box(red, 26, 38, 9, 8);
-  box(red, 65, 38, 9, 8);
-  // The arrow, pointing down (backwards, seen from behind the truck).
-  const arrow = [
-    [42, 62], [58, 62], [58, 78], [70, 78], [50, 97], [30, 78], [42, 78],
-  ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
-  g.fillStyle(red, 1).fillPoints(arrow, true);
-  g.lineStyle(line, ink, 1).strokePoints(arrow, true, true);
+  // The truck, facing right: a tall box, a window at the front, a bumper line and one big wheel.
+  box(body, 50, 22, 40, 44);
+  box(glass, 68, 30, 16, 14);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(76), X(30), X(76), X(44));
+  g.lineStyle(line, ink, 1).lineBetween(X(46), X(66), X(96), X(66));
+  g.fillStyle(dark, 1).fillCircle(X(76), X(68), 10 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(76), X(68), 10 * u);
+  g.fillStyle(grey ? 0xe0e0e0 : 0xffffff, 1).fillCircle(X(76), X(68), 3.5 * u);
+  // "<<=" behind it: two arrowheads, then two dashes up against the truck.
+  g.lineStyle(Math.max(3, 7 * u), red, 1);
+  for (const x of [6, 20]) g.lineBetween(X(x + 12), X(40), X(x), X(52)).lineBetween(X(x), X(52), X(x + 12), X(64));
+  g.lineBetween(X(36), X(47), X(46), X(47)).lineBetween(X(36), X(57), X(46), X(57));
 }
 
 /**
