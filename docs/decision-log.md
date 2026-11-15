@@ -45,7 +45,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 ## 128 — Brakes Made This Century: brakes +10%, $30 (2026-11-14)
 
-**Decision (Jira SCREAM-325, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "2. Brakes made this Century. Brakes are better. 10% increase.", under both Gitty Up and Trot. Asked, he set the price at **$30** (like the second Customer row). Owned, braking time is divided by 1.1 (`BRAKES_FACTOR`).
+**Decision (Jira SCREAM-325, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "2. Brakes made this Century. Brakes are better. 5% increase.", under both Gitty Up and Trot. Asked, he set the price at **$30** (like the second Customer row). Owned, braking time is divided by 1.1 (`BRAKES_FACTOR`). **While testing (22:57):** "I want to make the brakes only be 5% better as well": now divided by 1.05.
 
 **Options considered:** $25 or $40 each.
 

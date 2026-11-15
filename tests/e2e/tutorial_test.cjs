@@ -32,7 +32,7 @@ const { chromium } = require('playwright');
   check('Tutorial already played: Story asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
   check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
-  check('...Day 1 of 5, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/5 2500');
+  check('...Day 1 of 10, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/10 2500');
   check('...with its own 40 residents (sheet 23)', await ev('e.residents.all.length + " " + e.residents.all.every(p => p.resident.id.startsWith("T"))'), '40 true');
 
   // ---- On the road ----

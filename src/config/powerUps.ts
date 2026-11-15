@@ -180,7 +180,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID, TROT_ID],
         priceCents: BRAKES_PRICE_CENTS,
         name: 'BRAKES MADE THIS CENTURY',
-        description: 'Brakes are better. 10% increase.',
+        description: 'Brakes are better. 5% increase.',
         logo: 'brake-disc',
       },
       // SCREAM-326 (PO, November 14, notepad sketch): the Truck tree's third row.
