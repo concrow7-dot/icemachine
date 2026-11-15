@@ -358,7 +358,7 @@ const { chromium } = require('playwright');
   await page.mouse.click(600, 300);
   await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
   await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);
-  check('SCREAM-207: the uncle has handed over the wheel: the "How To Drive" pop-up, the road waits', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('HowToDrive', 's.lines.length')), 'true 7');
+  check('SCREAM-207: the uncle has handed over the wheel: the "How To Drive" pop-up, the road waits', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('HowToDrive', 's.lines.length')), 'true 8');
   await page.screenshot({ path: outDir + '/how_to_drive_after_uncle.png' });
   await page.mouse.click(600, 300); await wait(400);
   check('...a click closes it and the road runs', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false false');

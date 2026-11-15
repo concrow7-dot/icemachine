@@ -145,6 +145,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private prepLocked = false;
   /** SCREAM-54: true while the player is at the cooler after pulling into Home's driveway. */
   private restockingNow = false;
+  /** SCREAM-321: looking inside the truck with Tab, away from home. */
+  private peekingNow = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
   /** SCREAM-67: the resident being served at the window, or null. */
   private servingNow: ResidentNow | null = null;
@@ -1165,6 +1167,30 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   get homeOpensTruck(): boolean {
     return this.clockWaitsForDrive;
+  }
+
+  /**
+   * SCREAM-321 (PO, November 14): "If the player is at very low speed, they can hit \"Tab\" and they
+   * will go to the inside truck view. They can see inventory at this time, but not purchase it. They
+   * can see powerups but not purchase them." Story, once the truck has set off. The clock runs.
+   */
+  get canPeek(): boolean {
+    return this.clockWaitsForDrive && this.prepLocked && !this.restockingNow && !this.ended;
+  }
+
+  startPeek(): boolean {
+    if (!this.canPeek) return false;
+    this.peekingNow = true;
+    return true;
+  }
+
+  endPeek(): void {
+    this.peekingNow = false;
+  }
+
+  /** True while looking inside the truck with Tab (SCREAM-321). */
+  get isPeeking(): boolean {
+    return this.peekingNow;
   }
 
   /** True while restocking at home (SCREAM-54). */
