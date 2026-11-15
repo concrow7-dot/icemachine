@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 152 — Big Kev's street is Haviland Street; the sheet's Street column is what the game uses (2026-11-15)
+
+**Decision (Jira SCREAM-353, under SCREAM-11, PO, November 15, 17:23):** "I want to move where the character big Kev lives. I just want to change the street name to haviland st. Since that is where I find him all the time."
+
+So Big Kev (T034, house 82, Elm Park) is on Haviland Street in the Residents sheet and in the game: in customers' hints about him, in schedule lines and in who his neighbours are. His house, door, yard and curb spot are where they were.
+
+**Why (product owner's rationale):** "Since that is where I find him all the time." (His curb spot is on Haviland Street; his house is near the corner of Institute Road, and the game named his street from the top edge of the house.)
+
+**Options considered (engineering):** change Big Kev alone (chosen: he asked for only that), or work everyone's street out from their curb spot, which would also change 4 more people in Elm Park and 27 in Foley Stadium (offered to him; not done).
+
+**Engineering's calls (proposals):**
+
+- The sheet's Street column is now what the game uses, so he can change anyone's street by editing the sheet and saying "sync residents" (it was "for reading only" and the build ignored it). A blank Street still means the street nearest the top of the house. The build stops with a message if a Street is not a street on that map (a roundabout is not one).
+- Both tabs already matched what the game worked out, so nobody else changes.
+
 ## 151 — A shining red pixel-art bike on the New Bike screen (2026-11-15)
 
 **Decision (Jira SCREAM-242, under SCREAM-6, PO, November 10 and 15):** on November 10 he asked to "add a pixel-art bike image to the page, and make it shine so it looks like a cartoonishly good prize to win". On November 15 he sent a web picture as "the inspiration for the bikes shape" (a chunky bike seen from the front left: a triangle frame, raised handlebars, a black saddle, silver spoked wheels) and chose its colour, "Red", and its shine, "Glint and twinkles".

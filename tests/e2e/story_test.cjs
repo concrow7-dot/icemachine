@@ -228,8 +228,9 @@ const { chromium } = require('playwright');
   }, [id, chance, opts]);
   const monThuOnly = await ev("(e.residents.all.find(p => p.resident.days && p.resident.days.length >= 2 && p.resident.days.length <= 3 && p.resident.days.includes(3) && !p.resident.days.includes(1) && !p.resident.days.includes(2)) || { resident: { id: '' } }).resident.id");
   // SCREAM-275: only special customers (a set order size, or hard to find) have schedule lines said. Big Kev (T034) is one,
-  // every day on Institute Road; Francine Fudge (T003) is an ordinary neighbour of his there.
-  const allWeek = 'T034', ordinary = 'T003';
+  // every day on Haviland Street (SCREAM-353; it was Institute Road); Susie Parlor (T031) is an ordinary neighbour of his there.
+  const allWeek = 'T034', ordinary = 'T031';
+  check('SCREAM-353 (PO): Big Kev\'s street is Haviland Street, where his curb spot is; his house has not moved', await ev("(() => { const r = e.residents.all.find(p => p.resident.id === 'T034').resident; return r.street + ' ' + r.door.join() + ' ' + r.curb.slice(0, 2).join(); })()"), 'Haviland Street 723.3,610 621.6,624.6');
   check('Schedule lines: everyone with ticked days has their own lines this run', await ev("e.residents.all.filter(p => p.resident.days && p.resident.days.length > 0).every(p => (e.scheduleLinesFor.get(p.resident.id) || []).length > 0)"), true);
   const day1Sched = await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())");
   check('...none when the dice say no', (await sched(allWeek, 0, { said: 0 })).said, false);
