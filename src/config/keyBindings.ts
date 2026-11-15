@@ -34,6 +34,7 @@ export const KEY_GROUPS: readonly KeyGroup[] = [
     rows: [
       ['← → Or A D', 'Move Between The Parts'],
       ['Enter Or Space', 'Open The Part'],
+      ['B', 'Back To The Road (Stopped At Home)'],
       ['X', 'Skip The Uncle'],
       ['M', 'Music On Or Off'],
       ['N', 'Next Song'],
