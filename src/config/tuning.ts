@@ -471,11 +471,13 @@ export const GITTY_UP_PRICE_CENTS = 2000;
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
  * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
+ * SCREAM-336 (PO, November 15, testing): "Should be increase with the powerups a bit more. Lets go with
+ * 5% more on both": 1.5 to 1.55 (12 to 18.6 px/s); Steam Engine's step follows (18.6 to 25.2).
  */
-export const TROT_CREEP_FACTOR = 1.5;
+export const TROT_CREEP_FACTOR = 1.55;
 /**
  * SCREAM-326 (PO, November 14): Steam Engine, $30. First +10%; while testing: "it should be the same effect as
- * trot, just on top of it": it adds the step Trot adds (Story: +6 px/s, so 18 to 24 with Trot).
+ * trot, just on top of it": it adds the step Trot adds (Story: +6.6 px/s since SCREAM-336, so 18.6 to 25.2 with Trot).
  */
 export const STEAM_PRICE_CENTS = 3000;
 export const STEAM_CREEP_FACTOR = TROT_CREEP_FACTOR;

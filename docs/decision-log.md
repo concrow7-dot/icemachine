@@ -2,6 +2,19 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 136 — Trot and Steam Engine raise the roll speed a bit more: 5% more each (2026-11-15)
+
+**Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Trot now adds 55% of the Story truck's roll speed, not 50% (12 to 18.6 px/s; it was 18), and Steam Engine adds the same step again (18.6 to 25.2; it was 24).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "5% more" is read as 5 points more of the Story truck's roll speed for each note (`TROT_CREEP_FACTOR` 1.5 to 1.55; Steam Engine uses the same factor), like his "5 more" on Train Off The Tracks. The other reading (5% faster than each note gave) would be 18.9 and 25.2.
+- The notes' wording, the prices and Quick play are unchanged. Tab still works at the roll speed or slower.
+
 ## 135 — This Century Register: click the ice creams and the price adds up, $40 (2026-11-14)
 
 **Decision (Jira SCREAM-330, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes), note 3, under the calculator: "3 This century register - Click the icons of the Ice Cream to calculate price." "Player clicks on which item and they add up automatically." He had crossed out "Register should be a tablet with the "Today Menu" shown." Price: "$40". Asked where the icons should be, he first chose a tablet beside the pad (the calculator pad staying). Seeing that built (the tablet sat in the mini Today's Menu's place), he changed it: **"The tablet should replace the calculator"**. So with the register the pad is gone and the tablet sits where it was. Then, seeing that: **"One the tablet powerup is bought, lets remove the price menu."** So the mini Today's Menu is not taped to the glass while the register is owned: the tablet's tiles show each price.
