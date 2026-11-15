@@ -311,6 +311,14 @@ export const CUSTOMER_REGULAR_CHANCE = 0.35;
 
 /** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
 export const CUSTOMER_INDOORS_FACTOR = 0.5;
+/**
+ * SCREAM-329 (PO, November 14): Speaker with Heavier Bass, $40 (his answer). "More likely to get
+ * customers in their home": asked which chance, he chose the some-days people (anyone who isn't an
+ * every-day regular). Their Likelihood counts for this much more while the music reaches them.
+ * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
+ */
+export const BASS_PRICE_CENTS = 4000;
+export const BASS_SOMETIMES_FACTOR = 1.1;
 
 /** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
 export const CUSTOMER_RUN_SPEED = 37;

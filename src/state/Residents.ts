@@ -308,6 +308,18 @@ export class Residents {
     return kindFor(resident, this.story);
   }
 
+  /**
+   * SCREAM-329: Speaker with Heavier Bass. Multiplies the Likelihood of the some-days people
+   * (kind `sometimes`) when they roll to come out. 1 without the note (EveningState sets it).
+   */
+  sometimesFactor = 1;
+
+  /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232), times the bass (SCREAM-329). */
+  likelihoodNow(resident: Resident): number {
+    const bass = this.kindOf(resident) === 'sometimes' ? this.sometimesFactor : 1;
+    return Math.min(1, resident.likelihood * scheduleFactor(resident, this.story) * bass);
+  }
+
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
   /** SCREAM-249: the evening's clock, in minutes since midnight (EveningState sets it; without it everyone is always home). */
@@ -510,7 +522,7 @@ export class Residents {
       }
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
       const regular = this.kindOf(p.resident) === 'regular';
-      const likelihood = Math.min(1, p.resident.likelihood * scheduleFactor(p.resident, this.story));
+      const likelihood = this.likelihoodNow(p.resident);
       if (this.rnd() < customerChance(p.heard, likelihood, indoors, regular)) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
