@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 141 — Today's Menu prices stop at the price on the ice cream's cork board note (2026-11-15)
+
+**Decision (Jira SCREAM-343, under SCREAM-78, PO, November 15, 01:50):** "At the cooler, when seeing today's menu, the player should not be able to raise the price above the one stated on the cork board (powerup board)". In Story, a price on Today's Menu stops at the "won't pay more than" price on that ice cream's note (the eclair $2.50; SpongePop, the Lil Explorer Pop, the Two Ball Lou Ball and the Drum Cone $3.00). Before, it went up to $10.00 and customers simply left a dearer ice cream out of their order.
+
+**Options considered:** none offered; engineering proposed four details and he answered (02:03) "I agree with all of these. The only one to make a note on is the cookie ice cream, I will decide the benefits on that later."
+
+**Why (product owner's rationale):** _to ask_.
+
+**Agreed details (engineering's proposals, accepted by the PO):**
+
+- At the top price the + button is greyed out, so the player sees why it stopped.
+- An old save with a higher price is brought down the next time the cooler opens.
+- The Cookie Ice Cream Sandwich has no price on its note, so it stops at the general limit customers already have ($4.00), until the PO decides its benefits.
+- Quick play is unchanged (up to $10.00).
+
+**Engineering's calls (proposals):**
+
+- The uncle's evening is unchanged too.
+- This answers an older open question (decision 132): the "won't pay more than" line stays on the ice cream notes, because the menu now points at it.
+
 ## 140 — Debug key: Shift+0 fills the gas tank (2026-11-15)
 
 **Decision (Jira SCREAM-337, under SCREAM-202, PO, November 15):** "In this set of builds, I want to add another testing helper. Fill gas. Should be Shift + something, let me know your suggestion". Engineering suggested Shift+0; he answered "Lets go with that." On any evening screen, in both modes, Shift+0 fills the tank to 100%, for free.

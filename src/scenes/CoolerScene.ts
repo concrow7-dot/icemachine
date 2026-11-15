@@ -70,12 +70,17 @@ export function menuCardFit(count: number, w: number, gap: number, full: number)
 
 type Focus = { area: 'clipboard'; row: number } | { area: 'menu'; index: number };
 
+/** SCREAM-343: how faint the menu's + button is when the price can't go higher. */
+const TOP_PRICE_PLUS_ALPHA = 0.35;
+
 type MenuCard = {
   flavour: FlavourId;
   container: Phaser.GameObjects.Container;
   frame: Phaser.GameObjects.Rectangle;
   price: Phaser.GameObjects.Text;
   margin: Phaser.GameObjects.Text;
+  /** SCREAM-343: the + button, greyed when the price is at its top (null on a locked menu). */
+  plus: Phaser.GameObjects.Text | null;
 };
 
 export class CoolerScene extends Phaser.Scene {
@@ -144,7 +149,8 @@ export class CoolerScene extends Phaser.Scene {
   create(): void {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i));
+    this.evening.capMenuPrices();
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f));
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -443,6 +449,7 @@ export class CoolerScene extends Phaser.Scene {
       const margin = this.add.text(cx, 148, '', { fontFamily: 'monospace', fontSize: '11px', color: '#2e7d32' }).setOrigin(0.5);
       parts.push(margin);
       const container = this.add.container(0, 0, parts);
+      let plus: Phaser.GameObjects.Text | null = null;
       if (!this.locked) {
         const change = (direction: -1 | 1) => () => {
           this.focus = { area: 'menu', index: this.visibleCards().findIndex((c) => c.flavour === flavour.id) };
@@ -450,9 +457,10 @@ export class CoolerScene extends Phaser.Scene {
           this.refresh();
         };
         container.add(this.makeButton(16, 120, '−', change(-1), 16, false));
-        container.add(this.makeButton(w - 16, 120, '+', change(1), 16, false));
+        plus = this.makeButton(w - 16, 120, '+', change(1), 16, false);
+        container.add(plus);
       }
-      this.cards.push({ flavour: flavour.id, container, frame, price, margin });
+      this.cards.push({ flavour: flavour.id, container, frame, price, margin, plus });
     });
   }
 
@@ -737,6 +745,8 @@ export class CoolerScene extends Phaser.Scene {
       if (!slot) return;
       card.container.setVisible(true).setScale(fit.scale).setPosition(cardSize.firstLeft + n * (cardSize.w * fit.scale + fit.gap), cardSize.top);
       card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
+      // SCREAM-343: at the top price the + is greyed out, so the player sees why it stopped.
+      card.plus?.setAlpha(this.order.atTopPrice(card.flavour, PRICE_STEP_CENTS) ? TOP_PRICE_PLUS_ALPHA : 1);
       const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
       if (profitEach <= 0) card.margin.setText('No profit at this price').setColor('#b3261e');
