@@ -90,6 +90,10 @@ for (const w of [-TRUCK_HALF_WIDTH / 2, 0, TRUCK_HALF_WIDTH / 2]) TRUCK_OUTLINE.
 const HIT_COOLDOWN_MS = 400;
 /** SCREAM-16 (PO): at least half of the truck's hitbox must be in the pickup square. */
 const PICKUP_MIN_OVERLAP = 0.5;
+/** SCREAM-168: the waving hand: how fast it rocks (ms per radian of the sine), how far (radians), and its fill. */
+const WAVE_MS = 110;
+const WAVE_SWING = 0.5;
+const WAVE_FILL = 0xfff3d6;
 
 
 const KEY_TO_FACING: Record<string, Facing> = {
@@ -1309,6 +1313,11 @@ export class DriveScene extends Phaser.Scene {
       }
       if (bubble) {
         bubble.setVisible(wants);
+        // SCREAM-168 (PO): the tell: a waving hand beside the "!" of anyone who never gives up following the truck.
+        const hand = bubble.getAt(1) as Phaser.GameObjects.Graphics;
+        const waves = wants && this.evening.residents.chasesForever(p.resident);
+        hand.setVisible(waves);
+        if (waves) hand.setRotation(Math.sin(this.time.now / WAVE_MS + i) * WAVE_SWING);
         if (wants) {
           bubble.setPosition(Math.round(p.x) + 5, Math.round(p.y) - 30);
           const hurry = p.customer === 'waiting' && p.waitLeft < 5;
@@ -1395,7 +1404,27 @@ export class DriveScene extends Phaser.Scene {
     const g = drawBubble(this.add.graphics(), { x: -3, y: -15, w: 11, h: 12, unit: 1, tail: { side: 'down', at: 3, steps: 3 } });
     // The "!" in pixels: a stem and a dot.
     g.fillStyle(BUBBLE_INK, 1).fillRect(1, -13, 2, 5).fillRect(1, -6, 2, 2);
-    return this.add.container(0, 0, [g]).setDepth(7);
+    return this.add.container(0, 0, [g, this.makeWavingHand()]).setDepth(7);
+  }
+
+  /**
+   * SCREAM-168 (PO, November 15): "A waving hand" beside the bubble: an open hand in pixels (four
+   * fingers, a thumb, a bit of wrist), in ink with a cream fill, like a cartoon glove. It turns about its wrist
+   * (the graphics' own 0, 0), which sits right of the bubble. Hidden until drawCustomers shows it.
+   */
+  private makeWavingHand(): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics().setPosition(14, -4).setVisible(false);
+    g.fillStyle(BUBBLE_INK, 1);
+    g.fillRect(-4, -8, 9, 7); // palm
+    g.fillRect(-4, -12, 2, 4).fillRect(-2, -13, 2, 5).fillRect(1, -13, 2, 5).fillRect(3, -12, 2, 4); // fingers
+    g.fillRect(-7, -8, 3, 3); // thumb
+    g.fillRect(-2, -1, 5, 2); // wrist
+    g.fillStyle(WAVE_FILL, 1);
+    g.fillRect(-3, -7, 7, 5);
+    g.fillRect(-3, -11, 1, 4).fillRect(-1, -12, 1, 5).fillRect(2, -12, 1, 5).fillRect(4, -11, 1, 4);
+    g.fillRect(-6, -7, 3, 1);
+    g.fillRect(-1, -2, 3, 2);
+    return g;
   }
 
   /** The song's name, top right, for a few seconds. */

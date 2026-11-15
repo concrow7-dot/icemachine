@@ -187,7 +187,8 @@ const { chromium } = require('playwright');
     // One customer of a kind sets off after a truck that stays far away; time is stepped by hand.
     const chase = (kind, seconds) => page.evaluate(([kind, seconds]) => {
       const e = window.__game.registry.get('evening'); const res = e.residents; res.hearingOff = true;
-      const is = { adult: r => !r.kid, slowKid: r => r.kid && !r.fast, fastKid: r => r.kid && r.fast }[kind];
+      const plain = r => res.kindOf(r) !== 'regular'; // SCREAM-168: regulars have their own rules
+      const is = { adult: r => !r.kid && plain(r), slowKid: r => r.kid && !r.fast && plain(r), fastKid: r => r.kid && r.fast, chaser: r => res.isChaser(r) && !r.fast }[kind];
       const p = res.all.find(q => q.customer === 'none' && is(q.resident) && !q.resident.hardToFind);
       const ring = { x: p.x + 5000, y: p.y + 5000, radius: 1, open: false };
       res.wantIceCream(p);
@@ -206,6 +207,29 @@ const { chromium } = require('playwright');
     check('SCREAM-342: with Speedy Neighbors an adult goes after the truck faster (still 30 seconds)', await chase('adult', 60), 'done after 30 s at 46.25 px/s');
     check('...so does a fast kid', await chase('fastKid', 20), 'running after 20 s at 69.375 px/s');
     check('...the slower kids are not: that is the "most"', await chase('slowKid', 60), 'done after 20 s at 37 px/s');
+
+    // ---- SCREAM-168: 70% of regulars chase forever; the others wait at their own curb; the waving hand ----
+    const regulars = await ev("(() => { const r = e.residents.all.map(p => p.resident).filter(r => e.residents.kindOf(r) === 'regular'); return r.length + ' regulars, ' + r.filter(x => e.residents.isChaser(x)).length + ' chase'; })()");
+    check('SCREAM-168: 70% of Elm Park\'s regulars are picked to chase (the nearest whole number)', regulars, await ev("(() => { const n = e.residents.all.filter(p => e.residents.kindOf(p.resident) === 'regular').length; return n + ' regulars, ' + Math.round(n * 0.7) + ' chase'; })()"));
+    check('...and nobody who is not a regular is picked', await ev("e.residents.all.filter(p => e.residents.isChaser(p.resident) && e.residents.kindOf(p.resident) !== 'regular').length"), 0);
+    check('...a chasing regular is still following after two minutes', (await chase('chaser', 120)).replace(/ at .*/, ''), 'running after 120 s');
+    const hand = () => drive("(() => { s.drawCustomers(); const all = s.evening.residents.all; const show = i => { const b = s.bubbles.get(i); return !!b && b.visible && b.getAt(1).visible; }; const wants = p => p.outside && (p.customer === 'running' || p.customer === 'waiting'); const i = all.findIndex(p => wants(p) && s.evening.residents.isChaser(p.resident)); const j = all.findIndex(p => wants(p) && !s.evening.residents.chasesForever(p.resident)); return show(i) + ' ' + (j < 0 ? 'nobody' : show(j)); })()");
+    const curb = await page.evaluate(() => {
+      const e = window.__game.registry.get('evening'); const res = e.residents;
+      const p = res.all.find(q => q.customer === 'none' && res.staysAtCurb(q.resident) && !q.resident.hardToFind);
+      const ring = { x: p.x + 5000, y: p.y + 5000, radius: 1, open: false };
+      res.wantIceCream(p);
+      let t = 0;
+      while (t < 60 && p.customer === 'running') { res.update(0.1, ring); t += 0.1; }
+      const at = () => Math.round(Math.hypot(p.x - p.resident.curb[0], p.y - p.resident.curb[1]));
+      const first = p.customer + ' ' + at() + ' px from their own curb';
+      for (let k = 0; k < 100; k++) res.update(0.1, ring); // ten more seconds with the truck far away
+      return first + '; ten seconds on: ' + p.customer + ' ' + at() + ' px';
+    });
+    check('SCREAM-168: a regular who does not chase waits at their own curb and stays there', curb, 'waiting 0 px from their own curb; ten seconds on: waiting 0 px');
+    check('SCREAM-168: the waving hand shows beside a chaser\'s bubble, not beside the curb regular\'s', await hand(), 'true false');
+    check('...a fast kid waves too', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const res = e.residents; const s = window.__game.scene.getScene('Drive'); const p = res.all.find(q => q.resident.fast && q.customer === 'none'); res.wantIceCream(p); res.update(0.1, { x: p.x + 5000, y: p.y + 5000, radius: 1, open: false }); s.drawCustomers(); return s.bubbles.get(res.all.indexOf(p)).getAt(1).visible; }), true);
+    check('SCREAM-168: Quick play\'s rules are off: nobody waves or stays at their curb', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const res = e.residents; res.chaseRules = false; const r = res.all.map(p => p.resident); const out = r.filter(x => res.chasesForever(x) || res.staysAtCurb(x)).length + ' ' + res.chaseSecondsOf(r[0]); res.chaseRules = true; return out; }), '0 Infinity');
   }
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);

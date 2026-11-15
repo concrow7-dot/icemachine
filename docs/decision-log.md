@@ -2,6 +2,25 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 149 — 70% of regulars chase the truck forever, the rest wait at their own curb, and a waving hand is the tell (2026-11-15)
+
+**Decision (Jira SCREAM-168, under SCREAM-11, PO, November 15):** told that "Should regulars chase further?" had never been answered, he wrote: "Yes regulars should chase forever". Then: "Let's have 70% of regulars chase. Add the tell. And build". Asked four questions, he chose: the other 30% of regulars "Wait at their own curb"; the tell is "A waving hand"; "The game picks" which 70%; and fast kids show the tell too ("Yes").
+
+So, in Story: seven in ten regulars follow the truck for as long as it takes; the other regulars walk to their own curb and wait there, and never follow. Anyone who never gives up (a chasing regular or a fast kid) has a small waving hand beside their "!" bubble. Everyone else keeps decision 147's rules (adults 30 seconds, slower kids 20).
+
+**Options considered:** the other 30%: keep decision 147's rules (engineering's proposal), or wait at their own curb (chosen). The tell: a waving hand (chosen), a "!!" bubble, or both. Who picks the 70%: the game (chosen), or a Chase column in the Residents sheet. Fast kids: show the tell (chosen), or regulars only.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- A regular is tonight's meaning in Story: someone ticked on all seven days (the people with Likelihood 50% or more, unless he changes the ticks).
+- The game's pick: each map's regulars are put in the order of a number made from their ID, and the first 70% (to the nearest whole person) chase. It is the same people every evening and on both maps, with no sheet work.
+- A regular who waits at their own curb waits the usual 30 seconds there, then goes home.
+- The hand shows the whole time they want ice cream (walking after the truck or waiting at the curb), since someone waiting will set off again when the truck pulls away.
+- The hand is drawn by the game: cream, like a cartoon glove, the same for everybody.
+- Like decision 147: Story only, not the uncle's evening or Quick play.
+
 ## 148 — Two notes come out of Brakes Made This Century and two out of the Handy Notebook (2026-11-15)
 
 **Decision (PO, November 15, 03:28, testing #255 to #258; built on SCREAM-342's pull request):** "From brakes made this century and handy notebook, two powerups should come out. It should be both of the powerups just added". On the Truck tree, Back It Up (left) and More Space for Scream (right) both hang from Brakes Made This Century, side by side in the fourth row. On the Customer tree, Better Mirrors (left) and Speedy Neighbors (right) both hang from the Handy Notebook. This replaces the places engineering proposed in decisions 144 to 147 (one note under the other).

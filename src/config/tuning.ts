@@ -726,3 +726,13 @@ export const CHASE_SLOW_KID_SECONDS = 20;
 export const FAST_KID_SPEED_FACTOR = 1.5;
 export const SPEEDY_PRICE_CENTS = 6000;
 export const SPEEDY_SPEED_FACTOR = 1.25;
+
+/**
+ * SCREAM-168 (PO, November 15): asked whether regulars should chase further, he wrote "Yes
+ * regulars should chase forever", then "Let's have 70% of regulars chase. Add the tell." He then
+ * chose: the other 30% of regulars "Wait at their own curb" (they never follow the truck); the
+ * tell is "A waving hand" beside the "!" bubble; "The game picks" which 70% (fixed per person,
+ * from their ID); fast kids, who already never give up, show the hand too. Story's chasing rules
+ * only (not Quick play or the uncle's evening).
+ */
+export const CHASE_REGULAR_SHARE = 0.7;
