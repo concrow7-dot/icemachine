@@ -292,7 +292,14 @@ export class PowerUpsScene extends Phaser.Scene {
     addPowerUpLogo(this, logo, note.logo, note.logo === 'gas-can' ? 104 : 92, !owned);
     big.add(logo);
 
-    const name = this.add.text(x, top + 158, note.name, { fontFamily: MARKER_FONT, fontSize: note.name.length > 12 ? '24px' : '30px', color: INK }).setOrigin(0.5);
+    // SCREAM-325 (PO, November 14, testing): a long four-word name ("BRAKES MADE THIS CENTURY") ran off
+    // the note: "Make this two lines, two words a line."
+    const words = note.name.split(' ');
+    const twoLines = note.name.length > 20 && words.length === 4;
+    const shown = twoLines ? `${words[0]} ${words[1]}\n${words[2]} ${words[3]}` : note.name;
+    const name = this.add
+      .text(x, top + (twoLines ? 164 : 158), shown, { fontFamily: MARKER_FONT, fontSize: note.name.length > 12 ? '24px' : '30px', color: INK, align: 'center' })
+      .setOrigin(0.5);
     const description = this.add
       .text(x, top + 210, note.description, { fontFamily: 'monospace', fontSize: '15px', color: INK, align: 'center', wordWrap: { width: w - 40 } })
       .setOrigin(0.5);
