@@ -297,7 +297,7 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter');
   await until(async () => (await scenes()) === 'Drive,Hud');
   check('SCREAM-81: ...and the ring drawn round the truck is the bigger one', await page.evaluate(() => Math.round(window.__game.scene.getScene('Drive').ring.radius * 10) / 10), 181.5);
-  check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('truck-6')")) + ' ' + (await ev("e.buyPowerUp('truck-6')")), 'away false');
+  check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('brakes-made-this-century')")) + ' ' + (await ev("e.buyPowerUp('brakes-made-this-century')")), 'away false');
   // SCREAM-320 (PO, November 14): "purchase powerups while at home at any time": a home stop later in the evening.
   check('SCREAM-320: ...away from home the board says to buy it at home', await ev("e.powerUpStatus('calculator')"), 'away');
   await ev("(e.changeMoney(3000, 'Test', false), e.startRestock(), true)");

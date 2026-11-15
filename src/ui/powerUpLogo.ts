@@ -83,6 +83,8 @@ export function addPowerUpLogo(
     drawTrainOffTracks(g, size, grey);
   } else if (tree === 'brake-disc') {
     drawBrakeDisc(g, size, grey);
+  } else if (tree === 'steam-engine') {
+    drawSteamEngine(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -419,5 +421,48 @@ export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey
   g.lineStyle(line, ink, 1).strokePoints(pts, true, true);
   for (const t of [-Math.PI * 0.45, -Math.PI * 0.1]) {
     g.fillStyle(0xffffff, grey ? 0.5 : 0.85).fillCircle(cx + Math.cos(t) * 41.5 * u, cy + Math.sin(t) * 41.5 * u, 3 * u);
+  }
+}
+
+/**
+ * SCREAM-326: Steam Engine. After the PO's reference (a light green engine with a row of small
+ * wheels and puffs of steam): an original drawing in the game's style.
+ */
+export function drawSteamEngine(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const green = grey ? 0xc4c4c4 : 0x9fd3a7;
+  const deep = grey ? 0xa0a0a0 : 0x5fa874;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // Steam: a cloud of puffs above the chimney, and a little one off to the right.
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1);
+  for (const [x, y, r] of [[22, 18, 8], [32, 12, 9], [43, 16, 7], [74, 14, 5]] as const) {
+    g.fillStyle(0xffffff, grey ? 0.6 : 1).fillCircle(X(x), X(y), r * u);
+    g.strokeCircle(X(x), X(y), r * u);
+  }
+  box(dark, 22, 26, 10, 4); // chimney top
+  box(deep, 24, 30, 6, 14); // chimney
+  box(green, 12, 42, 52, 22); // boiler
+  box(deep, 38, 36, 9, 6); // dome
+  box(green, 62, 30, 26, 34); // cab
+  box(deep, 58, 26, 34, 5); // cab roof
+  box(0xffffff, 68, 36, 13, 10); // window
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(53), X(64), X(53)); // a band round the boiler
+  // Cowcatcher.
+  const cow = [new Phaser.Math.Vector2(X(12), X(58)), new Phaser.Math.Vector2(X(12), X(74)), new Phaser.Math.Vector2(X(1), X(74))];
+  g.fillStyle(deep, 1).fillPoints(cow, true);
+  g.lineStyle(line, ink, 1).strokePoints(cow, true, true);
+  // The rail and a row of five small wheels.
+  g.lineStyle(line, ink, 1).lineBetween(X(2), X(86), X(96), X(86));
+  for (const x of [20, 34, 48, 66, 80]) {
+    g.fillStyle(0xffffff, 1).fillCircle(X(x), X(75), 7 * u);
+    g.lineStyle(line, ink, 1).strokeCircle(X(x), X(75), 7 * u);
+    g.fillStyle(ink, 1).fillCircle(X(x), X(75), 2 * u);
   }
 }

@@ -29,13 +29,13 @@ test('every note has its own place, and hangs only from notes above it in its ow
 test('the arrow keys move to the nearest note that way', () => {
   assert.equal(nextNote(notes, 'temp-gas-can', 'down'), 'brakes-made-this-century');
   assert.equal(nextNote(notes, 'brakes-made-this-century', 'left'), 'train-off-the-tracks');
-  assert.equal(nextNote(notes, 'brakes-made-this-century', 'right'), 'truck-6');
+  assert.equal(nextNote(notes, 'brakes-made-this-century', 'right'), 'steam-engine');
   assert.equal(nextNote(notes, 'brakes-made-this-century', 'up'), 'temp-gas-can');
 });
 
 test('...and cross from one tree to the next', () => {
-  assert.equal(nextNote(notes, 'truck-6', 'right'), 'icecream-explorer');
-  assert.equal(nextNote(notes, 'icecream-explorer', 'left'), 'truck-6');
+  assert.equal(nextNote(notes, 'steam-engine', 'right'), 'icecream-explorer');
+  assert.equal(nextNote(notes, 'icecream-explorer', 'left'), 'steam-engine');
   assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'customer-4');
 });
 
@@ -94,7 +94,7 @@ test('SCREAM-310: Trot is the right note under the gas can, $20, with its own na
   const trot = notes.find((n) => n.id === 'trot');
   assert.deepEqual([trot.tree, trot.name, trot.priceCents, trot.logo, trot.from], [0, 'TROT', 2000, 'trot', ['temp-gas-can']]);
   assert.match(trot.description, /without any gas pedal/);
-  assert.deepEqual(notes.find((n) => n.id === 'truck-6').from, ['trot']);
+  assert.deepEqual(notes.find((n) => n.id === 'steam-engine').from, ['trot']);
 });
 
 test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair; SpongePop $20, Explorer $25 (PO, November 14), the rest $15', () => {
@@ -133,4 +133,9 @@ test('SCREAM-325: Brakes Made This Century is the middle third-row note, under G
   const n = notes.find((x) => x.id === 'brakes-made-this-century');
   assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better. 5% increase.']);
   assert.deepEqual(notes.find((x) => x.id === 'truck-7').from, ['brakes-made-this-century']);
+});
+
+test('SCREAM-326: Steam Engine is the right third-row note, under Trot, $30', () => {
+  const n = notes.find((x) => x.id === 'steam-engine');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'STEAM ENGINE', 3000, 'steam-engine', ['trot'], 'Increase the speed of the truck as it rolls.']);
 });

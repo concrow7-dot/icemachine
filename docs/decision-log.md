@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 129 — Steam Engine: the roll +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-326, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "3. Steam Engine. Increase the speed of the truck as it rolls.", under Trot. Asked, he set the price at **$30** (like the second Customer row). Asked how much: **+10%**, on top of Trot: Story's roll 12 → 13.2 px/s, or 18 → 19.8 with Trot. **While testing (22:50):** "For steam engine, it should be the same effect as trot, just on top of it." So it adds Trot's step again: 18 → 24 px/s (`STEAM_CREEP_FACTOR` = Trot's; engineering read "the same effect" as the same +6 px/s, not another x 1.5).
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's right third-row note (was Truck 6).
+- Picture: an original little green steam engine with a puff of steam (`drawSteamEngine`), from his sketch.
+- Tab (SCREAM-321) works up to the new roll speed.
+
 ## 128 — Brakes Made This Century: brakes +10%, $30 (2026-11-14)
 
 **Decision (Jira SCREAM-325, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "2. Brakes made this Century. Brakes are better. 5% increase.", under both Gitty Up and Trot. Asked, he set the price at **$30** (like the second Customer row). Owned, braking time is divided by 1.1 (`BRAKES_FACTOR`). **While testing (22:57):** "I want to make the brakes only be 5% better as well": now divided by 1.05.
