@@ -72,7 +72,7 @@ export const STEAM_ID = 'steam-engine';
 /** SCREAM-340: the Back It Up note (Truck tree, fourth row): the truck reverses faster. */
 export const BACK_IT_UP_ID = 'back-it-up';
 
-/** SCREAM-25: the More Junk note (Truck tree, fifth row): a bottom row opens in each cooler crate. */
+/** SCREAM-25: the More Space for Scream note (first named More Junk; the id keeps the old name) (Truck tree, fifth row): a bottom row opens in each cooler crate. */
 export const MORE_JUNK_ID = 'more-junk';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
@@ -248,7 +248,8 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Increase the speed of the truck in reverse.',
         logo: 'back-it-up',
       },
-      // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'". It takes the
+      // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'", then
+      // (02:40) "Change \"more Junk\" to \"More Space for Scream\"". It takes the
       // Truck 8 dummy's place (engineering's proposal; the sketch gives no place).
       {
         id: MORE_JUNK_ID,
@@ -256,7 +257,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         row: 4,
         from: [BACK_IT_UP_ID],
         priceCents: MORE_JUNK_PRICE_CENTS,
-        name: 'MORE JUNK',
+        name: 'MORE SPACE FOR SCREAM',
         description: 'More room in the cooler: a new bottom row opens in every crate.',
         logo: 'more-junk',
       },

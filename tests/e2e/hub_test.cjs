@@ -132,6 +132,14 @@ const { chromium } = require('playwright');
   check('...Down moves to the note below', await pu('s.selected'), 'brakes-made-this-century');
   await press('ArrowRight'); await press('ArrowRight');
   check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'icecream-louball / TWO BALL LOU BALL');
+  {
+    // SCREAM-25 (PO, November 15): "Change "more Junk" to "More Space for Scream"": a long name, on two lines.
+    const junk = await noteAt('more-junk');
+    await page.mouse.click(junk[0], junk[1]); await wait(150);
+    check('SCREAM-25: the cooler note is MORE SPACE FOR SCREAM, $50, locked until Back It Up', await big(), 'true | MORE SPACE FOR SCREAM | More room in the cooler: a new bottom row opens in every crate. | $50.00 | BACK IT UP Required | button=false');
+    await page.screenshot({ path: outDir + '/hub_note_more_space.png' });
+    await press('b');
+  }
   let ice = await noteAt('icecream-eclair');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
   check('SCREAM-271: the Chocolate Eclair is yours from the start, with its price note and no $0.00', await big(), "true | CHOCOLATE ECLAIR | Owned from the start. If you have these stocked in your cooler, every customer will buy an extra ice cream. The average person won't pay more than $2.50 for one. Costs you $1.00 each to stock. | Owned | button=false");

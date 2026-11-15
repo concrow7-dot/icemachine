@@ -84,7 +84,7 @@ export interface TruckSpec {
 export function truckSpec(weak: boolean, powerUps: readonly string[] = []): TruckSpec {
   const has = (id: string) => powerUps.includes(id);
   const halfCovered = weak && STORY_COOLER_HALF_COVERED;
-  // SCREAM-25: More Junk opens one more row at the bottom of every crate (Story's 18 squares become 24).
+  // SCREAM-25: More Space for Scream opens one more row at the bottom of every crate (Story's 18 squares become 24).
   const coolerColumns = halfCovered ? STORY_COOLER_COLUMNS : CRATE_SIDE;
   const coolerRows = halfCovered ? Math.min(CRATE_SIDE, STORY_COOLER_ROWS + (has(MORE_JUNK_ID) ? MORE_JUNK_EXTRA_ROWS : 0)) : CRATE_SIDE;
   // SCREAM-80: Train Off The Tracks, top speed x 1.05 (the roll down still takes STORY_TRUCK_ROLL_SECONDS).

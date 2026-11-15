@@ -637,7 +637,7 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
 }
 
 /**
- * SCREAM-25: More Junk. Engineering's own picture (the PO's sketches give the name only): an open
+ * SCREAM-25: More Space for Scream. Engineering's own picture (the PO's sketches give the name only): an open
  * cooler crate with ice creams standing in it, and a green plus at its top right.
  */
 export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
