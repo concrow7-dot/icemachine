@@ -110,6 +110,8 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/story_cooler_half_covered.png' });
   // SCREAM-221 / SCREAM-232 (PO): Story starts on a Monday; the HUD shows just the weekday.
   check('SCREAM-327: HUD shows the weekday and the day count beside the clock: Monday Day 1/10', /Monday Day 1\/10/.test(await hudClock()), true);
+  check('SCREAM-237: before the first drive the top bar names the street by home, not the neighbourhood', (await hudClock()).replace(/^.*Day 1\/10\s*/, '') + ' | ' + /Elm Park/.test(await hudClock()), (await ev('e.street')) + ' | false');
+  check('...and that is a real street name', (await ev('e.street')).length > 3, true);
   // SCREAM-232: ticked today a bit likelier, not ticked much less likely; anyone but 0% may come.
   check('Day 1 (Monday): everyone but 0% may come out tonight', await ev('e.residents.all.every(p => p.buys === (p.resident.likelihood > 0))'), true);
   check('...people ticked for Monday are likelier, the rest much less likely', await ev(`(() => { const R = e.residents.constructor; const st = { day: 1, seed: 1 }; return e.residents.all.every(p => (R.scheduleFactor(p.resident, st) > 1) === p.resident.days.includes(0) && R.scheduleFactor(p.resident, st) !== 1); })()`), true);
@@ -327,6 +329,13 @@ const { chromium } = require('playwright');
   await press('ArrowRight'); await press('Enter'); await wait(600);
   check('Roundabouts: on the road in Elm Park, with a roundabout', (await scenes()) + ' ' + (await sc('Drive', 's.laps !== null')), 'Drive,Hud true');
   check('SCREAM-318: ...DRIVE started the clock', await ev('e.isClockRunning'), true);
+  // ---- SCREAM-237 (PO, November 15: "Street instead"): the top bar names the street the truck is on ----
+  {
+    const onStreet = (name) => page.evaluate(async (name) => { const s = window.__game.scene.getScene('Drive'); const road = s.roads.names.indexOf(name); const seg = s.roads.segments.filter(g => g.road === road).sort((a, b) => Math.hypot(b.bx - b.ax, b.by - b.ay) - Math.hypot(a.bx - a.ax, a.by - a.ay))[0]; const was = { x: s.truck.x, y: s.truck.y }; s.truck.setPosition((seg.ax + seg.bx) / 2, (seg.ay + seg.by) / 2); await new Promise(r => setTimeout(r, 150)); const text = window.__game.scene.getScene('Hud').clockText.text; s.homeArmed = false; s.truck.setPosition(was.x, was.y); return text.replace(/^.*Day \d+\/10\s*/, ''); }, name);
+    check('SCREAM-237: on Westland Street the top bar says Westland Street', await onStreet('Westland Street'), 'Westland Street');
+    check('...and on Highland Street, Highland Street', await onStreet('Highland Street'), 'Highland Street');
+    check('...off the road (at a front door) the last street stays', await page.evaluate(async () => { const s = window.__game.scene.getScene('Drive'); const was = { x: s.truck.x, y: s.truck.y }; const before = s.evening.streetNow; const d = s.evening.residents.all[0].resident.door; s.truck.setPosition(d[0], d[1]); await new Promise(r => setTimeout(r, 150)); const t = window.__game.scene.getScene('Hud').clockText.text.replace(/^.*Day \d+\/10\s*/, ''); s.homeArmed = false; s.truck.setPosition(was.x, was.y); return s.roads.streetAt(d[0], d[1]) + '|' + (t === before && t.length > 3); }), '|true');
+  }
   // ---- SCREAM-321 (PO, November 14): Tab at roll speed or slower looks inside the truck; nothing can be bought ----
   // Away from home's driveway first (a stop there opens home's own truck screen, SCREAM-319); back after.
   const homeAt = await sc('Drive', 'Math.round(s.truck.x) + "," + Math.round(s.truck.y) + "," + s.heading');
@@ -446,9 +455,10 @@ const { chromium } = require('playwright');
   check('...then it has closed', (await portalWait("s.portal.state === 'lapping'")) + ' ' + (await sc('Drive', 's.portal.visible')), 'true false');
   check('...in about a second (well under 4 even on a busy machine)', Date.now() - closeStart < 4000, true);
   check('Three laps: the truck is in Foley Stadium', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')), 'worcester 1');
-  check('...the top bar names the neighbourhood', /Tuesday Day 2\/10  Foley Stadium/.test(await hudClock()), true);
+  check('SCREAM-237: ...the top bar no longer names the neighbourhood (was SCREAM-145)', /Foley Stadium|Elm Park/.test(await hudClock()), false);
   check('...on the road there, on Newton Square (the roundabout)', (await scenes()) + ' ' + (await sc('Drive', "(() => { const r = s.laps.ring; return Math.round(Math.hypot(s.truck.x - r.x, s.truck.y - r.y)) === r.r; })()")), 'Drive,Hud true');
   check('...Newton Square is at the top of the map', await sc('Drive', 's.laps.ring.y < 600'), true);
+  check('SCREAM-237: in Foley Stadium the top bar names one of its streets', await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); const t = window.__game.scene.getScene('Hud').clockText.text.replace(/^.*Day \d+\/10\s*/, ''); return t.length > 3 && s.roads.names.includes(t) && t !== 'Highland Street'; }), true);
   check('...Foley Stadium\'s own people are out (sheet 15), with their state kept apart from Elm Park\'s', await ev("e.residents.all.length > 100 && e.residents.all.every(p => !p.resident.id.startsWith('T'))"), true);
   check('...the clock and the cash carried on', (await ev('e.nowMs') >= clockBefore) + ' ' + (await ev('e.moneyCents')), 'true ' + cashBefore);
   check('...still Day 2 of the same run', await story('r.day'), 2);

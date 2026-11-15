@@ -229,8 +229,9 @@ export class HudScene extends Phaser.Scene {
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
     this.keepMusicGoing();
-    // SCREAM-145: in Story the neighbourhood's name sits after the day, since the truck can change map.
-    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${currentMap().name}` : ''));
+    // SCREAM-237 (PO, November 15: "Street instead"): in Story the street the truck is on sits after the day
+    // (the neighbourhood's name sat there, SCREAM-145).
+    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${this.evening.street}` : ''));
     this.placeDebugText();
     const sale = this.evening.sale;
     const warn =

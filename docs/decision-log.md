@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 150 — Story's top bar names the street the truck is on, instead of the neighbourhood (2026-11-15)
+
+**Decision (Jira SCREAM-237, under SCREAM-10, PO, November 10 and 15):** on November 10 he asked that players know which street they are on: show the street name with the neighbourhood name, or replace it. On November 15 he chose: "Street instead" (the top bar shows the street only; the neighbourhood name goes) and "Top bar only" (no bigger name popping up on the road when the street changes).
+
+So Story's top bar reads, for example, "7:12 PM   Tuesday Day 2/10  Westland Street".
+
+**Options considered:** the street with the neighbourhood ("Elm Park · Westland Street", engineering's proposal) or the street instead (chosen). A bigger name on the road view for about 2 seconds at each new street (engineering's proposal) or the top bar only (chosen).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076), which covers both maps and the uncle's evening. Quick play's top bar had no place name and still has none.
+- At a crossing or on a roundabout the name is the nearest road's (the rotary shows as "Elm Park Rotary").
+- Off the road, and on the inside screens (cooler, window, pump, truck), the last street stays. Before the first drive of an evening it is the street nearest to home's driveway.
+- Customers' hints and order lines are not changed here.
+
 ## 149 — 70% of regulars chase the truck forever and the rest wait at their own curb; no tell (2026-11-15)
 
 **Decision (Jira SCREAM-168, under SCREAM-11, PO, November 15):** told that "Should regulars chase further?" had never been answered, he wrote: "Yes regulars should chase forever". Then: "Let's have 70% of regulars chase. Add the tell. And build". Asked four questions, he chose: the other 30% of regulars "Wait at their own curb"; the tell is "A waving hand"; "The game picks" which 70%; and fast kids show the tell too ("Yes"). Shown a close-up of the hand once it was built (16:32), he wrote: "I want to remove the wave actually". The hand was taken out before the pull request opened: there is no tell.
