@@ -70,7 +70,7 @@ export const REFUSE_ABOVE_CENTS = 400;
  * (SCREAM-272 will set the others.)
  */
 // PO, November 14 (testing SCREAM-313 and 312): "I want the price people are willing to pay to be both be $3."
-export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300, louball: 375 };
+export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300, louball: 300 };
 /** SCREAM-271: the ice cream Story starts with; every other one is bought on the cork board. */
 export const STORY_FIRST_FLAVOUR = 'eclair';
 /** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
@@ -660,7 +660,7 @@ export const GAS_CAN_PULSES = 3;
  * SCREAM-334 (PO, November 14 sketch and November 15 answers; decision 138): the Two Ball Lou
  * Ball. "Tip is Double. Controls are reversed for 10 seconds." Every Story sale that includes one
  * pays double the tip, and afterwards the steering is swapped (left is right) for 10 seconds of
- * driving. The note costs $30, one costs $2.00, and customers pay up to $3.75
+ * driving. The note costs $30, one costs $2.00, and customers pay up to $3.00 (he first said $3.75, then, November 15: "The two ball and the drum can be sold for $3")
  * (ICE_CREAM_UNLOCK_PRICES, flavours.ts, STORY_REFUSE_ABOVE_CENTS).
  */
 export const LOU_BALL_TIP_FACTOR = 2;

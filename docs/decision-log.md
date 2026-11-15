@@ -6,6 +6,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Decision (Jira SCREAM-334, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under SpongePop: "1 Two Ball Screwball. Tip is Double. Controls are reversed for 10 seconds. In game description: 'High upside, crazy downside.'" Asked, he chose: the effect happens on **"Each sale with one"**; **"Steering only"** is reversed (left and right swap; gas and brake stay); the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: told that "Two Ball Screwball" is close to a real product's name, he asked "are the two brands something we shouldn't use?" and then chose **"two ball lou ball"**. The picture is his own sketch; he sent a second one ("Let's switch to this design"): a slanted cone cup, a lid that says "Lou" and "II", two gumballs in the point.
 
+**Later the same night (01:14 to 01:18):** with a photo of a real cup of ice, "It should look more like this" and "Make sure to include the two balls at the bottom of the cone": the picture was redrawn as a clear plastic cone cup of cherry ice with a rimmed lid (still "Lou" and "II", our own lettering) and bigger gumballs in the point. And "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
+
 **Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Reversed: steering only (chosen), everything, or gas and brake only. Note price: $30 (chosen), $40, or $25 like the Explorer Pop. Name: keep "Two Ball Screwball", or a parody name (chosen, his own).
 
 **Why (product owner's rationale):** _to ask_.
