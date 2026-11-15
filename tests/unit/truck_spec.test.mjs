@@ -86,11 +86,11 @@ test('SCREAM-309: Gitty Up makes the truck speed up 10% faster, and changes noth
   assert.deepEqual(truckSpec(true, ['temp-gas-can']), weak, 'other power-ups leave the truck alone');
 });
 
-test('SCREAM-310: Trot raises Story\'s creep from 12 to 18 px/s; the roll from top speed still takes 4 s', () => {
+test('SCREAM-310: Trot raises Story\'s creep from 12 to 25.2 px/s (SCREAM-336: where Trot and Steam Engine were); the roll from top speed still takes 4 s', () => {
   const weak = truckSpec(true);
   const trot = truckSpec(true, ['temp-gas-can', 'trot']);
   assert.ok(Math.abs(weak.creepSpeed - 12) < 1e-9);
-  assert.ok(Math.abs(trot.creepSpeed - 18) < 1e-9);
+  assert.ok(Math.abs(trot.creepSpeed - 25.2) < 1e-9);
   const rollSeconds = (sp) => (Math.log(sp.creepSpeed / sp.topSpeed) / Math.log(sp.coastKeep)) * t.TRUCK_COAST_KEEP_SECONDS;
   assert.ok(Math.abs(rollSeconds(trot) - 4) < 1e-6);
   for (const k of Object.keys(weak)) if (!['creepSpeed', 'coastKeep'].includes(k)) assert.equal(trot[k], weak[k], k);
@@ -122,9 +122,10 @@ test('SCREAM-325: Brakes Made This Century: braking time / 1.05, nothing else ch
   for (const k of Object.keys(trot)) if (k !== 'brakingSeconds') assert.equal(brakes[k], trot[k], k);
 });
 
-test('SCREAM-326: Steam Engine: the same step as Trot again, on top of it (12 -> 18 -> 24)', () => {
+test('SCREAM-326, SCREAM-336: Steam Engine doubles the roll speed Trot gives (12 -> 25.2 -> 50.4), still well under top speed', () => {
   const r = (ids) => Math.round(truckSpec(true, ids).creepSpeed * 10) / 10;
   assert.equal(r([]), 12);
-  assert.equal(r(['steam-engine']), 18);
-  assert.equal(r(['trot', 'steam-engine']), 24);
+  assert.equal(r(['trot']), 25.2);
+  assert.equal(r(['trot', 'steam-engine']), 50.4);
+  assert.ok(truckSpec(true, ['trot', 'steam-engine']).creepSpeed < truckSpec(true).topSpeed / 2);
 });

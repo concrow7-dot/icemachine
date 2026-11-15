@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 136 — Trot and Steam Engine raise the roll speed much more: 25.2 and 50.4 px/s (2026-11-15)
+
+**Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** first: "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Built as 18.6 px/s with Trot and 25.2 with Steam Engine too (from 18 and 24). He tried it: "What does roll mean to you? It doesn't seem to be much faster", and then: **"Lets increase it. trot should be where trot and steam are. and trot and steam should be another 2x increase."** So Trot alone now gives 25.2 px/s (Story's 12 x 2.1), and Steam Engine doubles that: 50.4.
+
+**Options considered:** the 5% step (built, too small to see); the bigger numbers above (chosen). Engineering had offered 21 and 30 as an example.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "Another 2x increase" is read as twice the roll speed Trot gives (50.4), not twice Trot's step (38.4).
+- Steam Engine now multiplies (x 2) instead of adding Trot's step again, which replaces decision 129's "the same effect as Trot, on top of it".
+- The roll down from top speed still takes 4 seconds and ends at the new roll speed. Tab (look inside) and the park brake work at the roll speed or slower, so both work at higher speeds with these notes.
+- The notes' wording, the prices and Quick play are unchanged.
+
 ## 135 — This Century Register: click the ice creams and the price adds up, $40 (2026-11-14)
 
 **Decision (Jira SCREAM-330, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes), note 3, under the calculator: "3 This century register - Click the icons of the Ice Cream to calculate price." "Player clicks on which item and they add up automatically." He had crossed out "Register should be a tablet with the "Today Menu" shown." Price: "$40". Asked where the icons should be, he first chose a tablet beside the pad (the calculator pad staying). Seeing that built (the tablet sat in the mini Today's Menu's place), he changed it: **"The tablet should replace the calculator"**. So with the register the pad is gone and the tablet sits where it was. Then, seeing that: **"One the tablet powerup is bought, lets remove the price menu."** So the mini Today's Menu is not taped to the glass while the register is owned: the tablet's tiles show each price.
