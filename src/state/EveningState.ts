@@ -293,6 +293,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     notebook?: readonly NotebookEntry[];
   }, mapId: MapId = 'worcester', guided = false) {
     super();
+    // SCREAM-334: an ice cream made for Story has no slot in Quick play's cooler (Quick play is unchanged).
+    if (!carry?.story) {
+      for (let i = this.coolerSlots.length - 1; i >= 0; i--) if (getFlavour(this.coolerSlots[i].flavour).storyOnly) this.coolerSlots.splice(i, 1);
+    }
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
     // SCREAM-187 (PO, November 6): "I left $50 on the truck for you to get started." (once)
     const run = this.tutorial;
