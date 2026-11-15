@@ -357,47 +357,36 @@ export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, gre
 }
 
 /**
- * SCREAM-80: Train Off The Tracks, the PO's own icon sketch (Personal Notes, "Train Off The Tracks
- * icon (notepad, November 14)"): a rail piece flips up off the track at a point where the track
- * bends, a faint copy where it was, a curved arrow showing the swing, and burst ticks.
+ * SCREAM-80: Train Off The Tracks. The PO (November 14): a speedometer, "but the needle should be on
+ * the left side, indicating it is still slow" (the truck is still slow; this note makes it faster).
+ * An original drawing after his web reference: a half dial with ticks, the red needle low on the left.
  */
 export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const steel = grey ? 0xbdbdbd : 0xb9c3cc;
-  const shine = grey ? 0xd6d6d6 : 0xe6ecf0;
-  const line = Math.max(2, 5 * u);
-  const thin = Math.max(1.5, 3.5 * u);
-  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
-  // The track: rising from the bottom left to the pivot, then flat to the right.
-  const track = new Phaser.Curves.QuadraticBezier(P(4, 80), P(26, 72), P(46, 70));
-  g.lineStyle(line, ink, 1).strokePoints(track.getPoints(12), false, false);
-  g.lineBetween((46 - 50) * u, (70 - 50) * u, (96 - 50) * u, (69 - 50) * u);
-  // A pointed rail piece from the pivot to its tip: a thin leaf shape.
-  const leaf = (tipX: number, tipY: number, alpha: number) => {
-    const bx = 46, by = 69;
-    const dx = tipX - bx, dy = tipY - by;
-    const len = Math.hypot(dx, dy);
-    const nx = (-dy / len) * 6, ny = (dx / len) * 6;
-    const curve = (side: number) =>
-      new Phaser.Curves.QuadraticBezier(P(bx, by), P(bx + dx * 0.5 + nx * side, by + dy * 0.5 + ny * side), P(tipX, tipY)).getPoints(10);
-    const pts = [...curve(1), ...curve(-1).reverse()];
-    g.fillStyle(steel, alpha).fillPoints(pts, true);
-    g.lineStyle(line, ink, alpha).strokePoints(pts, true, true);
-  };
-  leaf(10, 52, 0.3); // where it was, lying back along the track
-  leaf(30, 18, 1); // flipped up
-  g.lineStyle(Math.max(1.5, 2.5 * u), shine, 1).lineBetween((42 - 50) * u, (58 - 50) * u, (34 - 50) * u, (30 - 50) * u);
-  // The swing: a curved arrow from the old place to the new.
-  const swing = new Phaser.Curves.QuadraticBezier(P(14, 44), P(14, 30), P(24, 26)).getPoints(10);
-  g.lineStyle(thin, ink, 1).strokePoints(swing, false, false);
-  const head = [P(26, 25), P(19, 22), P(21, 31)];
-  g.fillStyle(ink, 1).fillPoints(head, true);
-  // Burst ticks around it.
-  g.lineStyle(thin, ink, 1);
-  for (const [x1, y1, x2, y2] of [[28, 12, 36, 16], [50, 10, 53, 20], [70, 14, 66, 24], [86, 30, 76, 36]] as const) {
-    g.lineBetween((x1 - 50) * u, (y1 - 50) * u, (x2 - 50) * u, (y2 - 50) * u);
+  const face = grey ? 0xe0e0e0 : 0xfff6dc;
+  const red = grey ? 0x9a9a9a : 0xd8332a;
+  const green = grey ? 0xbdbdbd : 0x5fa874;
+  const line = Math.max(2, 6 * u);
+  const cy = 22 * u; // the dial's centre, low in the picture
+  const r = 44 * u;
+  // The face: a half disc on a flat base, with a coloured band (green low, red high).
+  g.fillStyle(face, 1).slice(0, cy, r, Math.PI, 0, false).fillPath();
+  g.lineStyle(9 * u, green, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI, Math.PI * 1.45, false).strokePath();
+  g.lineStyle(9 * u, red, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI * 1.75, Math.PI * 2, false).strokePath();
+  g.lineStyle(line, ink, 1).beginPath().arc(0, cy, r, Math.PI, 0, false).strokePath();
+  g.lineBetween(-r - 6 * u, cy, r + 6 * u, cy);
+  // Ticks.
+  g.lineStyle(Math.max(1.5, 4 * u), ink, 1);
+  for (let i = 0; i <= 6; i++) {
+    const t = Math.PI + (i / 6) * Math.PI;
+    g.lineBetween(Math.cos(t) * (r - 2 * u), cy + Math.sin(t) * (r - 2 * u), Math.cos(t) * (r - 13 * u), cy + Math.sin(t) * (r - 13 * u));
   }
+  // The needle, low on the left: still slow.
+  const t = Math.PI * 1.17;
+  g.lineStyle(Math.max(2, 5 * u), ink, 1).lineBetween(0, cy, Math.cos(t) * (r - 10 * u), cy + Math.sin(t) * (r - 10 * u));
+  g.fillStyle(ink, 1).fillCircle(0, cy, 7 * u);
+  g.fillStyle(red, 1).fillCircle(0, cy, 3.5 * u);
 }
 
 /**
