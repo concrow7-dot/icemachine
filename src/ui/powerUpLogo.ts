@@ -436,42 +436,44 @@ export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey
 }
 
 /**
- * SCREAM-326: Steam Engine. From the PO's sketch (an engine pulling carriages): a little green
- * steam engine with a red cowcatcher and a puff of steam. Original drawing.
+ * SCREAM-326: Steam Engine. After the PO's reference (a light green engine with a row of small
+ * wheels and puffs of steam): an original drawing in the game's style.
  */
 export function drawSteamEngine(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const green = grey ? 0xb8b8b8 : 0x2e7d4f;
+  const green = grey ? 0xc4c4c4 : 0x9fd3a7;
+  const deep = grey ? 0xa0a0a0 : 0x5fa874;
   const dark = grey ? 0x8a8a8a : 0x3d3f44;
-  const red = grey ? 0xa8a8a8 : 0xd8332a;
-  const gold = grey ? 0xcccccc : 0xf2c14e;
   const line = Math.max(2, 5 * u);
   const X = (v: number) => (v - 50) * u;
   const box = (colour: number, x: number, y: number, w: number, h: number) => {
     g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
     g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
   };
-  // Steam: three puffs above the chimney.
-  g.fillStyle(0xffffff, grey ? 0.6 : 1);
+  // Steam: a cloud of puffs above the chimney, and a little one off to the right.
   g.lineStyle(Math.max(1.5, 3 * u), ink, 1);
-  for (const [x, y, r] of [[30, 20, 8], [42, 12, 9], [56, 9, 7]] as const) {
-    g.fillCircle(X(x), X(y), r * u);
+  for (const [x, y, r] of [[22, 18, 8], [32, 12, 9], [43, 16, 7], [74, 14, 5]] as const) {
+    g.fillStyle(0xffffff, grey ? 0.6 : 1).fillCircle(X(x), X(y), r * u);
     g.strokeCircle(X(x), X(y), r * u);
   }
-  box(dark, 24, 30, 10, 16); // chimney
-  box(green, 14, 44, 50, 24); // boiler
-  box(green, 62, 32, 26, 36); // cab
-  box(dark, 58, 28, 34, 6); // cab roof
-  box(0xffffff, 68, 39, 13, 11); // window
-  box(gold, 40, 38, 8, 8); // dome
-  // Cowcatcher, then wheels.
-  const cow = [new Phaser.Math.Vector2(X(14), X(60)), new Phaser.Math.Vector2(X(14), X(78)), new Phaser.Math.Vector2(X(2), X(78))];
-  g.fillStyle(red, 1).fillPoints(cow, true);
+  box(dark, 22, 26, 10, 4); // chimney top
+  box(deep, 24, 30, 6, 14); // chimney
+  box(green, 12, 42, 52, 22); // boiler
+  box(deep, 38, 36, 9, 6); // dome
+  box(green, 62, 30, 26, 34); // cab
+  box(deep, 58, 26, 34, 5); // cab roof
+  box(0xffffff, 68, 36, 13, 10); // window
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(53), X(64), X(53)); // a band round the boiler
+  // Cowcatcher.
+  const cow = [new Phaser.Math.Vector2(X(12), X(58)), new Phaser.Math.Vector2(X(12), X(74)), new Phaser.Math.Vector2(X(1), X(74))];
+  g.fillStyle(deep, 1).fillPoints(cow, true);
   g.lineStyle(line, ink, 1).strokePoints(cow, true, true);
-  for (const [x, r] of [[26, 10], [48, 10], [74, 12]] as const) {
-    g.fillStyle(red, 1).fillCircle(X(x), X(80 - r + 8), r * u);
-    g.lineStyle(line, ink, 1).strokeCircle(X(x), X(80 - r + 8), r * u);
-    g.fillStyle(ink, 1).fillCircle(X(x), X(80 - r + 8), 2.5 * u);
+  // The rail and a row of five small wheels.
+  g.lineStyle(line, ink, 1).lineBetween(X(2), X(86), X(96), X(86));
+  for (const x of [20, 34, 48, 66, 80]) {
+    g.fillStyle(0xffffff, 1).fillCircle(X(x), X(75), 7 * u);
+    g.lineStyle(line, ink, 1).strokeCircle(X(x), X(75), 7 * u);
+    g.fillStyle(ink, 1).fillCircle(X(x), X(75), 2 * u);
   }
 }
