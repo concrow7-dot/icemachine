@@ -42,7 +42,7 @@ const { chromium } = require('playwright');
   // ---- Quick play never offers a Story ice cream ----
   await page.click('canvas'); await press('Enter'); await wait(400);
   check('Quick play: the clipboard offers the four old ice creams only', (await scenes()) + ' ' + (await sc('Cooler', "s.offered.map(f => f.id).join()")), 'Cooler,Hud eclair,spongepop,explorer,cookie');
-  check('...and the Story ice creams are not unlocked there', await ev("['louball'].map(f => e.flavourUnlocked(f)).join()"), 'false');
+  check('...and the Story ice creams are not unlocked there', await ev("['louball','drumcone'].map(f => e.flavourUnlocked(f)).join()"), 'false,false');
 
   // ---- Story, On My Own: the board ----
   await flow('f.startStory(s, false)');
@@ -63,7 +63,7 @@ const { chromium } = require('playwright');
     const [x, y] = await sc('Cooler', `(() => { const b = s.addButtons.get('${f}'); return [b.x, b.y]; })()`);
     await page.mouse.click(x, y); await wait(120);
   }
-  check('...clicking each picture adds one of each', await sc('Cooler', "s.order.slots.map(x => x.flavour + ':' + x.quantity).join()"), 'eclair:1,spongepop:1,explorer:1,cookie:1,louball:1');
+  check('...clicking each picture adds one of each', await sc('Cooler', "s.order.slots.filter(x => x.quantity > 0).map(x => x.flavour + ':' + x.quantity).join()"), 'eclair:1,spongepop:1,explorer:1,cookie:1,louball:1');
   check("...Today's Menu shows five cards, smaller, all on the wall (left of x 940)", await sc('Cooler', "(() => { const v = s.cards.filter(c => c.container.visible); const last = v[v.length - 1].container; return v.length + ' ' + (last.scaleX < 1) + ' ' + (last.x + 156 * last.scaleX <= 941) + ' ' + (v[0].container.x === 262); })()"), '5 true true true');
   await page.mouse.move(5, 5); await wait(150);
   await page.screenshot({ path: outDir + '/icecreams_cooler_five.png' });
@@ -74,6 +74,18 @@ const { chromium } = require('playwright');
     await page.mouse.click(x, y); await wait(150);
     check('...a small card\'s + still raises its price', (await sc('Cooler', "s.order.slots.find(x => x.flavour === 'louball').priceCents")) - was, 25);
   }
+  // ---- SCREAM-335: the Drum Cone's note, and the cooler with all six ----
+  check('SCREAM-335: the Drum Cone\'s note: $30, under the Lil Explorer Pop, with the PO\'s line and the $3.75 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 3000 | 2 | 2 | icecream-explorer | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.75 for one.");
+  check('...bought (the Explorer Pop is owned): $2.00 to stock, refused above $3.75', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone'); })), 'true 200 375');
+  await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
+  check('Six ice creams unlocked: six rows, all above the totals', await sc('Cooler', "s.offered.map(f => f.id).join() + ' ' + s.rowYs.join() + ' ' + (Math.max(...s.rowYs) + 20 < s.totals.y - 14)"), 'eclair,spongepop,explorer,cookie,louball,drumcone 140,182,224,266,308,350 true');
+  for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball', 'drumcone']) {
+    const [x, y] = await sc('Cooler', `(() => { const b = s.addButtons.get('${f}'); return [b.x, b.y]; })()`);
+    await page.mouse.click(x, y); await wait(120);
+  }
+  check("...Today's Menu shows six cards, all on the wall", await sc('Cooler', "(() => { const v = s.cards.filter(c => c.container.visible); const last = v[v.length - 1].container; return v.length + ' ' + (last.x + 156 * last.scaleX <= 941) + ' ' + v.map(c => c.flavour).join(); })()"), '6 true eclair,spongepop,explorer,cookie,louball,drumcone');
+  await page.mouse.move(5, 5); await wait(150);
+  await page.screenshot({ path: outDir + '/icecreams_cooler_six.png' });
   await sc('Cooler', '(s.buyButton.emit("pointerdown"), true)'); await wait(300);
   check('...bought: one Two Ball Lou Ball in the cooler', await ev("e.slots.find(s => s.flavour === 'louball').quantity"), 1);
 
@@ -99,6 +111,22 @@ const { chromium } = require('playwright');
   check('...a second sale starts the 10 seconds again; it doesn\'t add up', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
   await ev('(e.steeringReversedMs = 200, true)'); await wait(500);
   check('...when they run out the steering is normal again and the countdown goes', (await ev('e.steeringReversed')) + ' ' + (await drive('s.reversedLabel.visible')) + ' ' + (await turned()), 'false false 1');
+
+  // ---- SCREAM-335: the Drum Cone's drum solo ----
+  const music = (fn) => page.evaluate(`(async () => { const { musicFor } = await import('/src/audio/Music.js'); const m = musicFor(window.__game.scene.getScene('Drive')); return ${fn}; })()`);
+  const radius0 = await ev('Math.round(e.spec.musicRadius * 100) / 100');
+  check('Before a Drum Cone sale: the usual tune, the usual ring, no countdown', (await music('m.drumSolo')) + ' ' + (await ev('e.drumSolo')) + ' ' + (await drive('s.drumLabel.visible')) + ' ' + (await drive('Math.round(s.ring.radius * 100) / 100 === ' + radius0)), 'false false false true');
+  check('SCREAM-335: a sale with a Drum Cone starts 30 seconds of drum solo (the usual tip, no reversed steering)', (await sell('drumcone')) + ' | solo ' + (await ev('e.drumSoloMs > 29000 && e.drumSoloMs <= 30000')), 'drumcone | factor 1 | tip 80 | reversed 0 | solo true');
+  await wait(500);
+  check('...the music is the drum solo and its name shows like a song\'s', (await music('m.drumSolo')) + ' | ' + (await drive('s.songLabel.text')), 'true | ♪ Drum Solo');
+  check('...the music ring is 10% bigger, on the road and for who hears it', (await ev('Math.round(e.spec.musicRadius / ' + radius0 + ' * 100) / 100')) + ' ' + (await drive('Math.round(s.ring.radius / ' + radius0 + ' * 100) / 100')), '1.1 1.1');
+  check('...a countdown says so, under where STEERING REVERSED goes', (await drive('s.drumLabel.visible')) + ' | ' + (await drive('/^DRUM SOLO  (29|30)$/.test(s.drumLabel.text)')) + ' | ' + (await drive('s.drumLabel.y > s.reversedLabel.y')), 'true | true | true');
+  await page.screenshot({ path: outDir + '/icecreams_drum_solo.png' });
+  check('...a second sale starts the 30 seconds again; it doesn\'t add up', (await sell('drumcone')) && (await ev('e.drumSoloMs > 29000 && e.drumSoloMs <= 30000')), true);
+  check('...with the speaker upgrade the 10% is on top of it', await ev("(() => { const before = e.spec.musicRadius; e.powerUpsOwned.push('upgrade-speaker'); e.buyPowerUp('nothing'); return true; })()") && await page.evaluate(async () => { const { truckSpec } = await import('/src/state/TruckSpec.js'); const e = window.__game.registry.get('evening'); const base = truckSpec(true, e.powerUpsOwned).musicRadius; e.truckNow = truckSpec(true, e.powerUpsOwned); return Math.round((e.spec.musicRadius / base) * 100) / 100 + ' ' + (base > 170); }), '1.1 true');
+  await ev('(e.drumSoloMs = 200, true)'); await wait(600);
+  check('...when the 30 seconds run out the tune is back, the ring is its own size and the countdown goes', (await music('m.drumSolo')) + ' ' + (await ev('e.drumSolo')) + ' ' + (await drive('s.drumLabel.visible')) + ' ' + (await drive('Math.round(s.ring.radius) === Math.round(' + (await ev('e.truckNow.musicRadius')) + ')')) + ' ' + (await drive('s.songLabel.text !== "♪ Drum Solo"')), 'false false false true true');
+  check('...a sale with both: double tip, reversed steering and the drum solo together', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const before = e.coolerSlots.map(s => s.quantity); e.coolerSlots.forEach(s => { s.quantity = s.flavour === 'louball' || s.flavour === 'drumcone' ? 1 : 0; }); let sale; for (let i = 0; i < 40 && !(sale && sale.louBall && sale.drumCone); i++) { sale = e.startSale(); e.saleNow = null; e.setCustomerWaiting(false); } e.coolerSlots.forEach((s, i) => { s.quantity = before[i]; }); return sale.louBall + ' ' + sale.drumCone + ' ' + sale.tipFactor; }), 'true true 2');
 
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();

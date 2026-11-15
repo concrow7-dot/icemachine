@@ -26,6 +26,7 @@ export const MENU_COLOURS: Record<FlavourId, { card: number; burst: number }> = 
   explorer: { card: 0x30a050, burst: 0x5abe68 },
   cookie: { card: 0x8048c4, burst: 0x9c68d6 },
   louball: { card: 0xe07a1c, burst: 0xf29a3e }, // SCREAM-334
+  drumcone: { card: 0x16969c, burst: 0x3cb4b8 }, // SCREAM-335
 };
 
 /** Call in preload: queues the pictures and the marker font unless they're already loaded. */
