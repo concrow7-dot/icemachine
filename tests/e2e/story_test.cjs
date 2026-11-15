@@ -307,8 +307,11 @@ const { chromium } = require('playwright');
   check('SCREAM-307: Enter opens the cooler from there, the clock still waiting', (await scenes()) + ' ' + (await ev('e.isClockRunning')), 'Cooler,Hud false');
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
+  const k3 = await ev('e.clockMinutes'); await wait(800);
+  check('SCREAM-318: back at the truck screen after buying, the clock still waits (it starts at DRIVE)', (await scenes()) + ' ' + ((await ev('e.clockMinutes')) === k3) + ' ' + (await ev('e.isClockRunning')), 'Truck,Hud true false');
   await press('ArrowRight'); await press('Enter'); await wait(600);
   check('Roundabouts: on the road in Elm Park, with a roundabout', (await scenes()) + ' ' + (await sc('Drive', 's.laps !== null')), 'Drive,Hud true');
+  check('SCREAM-318: ...DRIVE started the clock', await ev('e.isClockRunning'), true);
   // ---- SCREAM-313: a kid whose order includes a SpongePop tips 10 points more ----
   const kidSteps = (kid, flavours) => ev(`(() => { const p = e.residents.all.find(p => !!p.resident.kid === ${kid}); return e.saleTipSteps(${JSON.stringify(flavours)}.map((f, i) => ({ slot: i, flavour: f, count: 1 })), p).join(); })()`);
   check('SCREAM-313: a kid who orders a SpongePop: 30, 25, 20, 15', await kidSteps(true, ['spongepop']), '30,25,20,15');

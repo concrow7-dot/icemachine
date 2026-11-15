@@ -191,6 +191,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * the cooler or drives off.
    */
   readonly opensAtHub: boolean;
+  /**
+   * SCREAM-318 (PO, November 14): "At the beginning of the night, I want to make it so the clock
+   * doesn't start until the player hits \"Drive\"". Story (not the uncle's guided evening): leaving
+   * the cooler no longer starts the clock; only DRIVE on the truck screen does.
+   */
+  readonly clockWaitsForDrive: boolean;
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
@@ -291,6 +297,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.homeMapId = mapId;
     this.story = carry?.story;
     this.opensAtHub = !!carry?.story && carry.story.day >= 2 && !this.tutorial; // SCREAM-307
+    this.clockWaitsForDrive = !!carry?.story && !this.tutorial; // SCREAM-318
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;

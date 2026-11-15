@@ -162,6 +162,8 @@ export class CoolerScene extends Phaser.Scene {
           ? 'Stock and prices were locked when you left for the road.'
           : this.restocking
             ? 'Restocking at home: the clock is running. Bought stock can be added to, not returned.'
+            : !this.evening.isClockRunning && this.evening.clockWaitsForDrive
+            ? 'The clock starts when you press DRIVE. Everything locks when you drive off.' // SCREAM-318
             : !this.evening.isClockRunning
             ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
             : 'Bought stock can be added to, not returned. Everything locks when you drive off.',

@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 122 — Story: the clock starts at DRIVE (2026-11-14)
+
+**Decision (Jira SCREAM-318, PO, November 14):** "At the beginning of the night, I want to make it so the clock doesn't start until the player hits "Drive"". In Story, stocking the cooler, the truck screen and the cork board before setting off no longer move the clock; DRIVE on the truck screen starts it. Before, leaving the cooler started it (#66; decisions 005, 029).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076); the uncle's guided evening keeps the old rule (its own steps start the drive). Quick play unchanged.
+- `EveningState.clockWaitsForDrive`; `returnToTruck` doesn't start the clock when it is set. The cooler's note reads "The clock starts when you press DRIVE."
+- Once the truck has set off, the clock runs everywhere, as before.
+
 ## 121 — Calculator: the window's price pad gets + − × ÷ and =, $30 (2026-11-14)
 
 **Decision (Jira SCREAM-317, under SCREAM-78, PO, November 14):** "The right one should be “Calculator”. “Get a calculator to use at the sales window.” It should cost $30." The window already had a pad that only types the price; asked what buying the Calculator does, he chose: **the pad gets + − × ÷ and =**, like the desk calculator in his photo, so an order can be added up there (2.50 + 2.50 + 3 =) and then charged.
