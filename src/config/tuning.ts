@@ -465,15 +465,18 @@ export const GITTY_UP_PRICE_CENTS = 2000;
  * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
  */
 export const TROT_CREEP_FACTOR = 1.5;
-/** SCREAM-326 (PO, November 14): Steam Engine, $30: the roll (creep) x 1.1, on top of Trot. */
+/**
+ * SCREAM-326 (PO, November 14): Steam Engine, $30. First +10%; while testing: "it should be the same effect as
+ * trot, just on top of it": it adds the step Trot adds (Story: +6 px/s, so 18 to 24 with Trot).
+ */
 export const STEAM_PRICE_CENTS = 3000;
-export const STEAM_CREEP_FACTOR = 1.1;
+export const STEAM_CREEP_FACTOR = TROT_CREEP_FACTOR;
 /** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 10% better (braking time / 1.1). */
 export const BRAKES_PRICE_CENTS = 3000;
 export const BRAKES_FACTOR = 1.1;
-/** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.1. */
+/** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
 export const TRAIN_PRICE_CENTS = 3000;
-export const TRAIN_TOP_SPEED_FACTOR = 1.1;
+export const TRAIN_TOP_SPEED_FACTOR = 1.05;
 /** SCREAM-310 (PO: "Lets go with $20"). */
 export const TROT_PRICE_CENTS = 2000;
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
