@@ -127,6 +127,11 @@ const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
 const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
 
+/** SCREAM-334: the countdown shown while the steering is reversed (doc 15). */
+export function steeringReversedText(seconds: number): string {
+  return `STEERING REVERSED  ${seconds}`;
+}
+
 export class DriveScene extends Phaser.Scene {
   private evening!: EveningState;
   private truck!: Phaser.GameObjects.Container;
@@ -226,6 +231,8 @@ export class DriveScene extends Phaser.Scene {
   /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
   private rolling = 1;
   private parkLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-334: "STEERING REVERSED 7" while a Two Ball Lou Ball's 10 seconds run (test hook). */
+  reversedLabel!: Phaser.GameObjects.Text;
   private notice?: Phaser.GameObjects.Text;
   /** How long the brake has been held at a standstill (it reverses after a moment). */
   private brakeHeldStill = 0;
@@ -412,6 +419,21 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20)
       .setVisible(this.parkBrake);
 
+    // SCREAM-334: while the steering is reversed (a Two Ball Lou Ball sale), a countdown says so.
+    this.reversedLabel = this.add
+      .text(this.scale.width / 2, 64, '', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#e07a1c',
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0).setData('pin', true)
+      .setDepth(20)
+      .setVisible(false);
+
     // SCREAM-24: the music, with the song's name shown for a moment when it starts.
     this.songLabel = this.add
       .text(this.scale.width - 6, 22, '', {
@@ -555,7 +577,11 @@ export class DriveScene extends Phaser.Scene {
       this.parkLabel.setVisible(true);
     } else {
       this.driveHard(dt);
+      this.evening.driveTick(dt * 1000); // SCREAM-334: timers that count only while the player drives
     }
+    const reversedFor = Math.ceil(this.evening.steeringReversedMs / 1000);
+    this.reversedLabel.setVisible(reversedFor > 0);
+    if (reversedFor > 0) this.reversedLabel.setText(steeringReversedText(reversedFor));
 
     if (this.speed !== 0 && !this.uncleLeg) {
       const rad = Phaser.Math.DegToRad(this.heading);
@@ -654,7 +680,8 @@ export class DriveScene extends Phaser.Scene {
   private driveHard(dt: number): void {
     const gas = this.held.includes('up');
     const brake = this.held.includes('down');
-    const steer = (this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0);
+    // SCREAM-334: after a Two Ball Lou Ball sale the steering is swapped for 10 seconds of driving.
+    const steer = ((this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0)) * (this.evening.steeringReversed ? -1 : 1);
 
     // Car-style driving (#32, PO testing PR #58). Gas speeds up. Let go of
     // everything and the truck rolls at a creep, the way it was last going;

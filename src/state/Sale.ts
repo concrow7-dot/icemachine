@@ -394,6 +394,8 @@ export class Sale {
 
   /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
   tipFactor = 1;
+  /** SCREAM-334: this order includes a Two Ball Lou Ball (Story): the tip is doubled and the steering is reversed afterwards. */
+  louBall = false;
   /** SCREAM-312: the exploration tip paid with this sale, in cents (Lil Explorer Pops, Story only). */
   explorationTipCents = 0;
   /** SCREAM-313: the extra tip points a SpongePop brings to this sale (10 for a kid who ordered one). */

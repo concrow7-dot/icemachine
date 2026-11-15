@@ -3,7 +3,7 @@
     python3 tools/flavours/draw_icons.py public/assets/flavours/icons.png
 
 One row of frames, FRAME_W x FRAME_H art pixels each, transparent background, in the
-order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie.
+order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie, louball.
 The game scales them up with nearest-neighbour filtering. Original designs (no real
 products or characters). Fixed random seed, so it redraws the same.
 """
@@ -13,7 +13,7 @@ import sys
 from PIL import Image, ImageDraw
 
 FRAME_W, FRAME_H = 28, 36
-ORDER = ["eclair", "spongepop", "explorer", "cookie"]
+ORDER = ["eclair", "spongepop", "explorer", "cookie", "louball"]
 rnd = random.Random(129)
 
 sheet = Image.new("RGBA", (FRAME_W * len(ORDER), FRAME_H), (0, 0, 0, 0))
@@ -112,6 +112,41 @@ def cookie():
     return img
 
 
-for i, fn in enumerate([eclair, spongepop, explorer, cookie]):
+def louball():
+    """SCREAM-334 (the PO's second sketch, November 15, "Lets switch to this design"): a long
+    cone-shaped cup lying on a slant, point down to the left; a round lid on top that says
+    "Lou" with "II" under it; two gumballs side by side in the point. (His first sketch had a
+    crowned smiling face on the lid.)"""
+    img, d, R = frame(4)
+    ink = (60, 34, 30, 255)
+    blue = (40, 70, 160, 255)
+    # The cup: a cone from the lid down to a rounded point, bottom left. Cherry ice inside.
+    d.polygon([(8, 11), (25, 17), (6, 35), (2, 34), (1, 30)], fill=ink)
+    d.polygon([(9, 13), (23, 18), (6, 33), (3, 32), (3, 30)], fill=(232, 70, 96, 255))
+    d.polygon([(10, 14), (14, 15), (5, 30), (4, 30)], fill=(248, 128, 146, 255))  # a shine down one side
+    # Two gumballs in the point, side by side.
+    d.ellipse([3, 27, 8, 32], fill=ink)
+    d.ellipse([4, 28, 7, 31], fill=(70, 150, 240, 255))
+    d.ellipse([8, 25, 13, 30], fill=ink)
+    d.ellipse([9, 26, 12, 29], fill=(250, 214, 70, 255))
+    R(5, 28, 1, 1, (200, 226, 255, 255))
+    R(10, 26, 1, 1, (255, 246, 190, 255))
+    # The lid: a flat oval, tilted with the cup.
+    d.ellipse([5, 0, 27, 16], fill=ink)
+    d.ellipse([6, 1, 26, 15], fill=(250, 246, 234, 255))
+    # "LOU" in 3 x 5 pixel letters...
+    x, y = 9, 3
+    R(x, y, 1, 5, blue); R(x, y + 4, 3, 1, blue)                                   # L
+    x += 4
+    R(x, y, 1, 5, blue); R(x + 2, y, 1, 5, blue); R(x, y, 3, 1, blue); R(x, y + 4, 3, 1, blue)  # O
+    x += 4
+    R(x, y, 1, 5, blue); R(x + 2, y, 1, 5, blue); R(x, y + 4, 3, 1, blue)          # U
+    # ...and "II" under it, to the right, with its bars top and bottom.
+    R(15, 10, 5, 1, blue); R(15, 13, 5, 1, blue)
+    R(16, 10, 1, 4, blue); R(18, 10, 1, 4, blue)
+    return img
+
+
+for i, fn in enumerate([eclair, spongepop, explorer, cookie, louball]):
     sheet.paste(fn(), (i * FRAME_W, 0))
 sheet.save(sys.argv[1] if len(sys.argv) > 1 else "icons.png")

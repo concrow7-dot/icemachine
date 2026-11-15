@@ -35,9 +35,9 @@ test('the arrow keys move to the nearest note that way', () => {
 
 test('...and cross from one tree to the next', () => {
   // SCREAM-333: the Ice Cream tree's third row has a note on each side.
-  assert.equal(nextNote(notes, 'steam-engine', 'right'), 'icecream-5');
-  assert.equal(nextNote(notes, 'icecream-5', 'left'), 'steam-engine');
-  assert.equal(nextNote(notes, 'icecream-5', 'right'), 'icecream-6');
+  assert.equal(nextNote(notes, 'steam-engine', 'right'), 'icecream-louball');
+  assert.equal(nextNote(notes, 'icecream-louball', 'left'), 'steam-engine');
+  assert.equal(nextNote(notes, 'icecream-louball', 'right'), 'icecream-6');
   assert.equal(nextNote(notes, 'icecream-6', 'right'), 'heavier-bass');
 });
 
@@ -99,18 +99,22 @@ test('SCREAM-310: Trot is the right note under the gas can, $20, with its own na
   assert.deepEqual(notes.find((n) => n.id === 'steam-engine').from, ['trot']);
 });
 
-test('SCREAM-333: the eclair on top, SpongePop and the Explorer Pop side by side, a third-row note under each, the sandwich under both; SpongePop $20, Explorer $25, the rest $15', () => {
+test('SCREAM-333: the eclair on top, SpongePop and the Explorer Pop side by side, a third-row note under each, the sandwich under both; SpongePop $20, Explorer $25, the Two Ball Lou Ball $30, the rest $15', () => {
   const tree = POWER_UP_TREES.find((t) => t.id === 'icecream');
-  assert.deepEqual(tree.notes.map((n) => n.id), ['icecream-eclair', 'icecream-spongepop', 'icecream-explorer', 'icecream-5', 'icecream-6', 'icecream-cookie']);
+  assert.deepEqual(tree.notes.map((n) => n.id), ['icecream-eclair', 'icecream-spongepop', 'icecream-explorer', 'icecream-louball', 'icecream-6', 'icecream-cookie']);
   assert.deepEqual(FREE_NOTE_IDS, ['icecream-eclair']);
-  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 2000, 2500, 1500, 1500, 1500]);
+  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 2000, 2500, 3000, 1500, 1500]);
   assert.deepEqual(tree.notes.map((n) => [n.col, n.row]), [[1, 0], [0, 1], [2, 1], [0, 2], [2, 2], [1, 3]]);
-  assert.deepEqual(tree.notes.map((n) => n.from), [[], ['icecream-eclair'], ['icecream-eclair'], ['icecream-spongepop'], ['icecream-explorer'], ['icecream-5', 'icecream-6']]);
+  assert.deepEqual(tree.notes.map((n) => n.from), [[], ['icecream-eclair'], ['icecream-eclair'], ['icecream-spongepop'], ['icecream-explorer'], ['icecream-louball', 'icecream-6']]);
   const [, sponge, explorer, left, right, cookie] = tree.notes;
   assert.equal(buyStatus(sponge, FREE_NOTE_IDS, 2000, true), 'ok');
   // The Explorer Pop no longer waits for SpongePop.
   assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 2500, true), 'ok');
-  assert.equal(buyStatus(left, FREE_NOTE_IDS, 1500, true), 'locked');
+  assert.equal(buyStatus(left, FREE_NOTE_IDS, 3000, true), 'locked');
+  // SCREAM-334: the Two Ball Lou Ball, $30, the PO's line, $3.75 at most.
+  assert.deepEqual([left.name, left.flavour, left.logo], ['TWO BALL LOU BALL', 'louball', 'louball']);
+  assert.equal(left.description, "High upside, crazy downside. The average person won't pay more than $3.75 for one.");
+  assert.equal(storyRefuseAboveCents('louball'), 375);
   assert.equal(buyStatus(right, [...FREE_NOTE_IDS, explorer.id], 1500, true), 'ok');
   // The sandwich needs either third-row note.
   assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, sponge.id, explorer.id], 1500, true), 'locked');
