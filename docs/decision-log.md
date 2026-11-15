@@ -17,6 +17,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - The cooler's line says "Just looking: stock is bought and prices are set at home."; the board's says "Buy it at home".
 - Customers keep walking and the music keeps playing while inside (as on any stop off the road, SCREAM-114 / 118).
 - `EveningState.startPeek` / `isPeeking`; the Drive scene ends the look when it starts. Tab is captured so the browser doesn't move its focus.
+- **SCREAM-323 (PO, November 14, while testing):** "While in the cooler, we need a button to return to the truck view." A RETURN TO TRUCK button, bottom left in Story's cooler, does what B does. Engineering's calls: styled like the window's RETURN TO COOLER; Story only.
 
 ## 124 — Story: power-ups can be bought at home at any time (2026-11-14)
 

@@ -329,7 +329,11 @@ const { chromium } = require('playwright');
   await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
   check('...the cooler can be looked at, not changed', (await sc('Cooler', 's.locked')) + ' ' + (await ev('e.canStock')) + ' | ' + (await sc('Cooler', 's.note.text')), 'true false | Just looking: stock is bought and prices are set at home.');
   await page.screenshot({ path: outDir + '/story_tab_cooler.png' });
-  await press('b'); await until(async () => (await scenes()).startsWith('Truck'));
+  // SCREAM-323 (PO, November 14): a RETURN TO TRUCK button in the cooler.
+  const rb = await sc('Cooler', '(b => [b.x + b.width / 2, b.y])(s.returnButton)');
+  check('SCREAM-323: the cooler has RETURN TO TRUCK, bottom left', await sc('Cooler', 's.returnButton.text + " " + (s.returnButton.x < 40) + " " + (s.returnButton.y > 500)'), 'RETURN TO TRUCK true true');
+  await page.mouse.click(rb[0], rb[1]); await until(async () => (await scenes()).startsWith('Truck'));
+  check('...clicking it goes back to the truck screen', await scenes(), 'Truck,Hud');
   check('...the power-ups can be looked at, not bought', await ev("e.powerUpStatus('service-with-a-smile')"), 'away');
   await sc('Truck', '(s.activate("menu"), true)'); await until(async () => (await scenes()).startsWith('PowerUps'));
   check('...the cork board opens', await scenes(), 'PowerUps,Hud');

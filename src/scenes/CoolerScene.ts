@@ -73,6 +73,10 @@ export class CoolerScene extends Phaser.Scene {
   /** SCREAM-54: at the cooler after pulling into Home's driveway; leaving goes back to the road. */
   private restocking = false;
   private buyButton?: Phaser.GameObjects.Text;
+  /** SCREAM-323: RETURN TO TRUCK, bottom left (Story; test hook). */
+  returnButton?: Phaser.GameObjects.Text;
+  /** What B does: back to the truck (or the empty-cooler warning). */
+  private goBack?: () => void;
   /** SCREAM-277: the keys along the bottom (test hook). */
   keysLine?: Phaser.GameObjects.Text;
   private focus: Focus = { area: 'clipboard', row: 0 };
@@ -180,6 +184,24 @@ export class CoolerScene extends Phaser.Scene {
     this.noteTimer = undefined;
 
     this.addKeys();
+
+    // SCREAM-323 (PO, November 14, testing #235): "While in the cooler, we need a button to return to
+    // the truck view." Story (not the uncle's evening): bottom left, on the strip under the clipboard,
+    // styled like the window's RETURN TO COOLER. It does what B does.
+    this.returnButton = undefined;
+    if (this.evening.clockWaitsForDrive) {
+      this.returnButton = this.add
+        .text(14, height - 19, 'RETURN TO TRUCK', {
+          fontFamily: 'monospace',
+          fontSize: '14px',
+          color: '#ffffff',
+          backgroundColor: '#1d5c8c',
+          padding: { x: 9, y: 5 },
+        })
+        .setOrigin(0, 0.5)
+        .setInteractive({ useHandCursor: true });
+      this.returnButton.on('pointerdown', () => this.goBack?.());
+    }
 
     const onChange = () => this.refresh();
     this.evening.on(EveningEvents.CoolerChanged, onChange);
@@ -486,6 +508,7 @@ export class CoolerScene extends Phaser.Scene {
       leaving = true;
       this.leave();
     };
+    this.goBack = back;
     keyboard?.on('keydown-B', back);
     keyboard?.on('keydown-BACKSPACE', back);
     if (this.locked) return;
