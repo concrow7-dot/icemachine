@@ -86,9 +86,9 @@ test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own
   assert.match(can.description, /a splash to get you going/);
   const dummy = notes.find((n) => n.id === 'truck-9');
   assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 9', 'truck', ['back-it-up']]);
-  // SCREAM-25: Truck 8 is More Junk now.
+  // SCREAM-25: Truck 8 is More Space for Scream now.
   const junk = notes.find((n) => n.id === 'more-junk');
-  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE JUNK', 5000, ['back-it-up'], 'more-junk']);
+  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE SPACE FOR SCREAM', 5000, ['back-it-up'], 'more-junk']);
 });
 
 test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own name and picture', () => {
