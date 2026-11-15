@@ -444,7 +444,7 @@ const { chromium } = require('playwright');
   await ev("(e.powerUpsOwned.push('calculator', 'this-century-register'), true)");
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }]); await tick(5100);
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
-  check('SCREAM-330: with the register, "How much?" shows a tablet in the calculator\'s place: the pad is gone, the mini menu stays', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.register.container.visible + " " + s.calculator.container.visible + " " + s.priceCard.visible + " " + (s.register.container.x === s.calculator.container.x)')), 'pricing true false true true');
+  check('SCREAM-330: with the register, "How much?" shows a tablet in the calculator\'s place: the pad is gone, and so is the mini price menu (PO)', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.register.container.visible + " " + s.calculator.container.visible + " " + s.priceCard.visible + " " + (s.register.container.x === s.calculator.container.x)')), 'pricing true false false true');
   check('...a tile per ice cream on the menu, and CLEAR and CHARGE', await sc('Sales', '[...s.register.tiles.keys()].join() + " " + [...s.register.keys.keys()].join()'), (await ev('e.slots.filter(s => s.quantity > 0 || e.sale.order.some(l => l.flavour === s.flavour)).map(s => s.flavour).join()')) + ' C,CHARGE');
   const at = (what) => sc('Sales', `(r => [s.register.container.x + r.x, s.register.container.y + r.y])(s.register.${what})`);
   const tile = await at('tiles.get("eclair")');

@@ -10,7 +10,8 @@ import { addFlavourIcon, MARKER_FONT } from './flavourArt';
 // that ice cream to the total.
 // PO, November 14, on the first build (the tablet sat beside the calculator pad, in the mini
 // Today's Menu's place): "The tablet should replace the calculator". So it sits where the pad
-// was, the pad is gone while the register is owned, and the mini Today's Menu stays on the glass.
+// was and the pad is gone while the register is owned. PO, November 15: "One the tablet powerup is
+// bought, lets remove the price menu": the mini Today's Menu is not shown with it either.
 // Placeholder art by engineering until the PO draws it.
 
 const BEZEL = 0x2b2f36;

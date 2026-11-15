@@ -603,8 +603,10 @@ export class SalesScene extends Phaser.Scene {
     this.showLine(sale);
 
     const pricing = sale.phase === 'pricing';
-    if (pricing) this.drawMenuCard();
-    this.priceCard.setVisible(pricing);
+    // SCREAM-330 (PO, November 15: "One the tablet powerup is bought, lets remove the price menu"): the
+    // tablet's tiles already show each price, so the mini Today's Menu is not taped up with the register.
+    if (pricing && !this.register) this.drawMenuCard();
+    this.priceCard.setVisible(pricing && !this.register);
     this.calculator.show(this.sum ? this.sum.display() : this.typed, this.sum?.op ?? null);
     // SCREAM-330 (PO): the register's tablet replaces the calculator pad.
     if (pricing && this.register) this.register.show(this.menuRows(sale).map((s) => ({ flavour: s.flavour, priceCents: s.priceCents })), this.sum?.display() ?? '0');
