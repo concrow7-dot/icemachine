@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 137 — The Ice Cream tree: SpongePop and the Lil Explorer Pop side by side, the sandwich on a fourth row (2026-11-15)
+
+**Decision (Jira SCREAM-333, under SCREAM-78, PO, November 14, notepad sketch "Ice cream tree, third row (notepad, November 14)" in Personal Notes):** "Note: Change Sponge + Explorer to be next to each other." His drawing: one note at the top, two under it side by side, and one more under each of those. So the tree is now: the Chocolate Eclair at the top; SpongePop (left) and the Lil Explorer Pop (right) under it, each on its own string; a third-row note under each (dummies until SCREAM-334 and SCREAM-335 are built); the Cookie Ice Cream Sandwich in the middle of a fourth row. Asked where the sandwich and the two "?" notes go (the sketch has no spot for them), he chose **"A fourth row"**: the sandwich in the middle of row 4, unlocked by either third-row note; the two old "?" notes removed.
+
+**Options considered:** the sandwich on a fourth row with the "?" notes removed (chosen); removing all three; the sandwich on row 4 and the "?" notes on row 5.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Lil Explorer Pop is unlocked by the eclair alone (it no longer needs SpongePop), because the sketch hangs both from the top note.
+- Prices don't change (SpongePop $20, Explorer $25, the sandwich $15).
+- The two third-row spots reuse the old "?" notes' ids (`icecream-5`, `icecream-6`) until their ice creams are built, so a save that bought a "?" note still owns the note in that spot (it did nothing, and still does nothing).
+- A saved run keeps everything it owns; a run that owns the sandwich but no third-row note keeps the sandwich.
+
 ## 136 — Trot and Steam Engine raise the roll speed much more: 25.2 and 50.4 px/s (2026-11-15)
 
 **Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** first: "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Built as 18.6 px/s with Trot and 25.2 with Steam Engine too (from 18 and 24). He tried it: "What does roll mean to you? It doesn't seem to be much faster", and then: **"Lets increase it. trot should be where trot and steam are. and trot and steam should be another 2x increase."** So Trot alone now gives 25.2 px/s (Story's 12 x 2.1), and Steam Engine doubles that: 50.4.

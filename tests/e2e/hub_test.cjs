@@ -123,14 +123,15 @@ const { chromium } = require('playwright');
   check('...the first note is marked, and the card gives its name and price', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')) + ' / ' + (await pu('s.detailStatus.text')), 'temp-gas-can / TEMPORARY GAS CAN / $15.00');
   check('...only the two undecided ice creams say ? (SCREAM-271)', await pu("s.notes.filter(n => n.logo === 'question').map(n => n.id).join()"), 'icecream-5,icecream-6');
   check('...nothing is owned yet but the Chocolate Eclair (SCREAM-271)', await pu("s.notes.filter(n => s.status(n.id) === 'owned').map(n => n.id).join()"), 'icecream-eclair');
-  check('SCREAM-271: the ice creams hang top down: eclair, SpongePop, Explorer, the sandwich, then two not decided', await pu("s.notes.filter(n => n.id.startsWith('icecream')).map(n => n.name + '<' + n.from.join('+')).join(' | ')"), 'CHOCOLATE ECLAIR< | SPONGEPOP<icecream-eclair | LIL EXPLORER POP<icecream-spongepop | COOKIE ICE CREAM SANDWICH<icecream-explorer | ICE CREAM 5<icecream-cookie | ICE CREAM 6<icecream-cookie');
-  check('...SpongePop can be bought first; Explorer waits for it', (await pu("s.status('icecream-spongepop')")) + ' ' + (await pu("s.status('icecream-explorer')")), 'ok locked');
+  check('SCREAM-333: the eclair on top, SpongePop and Explorer side by side under it, a note under each, the sandwich under both', await pu("s.notes.filter(n => n.id.startsWith('icecream')).map(n => n.name + '<' + n.from.join('+')).join(' | ')"), 'CHOCOLATE ECLAIR< | SPONGEPOP<icecream-eclair | LIL EXPLORER POP<icecream-eclair | ICE CREAM 4<icecream-spongepop | ICE CREAM 5<icecream-explorer | COOKIE ICE CREAM SANDWICH<icecream-5+icecream-6');
+  check('...SpongePop and Explorer sit level, left and right of the eclair; the sandwich is in the middle, lowest', await pu("(() => { const at = (id) => s.notes.find(n => n.id === 'icecream-' + id); const [e, sp, ex, c, l, r] = ['eclair','spongepop','explorer','cookie','5','6'].map(at); return [sp.y === ex.y, sp.x < e.x && e.x < ex.x, l.x === sp.x && r.x === ex.x, l.y === r.y && l.y > sp.y, c.x === e.x && c.y > l.y].join(); })()"), 'true,true,true,true,true');
+  check('...SpongePop and Explorer can both be bought first (Explorer no longer waits); the sandwich waits', (await pu("s.status('icecream-spongepop')")) + ' ' + (await pu("s.status('icecream-explorer') !== 'locked'")) + ' ' + (await pu("s.status('icecream-cookie')")), 'ok true locked');
   await page.mouse.move(5, 5); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_board.png' });
   await press('ArrowDown');
   check('...Down moves to the note below', await pu('s.selected'), 'brakes-made-this-century');
   await press('ArrowRight'); await press('ArrowRight');
-  check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'icecream-explorer / LIL EXPLORER POP');
+  check('...Right, Right crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')), 'icecream-5 / ICE CREAM 4');
   let ice = await noteAt('icecream-eclair');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
   check('SCREAM-271: the Chocolate Eclair is yours from the start, with its price note and no $0.00', await big(), "true | CHOCOLATE ECLAIR | Owned from the start. If you have these stocked in your cooler, every customer will buy an extra ice cream. The average person won't pay more than $2.50 for one. | Owned | button=false");
@@ -298,7 +299,7 @@ const { chromium } = require('playwright');
   check('...the average person won\'t pay over $2.50 for an eclair, $3.00 for SpongePop and the Explorer Pop (PO, November 14); the sandwich keeps $4.00', await ev("['eclair','spongepop','explorer','cookie'].map(f => e.refuseAboveCents(f)).join()"), '250,300,300,400');
   await ev("(e.changeMoney(2000, 'Test', false), true)");
   check('PO, November 14: the notes cost $20 (SpongePop) and $25 (Lil Explorer Pop); the sandwich keeps $15', await pu("['icecream-spongepop','icecream-explorer','icecream-cookie'].map(id => s.notes.find(n => n.id === id).priceCents).join()"), '2000,2500,1500');
-  check('...Explorer can\'t be bought before SpongePop; SpongePop can', (await ev("e.buyPowerUp('icecream-explorer')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true eclair,spongepop');
+  check('SCREAM-333: the sandwich can\'t be bought before a third-row note; SpongePop can', (await ev("e.buyPowerUp('icecream-cookie')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true eclair,spongepop');
   await press('b'); await until(async () => (await scenes()) === 'Truck,Hud', 1500);
   if ((await scenes()) === 'Truck,Hud') { await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); }
   else { await sc('Cooler', '(s.scene.restart(), true)'); await wait(400); }

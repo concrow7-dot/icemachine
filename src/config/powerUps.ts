@@ -4,7 +4,7 @@
 // power-up ticket replaces a dummy note with a real one (name, price, what it does).
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
-import { FLAVOURS, getFlavour, type FlavourId } from './flavours';
+import { getFlavour, type FlavourId } from './flavours';
 import { BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
@@ -100,7 +100,8 @@ const dollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
  * SCREAM-271 (PO, November 13): the ice creams are power-ups. His sketch ("Power-up trees",
  * Personal Notes): top down, Chocolate Eclair (yours from the start), SpongePop, Explorer,
  * the sandwich, then a split into ice creams not decided yet ("just make them ? for now").
- * The sketch's last two shapes (a circle, then a box) wait for a taller board: it has 5 rows.
+ * SCREAM-333 (his sketch of November 14): SpongePop and the Explorer Pop now hang side by side;
+ * see ICE_CREAM_PLACES below.
  */
 /** SCREAM-135: what an ice cream does besides selling, told on its note (Story only). */
 // SCREAM-328 (PO, November 14): no note says exactly how strong it is ("For example, 10% or 5%").
@@ -110,16 +111,31 @@ const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
   explorer: 'The further from home, the bigger the tip.', // SCREAM-312; the PO's words (November 14)
 };
 
-function iceCreamNote(flavour: FlavourId, row: number): PowerUpNote {
+/**
+ * SCREAM-333 (PO's sketch, November 14, "Ice cream tree, third row"): where each ice cream's note
+ * hangs. The eclair at the top; SpongePop and the Lil Explorer Pop side by side under it, each on
+ * its own string; a third-row note under each; the sandwich in the middle of the fourth row,
+ * unlocked by either third-row note.
+ */
+const ROW_THREE_LEFT_ID = 'icecream-5';
+const ROW_THREE_RIGHT_ID = 'icecream-6';
+const ICE_CREAM_PLACES: Record<FlavourId, { col: 0 | 1 | 2; row: number; from: string[] }> = {
+  eclair: { col: 1, row: 0, from: [] },
+  spongepop: { col: 0, row: 1, from: [iceCreamNoteId('eclair')] },
+  explorer: { col: 2, row: 1, from: [iceCreamNoteId('eclair')] },
+  cookie: { col: 1, row: 3, from: [ROW_THREE_LEFT_ID, ROW_THREE_RIGHT_ID] },
+};
+
+function iceCreamNote(flavour: FlavourId): PowerUpNote {
   const f = getFlavour(flavour);
   const first = flavour === STORY_FIRST_FLAVOUR;
-  const before = FLAVOURS[FLAVOURS.findIndex((x) => x.id === flavour) - 1];
+  const place = ICE_CREAM_PLACES[flavour];
   const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
   return {
     id: iceCreamNoteId(flavour),
-    col: 1,
-    row,
-    from: first || !before ? [] : [iceCreamNoteId(before.id)],
+    col: place.col,
+    row: place.row,
+    from: place.from,
     priceCents: first ? 0 : ICE_CREAM_UNLOCK_PRICES[flavour] ?? ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
     // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
@@ -215,9 +231,13 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     string: 0x2884d6,
     paper: 0xcfe6fb,
     notes: [
-      ...FLAVOURS.map((f, row) => iceCreamNote(f.id, row)),
-      { id: 'icecream-5', col: 0, row: FLAVOURS.length, from: [iceCreamNoteId(FLAVOURS[FLAVOURS.length - 1].id)], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
-      { id: 'icecream-6', col: 2, row: FLAVOURS.length, from: [iceCreamNoteId(FLAVOURS[FLAVOURS.length - 1].id)], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
+      iceCreamNote('eclair'),
+      iceCreamNote('spongepop'),
+      iceCreamNote('explorer'),
+      // SCREAM-333: the third row's two spots, dummies until their ice creams are built (SCREAM-334, SCREAM-335).
+      { id: ROW_THREE_LEFT_ID, col: 0, row: 2, from: [iceCreamNoteId('spongepop')], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
+      { id: ROW_THREE_RIGHT_ID, col: 2, row: 2, from: [iceCreamNoteId('explorer')], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
+      iceCreamNote('cookie'),
     ],
   },
   {
