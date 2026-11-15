@@ -24,6 +24,8 @@ export type PlacedNote = {
   /** What the player sees it called: "TRUCK 3". */
   name: string;
   description: string;
+  /** SCREAM-352: the description's paragraphs, when the note has them. */
+  paragraphs?: string[];
   logo: PowerUpLogo;
   priceCents: number;
 };
@@ -42,6 +44,7 @@ export function placeNotes(trees: PowerUpTree[]): PlacedNote[] {
         from: note.from,
         name: note.name ?? `${tree.name} ${n + 1}`,
         description: note.description ?? DUMMY_NOTE_TEXT,
+        paragraphs: note.paragraphs,
         logo: note.logo ?? tree.id,
         priceCents: note.priceCents,
       });

@@ -27,6 +27,8 @@ export type PowerUpNote = {
   /** A real power-up's name, description and picture. A dummy note has none: it is called by its tree and number. */
   name?: string;
   description?: string;
+  /** SCREAM-352: the description's paragraphs; the opened note shows them with an empty line between. */
+  paragraphs?: string[];
   logo?: PowerUpLogo;
   /** SCREAM-271: the ice cream this note unlocks in Story. */
   flavour?: FlavourId;
@@ -135,6 +137,10 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
   const first = flavour === STORY_FIRST_FLAVOUR;
   const place = ICE_CREAM_PLACES[flavour];
   const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
+  // SCREAM-352 (PO, November 15): "I want to add the cost of buying each ice cream to the powerup card."
+  const cost = `Costs you ${dollars(f.costCents)} each to stock.`;
+  // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
+  const paragraphs = [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour] ?? '', limit, cost].filter(Boolean);
   return {
     id: iceCreamNoteId(flavour),
     col: place.col,
@@ -142,8 +148,8 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
     from: place.from,
     priceCents: first ? 0 : ICE_CREAM_UNLOCK_PRICES[flavour] ?? ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
-    // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
-    description: [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour], limit].filter(Boolean).join(' '),
+    description: paragraphs.join(' '),
+    paragraphs,
     logo: flavour,
     flavour,
     free: first,

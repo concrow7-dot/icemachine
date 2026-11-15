@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 143 — Ice cream notes show what the ice cream costs to stock, with a space between paragraphs (2026-11-15)
+
+**Decision (Jira SCREAM-352, under SCREAM-78, PO, November 15, 02:14, with a screenshot of the SpongePop note):** "I want to add the cost of buying each ice cream to the powerup card." and "I want to add a space between each paragraph". An opened ice cream note now reads, each as its own paragraph with an empty line between: what the ice cream does; the most a customer pays; "Costs you $1.50 each to stock."
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Wording of the new line: "Costs you $1.50 each to stock." Order: what it does, the most a customer pays, the cost.
+- The text starts under the name, the price and BUY follow it, and the paper grows a little to hold them (the eclair's note, with four paragraphs, is the tallest).
+- Only the ice cream notes have more than one paragraph today; any note given paragraphs later is spaced the same way.
+- The one-line preview under the board is unchanged.
+
 ## 142 — The Two Ball Lou Ball and the Drum Cone cost $1.00 to stock (2026-11-15)
 
 **Decision (Jira SCREAM-351, under SCREAM-78, PO, November 15, 02:14):** "I want to make the two ball and the drum $1 to buy". Engineering read "to buy" as what the player pays to stock one, not the $30 note; he answered (02:19) "Agreed". Both cost $1.00 to stock, down from $2.00, and customers still pay up to $3.00.

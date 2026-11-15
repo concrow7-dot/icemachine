@@ -32,6 +32,8 @@ const DETAIL = { x: 300, y: 454, w: 520, h: 60 };
 const BACK = { x: 866, y: 454, w: 108, h: 44 };
 /** The opened note, in the middle of the board. */
 const BIG = { x: 480, y: 268, w: 330, h: 372 };
+/** SCREAM-352: where a note's paragraphs start, below the top of the opened note's paper. */
+const BIG_TEXT_TOP = 184;
 
 const HINT_CLOSED = '← ↑ ↓ → Look Around    Enter: Open Note    B: Back To The Truck';
 const HINT_OPEN_BUY = 'Enter: Buy    B: Close Note';
@@ -48,6 +50,10 @@ export class PowerUpsScene extends Phaser.Scene {
   backButton!: Phaser.GameObjects.Zone;
   /** The opened note's BUY button, or null when there is none (owned, locked, away from home). */
   buyButton: Phaser.GameObjects.Zone | null = null;
+  /** SCREAM-352: the opened note's description text (test hook). */
+  bigDescription: Phaser.GameObjects.Text | null = null;
+  /** SCREAM-352: where the opened note's parts sit, top to bottom (test hook). */
+  bigLayout = { top: 0, bottom: 0, textTop: 0, textBottom: 0, priceY: 0, buttonY: 0 };
   /** The opened note's words, top to bottom (name, description, price, the line under it). */
   bigTexts: string[] = [];
   hint!: Phaser.GameObjects.Text;
@@ -270,8 +276,23 @@ export class PowerUpsScene extends Phaser.Scene {
    */
   private drawBig(note: PlacedNote): void {
     const { width, height } = this.scale;
-    const { x, y, w, h } = BIG;
+    const { x, y, w } = BIG;
     const tree = POWER_UP_TREES[note.tree];
+    const nameWords = note.name.split(' ');
+    const nameOnTwoLines = note.name.length > 20 && (nameWords.length === 4 || nameWords.length === 3);
+    // SCREAM-352 (PO, November 15): "I want to add a space between each paragraph". A note with
+    // paragraphs shows them with an empty line between, starting under the name; the price and the
+    // button follow the text, and the paper grows to hold them.
+    const paragraphs = note.paragraphs && note.paragraphs.length > 1 ? note.paragraphs : null;
+    const description = this.add
+      .text(0, 0, paragraphs ? paragraphs.join('\n\n') : note.description, { fontFamily: 'monospace', fontSize: '15px', color: INK, align: 'center', wordWrap: { width: w - 40 } })
+      .setOrigin(0.5, paragraphs ? 0 : 0.5);
+    this.bigDescription = description;
+    const textTop = nameOnTwoLines ? BIG_TEXT_TOP + 12 : BIG_TEXT_TOP;
+    const priceGap = note.priceCents === 0 ? 0 : 58;
+    const flowPriceY = textTop + description.height + 30;
+    const flowButtonY = flowPriceY + priceGap + (priceGap ? 0 : 6);
+    const h = paragraphs ? Math.max(BIG.h, flowButtonY + 44) : BIG.h;
     const status = this.status(note.id);
     const owned = status === 'owned';
     const big = this.add.container(0, 0).setDepth(20);
@@ -294,18 +315,16 @@ export class PowerUpsScene extends Phaser.Scene {
 
     // SCREAM-325 (PO, November 14, testing): a long four-word name ("BRAKES MADE THIS CENTURY") ran off
     // the note: "Make this two lines, two words a line."
-    const words = note.name.split(' ');
+    const words = nameWords;
     // SCREAM-330: a three-word one ("THIS CENTURY REGISTER") too, two words then one.
-    const twoLines = note.name.length > 20 && (words.length === 4 || words.length === 3);
+    const twoLines = nameOnTwoLines;
     const shown = twoLines ? `${words[0]} ${words[1]}\n${words.slice(2).join(' ')}` : note.name;
     const name = this.add
       .text(x, top + (twoLines ? 164 : 158), shown, { fontFamily: MARKER_FONT, fontSize: note.name.length > 12 ? '24px' : '30px', color: INK, align: 'center' })
       .setOrigin(0.5);
-    const description = this.add
-      .text(x, top + 210, note.description, { fontFamily: 'monospace', fontSize: '15px', color: INK, align: 'center', wordWrap: { width: w - 40 } })
-      .setOrigin(0.5);
+    description.setPosition(x, paragraphs ? top + textTop : top + 210);
     const price = this.add
-      .text(x, top + 266, formatMoney(note.priceCents), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
+      .text(x, paragraphs ? top + flowPriceY : top + 266, formatMoney(note.priceCents), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
       .setOrigin(0.5);
     big.add([name, description, price]);
     this.bigTexts = [note.name, note.description, formatMoney(note.priceCents)];
@@ -317,7 +336,9 @@ export class PowerUpsScene extends Phaser.Scene {
     }
 
     this.buyButton = null;
-    const buttonY = top + 320;
+    const buttonY = paragraphs ? top + flowButtonY : top + 320;
+    const textBounds = description.getBounds();
+    this.bigLayout = { top, bottom: top + h, textTop: textBounds.top, textBottom: textBounds.bottom, priceY: price.y, buttonY };
     if (status === 'ok' || status === 'poor') {
       const can = status === 'ok';
       big.add(this.add.rectangle(x + 2, buttonY + 3, 150, 46, 0x000000, 0.22));
