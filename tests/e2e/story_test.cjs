@@ -109,7 +109,7 @@ const { chromium } = require('playwright');
   check('...it fills to 18 and stops: 6 in each crate, none under a panel', fill24, '18 full true 6/6/6');
   // ---- SCREAM-355 (PO, November 15): click a flavour on the cooler screen to see its power ----
   {
-    await sc('Cooler', '(s.refresh(), true)'); await wait(150);
+    await sc('Cooler', "(s.order.addOne('eclair'), s.refresh(), true)"); await wait(150);
     const noteNow = () => sc('Cooler', "s.flavourNote ? s.flavourNote.flavour + ' | ' + s.flavourNote.texts.join(' / ') : 'none'");
     const before = await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents");
     check('SCREAM-355: each clipboard row has an "i" button (one ice cream on day 1)', await sc('Cooler', "s.infoButtons.size + ' ' + [...s.infoButtons.keys()].join()"), '1 eclair');
@@ -127,6 +127,7 @@ const { chromium } = require('playwright');
     await page.mouse.click(info.x, info.y); await wait(200);
     await page.keyboard.press('Escape'); await wait(250);
     check('...Esc closes it without pausing the game', (await noteNow()) + ' ' + (await scenes()), 'none Cooler,Hud');
+    await sc('Cooler', "(s.order.removeOne('eclair'), s.refresh(), true)");
   }
   check('SCREAM-293: the ice creams are drawn over the (moved) crates, not hidden under them', await sc('Cooler', "s.cellIcons.filter(i => i.visible).every(i => i.depth > Math.max(...s.coveredRows.map(c => c.depth)))"), true);
   await page.screenshot({ path: outDir + '/story_cooler_full.png' });
