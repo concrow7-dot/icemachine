@@ -126,7 +126,7 @@ test('SCREAM-303: Service With A Smile is the only top note of the Customer tree
 
 test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $30', () => {
   const n = notes.find((x) => x.id === 'train-off-the-tracks');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased by 10%.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased by 15%.']);
 });
 
 test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $30; Truck 7 hangs from it', () => {

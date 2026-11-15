@@ -166,7 +166,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID],
         priceCents: TRAIN_PRICE_CENTS,
         name: 'TRAIN OFF THE TRACKS',
-        description: 'Max velocity increased by 10%.',
+        description: 'Max velocity increased by 15%.',
         logo: 'train-off-tracks',
       },
       // SCREAM-325 (PO, November 14, notepad sketch): the Truck tree's third row.

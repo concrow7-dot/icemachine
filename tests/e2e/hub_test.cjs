@@ -212,7 +212,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => { const e = window.__game.registry.get('evening'); e.changeMoney(300 - e.moneyCents, 'Test', false); }); await wait(100);
   spot = await noteAt('train-off-the-tracks');
   await page.mouse.click(spot[0], spot[1]); await wait(150);
-  check('...not enough cash: BUY is shown greyed out and can\'t be pressed', (await pu('s.status()')) + ' ' + (await big()), 'poor true | TRAIN OFF THE TRACKS | Max velocity increased by 10%. | $30.00 | BUY | button=false');
+  check('...not enough cash: BUY is shown greyed out and can\'t be pressed', (await pu('s.status()')) + ' ' + (await big()), 'poor true | TRAIN OFF THE TRACKS | Max velocity increased by 15%. | $30.00 | BUY | button=false');
   await page.screenshot({ path: outDir + '/hub_cork_note_poor.png' });
   await press('Enter');
   check('...and Enter buys nothing', (await cashNow()) + ' ' + (await pu("s.status('train-off-the-tracks')")), '300 poor');
