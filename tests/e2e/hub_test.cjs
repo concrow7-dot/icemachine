@@ -219,7 +219,7 @@ const { chromium } = require('playwright');
   await page.evaluate((c) => { const e = window.__game.registry.get('evening'); e.changeMoney(c - e.moneyCents, 'Test', false); }, cash - 3500); await wait(100);
   check('...with the cash back, the same note can be bought', (await pu('s.status()')) + ' ' + (await pu('!!s.buyButton')), 'ok true');
   const c0 = await clockAt(); await wait(600);
-  check('...the clock keeps running at the board', (await clockAt()) > c0, true);
+  check('SCREAM-318: ...the clock waits at the board until DRIVE (Story)', (await clockAt()) === c0, true);
   await press('Escape'); await wait(250);
   check('...Esc still opens the menu', await page.evaluate(() => window.__game.scene.isActive('Pause')), true);
   await press('Escape'); await wait(250);
