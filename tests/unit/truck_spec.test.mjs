@@ -106,11 +106,11 @@ test('SCREAM-81: Upgrade Speaker makes the music ring 10% bigger: Story\'s 165 p
   for (const k of Object.keys(weak)) if (k !== 'musicRadius') assert.equal(speaker[k], weak[k], k);
 });
 
-test('SCREAM-80: Train Off The Tracks raises the top speed 15%; the roll down still ends at the creep', () => {
+test('SCREAM-80: Train Off The Tracks raises the top speed 5%; the roll down still ends at the creep', () => {
   const weak = truckSpec(true);
   const train = truckSpec(true, ['temp-gas-can', 'gitty-up', 'train-off-the-tracks']);
   const gitty = truckSpec(true, ['temp-gas-can', 'gitty-up']);
-  assert.ok(Math.abs(train.topSpeed - weak.topSpeed * 1.15) < 1e-9);
+  assert.ok(Math.abs(train.topSpeed - weak.topSpeed * 1.05) < 1e-9);
   assert.equal(train.creepSpeed, gitty.creepSpeed);
   assert.equal(train.brakingSeconds, gitty.brakingSeconds);
 });
