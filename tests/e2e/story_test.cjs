@@ -70,6 +70,10 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   const intro = await texts('StoryIntro');
   check('A new story opens with the intro screen', await scenes(), 'StoryIntro');
+  // ---- SCREAM-242 (PO): a shining pixel-art bike on the New Bike screen ----
+  check('SCREAM-242: the New Bike screen shows the bike, three times its drawn size, under the title', await sc('StoryIntro', "s.bike.texture.key + ' ' + s.bike.scaleX + ' ' + (s.bike.y > 100 && s.bike.y < 220) + ' ' + s.bike.visible"), 'story-bike 3 true true');
+  check('...a glint slides across it: a band of the picture in white, further right a moment later', await sc('StoryIntro', "(() => { const w = s.textures.get('story-bike').getSourceImage().width; s.shine(100, w); const a = s.glint.visible + ' ' + s.glint.frame.cutX; s.shine(600, w); const b = s.glint.frame.cutX; s.shine(1500, w); return a.split(' ')[0] + ' ' + (b > Number(a.split(' ')[1])) + ' ' + s.glint.visible; })()"), 'true true false');
+  check('...and five stars twinkle around it, not all at once', await sc('StoryIntro', "(() => { s.shine(300, 112); const a = s.twinkles.map(g => g.alpha > 0.5); return s.twinkles.length + ' ' + a.some(x => x) + ' ' + a.every(x => x); })()"), '5 true false');
   check('...about the $600 bike and school in 10 days (SCREAM-322), marked as a placeholder', /\$600\.00/.test(intro) && /School starts in 10 days/.test(intro) && /Placeholder/.test(intro), true);
   await page.screenshot({ path: outDir + '/story_intro.png' });
 

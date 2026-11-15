@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 151 — A shining red pixel-art bike on the New Bike screen (2026-11-15)
+
+**Decision (Jira SCREAM-242, under SCREAM-6, PO, November 10 and 15):** on November 10 he asked to "add a pixel-art bike image to the page, and make it shine so it looks like a cartoonishly good prize to win". On November 15 he sent a web picture as "the inspiration for the bikes shape" (a chunky bike seen from the front left: a triangle frame, raised handlebars, a black saddle, silver spoked wheels) and chose its colour, "Red", and its shine, "Glint and twinkles".
+
+So the New Bike screen shows a red bike under the title; a band of light slides across it every few seconds and five stars twinkle around it.
+
+**Options considered:** colour: blue like the picture, red (chosen), gold. Shine: a glint and twinkles (chosen), a turning sunburst behind it, or both.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Engineering drew the bike (a script, `tools/bike/draw_bike.py`): an original drawing in the picture's shape, with no brand or lettering. The web picture is a reference, not his note, so it is not in Personal Notes.
+- The bike is on the New Bike screen only for now (not the intro scroll or the end of Story).
+- To make room, the title moved up and is a little smaller, and the story text is a little smaller and lower. The wording is unchanged (still the placeholder of SCREAM-76).
+
 ## 150 — Story's top bar names the street the truck is on, instead of the neighbourhood (2026-11-15)
 
 **Decision (Jira SCREAM-237, under SCREAM-10, PO, November 10 and 15):** on November 10 he asked that players know which street they are on: show the street name with the neighbourhood name, or replace it. On November 15 he chose: "Street instead" (the top bar shows the street only; the neighbourhood name goes) and "Top bar only" (no bigger name popping up on the road when the street changes).
