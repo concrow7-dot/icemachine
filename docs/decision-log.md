@@ -16,7 +16,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Price: $40 (the third row is $30).
 - Strength: top reverse speed x 1.5 (Story's about 46 px/s to about 68). How quickly it picks up is unchanged. Not shown on the note (decision 132).
 - The note's words: "Increase the speed of the truck in reverse."
-- The picture is engineering's own: the back of a truck with a red arrow pointing backwards.
+- The picture: engineering's own at first (the back of a truck with a red arrow); then he sent his sketch (02:58) and it was redrawn from it: the truck from the side with "<<=" behind it.
 
 ## 143 — Ice cream notes show what the ice cream costs to stock, with a space between paragraphs (2026-11-15)
 
