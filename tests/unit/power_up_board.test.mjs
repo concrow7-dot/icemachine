@@ -131,6 +131,6 @@ test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, 
 
 test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $30; Truck 7 hangs from it', () => {
   const n = notes.find((x) => x.id === 'brakes-made-this-century');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better. 10% increase.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better. 5% increase.']);
   assert.deepEqual(notes.find((x) => x.id === 'truck-7').from, ['brakes-made-this-century']);
 });

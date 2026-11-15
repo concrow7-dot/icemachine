@@ -92,7 +92,7 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     accelerationSeconds:
       (weak ? TRUCK_ACCELERATION_SECONDS * STORY_TRUCK_ACCELERATION_FACTOR : TRUCK_ACCELERATION_SECONDS) /
       (has(GITTY_UP_ID) ? GITTY_UP_ACCELERATION_FACTOR : 1),
-    // SCREAM-325: Brakes Made This Century, braking 10% better.
+    // SCREAM-325: Brakes Made This Century, braking 5% better.
     brakingSeconds: (weak ? TRUCK_BRAKING_SECONDS * STORY_TRUCK_BRAKING_FACTOR : TRUCK_BRAKING_SECONDS) / (has(BRAKES_ID) ? BRAKES_FACTOR : 1),
     creepSpeed,
     // Story: from top speed down to the creep in STORY_TRUCK_ROLL_SECONDS.

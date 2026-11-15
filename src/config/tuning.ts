@@ -464,9 +464,9 @@ export const GITTY_UP_PRICE_CENTS = 2000;
  * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
  */
 export const TROT_CREEP_FACTOR = 1.5;
-/** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 10% better (braking time / 1.1). */
+/** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 5% better (braking time / 1.05; 10% at first, the PO while testing: "only be 5% better as well"). */
 export const BRAKES_PRICE_CENTS = 3000;
-export const BRAKES_FACTOR = 1.1;
+export const BRAKES_FACTOR = 1.05;
 /** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
 export const TRAIN_PRICE_CENTS = 3000;
 export const TRAIN_TOP_SPEED_FACTOR = 1.05;

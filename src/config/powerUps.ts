@@ -177,7 +177,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [GITTY_UP_ID, TROT_ID],
         priceCents: BRAKES_PRICE_CENTS,
         name: 'BRAKES MADE THIS CENTURY',
-        description: 'Brakes are better. 10% increase.',
+        description: 'Brakes are better. 5% increase.',
         logo: 'brake-disc',
       },
       { id: 'truck-6', col: 2, row: 2, from: [TROT_ID], priceCents: 1500 },
