@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 142 — The Two Ball Lou Ball and the Drum Cone cost $1.00 to stock (2026-11-15)
+
+**Decision (Jira SCREAM-351, under SCREAM-78, PO, November 15, 02:14):** "I want to make the two ball and the drum $1 to buy". Engineering read "to buy" as what the player pays to stock one, not the $30 note; he answered (02:19) "Agreed". Both cost $1.00 to stock, down from $2.00, and customers still pay up to $3.00.
+
+**Options considered:** engineering proposed that both start at $2.00 on Today's Menu (the usual cost plus $1.00). He answered: "I want these two ice creams to be more profitable. So they should cost $1 but be able to be sold at $3."
+
+**Why (product owner's rationale):** "I want these two ice creams to be more profitable."
+
+**Engineering's calls (proposals):**
+
+- Both keep starting at $3.00 on Today's Menu, as before, so the player earns the $2.00 each without having to raise the price first; the cost plus $1.00 rule is skipped for these two (`startPriceCents`).
+- A saved Story keeps whatever price the player had set.
+- Nothing else about them changes (double tip and reversed steering; the drum solo).
+
 ## 141 — Today's Menu prices stop at the price on the ice cream's cork board note (2026-11-15)
 
 **Decision (Jira SCREAM-343, under SCREAM-78, PO, November 15, 01:50):** "At the cooler, when seeing today's menu, the player should not be able to raise the price above the one stated on the cork board (powerup board)". In Story, a price on Today's Menu stops at the "won't pay more than" price on that ice cream's note (the eclair $2.50; SpongePop, the Lil Explorer Pop, the Two Ball Lou Ball and the Drum Cone $3.00). Before, it went up to $10.00 and customers simply left a dearer ice cream out of their order.
