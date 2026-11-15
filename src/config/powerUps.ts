@@ -245,8 +245,10 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // SCREAM-340 (PO, November 15, notepad sketches): "Reverse Speed - 'Back it up'". It takes the
       // Truck 7 dummy's place (engineering's proposal; the sketch gives no place).
       {
+        // PO, November 15 (03:28): "From brakes made this century and handy notebook, two powerups should
+        // come out. It should be both of the powerups just added": left and right under Brakes.
         id: BACK_IT_UP_ID,
-        col: 1,
+        col: 0,
         row: 3,
         from: [BRAKES_ID],
         priceCents: BACK_IT_UP_PRICE_CENTS,
@@ -259,15 +261,16 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // Truck 8 dummy's place (engineering's proposal; the sketch gives no place).
       {
         id: MORE_JUNK_ID,
-        col: 0,
-        row: 4,
-        from: [BACK_IT_UP_ID],
+        col: 2,
+        row: 3,
+        from: [BRAKES_ID],
         priceCents: MORE_JUNK_PRICE_CENTS,
         name: 'MORE SPACE FOR SCREAM',
         description: 'More room in the cooler: a new bottom row opens in every crate.',
         logo: 'more-junk',
       },
-      { id: 'truck-9', col: 2, row: 4, from: [BACK_IT_UP_ID], priceCents: 2500 },
+      // The last dummy hangs in the middle of the fifth row, from either of the two above (engineering's call).
+      { id: 'truck-9', col: 1, row: 4, from: [BACK_IT_UP_ID, MORE_JUNK_ID], priceCents: 2500 },
     ],
   },
   {
@@ -362,8 +365,9 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // SCREAM-341 (PO, November 15, notepad sketches): "Better Mirrors". It takes the Customer 7
       // dummy's place (engineering's proposal; the sketches give no place).
       {
+        // PO, November 15 (03:28): both new notes come out of the Handy Notebook, left and right.
         id: MIRRORS_ID,
-        col: 1,
+        col: 0,
         row: 3,
         from: [NOTEBOOK_ID],
         priceCents: MIRRORS_PRICE_CENTS,
@@ -375,15 +379,15 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // takes the Customer 8 dummy's place (engineering's proposal; the sketches give no place).
       {
         id: SPEEDY_ID,
-        col: 0,
-        row: 4,
-        from: [MIRRORS_ID],
+        col: 2,
+        row: 3,
+        from: [NOTEBOOK_ID],
         priceCents: SPEEDY_PRICE_CENTS,
         name: 'SPEEDY NEIGHBORS',
         description: 'Most customers run after the truck faster.',
         logo: 'sneaker',
       },
-      { id: 'customer-9', col: 2, row: 4, from: [MIRRORS_ID], priceCents: 2500 },
+      { id: 'customer-9', col: 1, row: 4, from: [MIRRORS_ID, SPEEDY_ID], priceCents: 2500 },
     ],
   },
 ];

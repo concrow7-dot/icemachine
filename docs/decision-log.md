@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 148 — Two notes come out of Brakes Made This Century and two out of the Handy Notebook (2026-11-15)
+
+**Decision (PO, November 15, 03:28, testing #255 to #258; built on SCREAM-342's pull request):** "From brakes made this century and handy notebook, two powerups should come out. It should be both of the powerups just added". On the Truck tree, Back It Up (left) and More Space for Scream (right) both hang from Brakes Made This Century, side by side in the fourth row. On the Customer tree, Better Mirrors (left) and Speedy Neighbors (right) both hang from the Handy Notebook. This replaces the places engineering proposed in decisions 144 to 147 (one note under the other).
+
+**Options considered:** engineering's first layout: Back It Up under Brakes with More Space for Scream under it; Better Mirrors under the Notebook with Speedy Neighbors under it.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Left and right follow the order of his sketch (Reverse speed then Cooler size; Better Mirrors then Customer speed).
+- Each note needs only its tree's middle third-row note now: More Space for Scream no longer needs Back It Up, and Speedy Neighbors no longer needs Better Mirrors.
+- Prices are unchanged ($40 and $50; $50 and $60), though all four are fourth-row notes now.
+- The last dummy of each tree (Truck 9, Customer 9) hangs in the middle of the fifth row, from either note above it, like the sandwich on the Ice Cream tree.
+
 ## 147 — Customers chase the truck by age, and Speedy Neighbors makes most of them faster, $60 (2026-11-15)
 
 **Decision (Jira SCREAM-342, under SCREAM-78, PO, November 15 notepad sketches and answers):** under "Customer" he wrote "Customer speed: most customers run after you faster", and named it: "Customers chasing - Speedy Neighbors". Asked who "most" is, he wrote his own answer: "I think it should be adults will follow the truck for only so long and then they will go home. Some kids will be fast and follow the truck anywhere. Others are slower and will give up after 20 seconds". He then chose: the rules apply to everyone in Story **"From the start"** (the note only adds speed); an adult follows for **"30 seconds"**; and the fast kids are a new Fast column in the Residents sheet (**"I pick a first set"**: engineering ticks a first set, he changes it). Story only (decision 076).
