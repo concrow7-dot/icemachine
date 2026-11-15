@@ -589,6 +589,11 @@ export class CoolerScene extends Phaser.Scene {
 
   /** Back to the truck after prep; back on the road after restocking at home (SCREAM-54). */
   private leave(): void {
+    // SCREAM-319: in Story a home stop goes back to the truck screen (still at home), DRIVE highlighted.
+    if (this.restocking && this.evening.homeOpensTruck) {
+      returnToTruck(this, 'driver');
+      return;
+    }
     if (this.restocking) {
       this.evening.endRestock();
       if (!this.evening.isOver) this.scene.start(SceneKeys.Drive);

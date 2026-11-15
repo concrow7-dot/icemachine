@@ -112,7 +112,7 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.rectangle(0, height - 34, width, 34, 0x000000, 0.45).setOrigin(0, 0);
     this.add
-      .text(width / 2, height - 17, '← → Choose    Enter: Go    Or Use The Mouse', {
+      .text(width / 2, height - 17, this.onTheRoad() ? '← → Choose    Enter: Go    B: Back To The Road' : '← → Choose    Enter: Go    Or Use The Mouse', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#ffffff',
@@ -126,6 +126,8 @@ export class TruckScene extends Phaser.Scene {
     keyboard?.on('keydown-D', () => this.move(1));
     keyboard?.on('keydown-ENTER', () => this.activate(this.selected));
     keyboard?.on('keydown-SPACE', () => this.activate(this.selected));
+    // SCREAM-319: stopped at home after setting off, B goes back on the road, like DRIVE.
+    if (this.onTheRoad()) keyboard?.on('keydown-B', () => this.activate('driver'));
 
     const onCustomer = () => {
       // If the customer leaves while the window is highlighted, move to the
@@ -145,6 +147,11 @@ export class TruckScene extends Phaser.Scene {
   /** The window can only be used while a customer is waiting (PO decision on #7). */
   private isAvailable(id: Station): boolean {
     return id !== 'window' || this.evening.customerWaiting;
+  }
+
+  /** SCREAM-319: the truck has been out tonight and stopped in here (at home): B drives off again. */
+  private onTheRoad(): boolean {
+    return this.evening.isPrepLocked && this.evening.isRestocking;
   }
 
   /** SCREAM-267: Story's cork board (after the uncle's evening) opens the power-ups. */
@@ -183,7 +190,9 @@ export class TruckScene extends Phaser.Scene {
       }
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
       this.evening.startClock(); // SCREAM-307: from the hub the clock may still be waiting
-      this.evening.lockPrep();
+      // SCREAM-319: leaving a home stop ends the restock (stock and prices lock again).
+      if (this.evening.isRestocking) this.evening.endRestock();
+      if (!this.evening.isPrepLocked) this.evening.lockPrep();
       this.scene.start(SceneKeys.Drive);
     }
     if (id === 'window' && this.evening.sale) this.scene.start(SceneKeys.Sales);

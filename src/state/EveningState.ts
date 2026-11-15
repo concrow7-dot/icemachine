@@ -1155,6 +1155,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.restockingNow = false;
   }
 
+  /**
+   * SCREAM-319 (PO, November 14): "When the player pulls into home ... it should be on the truck
+   * screen, not the cooler screen." Story (not the uncle's evening): a home stop opens the truck
+   * screen, where the cooler, the cork board and DRIVE are.
+   */
+  get homeOpensTruck(): boolean {
+    return this.clockWaitsForDrive;
+  }
+
   /** True while restocking at home (SCREAM-54). */
   get isRestocking(): boolean {
     return this.restockingNow;
