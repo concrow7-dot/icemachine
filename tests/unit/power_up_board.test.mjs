@@ -115,5 +115,8 @@ test('SCREAM-271: the ice creams hang top down from the free Chocolate Eclair; S
 test('SCREAM-303: Service With A Smile is the only top note of the Customer tree, in the middle', () => {
   const tops = notes.filter((n) => n.tree === 2 && n.from.length === 0).map((n) => n.id);
   assert.deepEqual(tops, ['service-with-a-smile']);
-  assert.deepEqual(notes.filter((n) => n.from.includes('service-with-a-smile')).map((n) => n.id), ['customer-2', 'customer-3']);
+  assert.deepEqual(notes.filter((n) => n.from.includes('service-with-a-smile')).map((n) => n.id), ['upgrade-speaker', 'customer-3']);
+  // SCREAM-81: the left one is Upgrade Speaker, $30.
+  const speaker = notes.find((n) => n.id === 'upgrade-speaker');
+  assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 3000, 'Increase the reach of the speaker by 10%.']);
 });

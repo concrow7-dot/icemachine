@@ -80,14 +80,7 @@ export function addPowerUpLogo(
     }
     g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
   } else if (tree === 'speaker') {
-    // A loudspeaker: the box, the cone and two sound waves.
-    g.fillStyle(colour(0x2f9e44), 1);
-    g.fillRect(-r, -r * 0.3, r * 0.5, r * 0.6);
-    g.fillTriangle(-r * 0.5, -r * 0.3, -r * 0.5, r * 0.3, r * 0.1, r * 0.8);
-    g.fillTriangle(-r * 0.5, -r * 0.3, r * 0.1, -r * 0.8, r * 0.1, r * 0.8);
-    g.lineStyle(line, grey ? 0x9a9a9a : INK, 1);
-    g.beginPath().arc(r * 0.1, 0, r * 0.5, -0.8, 0.8).strokePath();
-    g.beginPath().arc(r * 0.1, 0, r * 0.88, -0.8, 0.8).strokePath();
+    drawSpeakerHorn(g, size, grey);
   } else {
     // A coin with a dollar sign.
     g.fillStyle(colour(0xb8860b), 1).fillCircle(0, 0, r);
@@ -279,4 +272,41 @@ function drawHorse(g: Phaser.GameObjects.Graphics, size: number, grey: boolean, 
   // The mane and the eye.
   poly(hair, [[59, 30], [68, 12], [73, 12], [66, 31]]);
   g.fillStyle(ink, 1).fillCircle(ox + (82 - 50) * u, oy + (19 - 50) * u, 3 * u);
+}
+
+/**
+ * SCREAM-81: Upgrade Speaker. The PO's reference was a photo of a grey horn loudspeaker on a U
+ * bracket. An original drawing in the gas can's style (flat colour, thick dark outline, one
+ * highlight): the driver at the back, the horn flaring to the right, the dark mouth with its
+ * plug, the bracket underneath. No brand, no label.
+ */
+export function drawSpeakerHorn(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xbdbdbd : 0xc9d1d8;
+  const shade = grey ? 0x9e9e9e : 0x98a4ae;
+  const inside = grey ? 0x7d7d7d : 0x4d5761;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  // The bracket: a U under the horn.
+  poly(shade, [[24, 58], [24, 92], [62, 92], [62, 58], [55, 58], [55, 85], [31, 85], [31, 58]]);
+  // The driver: a short drum at the back.
+  poly(body, [[6, 36], [32, 36], [32, 64], [6, 64]]);
+  g.fillStyle(shade, 1).fillEllipse((6 - 50) * u, 0, 8 * u, 28 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((6 - 50) * u, 0, 8 * u, 28 * u);
+  // The horn, flaring to the right, with a highlight along its top.
+  poly(body, [[30, 34], [76, 8], [76, 92], [30, 66]]);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.45).fillPoints([P(36, 37), P(70, 18), P(70, 24), P(36, 42)], true);
+  g.fillStyle(shade, 1).fillPoints([P(36, 58), P(70, 76), P(70, 84), P(36, 63)], true);
+  // The mouth: a rim, the dark inside and the plug in the middle.
+  g.fillStyle(body, 1).fillEllipse((78 - 50) * u, 0, 18 * u, 86 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((78 - 50) * u, 0, 18 * u, 86 * u);
+  g.fillStyle(inside, 1).fillEllipse((79 - 50) * u, 0, 10 * u, 66 * u);
+  g.fillStyle(body, 1).fillCircle((81 - 50) * u, 0, 4.5 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle((81 - 50) * u, 0, 4.5 * u);
 }
