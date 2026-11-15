@@ -27,10 +27,10 @@ test('every note has its own place, and hangs only from notes above it in its ow
 });
 
 test('the arrow keys move to the nearest note that way', () => {
-  assert.equal(nextNote(notes, 'temp-gas-can', 'down'), 'truck-5');
-  assert.equal(nextNote(notes, 'truck-5', 'left'), 'train-off-the-tracks');
-  assert.equal(nextNote(notes, 'truck-5', 'right'), 'truck-6');
-  assert.equal(nextNote(notes, 'truck-5', 'up'), 'temp-gas-can');
+  assert.equal(nextNote(notes, 'temp-gas-can', 'down'), 'brakes-made-this-century');
+  assert.equal(nextNote(notes, 'brakes-made-this-century', 'left'), 'train-off-the-tracks');
+  assert.equal(nextNote(notes, 'brakes-made-this-century', 'right'), 'truck-6');
+  assert.equal(nextNote(notes, 'brakes-made-this-century', 'up'), 'temp-gas-can');
 });
 
 test('...and cross from one tree to the next', () => {
@@ -65,7 +65,7 @@ test('SCREAM-296: every note has a name and a price', () => {
 
 test('SCREAM-296: when a note can be bought', () => {
   const top = notes.find((n) => n.id === 'temp-gas-can');
-  const below = notes.find((n) => n.id === 'truck-5'); // hangs from Gitty Up and Trot
+  const below = notes.find((n) => n.id === 'brakes-made-this-century'); // hangs from Gitty Up and Trot
   assert.equal(buyStatus(top, [], top.priceCents, true), 'ok');
   assert.equal(buyStatus(top, [], top.priceCents - 1, true), 'poor', 'a cent short');
   assert.equal(buyStatus(top, [], 99999, false), 'away', 'not at home');
@@ -87,7 +87,7 @@ test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own
   const gitty = notes.find((n) => n.id === 'gitty-up');
   assert.deepEqual([gitty.tree, gitty.name, gitty.priceCents, gitty.logo, gitty.from], [0, 'GITTY UP', 2000, 'gitty-up', ['temp-gas-can']]);
   assert.match(gitty.description, /10%/);
-  assert.deepEqual(notes.find((n) => n.id === 'truck-5').from, ['gitty-up', 'trot']);
+  assert.deepEqual(notes.find((n) => n.id === 'brakes-made-this-century').from, ['gitty-up', 'trot']);
 });
 
 test('SCREAM-310: Trot is the right note under the gas can, $20, with its own name and picture', () => {
@@ -127,4 +127,10 @@ test('SCREAM-303: Service With A Smile is the only top note of the Customer tree
 test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $30', () => {
   const n = notes.find((x) => x.id === 'train-off-the-tracks');
   assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased by 5%.']);
+});
+
+test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $30; Truck 7 hangs from it', () => {
+  const n = notes.find((x) => x.id === 'brakes-made-this-century');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['gitty-up', 'trot'], 'Brakes are better. 5% increase.']);
+  assert.deepEqual(notes.find((x) => x.id === 'truck-7').from, ['brakes-made-this-century']);
 });

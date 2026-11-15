@@ -114,3 +114,10 @@ test('SCREAM-80: Train Off The Tracks raises the top speed 5%; the roll down sti
   assert.equal(train.creepSpeed, gitty.creepSpeed);
   assert.equal(train.brakingSeconds, gitty.brakingSeconds);
 });
+
+test('SCREAM-325: Brakes Made This Century: braking time / 1.05, nothing else changes', () => {
+  const trot = truckSpec(true, ['temp-gas-can', 'trot']);
+  const brakes = truckSpec(true, ['temp-gas-can', 'trot', 'brakes-made-this-century']);
+  assert.ok(Math.abs(brakes.brakingSeconds - trot.brakingSeconds / 1.05) < 1e-9);
+  for (const k of Object.keys(trot)) if (k !== 'brakingSeconds') assert.equal(brakes[k], trot[k], k);
+});
