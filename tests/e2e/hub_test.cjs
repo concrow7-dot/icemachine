@@ -277,6 +277,13 @@ const { chromium } = require('playwright');
   await page.keyboard.down('Shift'); await page.keyboard.press('Digit9'); await page.keyboard.up('Shift'); await wait(150);
   check('SCREAM-324: Shift+9 on the truck screen adds $50 to the cash, not to the profit', await page.evaluate(([c, p]) => { const e = window.__game.registry.get('evening'); return (e.moneyCents - c) + ' ' + (e.profitCents - p); }, [cash9, profit9]), '5000 0');
   await page.evaluate((c) => { const e = window.__game.registry.get('evening'); e.changeMoney(c - e.moneyCents, 'Test', false); }, cash9); await wait(100);
+  // SCREAM-337 (PO, November 15): Shift+0 fills the gas tank on any evening screen, for free.
+  {
+    const before = await page.evaluate(() => { const e = window.__game.registry.get('evening'); const was = { fuel: e.fuel, cash: e.moneyCents, profit: e.profitCents, can: e.gasCanFull }; e.fuelLeft = 0.25; return was; });
+    await page.keyboard.down('Shift'); await page.keyboard.press('Digit0'); await page.keyboard.up('Shift'); await wait(150);
+    check('SCREAM-337: Shift+0 on the truck screen fills the tank; cash, profit and the gas can don\'t change', await page.evaluate((b) => { const e = window.__game.registry.get('evening'); const out = e.fuel + ' ' + (e.moneyCents - b.cash) + ' ' + (e.profitCents - b.profit) + ' ' + (e.gasCanFull === b.can); e.fuelLeft = b.fuel; return out; }, before), '1 0 0 true');
+    check('...it is a debug key: not on the Key Bindings page', await page.evaluate(async () => { const { KEY_GROUPS } = await import('/src/config/keyBindings.js'); return JSON.stringify(KEY_GROUPS).includes('Shift+0'); }), false);
+  }
   await press('ArrowRight'); await press('ArrowRight');
   check('...the board can be picked first', await sel(), 'menu');
   await press('Enter'); await until(async () => (await scenes()) === 'PowerUps,Hud');

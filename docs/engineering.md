@@ -77,7 +77,7 @@ How the code is laid out and the things you need to know before changing it. Kep
 
 ## Debug keys (temporary)
 
-Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen, Shift+6 the next tipped sale ends with a hint (SCREAM-103). Shift+7 the next paid sale ends with the customer's schedule line (SCREAM-247; Story, a real customer at the window). Shift+8 the same with a line about a neighbour (SCREAM-248). They are live on the public site too.
+Shift+1 +$4.50, Shift+2 −$2.00, Shift+3 end the evening (the only one shown on screen), Shift+4 start a sale, Shift+5 show the loading screen, Shift+6 the next tipped sale ends with a hint (SCREAM-103). Shift+7 the next paid sale ends with the customer's schedule line (SCREAM-247; Story, a real customer at the window). Shift+8 the same with a line about a neighbour (SCREAM-248). Shift+9 +$50 cash, not counted as profit (SCREAM-324; `evening.debugAddCash`). Shift+0 a full gas tank, free, the Temporary Gas Can left alone (SCREAM-337; `evening.debugFillGas`). They are live on the public site too.
 
 ## Tests
 
