@@ -3,7 +3,7 @@
     python3 tools/flavours/draw_icons.py public/assets/flavours/icons.png
 
 One row of frames, FRAME_W x FRAME_H art pixels each, transparent background, in the
-order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie, louball.
+order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie, louball, drumcone.
 The game scales them up with nearest-neighbour filtering. Original designs (no real
 products or characters). Fixed random seed, so it redraws the same.
 """
@@ -13,7 +13,7 @@ import sys
 from PIL import Image, ImageDraw
 
 FRAME_W, FRAME_H = 28, 36
-ORDER = ["eclair", "spongepop", "explorer", "cookie", "louball"]
+ORDER = ["eclair", "spongepop", "explorer", "cookie", "louball", "drumcone"]
 rnd = random.Random(129)
 
 sheet = Image.new("RGBA", (FRAME_W * len(ORDER), FRAME_H), (0, 0, 0, 0))
@@ -156,6 +156,39 @@ def louball():
     return img
 
 
-for i, fn in enumerate([eclair, spongepop, explorer, cookie, louball]):
+def drumcone():
+    """SCREAM-335 (the PO's sketch, November 15): an upright waffle cone with crosshatch marks,
+    a rounded scoop on top with a bumpy chocolate coating and bits on it, and a bite out of
+    the top left of the scoop (vanilla showing)."""
+    img, d, R = frame(5)
+    ink = (60, 34, 20, 255)
+    cx = 14
+    # The scoop: a bumpy dome of chocolate coating over the cone's top.
+    d.ellipse([cx - 11, 1, cx + 11, 19], fill=ink)
+    d.ellipse([cx - 10, 2, cx + 10, 18], fill=(110, 62, 34, 255))
+    for bx, by in [(-9, 11), (-4, 12), (1, 12), (6, 12), (9, 11)]:
+        d.ellipse([cx + bx - 3, by, cx + bx + 3, by + 5], fill=ink)
+        d.ellipse([cx + bx - 2, by, cx + bx + 2, by + 4], fill=(110, 62, 34, 255))
+    R(cx - 8, 11, 17, 3, (110, 62, 34, 255))
+    # Bits on the coating.
+    for bx, by in [(2, 5), (6, 8), (-1, 9), (4, 12), (-5, 12), (8, 12), (0, 14), (-8, 10)]:
+        R(cx + bx, by, 2, 1, (240, 214, 160, 255))
+    R(cx + 3, 3, 3, 1, (150, 96, 60, 255))  # a shine
+    # The bite, top left: vanilla inside, a dark edge.
+    d.ellipse([cx - 13, -2, cx - 2, 9], fill=(0, 0, 0, 0))
+    d.ellipse([cx - 6, 4, cx - 1, 10], fill=(252, 244, 222, 255))
+    d.ellipse([cx - 9, 6, cx - 4, 11], fill=(252, 244, 222, 255))
+    # The cone: a long triangle, waffle brown, with a crosshatch.
+    d.polygon([(cx - 8, 16), (cx + 8, 16), (cx, 35)], fill=ink)
+    d.polygon([(cx - 6, 17), (cx + 6, 17), (cx, 33)], fill=(222, 170, 96, 255))
+    for k in range(-12, 13, 4):
+        for y in range(17, 33):
+            for x in (cx + k + (y - 17), cx + k - (y - 17)):
+                if abs(x - cx) <= (33 - y) * 6 / 17 - 0.5:
+                    R(int(x), y, 1, 1, (170, 112, 52, 255))
+    return img
+
+
+for i, fn in enumerate([eclair, spongepop, explorer, cookie, louball, drumcone]):
     sheet.paste(fn(), (i * FRAME_W, 0))
 sheet.save(sys.argv[1] if len(sys.argv) > 1 else "icons.png")

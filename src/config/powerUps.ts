@@ -110,6 +110,7 @@ const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
   spongepop: 'Kids who order one tip more.', // SCREAM-313; engineering's wording
   explorer: 'The further from home, the bigger the tip.', // SCREAM-312; the PO's words (November 14)
   louball: 'High upside, crazy downside.', // SCREAM-334; the PO's words (his sketch, November 14)
+  drumcone: 'Drum solo reaches more of the neighborhood.', // SCREAM-335; the PO's words (his sketch; the cut-off ending confirmed November 15)
 };
 
 /**
@@ -119,12 +120,13 @@ const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
  * unlocked by either third-row note.
  */
 const ROW_THREE_LEFT_ID = iceCreamNoteId('louball'); // SCREAM-334
-const ROW_THREE_RIGHT_ID = 'icecream-6';
+const ROW_THREE_RIGHT_ID = iceCreamNoteId('drumcone'); // SCREAM-335
 const ICE_CREAM_PLACES: Record<FlavourId, { col: 0 | 1 | 2; row: number; from: string[] }> = {
   eclair: { col: 1, row: 0, from: [] },
   spongepop: { col: 0, row: 1, from: [iceCreamNoteId('eclair')] },
   explorer: { col: 2, row: 1, from: [iceCreamNoteId('eclair')] },
   louball: { col: 0, row: 2, from: [iceCreamNoteId('spongepop')] },
+  drumcone: { col: 2, row: 2, from: [iceCreamNoteId('explorer')] },
   cookie: { col: 1, row: 3, from: [ROW_THREE_LEFT_ID, ROW_THREE_RIGHT_ID] },
 };
 
@@ -237,8 +239,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       iceCreamNote('spongepop'),
       iceCreamNote('explorer'),
       iceCreamNote('louball'), // SCREAM-334: the third row, left
-      // SCREAM-333: the third row's right spot, a dummy until its ice cream is built (SCREAM-335).
-      { id: ROW_THREE_RIGHT_ID, col: 2, row: 2, from: [iceCreamNoteId('explorer')], priceCents: ICE_CREAM_UNLOCK_CENTS, logo: 'question' },
+      iceCreamNote('drumcone'), // SCREAM-335: the third row, right
       iceCreamNote('cookie'),
     ],
   },

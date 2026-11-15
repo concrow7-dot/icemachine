@@ -293,7 +293,7 @@ const { chromium } = require('playwright');
   check('...and says Game saved', /Game saved/.test(day1), true);
   check('...and the largest sale (none on a day with no sales, SCREAM-93)', /Largest sale: none yet/.test(day1), true);
   check('...and shows the Bike $600.00 badge', /Bike\n\$600\.00/.test(day1), true);
-  check('Saved: day 2, $22, 3 bars in the first slot', await saved(), '2 2200 3/0/0/0/0');
+  check('Saved: day 2, $22, 3 bars in the first slot', await saved(), '2 2200 3/0/0/0/0/0');
   check('...and where each ice cream sits (SCREAM-131): 48 squares, 3 eclairs', await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.cells.length + ' ' + d.cells.filter(c => c === 'eclair').length; }), '48 3');
   await page.screenshot({ path: outDir + '/story_day_end.png' });
 
@@ -618,14 +618,14 @@ const { chromium } = require('playwright');
   check('New story over a save: asks first', /Start a new story\?/.test(await texts('Title')) && (await scenes()) === 'Title', true);
   await page.screenshot({ path: outDir + '/story_new_confirm.png' });
   await press('Enter'); await wait(200);
-  check('...Enter alone does not wipe the save', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0/0');
+  check('...Enter alone does not wipe the save', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0/0/0');
   await press('n'); await wait(200);
-  check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0/0');
+  check('...N: still on the title, save kept', (await scenes()) + ' ' + (await saved()), 'Title 2 50 2/0/0/0/0/0');
   // SCREAM-90: the question's No can be clicked too.
   await press('Enter'); await wait(200);
   check('SCREAM-270: Start a new story? has No marked', await sc('Title', 's.answers[s.answerSelected].label'), 'No (N)');
   await press('Enter'); await wait(200);
-  check('...so Enter closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0/0');
+  check('...so Enter closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0/0/0');
   await press('Enter'); await wait(200); await press('ArrowLeft'); await press('Enter'); await wait(300);
   check('...← then Enter: Yes, on to the uncle question', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('Escape'); await wait(200); await press('Enter'); await wait(200);
@@ -633,7 +633,7 @@ const { chromium } = require('playwright');
   await page.mouse.click(noAt[0], noAt[1]); await wait(200);
   // SCREAM-292: the menu is in the middle now, so the click left the mouse over an option (hover picks it): pick New Story again.
   await page.mouse.move(5, 5); await sc('Title', '(s.selected = s.options.findIndex(o => o.id === "story"), s.refreshModes(), true)'); await wait(100);
-  check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0/0');
+  check('...clicking No closes it, save kept', (await sc('Title', 's.confirming')) + ' ' + (await saved()), 'false 2 50 2/0/0/0/0/0');
   await press('Enter'); await wait(200); await press('y'); await wait(300);
   check('...Y: then the uncle question (SCREAM-205)', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('o'); await wait(300);

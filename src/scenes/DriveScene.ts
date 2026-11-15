@@ -132,6 +132,11 @@ export function steeringReversedText(seconds: number): string {
   return `STEERING REVERSED  ${seconds}`;
 }
 
+/** SCREAM-335: the countdown shown while the drum solo plays (doc 15). */
+export function drumSoloText(seconds: number): string {
+  return `DRUM SOLO  ${seconds}`;
+}
+
 export class DriveScene extends Phaser.Scene {
   private evening!: EveningState;
   private truck!: Phaser.GameObjects.Container;
@@ -233,6 +238,8 @@ export class DriveScene extends Phaser.Scene {
   private parkLabel!: Phaser.GameObjects.Text;
   /** SCREAM-334: "STEERING REVERSED 7" while a Two Ball Lou Ball's 10 seconds run (test hook). */
   reversedLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-335: "DRUM SOLO 23" while a Drum Cone's 30 seconds run (test hook). */
+  drumLabel!: Phaser.GameObjects.Text;
   private notice?: Phaser.GameObjects.Text;
   /** How long the brake has been held at a standstill (it reverses after a moment). */
   private brakeHeldStill = 0;
@@ -434,6 +441,21 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20)
       .setVisible(false);
 
+    // SCREAM-335: while a Drum Cone's drum solo plays, a countdown under it.
+    this.drumLabel = this.add
+      .text(this.scale.width / 2, 96, '', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#16969c',
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0).setData('pin', true)
+      .setDepth(20)
+      .setVisible(false);
+
     // SCREAM-24: the music, with the song's name shown for a moment when it starts.
     this.songLabel = this.add
       .text(this.scale.width - 6, 22, '', {
@@ -579,6 +601,11 @@ export class DriveScene extends Phaser.Scene {
       this.driveHard(dt);
       this.evening.driveTick(dt * 1000); // SCREAM-334: timers that count only while the player drives
     }
+    // SCREAM-335: a Drum Cone's drum solo plays in place of the tune while its 30 seconds run.
+    this.music.setDrumSolo(this.evening.drumSolo);
+    const soloFor = Math.ceil(this.evening.drumSoloMs / 1000);
+    this.drumLabel.setVisible(soloFor > 0);
+    if (soloFor > 0) this.drumLabel.setText(drumSoloText(soloFor));
     const reversedFor = Math.ceil(this.evening.steeringReversedMs / 1000);
     this.reversedLabel.setVisible(reversedFor > 0);
     if (reversedFor > 0) this.reversedLabel.setText(steeringReversedText(reversedFor));

@@ -271,7 +271,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(400);
   check('An old save (no fuel in it) continues with a quarter tank', await ev('e.fuel'), 0.25);
-  check('An old 3-slot save (SCREAM-129): stock and prices kept, by flavour', await ev("e.slots.map(s => s.flavour + ':' + s.quantity + ':' + s.priceCents).join(' ')"), 'eclair:3:225 spongepop:0:250 explorer:0:250 cookie:2:325 louball:0:300');
+  check('An old 3-slot save (SCREAM-129): stock and prices kept, by flavour', await ev("e.slots.map(s => s.flavour + ':' + s.quantity + ':' + s.priceCents).join(' ')"), 'eclair:3:225 spongepop:0:250 explorer:0:250 cookie:2:325 louball:0:300 drumcone:0:300');
 
   console.log(`fuel: ${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' / ') : 'none'}`);
   await browser.close();

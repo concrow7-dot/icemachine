@@ -6,7 +6,7 @@ import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  BASS_SOMETIMES_FACTOR, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
+  BASS_SOMETIMES_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -168,7 +168,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** SCREAM-334: called by the driving view each frame the player is driving: runs the driving-only timers down. */
   driveTick(deltaMs: number): void {
     if (this.steeringReversedMs > 0) this.steeringReversedMs = Math.max(0, this.steeringReversedMs - deltaMs);
+    if (this.drumSoloMs > 0) this.drumSoloMs = Math.max(0, this.drumSoloMs - deltaMs);
   }
+  /** SCREAM-335: how much longer the Drum Cone's drum solo plays, in ms of driving. 0 = the usual tune. */
+  drumSoloMs = 0;
+  get drumSolo(): boolean {
+    return this.drumSoloMs > 0;
+  }
+  /** SCREAM-335: tonight's truck with the music ring 10% bigger, used while the drum solo plays. */
+  private truckDrum?: { of: TruckSpec; spec: TruckSpec };
   /** SCREAM-313: the part of tonight's tips that SpongePops earned (their own row on the end-of-day screen). */
   private spongePopTotalCents = 0;
   /** SCREAM-93: the most paid for one order tonight, price plus tip. */
@@ -259,7 +267,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** SCREAM-204: what tonight's truck can do (Story's is weaker than Quick play's). SCREAM-309: and the power-ups that change it. */
   private truckNow!: TruckSpec;
   get spec(): TruckSpec {
-    return this.truckNow;
+    if (this.drumSoloMs <= 0) return this.truckNow;
+    // SCREAM-335: during a Drum Cone's drum solo the music reaches 10% further.
+    if (this.truckDrum?.of !== this.truckNow) {
+      this.truckDrum = { of: this.truckNow, spec: { ...this.truckNow, musicRadius: this.truckNow.musicRadius * DRUM_CONE_RADIUS_FACTOR } };
+    }
+    return this.truckDrum.spec;
   }
   /** During a sale: each ice cream in the bag and the square it came from, so it can go back there. */
   private bagCells: { cell: number; slot: number }[] = [];
@@ -947,6 +960,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.saleNow.louBall = true;
       this.saleNow.tipFactor *= LOU_BALL_TIP_FACTOR;
     }
+    // SCREAM-335 (PO): a sale with a Drum Cone starts the drum solo once it is paid.
+    if (this.story && order.some((line) => line.flavour === 'drumcone')) this.saleNow.drumCone = true;
     this.saleNow.tipSteps = this.saleTipSteps(this.saleNow.order, customer); // SCREAM-303, SCREAM-313
     this.saleNow.spongePopPoints = this.spongePopPoints(this.saleNow.order, customer);
     this.lastSalePhase = this.saleNow.phase;
@@ -1028,6 +1043,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.payExplorationTip(sale); // SCREAM-312
       // SCREAM-334: ...and the steering is reversed for 10 seconds of driving (a second sale starts them again).
       if (sale.louBall) this.steeringReversedMs = LOU_BALL_REVERSED_SECONDS * 1000;
+      // SCREAM-335: ...and a Drum Cone's drum solo plays for 30 seconds of driving (a second sale starts them again).
+      if (sale.drumCone) this.drumSoloMs = DRUM_CONE_SOLO_SECONDS * 1000;
       this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents + sale.explorationTipCents);
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145

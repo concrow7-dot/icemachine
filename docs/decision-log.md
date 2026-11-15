@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 139 — The Drum Cone: a drum solo replaces the music and reaches further for 30 seconds, $30 (2026-11-15)
+
+**Decision (Jira SCREAM-335, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under the Lil Explorer Pop: "2 Drumstick. Music is replaced by drum solo. Music Radius increases by 10% for 30 seconds. In game description: 'Drum solo reaches more of the neighborhoo...'" (cut off in the photo; asked whether it ends "neighborhood.", he answered "Yes"). Asked, he chose: the effect happens on **"Each sale with one"**; the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: "Drumstick" is a real ice cream brand; he chose **"drum cone"**. The picture is his own sketch (November 15): a waffle cone with crosshatch marks and a coated scoop with a bite out of it.
+
+**Later the same night (01:18):** "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
+
+**Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Note price: $30 (chosen), $40, or $25. Name: keep "Drumstick", or a name of our own (chosen, his).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- For the 30 seconds the truck's tune is swapped for a drum solo and the music ring is 10% bigger (drawn bigger, and customers inside it hear the truck); then both go back, and the tune carries on where it stopped.
+- The 10% is on top of Upgrade Speaker when it is owned.
+- The 30 seconds run in the driving view only, with a DRUM SOLO countdown at the top of the road view; the song label says "Drum Solo". A second Drum Cone sale starts the 30 seconds again; it doesn't add up.
+- The drum solo is an original two-bar pattern made with the browser's own sound, like the tunes (kick, snare, hi-hat, two toms; no recording). M mutes it.
+- Story only (`storyOnly`), like the Two Ball Lou Ball. With six ice creams the cooler screen uses the closer rows and smaller cards built for SCREAM-334.
+
 ## 138 — The Two Ball Lou Ball: double the tip, then the steering is reversed for 10 seconds, $30 (2026-11-15)
 
 **Decision (Jira SCREAM-334, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under SpongePop: "1 Two Ball Screwball. Tip is Double. Controls are reversed for 10 seconds. In game description: 'High upside, crazy downside.'" Asked, he chose: the effect happens on **"Each sale with one"**; **"Steering only"** is reversed (left and right swap; gas and brake stay); the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: told that "Two Ball Screwball" is close to a real product's name, he asked "are the two brands something we shouldn't use?" and then chose **"two ball lou ball"**. The picture is his own sketch; he sent a second one ("Let's switch to this design"): a slanted cone cup, a lid that says "Lou" and "II", two gumballs in the point.
