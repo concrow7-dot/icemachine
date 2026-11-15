@@ -355,45 +355,46 @@ export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, gre
 }
 
 /**
- * SCREAM-80: Train Off The Tracks. From the PO's sketch (something sliding off a line): a little red
- * engine tipped off its rail, jumping forward, with speed lines behind. Original drawing.
+ * SCREAM-80: Train Off The Tracks, the PO's own icon sketch (Personal Notes, "Train Off The Tracks
+ * icon (notepad, November 14)"): a rail piece flips up off the track at a point where the track
+ * bends, a faint copy where it was, a curved arrow showing the swing, and burst ticks.
  */
 export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const red = grey ? 0xb8b8b8 : 0xd8402e;
-  const dark = grey ? 0x8a8a8a : 0x3d3f44;
-  const gold = grey ? 0xcccccc : 0xf2c14e;
+  const steel = grey ? 0xbdbdbd : 0xb9c3cc;
+  const shine = grey ? 0xd6d6d6 : 0xe6ecf0;
   const line = Math.max(2, 5 * u);
-  // Tipped 16 degrees nose-up, centred a little above the middle.
-  const a = Phaser.Math.DegToRad(-16);
-  const cx = 52, cy = 44;
-  const P = (x: number, y: number) => {
-    const dx = x - cx, dy = y - cy;
-    return new Phaser.Math.Vector2((cx + dx * Math.cos(a) - dy * Math.sin(a) - 50) * u, (cy + dx * Math.sin(a) + dy * Math.cos(a) - 50) * u);
+  const thin = Math.max(1.5, 3.5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  // The track: rising from the bottom left to the pivot, then flat to the right.
+  const track = new Phaser.Curves.QuadraticBezier(P(4, 80), P(26, 72), P(46, 70));
+  g.lineStyle(line, ink, 1).strokePoints(track.getPoints(12), false, false);
+  g.lineBetween((46 - 50) * u, (70 - 50) * u, (96 - 50) * u, (69 - 50) * u);
+  // A pointed rail piece from the pivot to its tip: a thin leaf shape.
+  const leaf = (tipX: number, tipY: number, alpha: number) => {
+    const bx = 46, by = 69;
+    const dx = tipX - bx, dy = tipY - by;
+    const len = Math.hypot(dx, dy);
+    const nx = (-dy / len) * 6, ny = (dx / len) * 6;
+    const curve = (side: number) =>
+      new Phaser.Curves.QuadraticBezier(P(bx, by), P(bx + dx * 0.5 + nx * side, by + dy * 0.5 + ny * side), P(tipX, tipY)).getPoints(10);
+    const pts = [...curve(1), ...curve(-1).reverse()];
+    g.fillStyle(steel, alpha).fillPoints(pts, true);
+    g.lineStyle(line, ink, alpha).strokePoints(pts, true, true);
   };
-  const poly = (colour: number, pts: [number, number][]) => {
-    const v = pts.map(([x, y]) => P(x, y));
-    g.fillStyle(colour, 1).fillPoints(v, true);
-    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
-  };
-  // The rail it left: a line with sleepers, along the bottom.
-  g.lineStyle(line, ink, 1).lineBetween(-46 * u, 40 * u, 40 * u, 40 * u);
-  for (const x of [-38, -22, -6, 10, 26]) g.lineBetween(x * u, 34 * u, (x + 6) * u, 46 * u);
-  // Speed lines behind.
-  g.lineStyle(Math.max(1.5, 3.5 * u), ink, 1);
-  for (const [y, l] of [[30, 16], [44, 22], [58, 14]] as const) g.lineBetween((6 - 50) * u, (y - 50) * u, (6 + l - 50) * u, (y - 50) * u);
-  // The engine: cab at the back, boiler, chimney, buffer.
-  poly(red, [[26, 30], [44, 30], [44, 60], [26, 60]]);
-  poly(dark, [[22, 26], [48, 26], [48, 31], [22, 31]]);
-  poly(red, [[44, 40], [80, 40], [80, 60], [44, 60]]);
-  poly(dark, [[64, 28], [72, 28], [72, 40], [64, 40]]);
-  poly(gold, [[80, 44], [87, 44], [87, 56], [80, 56]]);
-  poly(0xffffff, [[30, 35], [40, 35], [40, 44], [30, 44]]);
-  for (const x of [34, 56, 72]) {
-    const c = P(x, 63);
-    g.fillStyle(dark, 1).fillCircle(c.x, c.y, 7 * u);
-    g.lineStyle(line, ink, 1).strokeCircle(c.x, c.y, 7 * u);
+  leaf(10, 52, 0.3); // where it was, lying back along the track
+  leaf(30, 18, 1); // flipped up
+  g.lineStyle(Math.max(1.5, 2.5 * u), shine, 1).lineBetween((42 - 50) * u, (58 - 50) * u, (34 - 50) * u, (30 - 50) * u);
+  // The swing: a curved arrow from the old place to the new.
+  const swing = new Phaser.Curves.QuadraticBezier(P(14, 44), P(14, 30), P(24, 26)).getPoints(10);
+  g.lineStyle(thin, ink, 1).strokePoints(swing, false, false);
+  const head = [P(26, 25), P(19, 22), P(21, 31)];
+  g.fillStyle(ink, 1).fillPoints(head, true);
+  // Burst ticks around it.
+  g.lineStyle(thin, ink, 1);
+  for (const [x1, y1, x2, y2] of [[28, 12, 36, 16], [50, 10, 53, 20], [70, 14, 66, 24], [86, 30, 76, 36]] as const) {
+    g.lineBetween((x1 - 50) * u, (y1 - 50) * u, (x2 - 50) * u, (y2 - 50) * u);
   }
 }
 
