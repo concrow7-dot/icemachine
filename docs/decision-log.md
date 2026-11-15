@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 133 — Speaker with Heavier Bass: the some-days people come out more often, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-329, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes): "1 Speaker with Heavier Bass - more likely to get customers in their home", drawn under the speaker with a guitar and music notes as the picture. Asked which chance goes up, he chose the **some-days people**; asked the price, "$40".
+
+**Options considered:** the some-days people (chosen); second chances (people who didn't come out the first time); both. Prices offered: $40 or $45.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "Some-days people" in Story are everyone who isn't ticked all seven days and isn't 0% (the buyer kind `sometimes`). With the note, their Likelihood counts 1.1 times as much each time they roll to come out (`BASS_SOMETIMES_FACTOR`), on top of today's tick. Every-day regulars, 0% people and hard-to-find customers are unchanged. The number isn't on the note (decision 132).
+- It works from the moment it is bought, on both maps. (The ticket first said "from the next evening"; in Story nobody's evening is decided ahead, so there is nothing to wait for.)
+- The Customer tree's lower rows now mirror the Truck tree: three notes on the third row (this one and two dummies until SCREAM-245 and SCREAM-330), one dummy under the middle, two at the bottom. The dummies are Customer 5 to 9.
+- The picture is his sketch: a guitar lying up to the right with sound strokes and music notes.
+- Still to check with him: "in their home" could also mean people who are indoors (they are half as likely to come out as people in their yard). Built as he answered.
+- Story only (decision 076).
+
 ## 132 — Power-up notes don't give exact numbers (2026-11-14)
 
 **Decision (Jira SCREAM-328, PO, November 14):** "I want to remove all the hints on the powerups that give the exact information on the powerups. For example, 10% or 5%". The notes say what a power-up does, not by how much.

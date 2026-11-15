@@ -89,6 +89,8 @@ export function addPowerUpLogo(
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
     drawSpeakerHorn(g, size, grey);
+  } else if (tree === 'bass-guitar') {
+    drawBassGuitar(g, size, grey);
   } else {
     // A coin with a dollar sign.
     g.fillStyle(colour(0xb8860b), 1).fillCircle(0, 0, r);
@@ -465,4 +467,50 @@ export function drawSteamEngine(g: Phaser.GameObjects.Graphics, size: number, gr
     g.lineStyle(line, ink, 1).strokeCircle(X(x), X(75), 7 * u);
     g.fillStyle(ink, 1).fillCircle(X(x), X(75), 2 * u);
   }
+}
+
+/**
+ * SCREAM-329: Speaker with Heavier Bass. The PO's sketch (Personal Notes, "Customer power-ups,
+ * third row", November 14): a guitar lying up to the right, two sound strokes and music notes
+ * floating off its head. Drawn like the gas can: flat colour, a thick dark outline, one highlight.
+ */
+export function drawBassGuitar(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xb4b4b4 : 0xc4372c;
+  const guard = grey ? 0xdcdcdc : 0xf4ead2;
+  const neck = grey ? 0x9a9a9a : 0x8a5a2b;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const P = (x: number, y: number) => new Phaser.Math.Vector2(X(x), X(y));
+  // The neck and head, from the body up to the right.
+  const neckPts = [P(40, 58), P(74, 28), P(79, 33), P(46, 64)];
+  g.fillStyle(neck, 1).fillPoints(neckPts, true);
+  g.lineStyle(thin, ink, 1).strokePoints(neckPts, true, true);
+  const head = [P(72, 26), P(84, 16), P(90, 23), P(80, 35)];
+  g.fillStyle(body, 1).fillPoints(head, true);
+  g.lineStyle(thin, ink, 1).strokePoints(head, true, true);
+  // The body: two overlapping rounds, the lower bigger.
+  g.fillStyle(body, 1).fillCircle(X(28), X(74), 21 * u).fillCircle(X(42), X(60), 14 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(28), X(74), 21 * u);
+  g.lineStyle(line, ink, 1).beginPath().arc(X(42), X(60), 14 * u, -2.5, 0.9).strokePath();
+  g.fillStyle(body, 1).fillCircle(X(33), X(69), 13 * u);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.4).fillEllipse(X(17), X(66), 7 * u, 14 * u);
+  // The pick guard and the strings.
+  g.fillStyle(guard, 1).fillCircle(X(31), X(72), 8 * u);
+  g.lineStyle(thin, ink, 1).strokeCircle(X(31), X(72), 8 * u);
+  g.lineStyle(Math.max(1, 2 * u), ink, 1).lineBetween(X(24), X(76), X(78), X(28)).lineBetween(X(28), X(80), X(81), X(32));
+  // Two sound strokes off the head, as in the sketch.
+  g.lineStyle(thin, ink, 1).lineBetween(X(58), X(22), X(64), X(12)).lineBetween(X(66), X(26), X(72), X(16));
+  // Music notes floating up to the right.
+  const noteInk = grey ? 0x7d7d7d : 0x2b1d10;
+  const note = (x: number, y: number, s: number) => {
+    g.fillStyle(noteInk, 1).fillEllipse(X(x), X(y), 9 * s * u, 7 * s * u);
+    g.lineStyle(Math.max(1.5, 3 * s * u), noteInk, 1).lineBetween(X(x + 4 * s), X(y), X(x + 4 * s), X(y - 16 * s));
+    g.lineBetween(X(x + 4 * s), X(y - 16 * s), X(x + 11 * s), X(y - 12 * s));
+  };
+  note(86, 50, 1);
+  note(70, 8 + 12, 0.8);
+  note(90, 12 + 12, 0.7);
 }

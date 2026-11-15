@@ -36,13 +36,13 @@ test('the arrow keys move to the nearest note that way', () => {
 test('...and cross from one tree to the next', () => {
   assert.equal(nextNote(notes, 'steam-engine', 'right'), 'icecream-explorer');
   assert.equal(nextNote(notes, 'icecream-explorer', 'left'), 'steam-engine');
-  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'customer-4');
+  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'heavier-bass');
 });
 
 test('...and stay put at the edge of the board', () => {
   assert.equal(nextNote(notes, 'train-off-the-tracks', 'left'), 'train-off-the-tracks');
   assert.equal(nextNote(notes, 'temp-gas-can', 'up'), 'temp-gas-can');
-  assert.equal(nextNote(notes, 'customer-8', 'down'), 'customer-8');
+  assert.equal(nextNote(notes, 'customer-9', 'down'), 'customer-9');
 });
 
 test('every note can be reached with the arrow keys from the first one', () => {
@@ -59,7 +59,7 @@ test('every note can be reached with the arrow keys from the first one', () => {
 });
 
 test('SCREAM-296: every note has a name and a price', () => {
-  assert.equal(notes.find((n) => n.id === 'customer-4').name, 'CUSTOMER 4');
+  assert.equal(notes.find((n) => n.id === 'customer-7').name, 'CUSTOMER 7');
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && (n.priceCents > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 
@@ -138,4 +138,11 @@ test('SCREAM-325: Brakes Made This Century is the middle third-row note, under G
 test('SCREAM-326: Steam Engine is the right third-row note, under Trot, $30', () => {
   const n = notes.find((x) => x.id === 'steam-engine');
   assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'STEAM ENGINE', 3000, 'steam-engine', ['trot'], 'Increase the speed of the truck as it rolls.']);
+});
+
+test('SCREAM-329: Speaker with Heavier Bass is the Customer tree\'s left third-row note, under Upgrade Speaker, $40', () => {
+  const n = notes.find((x) => x.id === 'heavier-bass');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'SPEAKER WITH HEAVIER BASS', 4000, 'bass-guitar', ['upgrade-speaker'], 'More likely to get customers in their home.']);
+  assert.equal(buyStatus(n, ['service-with-a-smile'], 4000, true), 'locked');
+  assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'ok');
 });
