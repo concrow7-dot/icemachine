@@ -31,7 +31,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 **Engineering's calls (proposals):**
 
 - Only hints heard after buying it are written down. Each entry has the day ("Tuesday Day 2"), who said it and their words without the "Thanks!". The same words from the same person are not written twice. The regular's line about the rotary is written down too.
-- It hangs on the side door in the truck view, between the driver's seat and the window, and only once it is owned. Where it hangs and how it looks are engineering's placeholders until he draws them.
+- It hangs under the tip jar in the truck view (the green cup on the shelf by the window), and only once it is owned. The PO chose the spot while testing: "Lets have notebook hang under the tip jar." (the first build hung it on the side door). How it looks is engineering's placeholder until he draws it.
 - Opened, it is a full-screen pad: newest first, four to a page, ← → to turn the page, B to go back. Reading only, so it also opens while looking inside from the road (Tab).
 - It lasts for the whole Story run and is saved with it at the end of each day, like the power-ups (Restart Evening gives back the notebook the evening started with). A new Story starts with an empty one.
 - SCREAM-245 (the November 10 ticket) was rewritten for it rather than making a duplicate.

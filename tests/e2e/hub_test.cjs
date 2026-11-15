@@ -319,7 +319,7 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()) === 'Truck,Hud');
   // SCREAM-245 (PO): "Notebook should be a new clickable item in the truck view".
   await press('ArrowRight'); await press('ArrowRight');
-  check('SCREAM-245: the notebook is a part of the truck view now, between the driver\'s seat and the window', (await sel()) + ' ' + (await sc('Truck', 's.tag.text')), 'notebook NOTEBOOK');
+  check('SCREAM-245: the notebook is a part of the truck view now, hanging under the tip jar (PO)', (await sel()) + ' ' + (await sc('Truck', 's.tag.text')), 'notebook NOTEBOOK');
   await page.screenshot({ path: outDir + '/hub_notebook_in_truck.png' });
   await press('Enter');
   await until(async () => (await scenes()) === 'Notebook,Hud');
