@@ -47,6 +47,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
+import { MAX_PRICE_CENTS } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
@@ -714,6 +715,20 @@ export class EveningState extends Phaser.Events.EventEmitter {
   /** SCREAM-271: the most a customer pays for one of these tonight before leaving it out of the order. */
   refuseAboveCents(flavour: FlavourId): number {
     return this.story ? storyRefuseAboveCents(flavour) : REFUSE_ABOVE_CENTS;
+  }
+
+  /**
+   * SCREAM-343 (PO, November 15): "At the cooler, when seeing today's menu, the player should not be
+   * able to raise the price above the one stated on the cork board". In Story (not the uncle's
+   * evening) Today's Menu stops at the price on the ice cream's note; elsewhere at MAX_PRICE_CENTS.
+   */
+  menuTopPriceCents(flavour: FlavourId): number {
+    return this.story && !this.tutorial ? storyRefuseAboveCents(flavour) : MAX_PRICE_CENTS;
+  }
+
+  /** SCREAM-343: brings any menu price above its top down to it (an old save's); called when the cooler opens. */
+  capMenuPrices(): void {
+    for (const slot of this.coolerSlots) slot.priceCents = Math.min(slot.priceCents, this.menuTopPriceCents(slot.flavour));
   }
 
   /** SCREAM-245: the Handy Notebook's entries, oldest first (kept for the whole Story run). */
