@@ -464,6 +464,9 @@ export const GITTY_UP_PRICE_CENTS = 2000;
  * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
  */
 export const TROT_CREEP_FACTOR = 1.5;
+/** SCREAM-326 (PO, November 14): Steam Engine, $30: the roll (creep) x 1.1, on top of Trot. */
+export const STEAM_PRICE_CENTS = 3000;
+export const STEAM_CREEP_FACTOR = 1.1;
 /** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 10% better (braking time / 1.1). */
 export const BRAKES_PRICE_CENTS = 3000;
 export const BRAKES_FACTOR = 1.1;

@@ -121,3 +121,10 @@ test('SCREAM-325: Brakes Made This Century: braking time / 1.1, nothing else cha
   assert.ok(Math.abs(brakes.brakingSeconds - trot.brakingSeconds / 1.1) < 1e-9);
   for (const k of Object.keys(trot)) if (k !== 'brakingSeconds') assert.equal(brakes[k], trot[k], k);
 });
+
+test('SCREAM-326: Steam Engine: the roll x 1.1, on top of Trot (12 -> 13.2; 18 -> 19.8)', () => {
+  const r = (ids) => Math.round(truckSpec(true, ids).creepSpeed * 10) / 10;
+  assert.equal(r([]), 12);
+  assert.equal(r(['steam-engine']), 13.2);
+  assert.equal(r(['trot', 'steam-engine']), 19.8);
+});

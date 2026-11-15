@@ -83,6 +83,8 @@ export function addPowerUpLogo(
     drawTrainOffTracks(g, size, grey);
   } else if (tree === 'brake-disc') {
     drawBrakeDisc(g, size, grey);
+  } else if (tree === 'steam-engine') {
+    drawSteamEngine(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -427,4 +429,45 @@ export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey
   g.fillStyle(red, 1).fillRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
   g.lineStyle(line, ink, 1).strokeRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
   g.fillStyle(0xffffff, grey ? 0.2 : 0.4).fillRect(27 * u, -15 * u, 4 * u, 22 * u);
+}
+
+/**
+ * SCREAM-326: Steam Engine. From the PO's sketch (an engine pulling carriages): a little green
+ * steam engine with a red cowcatcher and a puff of steam. Original drawing.
+ */
+export function drawSteamEngine(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const green = grey ? 0xb8b8b8 : 0x2e7d4f;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const red = grey ? 0xa8a8a8 : 0xd8332a;
+  const gold = grey ? 0xcccccc : 0xf2c14e;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // Steam: three puffs above the chimney.
+  g.fillStyle(0xffffff, grey ? 0.6 : 1);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1);
+  for (const [x, y, r] of [[30, 20, 8], [42, 12, 9], [56, 9, 7]] as const) {
+    g.fillCircle(X(x), X(y), r * u);
+    g.strokeCircle(X(x), X(y), r * u);
+  }
+  box(dark, 24, 30, 10, 16); // chimney
+  box(green, 14, 44, 50, 24); // boiler
+  box(green, 62, 32, 26, 36); // cab
+  box(dark, 58, 28, 34, 6); // cab roof
+  box(0xffffff, 68, 39, 13, 11); // window
+  box(gold, 40, 38, 8, 8); // dome
+  // Cowcatcher, then wheels.
+  const cow = [new Phaser.Math.Vector2(X(14), X(60)), new Phaser.Math.Vector2(X(14), X(78)), new Phaser.Math.Vector2(X(2), X(78))];
+  g.fillStyle(red, 1).fillPoints(cow, true);
+  g.lineStyle(line, ink, 1).strokePoints(cow, true, true);
+  for (const [x, r] of [[26, 10], [48, 10], [74, 12]] as const) {
+    g.fillStyle(red, 1).fillCircle(X(x), X(80 - r + 8), r * u);
+    g.lineStyle(line, ink, 1).strokeCircle(X(x), X(80 - r + 8), r * u);
+    g.fillStyle(ink, 1).fillCircle(X(x), X(80 - r + 8), 2.5 * u);
+  }
 }
