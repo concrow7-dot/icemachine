@@ -1,6 +1,7 @@
-import { BACK_IT_UP_ID, TRAIN_ID, BRAKES_ID, STEAM_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
+import { BACK_IT_UP_ID, MORE_JUNK_ID, TRAIN_ID, BRAKES_ID, STEAM_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
 import {
   BACK_IT_UP_REVERSE_FACTOR,
+  MORE_JUNK_EXTRA_ROWS,
   COOLER_CAPACITY,
   GITTY_UP_ACCELERATION_FACTOR,
   STEAM_CREEP_FACTOR,
@@ -83,6 +84,9 @@ export interface TruckSpec {
 export function truckSpec(weak: boolean, powerUps: readonly string[] = []): TruckSpec {
   const has = (id: string) => powerUps.includes(id);
   const halfCovered = weak && STORY_COOLER_HALF_COVERED;
+  // SCREAM-25: More Junk opens one more row at the bottom of every crate (Story's 18 squares become 24).
+  const coolerColumns = halfCovered ? STORY_COOLER_COLUMNS : CRATE_SIDE;
+  const coolerRows = halfCovered ? Math.min(CRATE_SIDE, STORY_COOLER_ROWS + (has(MORE_JUNK_ID) ? MORE_JUNK_EXTRA_ROWS : 0)) : CRATE_SIDE;
   // SCREAM-80: Train Off The Tracks, top speed x 1.05 (the roll down still takes STORY_TRUCK_ROLL_SECONDS).
   const topSpeed = (weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED) * (has(TRAIN_ID) ? TRAIN_TOP_SPEED_FACTOR : 1);
   // SCREAM-310: Trot raises the creep (the roll speed). The roll down from top speed still takes
@@ -108,10 +112,10 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     // SCREAM-81: Upgrade Speaker reaches 10% further than tonight's ring.
     musicRadius: (weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS) * (has(SPEAKER_ID) ? SPEAKER_RADIUS_FACTOR : 1),
     coolerHalfCovered: halfCovered,
-    coolerColumns: halfCovered ? STORY_COOLER_COLUMNS : CRATE_SIDE,
-    coolerRows: halfCovered ? STORY_COOLER_ROWS : CRATE_SIDE,
+    coolerColumns,
+    coolerRows,
     // SCREAM-291: Story's open squares, counted (18: two columns by three rows, in three crates).
-    coolerCapacity: Array.from({ length: COOLER_CAPACITY }, (_, i) => coolerCellOpen(halfCovered, i)).filter(Boolean).length,
+    coolerCapacity: Array.from({ length: COOLER_CAPACITY }, (_, i) => coolerCellOpenIn(coolerColumns, coolerRows, i)).filter(Boolean).length,
     fuelTankPx: weak ? FUEL_TANK_PX / STORY_FUEL_BURN_FACTOR : FUEL_TANK_PX,
   };
 }

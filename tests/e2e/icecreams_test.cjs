@@ -70,6 +70,22 @@ const { chromium } = require('playwright');
   await page.mouse.move(5, 5); await wait(150);
   await page.screenshot({ path: outDir + '/icecreams_cooler_five.png' });
 
+  // ---- SCREAM-25: More Junk opens a bottom row of two squares in each crate ----
+  {
+    const own = (on) => page.evaluate(async (on) => { const { truckSpec } = await import('/src/state/TruckSpec.js'); const e = window.__game.registry.get('evening'); const i = e.powerUpsOwned.indexOf('more-junk'); if (on && i < 0) e.powerUpsOwned.push('more-junk'); if (!on && i >= 0) e.powerUpsOwned.splice(i, 1); e.truckNow = truckSpec(true, e.powerUps); window.__game.scene.getScene('Cooler').scene.restart(); }, on);
+    const open = () => ev("[0, 1, 2, 8, 9, 12, 13, 14, 28, 29, 44, 45, 46].filter(i => e.cellOpen(i)).join()");
+    check('Before More Junk: Story\'s cooler holds 18, three rows of two in each crate', (await sc('Cooler', 's.order.capacity')) + ' ' + (await ev('e.spec.coolerRows')) + ' | ' + (await open()), '18 3 | 0,1,8,9');
+    await own(true); await wait(700);
+    check('SCREAM-25: with More Junk it holds 24: a fourth row of two opens at the bottom of all three crates', (await sc('Cooler', 's.order.capacity')) + ' ' + (await ev('e.spec.coolerRows')) + ' | ' + (await open()), '24 4 | 0,1,8,9,12,13,28,29,44,45');
+    check('...an ice cream can be dropped on a new bottom square', await sc('Cooler', "(() => { s.order.addOne('eclair'); const from = s.order.cells.findIndex(c => c); const ok = s.order.move(from, 12); const there = !!s.order.cells[12]; s.order.move(12, from); s.order.removeOne('eclair'); s.refresh(); return ok + ' ' + there; })()"), 'true true');
+    await page.mouse.move(5, 5); await wait(150);
+    await page.screenshot({ path: outDir + '/icecreams_more_junk.png' });
+    await own(false); await wait(700);
+    check('...without it the cooler is 18 again', await sc('Cooler', 's.order.capacity'), 18);
+    for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball']) await sc('Cooler', `(s.order.addOne('${f}'), true)`);
+    await sc('Cooler', '(s.refresh(), true)');
+  }
+
   // ---- SCREAM-343: Today's Menu stops at the price on the ice cream's cork board note ----
   const raise = (f, n) => sc('Cooler', `(() => { for (let i = 0; i < ${n}; i++) s.order.changePrice('${f}', 25); s.refresh(); return s.order.slots.find(x => x.flavour === '${f}').priceCents; })()`);
   const plusAlpha = (f) => sc('Cooler', `s.cards.find(c => c.flavour === '${f}').plus.alpha`);

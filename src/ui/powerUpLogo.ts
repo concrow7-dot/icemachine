@@ -87,6 +87,8 @@ export function addPowerUpLogo(
     drawSteamEngine(g, size, grey);
   } else if (tree === 'back-it-up') {
     drawBackItUp(g, size, grey);
+  } else if (tree === 'more-junk') {
+    drawMoreJunk(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -632,4 +634,37 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
   ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
   g.fillStyle(red, 1).fillPoints(arrow, true);
   g.lineStyle(line, ink, 1).strokePoints(arrow, true, true);
+}
+
+/**
+ * SCREAM-25: More Junk. Engineering's own picture (the PO's sketches give the name only): an open
+ * cooler crate with ice creams standing in it, and a green plus at its top right.
+ */
+export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const crate = grey ? 0xdcdcdc : 0xbfe3f5;
+  const deep = grey ? 0xb4b4b4 : 0x7fbfe0;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // Three ice creams on sticks, standing up out of the crate.
+  const pops: [number, number][] = [[22, grey ? 0xcfcfcf : 0xf4d35e], [40, grey ? 0xbdbdbd : 0x8b5a3c], [58, grey ? 0xd6d6d6 : 0xf28ca0]];
+  for (const [x, colour] of pops) {
+    box(grey ? 0xe2e2e2 : 0xe8c98f, x + 5, 40, 4, 16);
+    box(colour, x, 14, 14, 30);
+  }
+  // The crate: back lip, front, and a band.
+  box(deep, 8, 50, 76, 8);
+  box(crate, 12, 56, 68, 34);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(72), X(80), X(72));
+  // The plus, top right.
+  const px = X(86);
+  const py = X(22);
+  const arm = 11 * u;
+  g.lineStyle(Math.max(3, 9 * u), grey ? 0x8a8a8a : 0x2e9e44, 1);
+  g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
 }
