@@ -122,6 +122,10 @@ const MAP_SQUARE = 512;
 const RESIDENT_DEPTH = 5;
 /** Depth added per px down the map, so lower on screen means in front: the map is under 10,000 px tall. */
 const DEPTH_PER_PX = 10000;
+/** SCREAM-251: where a porch light sits from the front door's point (px), and its glow's colour. */
+const PORCH_LIGHT_DX = 9;
+const PORCH_LIGHT_DY = -24;
+const PORCH_GLOW = 0xffd36b;
 /** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
 const OCCLUDER_CELL = 128;
 const MAP_PAINT_MARGIN = 32;
@@ -153,6 +157,8 @@ export class DriveScene extends Phaser.Scene {
   private held: Facing[] = [];
   /** One sprite per resident, in the same order as evening.residents.all. */
   private residentSprites: Phaser.GameObjects.Sprite[] = [];
+  /** SCREAM-251: each resident's porch light, by resident index (Story only; empty in Quick play). */
+  porchLights: Phaser.GameObjects.Graphics[] = [];
   /** Houses and trees by 128 px square, as indexes into this.map.objects, for finding what stands in front of a resident. */
   private objectGrid = new Map<string, number[]>();
   /** Copies of houses and trees drawn over a resident who is behind them (SCREAM-104), by object index. */
@@ -304,6 +310,8 @@ export class DriveScene extends Phaser.Scene {
     this.residentSprites = this.evening.residents.all.map(() =>
       this.add.sprite(0, 0, residentsKey(), 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
     );
+    // SCREAM-251: Story's porch lights (Quick play's houses are unchanged).
+    this.porchLights = getStory(this) ? this.evening.residents.all.map((p) => this.makePorchLight(p.resident.door)) : [];
     this.occluders.clear();
     this.objectGrid.clear();
     this.map.objects.forEach((o, i) => {
@@ -1225,6 +1233,22 @@ export class DriveScene extends Phaser.Scene {
   // ---- Residents (SCREAM-59, SCREAM-73) ----
 
   /**
+   * SCREAM-251 (PO, November 15): "A porch light at the door": a small lamp beside and above the
+   * front door, with a soft warm glow round it. Drawn once per resident and shown by drawResidents.
+   */
+  private makePorchLight(door: readonly [number, number]): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics().setPosition(Math.round(door[0]) + PORCH_LIGHT_DX, Math.round(door[1]) + PORCH_LIGHT_DY);
+    g.fillStyle(PORCH_GLOW, 0.16).fillCircle(0, 1, 22);
+    g.fillStyle(PORCH_GLOW, 0.24).fillCircle(0, 1, 14);
+    g.fillStyle(PORCH_GLOW, 0.42).fillCircle(0, 1, 7);
+    // The lamp: a dark cap and bracket, a bright glass.
+    g.fillStyle(0x3b2a1a, 1).fillRect(-4, -5, 8, 2).fillRect(-1, -8, 2, 3);
+    g.fillStyle(0xfff6c8, 1).fillRect(-3, -3, 6, 7);
+    g.fillStyle(0xffd24a, 1).fillRect(-3, 3, 6, 1);
+    return g.setDepth(RESIDENT_DEPTH + door[1] / DEPTH_PER_PX).setVisible(false);
+  }
+
+  /**
    * Draws the residents who are outside and near the view. Frames are picked by
    * hand rather than with Phaser animations (160 people x 8 animations would be a lot):
    * each look is two rows in residents.png, idle then walk, with six frames each
@@ -1234,6 +1258,15 @@ export class DriveScene extends Phaser.Scene {
     const view = this.cameras.main.worldView;
     const inFront = new Set<number>();
     this.evening.residents.all.forEach((p, i) => {
+      // SCREAM-251 (PO): the porch light by their front door is on while they are in.
+      const light = this.porchLights[i];
+      if (light) {
+        const [dx, dy] = p.resident.door;
+        const lit = this.evening.residents.porchLit(p) && dx > view.x - 30 && dx < view.right + 30 && dy > view.y - 30 && dy < view.bottom + 40;
+        light.setVisible(lit);
+        // A slow, slight flicker, each lamp in its own time.
+        if (lit) light.setAlpha(0.88 + 0.12 * Math.sin(timeMs / 420 + i * 1.7));
+      }
       const sprite = this.residentSprites[i];
       const near =
         p.outside && p.x > view.x - 40 && p.x < view.right + 40 && p.y > view.y - 10 && p.y < view.bottom + 50;
