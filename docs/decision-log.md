@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 140 — Debug key: Shift+0 fills the gas tank (2026-11-15)
+
+**Decision (Jira SCREAM-337, under SCREAM-202, PO, November 15):** "In this set of builds, I want to add another testing helper. Fill gas. Should be Shift + something, let me know your suggestion". Engineering suggested Shift+0; he answered "Lets go with that." On any evening screen, in both modes, Shift+0 fills the tank to 100%, for free.
+
+**Options considered:** Shift+0 was the only free Shift + number key (Shift+1 to 9 are taken), and it sits next to Shift+9 (+$50).
+
+**Why (product owner's rationale):** a testing helper (his words above).
+
+**Engineering's calls (proposals):**
+
+- It fills the main tank only; the Temporary Gas Can stays as it is (full or used).
+- It costs nothing and counts as no purchase: cash, profit and the gas spent don't change.
+- After the evening has ended it does nothing.
+- Like the other debug keys it is not on the Key Bindings page, and it works on the public site until debug keys are gated.
+
 ## 139 — The Drum Cone: a drum solo replaces the music and reaches further for 30 seconds, $30 (2026-11-15)
 
 **Decision (Jira SCREAM-335, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under the Lil Explorer Pop: "2 Drumstick. Music is replaced by drum solo. Music Radius increases by 10% for 30 seconds. In game description: 'Drum solo reaches more of the neighborhoo...'" (cut off in the photo; asked whether it ends "neighborhood.", he answered "Yes"). Asked, he chose: the effect happens on **"Each sale with one"**; the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: "Drumstick" is a real ice cream brand; he chose **"drum cone"**. The picture is his own sketch (November 15): a waffle cone with crosshatch marks and a coated scoop with a bite out of it.

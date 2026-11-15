@@ -622,6 +622,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.changeMoney(cents, 'Debug');
   }
 
+  /**
+   * Debug (Shift+0, SCREAM-337; PO, November 15): "another testing helper. Fill gas." The tank
+   * is full again; it costs nothing and counts as no purchase. The Temporary Gas Can is left alone.
+   */
+  debugFillGas(): void {
+    if (this.ended) return;
+    this.fuelLeft = 1;
+  }
+
   // ---- Damage (#10) ----
 
   /** Charges for a hit on the road (pothole, parked car, road edge). Cash may go below zero. */
