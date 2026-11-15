@@ -43,7 +43,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 - The Truck tree's left third-row note (was Truck 4). Note text "Max velocity increased by 10%."
 - The roll down from top speed still takes STORY_TRUCK_ROLL_SECONDS (`coastKeep` follows the new top speed).
-- Picture: an original little red engine tipped off its rail (`drawTrainOffTracks`), from his sketch.
+- Picture (the PO, November 14, after two tries): a speedometer, "but the needle should be on the left side, indicating it is still slow" (`drawTrainOffTracks`, after his web reference; original drawing).
 - SCREAM-80 (the old "faster truck" upgrade, November 1) was rewritten for it.
 
 ## 126 — Debug key: Shift+9 adds $50 (2026-11-14)
