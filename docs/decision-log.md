@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 154 — On the cooler screen, click a flavour to read its cork board note (2026-11-15)
+
+**Decision (Jira SCREAM-355, under SCREAM-78, PO, November 15, 17:42, with a screenshot of the cooler screen):** "From this screen, I want to be able to click on flavors and see the power". His answers: where you click, "Both" (a flavour's Today's Menu card, and a small "i" button on each clipboard row); what shows, "The cork board's note"; "Build now".
+
+So, on Story's cooler screen, a click on an ice cream's menu card (not its - or +) or on the "i" beside its price on the clipboard opens that ice cream's note from the cork board over the cooler: picture, name, its power, the most a customer pays, what it costs to stock. It is for reading: no price and no BUY button. A click anywhere or any key closes it.
+
+**Options considered:** where: the menu card, an "i" button on the clipboard (the row itself still buys one), or both (chosen). What shows: the cork board's note (chosen), or a small bubble with just the power line.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076): Quick play's ice creams have no notes.
+- It works whenever the cooler screen is open in Story: before DRIVE, at a home stop, looking inside from the road and during a sale. The clock is not stopped by it.
+- While the note is open nothing under it reacts: the click or key that closes it does only that (Esc does not also pause).
+- Both ways in are buttons on screen (the mobile rule, SCREAM-77).
+
 ## 153 — Chocolate Eclair: the extra ice cream can be any ice cream, and one eclair in the cooler is enough (2026-11-15)
 
 **Decision (Jira SCREAM-354, under SCREAM-78, PO, November 15, 17:39; changes decision 118):** "For the chocolate eclair. I want to make sure that customers are buying an extra ice cream, even if they aren't buying an eclair. If the eclair is in the cooler, they buy an extra ice cream." Told that the extra one was always an eclair (his November 14 choice), he chose: the extra is "Any ice cream they'd buy"; and when every eclair in the cooler is already in the customer's order, "Yes, any eclair counts".

@@ -107,6 +107,28 @@ const { chromium } = require('playwright');
   await page.keyboard.press('1'); await wait(150);
   const fill24 = await sc('Cooler', "(() => { const o = s.order; let n = 0; while (o.addOne('eclair')) n++; const cells = o.cells; const r = n + ' ' + o.refusal + ' ' + cells.every((c, i) => !c || (i % 4 < 2 && i % 16 < 12)) + ' ' + [0, 1, 2].map(k => cells.slice(k * 16, k * 16 + 16).filter(Boolean).length).join('/'); for (let k = 0; k < n; k++) o.removeOne('eclair'); return r; })()");
   check('...it fills to 18 and stops: 6 in each crate, none under a panel', fill24, '18 full true 6/6/6');
+  // ---- SCREAM-355 (PO, November 15): click a flavour on the cooler screen to see its power ----
+  {
+    await sc('Cooler', "(s.order.addOne('eclair'), s.refresh(), true)"); await wait(150);
+    const noteNow = () => sc('Cooler', "s.flavourNote ? s.flavourNote.flavour + ' | ' + s.flavourNote.texts.join(' / ') : 'none'");
+    const before = await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents");
+    check('SCREAM-355: each clipboard row has an "i" button (one ice cream on day 1)', await sc('Cooler', "s.infoButtons.size + ' ' + [...s.infoButtons.keys()].join()"), '1 eclair');
+    const info = JSON.parse(await sc('Cooler', "JSON.stringify((b => ({ x: b.x, y: b.y }))(s.infoButtons.get('eclair')))"));
+    await page.mouse.click(info.x, info.y); await wait(200);
+    check('...clicking it opens the Chocolate Eclair\'s note from the cork board: its power, its limit and its cost', await noteNow(), 'eclair | CHOCOLATE ECLAIR / Owned from the start. / If you have these stocked in your cooler, every customer will buy an extra ice cream. / The average person won\'t pay more than $2.50 for one. / Costs you $1.00 each to stock.');
+    await page.screenshot({ path: outDir + '/story_cooler_flavour_note.png' });
+    await page.keyboard.press('Enter'); await wait(200);
+    check('...Enter closes it and does nothing else (no stock bought, still on the cooler)', (await noteNow()) + ' ' + (await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents")) + ' ' + (await scenes()), 'none ' + before + ' Cooler,Hud');
+    const card = JSON.parse(await sc('Cooler', "JSON.stringify((c => ({ x: c.container.x + 40 * c.container.scaleX, y: c.container.y + 56 * c.container.scaleY, shown: c.container.visible }))(s.cards.find(c => c.flavour === 'eclair')))"));
+    await page.mouse.click(card.x, card.y); await wait(200);
+    check('...a click on its Today\'s Menu card opens the note too', card.shown + ' ' + (await noteNow()).split(' | ')[0], 'true eclair');
+    await page.mouse.click(info.x + 150, info.y); await wait(200);
+    check('...a click anywhere closes it, and that click reaches nothing underneath', (await noteNow()) + ' ' + (await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents")), 'none ' + before);
+    await page.mouse.click(info.x, info.y); await wait(200);
+    await page.keyboard.press('Escape'); await wait(250);
+    check('...Esc closes it without pausing the game', (await noteNow()) + ' ' + (await scenes()), 'none Cooler,Hud');
+    await sc('Cooler', "(s.order.removeOne('eclair'), s.refresh(), true)");
+  }
   check('SCREAM-293: the ice creams are drawn over the (moved) crates, not hidden under them', await sc('Cooler', "s.cellIcons.filter(i => i.visible).every(i => i.depth > Math.max(...s.coveredRows.map(c => c.depth)))"), true);
   await page.screenshot({ path: outDir + '/story_cooler_full.png' });
   check('...an ice cream can\'t be dragged onto a covered square', await sc('Cooler', "(() => { const o = s.order; o.addOne('eclair'); const moved = o.move(0, 2); o.removeOne('eclair'); return moved; })()"), false);
