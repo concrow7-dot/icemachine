@@ -2,18 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
-## 136 — Trot and Steam Engine raise the roll speed a bit more: 5% more each (2026-11-15)
+## 136 — Trot and Steam Engine raise the roll speed much more: 25.2 and 50.4 px/s (2026-11-15)
 
-**Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Trot now adds 55% of the Story truck's roll speed, not 50% (12 to 18.6 px/s; it was 18), and Steam Engine adds the same step again (18.6 to 25.2; it was 24).
+**Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** first: "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Built as 18.6 px/s with Trot and 25.2 with Steam Engine too (from 18 and 24). He tried it: "What does roll mean to you? It doesn't seem to be much faster", and then: **"Lets increase it. trot should be where trot and steam are. and trot and steam should be another 2x increase."** So Trot alone now gives 25.2 px/s (Story's 12 x 2.1), and Steam Engine doubles that: 50.4.
 
-**Options considered:** none offered; the PO's call.
+**Options considered:** the 5% step (built, too small to see); the bigger numbers above (chosen). Engineering had offered 21 and 30 as an example.
 
 **Why (product owner's rationale):** _to ask_.
 
 **Engineering's calls (proposals):**
 
-- "5% more" is read as 5 points more of the Story truck's roll speed for each note (`TROT_CREEP_FACTOR` 1.5 to 1.55; Steam Engine uses the same factor), like his "5 more" on Train Off The Tracks. The other reading (5% faster than each note gave) would be 18.9 and 25.2.
-- The notes' wording, the prices and Quick play are unchanged. Tab still works at the roll speed or slower.
+- "Another 2x increase" is read as twice the roll speed Trot gives (50.4), not twice Trot's step (38.4).
+- Steam Engine now multiplies (x 2) instead of adding Trot's step again, which replaces decision 129's "the same effect as Trot, on top of it".
+- The roll down from top speed still takes 4 seconds and ends at the new roll speed. Tab (look inside) and the park brake work at the roll speed or slower, so both work at higher speeds with these notes.
+- The notes' wording, the prices and Quick play are unchanged.
 
 ## 135 — This Century Register: click the ice creams and the price adds up, $40 (2026-11-14)
 

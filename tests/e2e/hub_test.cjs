@@ -311,7 +311,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-122: the Temporary Gas Can pours itself in when the tank runs empty ----
   check('SCREAM-122: day 2 starts with the can full', await ev('e.gasCanFull'), true);
   check('...at home a note under an owned one can be bought', await ev("(e.changeMoney(5000, 'Test', false), e.powerUpStatus('trot'))"), 'ok');
-  check('SCREAM-310: Trot bought at home: tonight\'s creep goes from 12 to 18.6 px/s (SCREAM-336)', (await ev('Math.round(e.spec.creepSpeed * 10) / 10')) + ' ' + (await ev("e.buyPowerUp('trot')")) + ' ' + (await ev('Math.round(e.spec.creepSpeed * 10) / 10')), '12 true 18.6');
+  check('SCREAM-310: Trot bought at home: tonight\'s creep goes from 12 to 25.2 px/s (SCREAM-336)', (await ev('Math.round(e.spec.creepSpeed * 10) / 10')) + ' ' + (await ev("e.buyPowerUp('trot')")) + ' ' + (await ev('Math.round(e.spec.creepSpeed * 10) / 10')), '12 true 25.2');
   check('SCREAM-81: Upgrade Speaker bought at home: the music ring goes from 165 to 181.5 px', (await ev('Math.round(e.spec.musicRadius * 10) / 10')) + ' ' + (await ev("(e.changeMoney(3000, 'Test', false), e.buyPowerUp('upgrade-speaker'))")) + ' ' + (await ev('Math.round(e.spec.musicRadius * 10) / 10')), '165 true 181.5');
   check('SCREAM-329: Speaker with Heavier Bass bought at home: the some-days people count 10% likelier from now on', (await ev('e.residents.sometimesFactor')) + ' ' + (await ev("(e.changeMoney(4000, 'Test', false), e.buyPowerUp('heavier-bass'))")) + ' ' + (await ev('e.residents.sometimesFactor')), '1 true 1.1');
   check('SCREAM-245: Handy Notebook bought at home (the speaker is enough: "need either")', (await ev('e.hasNotebook')) + ' ' + (await ev("e.powerUpStatus('calculator') + ' ' + (e.changeMoney(4000, 'Test', false), e.buyPowerUp('handy-notebook'))")) + ' ' + (await ev('e.hasNotebook')), 'false ok true true');
@@ -345,7 +345,7 @@ const { chromium } = require('playwright');
   await ev('(e.endRestock(), true)');
   check('SCREAM-320: ...back on the road, not any more', await ev("e.powerUpStatus('this-century-register')"), 'away');
   await page.keyboard.down('ArrowUp'); await wait(300); await page.keyboard.up('ArrowUp'); await wait(2000);
-  check('SCREAM-310: with Trot, after a tap of the gas the truck creeps on at 18.6 px/s with no key held (SCREAM-336)', await page.evaluate(() => Math.round(Math.abs(window.__game.scene.getScene('Drive').speed) * 10) / 10), 18.6);
+  check('SCREAM-310: with Trot, after a tap of the gas the truck creeps on at 25.2 px/s with no key held (SCREAM-336)', await page.evaluate(() => Math.round(Math.abs(window.__game.scene.getScene('Drive').speed) * 10) / 10), 25.2);
   await ev('(e.fuelLeft = 0.004, true)');
   await page.keyboard.down('ArrowUp');
   const popped = await until(() => page.evaluate(() => window.__game.scene.isActive('GasCan')), 8000);
