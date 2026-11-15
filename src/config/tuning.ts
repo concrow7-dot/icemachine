@@ -469,6 +469,8 @@ export const TROT_PRICE_CENTS = 2000;
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
 export const SPEAKER_PRICE_CENTS = 3000;
 export const SPEAKER_RADIUS_FACTOR = 1.1;
+/** SCREAM-317 (PO, November 14): the Calculator note, $30. */
+export const CALCULATOR_PRICE_CENTS = 3000;
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**

@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 121 — Calculator: the window's price pad gets + − × ÷ and =, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-317, under SCREAM-78, PO, November 14):** "The right one should be “Calculator”. “Get a calculator to use at the sales window.” It should cost $30." The window already had a pad that only types the price; asked what buying the Calculator does, he chose: **the pad gets + − × ÷ and =**, like the desk calculator in his photo, so an order can be added up there (2.50 + 2.50 + 3 =) and then charged.
+
+**Options considered:** + − × ÷ and = (chosen); only + and =; the total worked out for you (no maths at all).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The note is the Customer tree's right note under Service With A Smile (it was the dummy Customer 3); the middle note under both now hangs from Upgrade Speaker or Calculator.
+- The sum keys are a new column on the pad's right (÷ × − +), with = above a one-row CHARGE; the digits, C and ← stay where they were. (The ticket first said the left; there's no room left of the pad, beside Today's Menu.) The pad now reaches a little over the customer.
+- Worked left to right like a cheap calculator: 2 + 3 × 2 is 10. × and ÷ take the second number as a plain number (3 × 2.50 = 7.50). ÷ 0 leaves the number alone.
+- The waiting sign shows small beside the $ on the display. A result shows with cents (8.00).
+- Keyboard: + − * / and =; Enter (CHARGE) works a sum out first, then charges. A sum below $0.01 charges nothing.
+- The picture is an original dark desk calculator with two red keys, drawn like the gas can; not a copy of the photo.
+- Story only (decision 076): only Story can own it. The keys line at the window is unchanged; the Key Bindings page has a new row.
+
 ## 120 — Upgrade Speaker: the music ring reaches 10% further, $30 (2026-11-14)
 
 **Decision (Jira SCREAM-81, under SCREAM-78, PO, November 14):** "I want to add the next two power ups under customer. The left one should be “Upgrade Speaker” which will “Increase the reach of the speaker by 10%.” It should cost $30." Asked what 10% means, he chose **10% of today's ring**: Story's ring goes from 165 px to about 182 px (165 x 1.1). He sent a photo of a grey horn loudspeaker for the picture.

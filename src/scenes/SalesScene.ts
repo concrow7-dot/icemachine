@@ -7,6 +7,8 @@ import type { ResidentNow } from '../state/Residents';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
 import { Calculator, type CalculatorKey } from '../ui/Calculator';
+import { CalcSum, type CalcOp } from '../state/CalcSum';
+import { CALCULATOR_ID } from '../config/powerUps';
 import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
 import { loadResidentSheet } from '../ui/residentLook';
@@ -97,6 +99,8 @@ export class SalesScene extends Phaser.Scene {
   askButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
   private typed = '';
+  /** SCREAM-317: with the Calculator power-up, the pad adds up (+ − × ÷ =); null without it (test hook). */
+  sum: CalcSum | null = null;
 
   constructor() {
     super(SceneKeys.Sales);
@@ -177,7 +181,9 @@ export class SalesScene extends Phaser.Scene {
     this.tipBar = new TipBar(this, 892, 412, true, true, WINDOW_TIP_BAR_H, this.evening.sale?.tipSteps ?? this.evening.tipSteps); // SCREAM-313: this sale's own steps
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
-    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);
+    // SCREAM-317: with the Calculator power-up the pad is a column wider, on the right; the digits stay put.
+    this.sum = this.evening.powerUps.includes(CALCULATOR_ID) ? new CalcSum() : null;
+    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key), !!this.sum).setVisible(false);
 
     // Below the window, centred, where GO TO THE COOLER sits (ICE-14, ICE-15). Shows once the
     // sale is over, paid or not; the hint still says sorry when the ice cream ends up free.
@@ -296,6 +302,7 @@ export class SalesScene extends Phaser.Scene {
       else if (key === 'Delete') this.pressKey('C');
       else if (key === 'Enter') this.pressKey('CHARGE');
       else if (/^[0-9]$/.test(key) || key === '.') this.pressKey(key as CalculatorKey);
+      else if (this.sum && ['+', '-', '*', '/', '='].includes(key)) this.pressKey(key as CalculatorKey); // SCREAM-317
       return;
     }
   }
@@ -312,6 +319,7 @@ export class SalesScene extends Phaser.Scene {
     if (!this.evening.sale?.askAgain(this.evening.nowMs)) return;
     this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
     this.typed = '';
+    this.sum?.clear();
     this.refresh();
   }
 
@@ -319,6 +327,7 @@ export class SalesScene extends Phaser.Scene {
   private returnToCooler(): void {
     if (!this.evening.sale?.backToCooler()) return;
     this.typed = ''; // a price already typed is cleared (PO)
+    this.sum?.clear();
     this.scene.start(SceneKeys.Fill);
   }
 
@@ -342,16 +351,28 @@ export class SalesScene extends Phaser.Scene {
       this.charge();
       return;
     }
-    if (key === 'C') this.typed = '';
+    if (this.sum) {
+      // SCREAM-317: the Calculator power-up's pad.
+      if (key === 'C') this.sum.clear();
+      else if (key === 'BACK') this.sum.back();
+      else if (key === '=') this.sum.equals();
+      else if (key === '+' || key === '-' || key === '*' || key === '/') this.sum.operator(key as CalcOp);
+      else this.sum.digit(key);
+    } else if (key === 'C') this.typed = '';
     else if (key === 'BACK') this.typed = this.typed.slice(0, -1);
-    else this.typed = pressPriceKey(this.typed, key);
+    else if (/^[0-9]$|^00$|^\.$/.test(key)) this.typed = pressPriceKey(this.typed, key);
     this.refresh();
   }
 
   private charge(): void {
-    const cents = priceEntryCents(this.typed);
-    if (cents === null) return;
+    // SCREAM-317: CHARGE in the middle of a sum works it out first.
+    const cents = this.sum ? this.sum.chargeCents() : priceEntryCents(this.typed);
+    if (cents === null) {
+      this.refresh();
+      return;
+    }
     this.typed = '';
+    this.sum?.clear();
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
     if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0, this.evening.sale?.explorationTipCents ?? 0);
@@ -549,7 +570,7 @@ export class SalesScene extends Phaser.Scene {
     const pricing = sale.phase === 'pricing';
     if (pricing) this.drawMenuCard();
     this.priceCard.setVisible(pricing);
-    this.calculator.show(this.typed);
+    this.calculator.show(this.sum ? this.sum.display() : this.typed, this.sum?.op ?? null);
     this.calculator.setVisible(pricing);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';

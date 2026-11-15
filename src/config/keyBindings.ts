@@ -60,6 +60,7 @@ export const KEY_GROUPS: readonly KeyGroup[] = [
       ['0-9 And .', 'Type The Price'],
       ['Backspace', 'Erase One Digit'],
       ['Delete', 'Clear The Price'],
+      ['+ - * / =', 'Add Up The Price (With The Calculator)'],
       ['Enter', 'Charge'],
       ['Enter Or Space', 'Next Customer (When The Sale Is Over)'],
       ['B', 'Drive Off'],

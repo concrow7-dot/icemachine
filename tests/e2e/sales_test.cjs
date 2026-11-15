@@ -412,6 +412,30 @@ const { chromium } = require('playwright');
   await press('b'); await wait(300);
   await ev('(e.orderPictureChance = 0, true)');
 
+  // ---- SCREAM-317: the Calculator power-up: + − × ÷ and = on the window's pad (only bought in Story; set here) ----
+  await ev("(e.powerUpsOwned.push('calculator'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }]); await tick(5100);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-317: with the Calculator, "How much?" shows a pad with + − × ÷ and =', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', '!!s.sum + " " + ["+", "-", "*", "/", "="].every(k => s.calculator.keys.has(k))')), 'pricing true true');
+  await page.keyboard.type('2+1.5'); await wait(150);
+  check('...typing 2 + 1.5: the display shows 1.5 with the + waiting', await sc('Sales', 's.calculator.display.text + " " + s.calculator.opMark.text'), '1.5 +');
+  const eq = await sc('Sales', '(r => [s.calculator.container.x + r.x, s.calculator.container.y + r.y])(s.calculator.keys.get("="))');
+  await page.mouse.click(eq[0], eq[1]); await wait(150);
+  check('...clicking = works it out: 3.50', await sc('Sales', 's.calculator.display.text + "|" + s.calculator.opMark.text'), '3.50|');
+  await press('Delete');
+  const each = await ev('e.slots[0].priceCents');
+  await page.keyboard.type(`${each / 100}*2`); await wait(150);
+  await page.mouse.move(5, 300); await page.screenshot({ path: outDir + '/sale_calculator.png' });
+  const cCalc = await cash();
+  await press('Enter'); await wait(200);
+  check('...Delete clears it; price x 2 then Enter works it out and charges it', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.priceCents')), 'paid ' + each * 2);
+  check('...the money is in the till', (await cash()) - cCalc >= each * 2, true);
+  await press('Enter'); await wait(300);
+  await ev("(e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('calculator'), 1), true)");
+  await serveNow(); await tick(5100);
+  check('...without it, the pad is the plain one again', await sc('Sales', 's.sum === null && !s.calculator.keys.has("+")'), true);
+  await press('b'); await wait(300);
+
   // ---- Debug keys moved to Shift ----
   const c7 = await cash();
   await press('1');
