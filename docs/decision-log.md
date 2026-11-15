@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 119 — The gas station: Buy Gas bottom right, Leave bottom left (2026-11-14)
+
+**Decision (Jira SCREAM-316, under SCREAM-7, PO, November 14):** "Move the buy gas button to the bottom left. Move the leave button to the bottom left of the screen." Asked which goes where, he answered: "Buy gas bottom right." So the pay button (PAY $x, or UNCLE PAYS $x) is in the bottom-right corner and DRIVE OFF in the bottom-left. Priority High (his answer).
+
+**Options considered:** Buy Gas bottom left and Leave bottom right; Leave bottom left and Buy Gas bottom right (chosen); both side by side in the bottom left.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The gas dial (SCREAM-238) already fills the very corner, so DRIVE OFF sits just right of it, under the pump picture.
+- The key line under the buttons ("Enter: Pay And Drive Off ...") moves down 6 px to make room; its words are unchanged.
+- Story only (decision 076); Quick play keeps the old places. The keys (Enter, B, arrows) are unchanged.
+
 ## 118 — Chocolate Eclair: with one in the cooler, every customer orders one extra eclair (2026-11-14)
 
 **Decision (Jira SCREAM-315, under SCREAM-78, PO, November 14):** "I want to add a powerup to chocolate eclair: If at least one of these are in the cooler, the customer will buy one more ice cream than they would have". His answers: the extra one is **a Chocolate Eclair**; it works **from day 1** (the eclair is owned from the start); **everyone**, set order sizes included (Big Kev's 7 becomes 8); **nothing extra shown** (the order is just one bigger). The note's line is his: "If you have these stocked in your cooler, every customer will buy an extra ice cream."

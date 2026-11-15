@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { FUEL_FULL_TANK_CENTS, FUEL_STEP_CENTS } from '../config/tuning';
-import { getEvening, SceneKeys } from '../flow';
+import { getEvening, getStory, SceneKeys } from '../flow';
 import { MAP_ATLAS, MAP_ATLAS_JSON, MAP_ATLAS_PNG } from '../config/gasStation';
 import { EveningState } from '../state/EveningState';
 import { formatMoney } from '../util/format';
@@ -23,6 +23,7 @@ export class PumpScene extends Phaser.Scene {
   private addsText!: Phaser.GameObjects.Text;
   private noteText!: Phaser.GameObjects.Text;
   private payButton!: Phaser.GameObjects.Text;
+  private driveOffButton!: Phaser.GameObjects.Text;
   /** SCREAM-112: click to change the amount by $5. */
   private lessButton!: Phaser.GameObjects.Text;
   private moreButton!: Phaser.GameObjects.Text;
@@ -78,9 +79,16 @@ export class PumpScene extends Phaser.Scene {
     });
 
     this.payButton = this.button(470, 478, '', '#2e7d32', () => this.pay());
-    this.button(760, 478, 'DRIVE OFF', '#1d5c8c', () => this.leave());
+    this.driveOffButton = this.button(760, 478, 'DRIVE OFF', '#1d5c8c', () => this.leave());
+    // SCREAM-316 (PO, November 14; Story only): buying gas is in the bottom-right corner and
+    // leaving in the bottom-left, just right of the HUD's gas dial (SCREAM-238) and under the pump.
+    const story = !!getStory(this);
+    if (story) {
+      this.driveOffButton.setOrigin(0, 1).setPosition(160, 513);
+      this.payButton.setOrigin(1, 1).setPosition(width - 16, 513);
+    }
     this.add
-      .text(width / 2, 522, 'Enter: Pay And Drive Off    B: Drive Off Without Gas    The clock is running.', {
+      .text(width / 2, story ? 528 : 522, 'Enter: Pay And Drive Off    B: Drive Off Without Gas    The clock is running.', {
         fontFamily: 'monospace',
         fontSize: '14px',
         color: '#ffffff',

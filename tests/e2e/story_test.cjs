@@ -650,6 +650,10 @@ const { chromium } = require('playwright');
     const cash0 = await ev('e.cashCents'); const fuel0 = await ev('e.fuel');
     await press('ArrowUp', 6);
     check('...up to $20, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), "2000 | UNCLE PAYS $20.00 | That's the uncle's $20.");
+    // SCREAM-316 (PO, November 14): in Story, Buy Gas is bottom right and Leave bottom left (right of the gas dial, under the pump).
+    check('SCREAM-316: the pay button is in the bottom-right corner', await sc('Pump', '(b => b.right <= s.scale.width && b.right >= s.scale.width - 24 && b.bottom >= s.scale.height - 40 && b.bottom <= s.scale.height)(s.payButton.getBounds())'), true);
+    check('...DRIVE OFF in the bottom left, clear of the pump, the gas dial and the key line', await sc('Pump', `(() => { const d = s.driveOffButton.getBounds(), p = s.children.getByName('pump').getBounds(); const hud = s.scene.get('Hud'); const g = hud && hud.fuelGauge && hud.fuelGauge.visible ? hud.fuelGauge.x + 72 : 0; const line = s.children.list.find(o => o.type === 'Text' && /B: Drive Off/.test(o.text)).getBounds(); return d.left < 200 && d.bottom >= s.scale.height - 40 && d.top >= p.bottom && d.left >= g && d.bottom <= line.top && s.payButton.getBounds().bottom <= line.top; })()`), true);
+    await page.screenshot({ path: outDir + '/story_pump_buttons.png' });
     await press('Enter'); await wait(400);
     check('...the tank fills by $20 and the cash is untouched', ((await ev('e.fuel')) - fuel0 > 0.6) + ' ' + ((await ev('e.cashCents')) === cash0), 'true true');
     check('...used up: the next pump is the player\'s', await ev('e.uncleLeftGas + " " + e.unclePaysGas + " " + e.uncleGasUsed'), 'false false true');
