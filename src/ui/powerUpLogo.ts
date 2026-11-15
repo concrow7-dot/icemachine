@@ -399,33 +399,36 @@ export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number,
 }
 
 /**
- * SCREAM-325: Brakes Made This Century. From the PO's sketch (a disc): a shiny brake disc with its
- * drilled holes and hub, and a red caliper gripping its edge. Original drawing.
+ * SCREAM-325: Brakes Made This Century. After the PO's reference (a dark disc with its wheel studs
+ * and a caliper wrapped round its top right edge): an original drawing in the game's style, with a
+ * red caliper.
  */
 export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const disc = grey ? 0xc4c4c4 : 0xc9d1d8;
-  const hub = grey ? 0x9e9e9e : 0x7d8791;
-  const red = grey ? 0xb0b0b0 : 0xd8332a;
+  const disc = grey ? 0x8a8a8a : 0x4a4f56;
+  const face = grey ? 0xb0b0b0 : 0x8d969f;
+  const red = grey ? 0xbdbdbd : 0xd8332a;
   const line = Math.max(2, 5 * u);
-  const cx = -6 * u;
-  g.fillStyle(disc, 1).fillCircle(cx, 0, 40 * u);
-  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 40 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 0.5).strokeCircle(cx, 0, 30 * u);
-  for (let i = 0; i < 8; i++) {
-    const t = (i / 8) * Math.PI * 2;
-    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 23 * u, Math.sin(t) * 23 * u, 2.6 * u);
-  }
-  g.fillStyle(hub, 1).fillCircle(cx, 0, 14 * u);
-  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 14 * u);
+  const cx = -4 * u, cy = 4 * u;
+  g.fillStyle(disc, 1).fillCircle(cx, cy, 40 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(cx, cy, 40 * u);
+  g.fillStyle(face, 1).fillCircle(cx, cy, 17 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(cx, cy, 17 * u);
+  g.fillStyle(ink, 1).fillCircle(cx, cy, 5 * u);
   for (let i = 0; i < 5; i++) {
     const t = (i / 5) * Math.PI * 2 - Math.PI / 2;
-    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 7.5 * u, Math.sin(t) * 7.5 * u, 2 * u);
+    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 11 * u, cy + Math.sin(t) * 11 * u, 2.2 * u);
   }
-  g.fillStyle(0xffffff, grey ? 0.2 : 0.45).fillEllipse(cx - 20 * u, -18 * u, 14 * u, 7 * u);
-  // The caliper: a rounded block over the right edge.
-  g.fillStyle(red, 1).fillRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
-  g.lineStyle(line, ink, 1).strokeRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
-  g.fillStyle(0xffffff, grey ? 0.2 : 0.4).fillRect(27 * u, -15 * u, 4 * u, 22 * u);
+  g.fillStyle(0xffffff, grey ? 0.15 : 0.25).fillEllipse(cx - 18 * u, cy - 20 * u, 16 * u, 7 * u);
+  // The caliper: a thick curved band round the top right edge, with two bolts.
+  const pts: Phaser.Math.Vector2[] = [];
+  const a0 = -Math.PI * 0.62, a1 = Math.PI * 0.08;
+  for (let i = 0; i <= 12; i++) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 50 * u, cy + Math.sin(t) * 50 * u)); }
+  for (let i = 12; i >= 0; i--) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 33 * u, cy + Math.sin(t) * 33 * u)); }
+  g.fillStyle(red, 1).fillPoints(pts, true);
+  g.lineStyle(line, ink, 1).strokePoints(pts, true, true);
+  for (const t of [-Math.PI * 0.45, -Math.PI * 0.1]) {
+    g.fillStyle(0xffffff, grey ? 0.5 : 0.85).fillCircle(cx + Math.cos(t) * 41.5 * u, cy + Math.sin(t) * 41.5 * u, 3 * u);
+  }
 }
