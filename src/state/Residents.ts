@@ -382,7 +382,7 @@ export class Residents {
   isChaser(resident: Resident): boolean {
     return this.chasers.has(resident.id);
   }
-  /** SCREAM-168: never gives up following the truck (Story's chasing rules): a fast kid or a chasing regular. They wave. */
+  /** SCREAM-168: never gives up following the truck (Story's chasing rules): a fast kid or a chasing regular. */
   chasesForever(resident: Resident): boolean {
     return this.chaseRules && ((resident.kid && !!resident.fast) || this.chasers.has(resident.id));
   }
