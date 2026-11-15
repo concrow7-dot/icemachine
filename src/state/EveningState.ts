@@ -455,6 +455,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     setCurrentMap(to);
     this.residentsOn(to);
     this.truckPosition = spot;
+    this.streetNow = ''; // SCREAM-237: the other map's streets
     this.mapSwitches += 1;
     this.emit(EveningEvents.MapChanged, to);
     return to;
@@ -1239,6 +1240,19 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   get truck(): Readonly<TruckPosition> {
     return this.truckPosition;
+  }
+
+  /** SCREAM-237: the street the truck was last on (the road view sets it whenever the truck is on a named street). */
+  streetNow = '';
+  /**
+   * SCREAM-237 (PO, November 15: "Street instead"): the street for Story's top bar. The last one
+   * the truck drove on; before it has driven tonight (home's driveway), the street nearest to it.
+   */
+  get street(): string {
+    if (this.streetNow) return this.streetNow;
+    const roads = roadsOf(this.mapId, MAPS[this.mapId].data);
+    const seg = roads.nearestSegment(this.truckPosition.x, this.truckPosition.y);
+    return seg ? (roads.names[seg.road] ?? '') : '';
   }
 
   /** Remembers where the truck stopped, so driving resumes from the same place. */
