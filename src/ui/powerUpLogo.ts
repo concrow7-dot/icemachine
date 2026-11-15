@@ -357,78 +357,82 @@ export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, gre
 }
 
 /**
- * SCREAM-80: Train Off The Tracks. From the PO's sketch (something sliding off a line): a little red
- * engine tipped off its rail, jumping forward, with speed lines behind. Original drawing.
+ * SCREAM-80: Train Off The Tracks, the PO's own icon sketch (Personal Notes, "Train Off The Tracks
+ * icon (notepad, November 14)"): a rail piece flips up off the track at a point where the track
+ * bends, a faint copy where it was, a curved arrow showing the swing, and burst ticks.
  */
 export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const red = grey ? 0xb8b8b8 : 0xd8402e;
-  const dark = grey ? 0x8a8a8a : 0x3d3f44;
-  const gold = grey ? 0xcccccc : 0xf2c14e;
+  const steel = grey ? 0xbdbdbd : 0xb9c3cc;
+  const shine = grey ? 0xd6d6d6 : 0xe6ecf0;
   const line = Math.max(2, 5 * u);
-  // Tipped 16 degrees nose-up, centred a little above the middle.
-  const a = Phaser.Math.DegToRad(-16);
-  const cx = 52, cy = 44;
-  const P = (x: number, y: number) => {
-    const dx = x - cx, dy = y - cy;
-    return new Phaser.Math.Vector2((cx + dx * Math.cos(a) - dy * Math.sin(a) - 50) * u, (cy + dx * Math.sin(a) + dy * Math.cos(a) - 50) * u);
+  const thin = Math.max(1.5, 3.5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  // The track: rising from the bottom left to the pivot, then flat to the right.
+  const track = new Phaser.Curves.QuadraticBezier(P(4, 80), P(26, 72), P(46, 70));
+  g.lineStyle(line, ink, 1).strokePoints(track.getPoints(12), false, false);
+  g.lineBetween((46 - 50) * u, (70 - 50) * u, (96 - 50) * u, (69 - 50) * u);
+  // A pointed rail piece from the pivot to its tip: a thin leaf shape.
+  const leaf = (tipX: number, tipY: number, alpha: number) => {
+    const bx = 46, by = 69;
+    const dx = tipX - bx, dy = tipY - by;
+    const len = Math.hypot(dx, dy);
+    const nx = (-dy / len) * 6, ny = (dx / len) * 6;
+    const curve = (side: number) =>
+      new Phaser.Curves.QuadraticBezier(P(bx, by), P(bx + dx * 0.5 + nx * side, by + dy * 0.5 + ny * side), P(tipX, tipY)).getPoints(10);
+    const pts = [...curve(1), ...curve(-1).reverse()];
+    g.fillStyle(steel, alpha).fillPoints(pts, true);
+    g.lineStyle(line, ink, alpha).strokePoints(pts, true, true);
   };
-  const poly = (colour: number, pts: [number, number][]) => {
-    const v = pts.map(([x, y]) => P(x, y));
-    g.fillStyle(colour, 1).fillPoints(v, true);
-    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
-  };
-  // The rail it left: a line with sleepers, along the bottom.
-  g.lineStyle(line, ink, 1).lineBetween(-46 * u, 40 * u, 40 * u, 40 * u);
-  for (const x of [-38, -22, -6, 10, 26]) g.lineBetween(x * u, 34 * u, (x + 6) * u, 46 * u);
-  // Speed lines behind.
-  g.lineStyle(Math.max(1.5, 3.5 * u), ink, 1);
-  for (const [y, l] of [[30, 16], [44, 22], [58, 14]] as const) g.lineBetween((6 - 50) * u, (y - 50) * u, (6 + l - 50) * u, (y - 50) * u);
-  // The engine: cab at the back, boiler, chimney, buffer.
-  poly(red, [[26, 30], [44, 30], [44, 60], [26, 60]]);
-  poly(dark, [[22, 26], [48, 26], [48, 31], [22, 31]]);
-  poly(red, [[44, 40], [80, 40], [80, 60], [44, 60]]);
-  poly(dark, [[64, 28], [72, 28], [72, 40], [64, 40]]);
-  poly(gold, [[80, 44], [87, 44], [87, 56], [80, 56]]);
-  poly(0xffffff, [[30, 35], [40, 35], [40, 44], [30, 44]]);
-  for (const x of [34, 56, 72]) {
-    const c = P(x, 63);
-    g.fillStyle(dark, 1).fillCircle(c.x, c.y, 7 * u);
-    g.lineStyle(line, ink, 1).strokeCircle(c.x, c.y, 7 * u);
+  leaf(10, 52, 0.3); // where it was, lying back along the track
+  leaf(30, 18, 1); // flipped up
+  g.lineStyle(Math.max(1.5, 2.5 * u), shine, 1).lineBetween((42 - 50) * u, (58 - 50) * u, (34 - 50) * u, (30 - 50) * u);
+  // The swing: a curved arrow from the old place to the new.
+  const swing = new Phaser.Curves.QuadraticBezier(P(14, 44), P(14, 30), P(24, 26)).getPoints(10);
+  g.lineStyle(thin, ink, 1).strokePoints(swing, false, false);
+  const head = [P(26, 25), P(19, 22), P(21, 31)];
+  g.fillStyle(ink, 1).fillPoints(head, true);
+  // Burst ticks around it.
+  g.lineStyle(thin, ink, 1);
+  for (const [x1, y1, x2, y2] of [[28, 12, 36, 16], [50, 10, 53, 20], [70, 14, 66, 24], [86, 30, 76, 36]] as const) {
+    g.lineBetween((x1 - 50) * u, (y1 - 50) * u, (x2 - 50) * u, (y2 - 50) * u);
   }
 }
 
 /**
- * SCREAM-325: Brakes Made This Century. From the PO's sketch (a disc): a shiny brake disc with its
- * drilled holes and hub, and a red caliper gripping its edge. Original drawing.
+ * SCREAM-325: Brakes Made This Century. After the PO's reference (a dark disc with its wheel studs
+ * and a caliper wrapped round its top right edge): an original drawing in the game's style, with a
+ * red caliper.
  */
 export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const disc = grey ? 0xc4c4c4 : 0xc9d1d8;
-  const hub = grey ? 0x9e9e9e : 0x7d8791;
-  const red = grey ? 0xb0b0b0 : 0xd8332a;
+  const disc = grey ? 0x8a8a8a : 0x4a4f56;
+  const face = grey ? 0xb0b0b0 : 0x8d969f;
+  const red = grey ? 0xbdbdbd : 0xd8332a;
   const line = Math.max(2, 5 * u);
-  const cx = -6 * u;
-  g.fillStyle(disc, 1).fillCircle(cx, 0, 40 * u);
-  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 40 * u);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 0.5).strokeCircle(cx, 0, 30 * u);
-  for (let i = 0; i < 8; i++) {
-    const t = (i / 8) * Math.PI * 2;
-    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 23 * u, Math.sin(t) * 23 * u, 2.6 * u);
-  }
-  g.fillStyle(hub, 1).fillCircle(cx, 0, 14 * u);
-  g.lineStyle(line, ink, 1).strokeCircle(cx, 0, 14 * u);
+  const cx = -4 * u, cy = 4 * u;
+  g.fillStyle(disc, 1).fillCircle(cx, cy, 40 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(cx, cy, 40 * u);
+  g.fillStyle(face, 1).fillCircle(cx, cy, 17 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(cx, cy, 17 * u);
+  g.fillStyle(ink, 1).fillCircle(cx, cy, 5 * u);
   for (let i = 0; i < 5; i++) {
     const t = (i / 5) * Math.PI * 2 - Math.PI / 2;
-    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 7.5 * u, Math.sin(t) * 7.5 * u, 2 * u);
+    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 11 * u, cy + Math.sin(t) * 11 * u, 2.2 * u);
   }
-  g.fillStyle(0xffffff, grey ? 0.2 : 0.45).fillEllipse(cx - 20 * u, -18 * u, 14 * u, 7 * u);
-  // The caliper: a rounded block over the right edge.
-  g.fillStyle(red, 1).fillRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
-  g.lineStyle(line, ink, 1).strokeRoundedRect(22 * u, -22 * u, 20 * u, 44 * u, 7 * u);
-  g.fillStyle(0xffffff, grey ? 0.2 : 0.4).fillRect(27 * u, -15 * u, 4 * u, 22 * u);
+  g.fillStyle(0xffffff, grey ? 0.15 : 0.25).fillEllipse(cx - 18 * u, cy - 20 * u, 16 * u, 7 * u);
+  // The caliper: a thick curved band round the top right edge, with two bolts.
+  const pts: Phaser.Math.Vector2[] = [];
+  const a0 = -Math.PI * 0.62, a1 = Math.PI * 0.08;
+  for (let i = 0; i <= 12; i++) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 50 * u, cy + Math.sin(t) * 50 * u)); }
+  for (let i = 12; i >= 0; i--) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 33 * u, cy + Math.sin(t) * 33 * u)); }
+  g.fillStyle(red, 1).fillPoints(pts, true);
+  g.lineStyle(line, ink, 1).strokePoints(pts, true, true);
+  for (const t of [-Math.PI * 0.45, -Math.PI * 0.1]) {
+    g.fillStyle(0xffffff, grey ? 0.5 : 0.85).fillCircle(cx + Math.cos(t) * 41.5 * u, cy + Math.sin(t) * 41.5 * u, 3 * u);
+  }
 }
 
 /**
