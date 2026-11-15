@@ -2,10 +2,11 @@ import * as Phaser from 'phaser';
 import { FLAVOURS, getFlavour, type Flavour, type FlavourId } from '../config/flavours';
 import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
 import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
-import { getEvening, returnToTruck, SceneKeys } from '../flow';
+import { getEvening, getStory, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT, MENU_COLOURS } from '../ui/flavourArt';
+import { flavourNoteOf, showFlavourNote, type OpenFlavourNote } from '../ui/flavourNote';
 import { formatMoney } from '../util/format';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { addUnclePointer } from '../ui/unclePointer';
@@ -96,6 +97,34 @@ export class CoolerScene extends Phaser.Scene {
   returnButton?: Phaser.GameObjects.Text;
   /** What B does: back to the truck (or the empty-cooler warning). */
   private goBack?: () => void;
+  /** SCREAM-355: the ice cream's note opened over the cooler (null when none is). A test hook. */
+  flavourNote: OpenFlavourNote | null = null;
+  /** SCREAM-355: each clipboard row's "i" button, by flavour. A test hook. */
+  infoButtons = new Map<FlavourId, Phaser.GameObjects.Container>();
+
+  /**
+   * SCREAM-355 (PO, November 15): "I want to be able to click on flavors and see the power": opens
+   * the ice cream's cork-board note over the cooler, to read. Story only (Quick play's have no notes).
+   */
+  showNote(flavour: FlavourId): void {
+    if (this.flavourNote || !getStory(this) || !flavourNoteOf(flavour)) return;
+    this.flavourNote = showFlavourNote(this, flavour, () => (this.flavourNote = null));
+  }
+
+  /** SCREAM-355: a small round "i" button at (x, y) that opens this ice cream's note. */
+  private makeInfoButton(x: number, y: number, flavour: FlavourId): void {
+    const button = this.add.container(x, y, [
+      this.add.circle(0, 0, 9, 0x2884d6).setStrokeStyle(2, 0xffffff),
+      this.add.text(0, 0, 'i', { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
+    ]).setName(`info-${flavour}`);
+    // A zone bigger than the circle, so a finger can hit it (SCREAM-77).
+    const hit = this.add.zone(x - 14, y - 14, 28, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+      this.showNote(flavour);
+    });
+    this.infoButtons.set(flavour, button);
+  }
   /** SCREAM-277: the keys along the bottom (test hook). */
   keysLine?: Phaser.GameObjects.Text;
   private focus: Focus = { area: 'clipboard', row: 0 };
@@ -156,6 +185,8 @@ export class CoolerScene extends Phaser.Scene {
     this.buyButton = undefined;
     this.focus = { area: 'clipboard', row: 0 };
     this.rowCounts = [];
+    this.infoButtons.clear();
+    this.flavourNote = null;
     this.cellIcons = [];
     this.cards = [];
     const { width, height } = this.scale;
@@ -292,6 +323,8 @@ export class CoolerScene extends Phaser.Scene {
           this.pick(flavour.id);
         }, compact ? 0.72 : 1);
       }
+      // SCREAM-355: an "i" beside the row's price opens the ice cream's note (added last, so it is above the row's click area).
+      if (getStory(this) && flavourNoteOf(flavour.id)) this.makeInfoButton(paper.left + 104, lowerY, flavour.id);
     });
 
     this.totals = this.add
@@ -449,6 +482,10 @@ export class CoolerScene extends Phaser.Scene {
       const margin = this.add.text(cx, 148, '', { fontFamily: 'monospace', fontSize: '11px', color: '#2e7d32' }).setOrigin(0.5);
       parts.push(margin);
       const container = this.add.container(0, 0, parts);
+      // SCREAM-355: a click on the card (not on its - or +, which stop the click) opens the ice cream's note.
+      if (getStory(this) && flavourNoteOf(flavour.id)) {
+        frame.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.showNote(flavour.id));
+      }
       let plus: Phaser.GameObjects.Text | null = null;
       if (!this.locked) {
         const change = (direction: -1 | 1) => () => {
