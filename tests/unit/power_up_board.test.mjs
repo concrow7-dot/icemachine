@@ -65,6 +65,9 @@ test('SCREAM-296: every note has a name and a price', () => {
   // SCREAM-341: Customer 7 is Better Mirrors now, under the Handy Notebook.
   const mirrors = notes.find((n) => n.id === 'better-mirrors');
   assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 5000, ['handy-notebook'], 'mirror']);
+  // SCREAM-342: Customer 8 is Speedy Neighbors now, under Better Mirrors.
+  const speedy = notes.find((n) => n.id === 'speedy-neighbors');
+  assert.deepEqual([speedy.name, speedy.priceCents, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', 6000, ['handy-notebook'], 'sneaker', 'Most customers run after the truck faster.']);
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && (n.priceCents > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 
@@ -85,10 +88,10 @@ test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own
   assert.deepEqual([can.tree, can.number, can.name, can.priceCents, can.logo], [0, 1, 'TEMPORARY GAS CAN', 1500, 'gas-can']);
   assert.match(can.description, /a splash to get you going/);
   const dummy = notes.find((n) => n.id === 'truck-9');
-  assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 9', 'truck', ['back-it-up']]);
+  assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 9', 'truck', ['back-it-up', 'more-junk']]);
   // SCREAM-25: Truck 8 is More Space for Scream now.
   const junk = notes.find((n) => n.id === 'more-junk');
-  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE SPACE FOR SCREAM', 5000, ['back-it-up'], 'more-junk']);
+  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE SPACE FOR SCREAM', 5000, ['brakes-made-this-century'], 'more-junk']);
 });
 
 test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own name and picture', () => {
@@ -171,4 +174,15 @@ test('SCREAM-329: Speaker with Heavier Bass is the Customer tree\'s left third-r
   assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'SPEAKER WITH HEAVIER BASS', 4000, 'bass-guitar', ['upgrade-speaker'], 'More likely to get customers in their home.']);
   assert.equal(buyStatus(n, ['service-with-a-smile'], 4000, true), 'locked');
   assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'ok');
+});
+
+test('PO, November 15 (03:28): two notes come out of Brakes Made This Century and two out of the Handy Notebook, side by side', () => {
+  const at = (id) => notes.find((n) => n.id === id);
+  for (const [parent, left, right, last] of [['brakes-made-this-century', 'back-it-up', 'more-junk', 'truck-9'], ['handy-notebook', 'better-mirrors', 'speedy-neighbors', 'customer-9']]) {
+    assert.deepEqual([at(left).from, at(right).from], [[parent], [parent]]);
+    assert.equal(at(left).y, at(right).y); // level with each other
+    assert.ok(at(left).y > at(parent).y && at(left).x < at(parent).x && at(right).x > at(parent).x); // below it, left and right
+    assert.deepEqual(at(last).from, [left, right]);
+    assert.ok(at(last).y > at(left).y && at(last).x === at(parent).x); // the dummy below, in the middle
+  }
 });

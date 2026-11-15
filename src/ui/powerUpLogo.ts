@@ -91,6 +91,8 @@ export function addPowerUpLogo(
     drawMoreJunk(g, size, grey);
   } else if (tree === 'mirror') {
     drawMirror(g, size, grey);
+  } else if (tree === 'sneaker') {
+    drawSneaker(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -711,3 +713,40 @@ export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: b
   block(89, -1);
 }
 
+/**
+ * SCREAM-342: Speedy Neighbors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a laced-up high-top shoe with a round toe, and a feathered wing rising from each
+ * side of its ankle.
+ */
+export function drawSneaker(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shoe = grey ? 0xd0d0d0 : 0xff7a59;
+  const white = grey ? 0xf0f0f0 : 0xffffff;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const P = (pts: number[][]) => pts.map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+  // The two wings first (the shoe's ankle covers where they join): three feather tips each.
+  const wing = (m: (x: number) => number) => {
+    const pts = P([[m(44), 46], [m(30), 40], [m(12), 30], [m(4), 12], [m(16), 18], [m(16), 4], [m(27), 14], [m(31), 2], [m(40), 16], [m(46), 34]]);
+    g.fillStyle(white, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+    g.lineBetween(X(m(18)), X(20), X(m(34)), X(36)).lineBetween(X(m(28)), X(16), X(m(39)), X(32));
+  };
+  wing((x) => x);
+  wing((x) => 100 - x);
+  // The shoe: a tall ankle, the foot out to the right, a round white toe and a white sole.
+  const upper = P([[36, 40], [62, 40], [63, 62], [76, 66], [90, 76], [90, 86], [34, 86]]);
+  g.fillStyle(shoe, 1).fillPoints(upper, true);
+  g.lineStyle(line, ink, 1).strokePoints(upper, true, true);
+  g.fillStyle(white, 1).fillCircle(X(82), X(79), 8 * u);
+  g.lineStyle(thin, ink, 1).strokeCircle(X(82), X(79), 8 * u);
+  g.fillStyle(white, 1).fillRect(X(32), X(84), 60 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRect(X(32), X(84), 60 * u, 8 * u);
+  // The ankle's opening and the laces: two crosses down the front.
+  g.fillStyle(grey ? 0x9a9a9a : 0x7a3b2a, 1).fillEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, ink, 1).strokeEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, white, 1);
+  for (const y of [48, 58]) g.lineBetween(X(50), X(y), X(60), X(y + 8)).lineBetween(X(60), X(y), X(50), X(y + 8));
+}

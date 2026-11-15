@@ -136,7 +136,7 @@ const { chromium } = require('playwright');
     // SCREAM-25 (PO, November 15): "Change "more Junk" to "More Space for Scream"": a long name, on two lines.
     const junk = await noteAt('more-junk');
     await page.mouse.click(junk[0], junk[1]); await wait(150);
-    check('SCREAM-25: the cooler note is MORE SPACE FOR SCREAM, $50, locked until Back It Up', await big(), 'true | MORE SPACE FOR SCREAM | More room in the cooler: a new bottom row opens in every crate. | $50.00 | BACK IT UP Required | button=false');
+    check('SCREAM-25: the cooler note is MORE SPACE FOR SCREAM, $50, locked until Brakes Made This Century', await big(), 'true | MORE SPACE FOR SCREAM | More room in the cooler: a new bottom row opens in every crate. | $50.00 | BRAKES MADE THIS CENTURY Required | button=false');
     await page.screenshot({ path: outDir + '/hub_note_more_space.png' });
     await press('b');
   }

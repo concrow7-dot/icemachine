@@ -2,6 +2,42 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 148 — Two notes come out of Brakes Made This Century and two out of the Handy Notebook (2026-11-15)
+
+**Decision (PO, November 15, 03:28, testing #255 to #258; built on SCREAM-342's pull request):** "From brakes made this century and handy notebook, two powerups should come out. It should be both of the powerups just added". On the Truck tree, Back It Up (left) and More Space for Scream (right) both hang from Brakes Made This Century, side by side in the fourth row. On the Customer tree, Better Mirrors (left) and Speedy Neighbors (right) both hang from the Handy Notebook. This replaces the places engineering proposed in decisions 144 to 147 (one note under the other).
+
+**Options considered:** engineering's first layout: Back It Up under Brakes with More Space for Scream under it; Better Mirrors under the Notebook with Speedy Neighbors under it.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Left and right follow the order of his sketch (Reverse speed then Cooler size; Better Mirrors then Customer speed).
+- Each note needs only its tree's middle third-row note now: More Space for Scream no longer needs Back It Up, and Speedy Neighbors no longer needs Better Mirrors.
+- Prices are unchanged ($40 and $50; $50 and $60), though all four are fourth-row notes now.
+- The last dummy of each tree (Truck 9, Customer 9) hangs in the middle of the fifth row, from either note above it, like the sandwich on the Ice Cream tree.
+
+## 147 — Customers chase the truck by age, and Speedy Neighbors makes most of them faster, $60 (2026-11-15)
+
+**Decision (Jira SCREAM-342, under SCREAM-78, PO, November 15 notepad sketches and answers):** under "Customer" he wrote "Customer speed: most customers run after you faster", and named it: "Customers chasing - Speedy Neighbors". Asked who "most" is, he wrote his own answer: "I think it should be adults will follow the truck for only so long and then they will go home. Some kids will be fast and follow the truck anywhere. Others are slower and will give up after 20 seconds". He then chose: the rules apply to everyone in Story **"From the start"** (the note only adds speed); an adult follows for **"30 seconds"**; and the fast kids are a new Fast column in the Residents sheet (**"I pick a first set"**: engineering ticks a first set, he changes it). Story only (decision 076).
+
+So, in Story: an adult follows the truck for 30 seconds and then goes home; a fast kid is quicker and follows it anywhere; the other kids give up after 20 seconds. With Speedy Neighbors, everyone but the slower kids goes after the truck faster.
+
+**Options considered:** who runs faster: all but the oldest; kids and teens only; everyone (he wrote his own answer instead). The rules from the start (chosen) or only with the note. Adults: 30 seconds (chosen), 20, 45. Fast kids: engineering ticks a first set (chosen), by age, or wait for his ticks.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The first four fast kids in Elm Park: Tiger Prince, Rocky Road Ron, Maximus Mintimus and Darrel Strawberry (4 of the 11 kids; picked by their names). Foley Stadium has no Fast column yet, so its kids are all the slower kind.
+- A fast kid goes 1.5 times as fast as everyone else (37 px/s to 55.5). The note: x 1.25 for adults and fast kids; not shown (decision 132).
+- The seconds count only while the customer is walking after the truck. Once they have reached the curb beside it they wait as before (30 seconds); if the truck drives off again the count starts again.
+- Someone who gives up walks home and is done for the evening, like a customer who waited too long at the curb.
+- The uncle's evening and Quick play keep the old behaviour (everyone the same speed, nobody gives up while following).
+- Place: the Customer 8 dummy's spot (fifth row, left, under Better Mirrors). Price: $60. The note's words: "Most customers run after the truck faster."
+- The picture: engineering's own at first (a running shoe with speed lines); then he sent his sketch (02:58) and it was redrawn from it: a laced-up high-top shoe with a wing on each side of its ankle.
+- This overlaps SCREAM-257 (customers walk at a speed that fits their age): look at whether it is still needed.
+
 ## 146 — Better Mirrors: markers at the screen's edge for customers on their way, $50 (2026-11-15)
 
 **Decision (Jira SCREAM-341, under SCREAM-78, PO, November 15 notepad sketches):** under "Customer" he wrote "Better Mirrors: indicator for customers, show exact customer"; the name stays "Better Mirrors". Asked what the player should see, he chose **edge markers**: a small marker at the edge of the screen points at each customer who is coming but is off screen, showing that person's face. Story only (decision 076).

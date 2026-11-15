@@ -709,3 +709,20 @@ export const MIRROR_MARKER_TOP_EXTRA = 13;
 export const MIRROR_MARKER_BOTTOM_EXTRA = 58;
 /** The gas dial's corner (bottom left of the road view), map px wide and high: markers stay above it. */
 export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
+
+/**
+ * SCREAM-342 (PO, November 15, notepad sketches: "Customer speed: most customers run after you
+ * faster", named "Speedy Neighbors"). Asked who "most" is, he wrote: "I think it should be adults
+ * will follow the truck for only so long and then they will go home. Some kids will be fast and
+ * follow the truck anywhere. Others are slower and will give up after 20 seconds". He then chose:
+ * the rules apply to everyone in Story "From the start"; adults follow for "30 seconds"; the fast
+ * kids are the Residents sheet's Fast column (engineering ticked a first four; he changes them).
+ * Engineering's proposals: how much faster a fast kid is, the note's price and its strength (not
+ * shown, decision 132). The seconds count only while the customer is walking after the truck, and
+ * start again each time they have reached the curb and the truck drives off.
+ */
+export const CHASE_ADULT_SECONDS = 30;
+export const CHASE_SLOW_KID_SECONDS = 20;
+export const FAST_KID_SPEED_FACTOR = 1.5;
+export const SPEEDY_PRICE_CENTS = 6000;
+export const SPEEDY_SPEED_FACTOR = 1.25;

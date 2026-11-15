@@ -23,7 +23,10 @@ import {
   CUSTOMER_INDOORS_FACTOR,
   CUSTOMER_FOLLOW_AGAIN,
   CUSTOMER_QUEUE_GAP,
+  CHASE_ADULT_SECONDS,
+  CHASE_SLOW_KID_SECONDS,
   CUSTOMER_RUN_SPEED,
+  FAST_KID_SPEED_FACTOR,
   CUSTOMER_SIDE_BY_SIDE,
   CUSTOMER_SPOT_REACH,
   CUSTOMER_SPOT_MAX,
@@ -61,6 +64,8 @@ export interface Resident {
   curb: [number, number, number, number, number];
   /** SCREAM-189 (PO): the sheet's "Order size": always this many ice creams (as many as there are, if fewer). */
   orderSize?: number;
+  /** SCREAM-342 (PO): the sheet's "Fast": a kid who is fast and follows the truck anywhere. */
+  fast?: boolean;
   /** SCREAM-103 (PO): the sheet's "Hinted": other customers sometimes point the player to this big regular. */
   hinted?: boolean;
   /**
@@ -248,6 +253,8 @@ interface Running extends ResidentNow {
   spotStand?: [number, number];
   /** SCREAM-152: heard the truck CUSTOMER_DECIDE_SECONDS without coming out: not tonight. */
   decided?: boolean;
+  /** SCREAM-342: seconds spent walking after the truck since they set off (or last stood at the curb). */
+  chased?: number;
   /** SCREAM-142: true for customers who follow the truck (not the test hook's, who stay at their curb). */
   follows?: boolean;
   /**
@@ -326,6 +333,33 @@ export class Residents {
   nowMinutes: (() => number) | null = null;
   /** SCREAM-250: false in the uncle's evening, when the hard-to-find customers stay in (engineering's call). */
   hardToFindOn = true;
+
+  /**
+   * SCREAM-342 (PO, November 15): Story's chasing rules (EveningState turns them on; not in Quick
+   * play or the uncle's evening). Adults follow the truck for CHASE_ADULT_SECONDS and then go home;
+   * fast kids (the sheet's Fast column) are quicker and follow it anywhere; the other kids give up
+   * after CHASE_SLOW_KID_SECONDS.
+   */
+  chaseRules = false;
+  /** SCREAM-342: Speedy Neighbors: how much faster everyone but the slower kids goes after the truck (1 without the note). */
+  speedyFactor = 1;
+  /** SCREAM-342: how many customers have given up following the truck tonight (test hook). */
+  chaseGiveUps = 0;
+
+  /** SCREAM-342: how fast this customer goes after the truck and to the curb, px per second. */
+  runSpeedOf(resident: Resident): number {
+    if (!this.chaseRules) return CUSTOMER_RUN_SPEED;
+    const fastKid = resident.kid && !!resident.fast;
+    const slowKid = resident.kid && !resident.fast;
+    return CUSTOMER_RUN_SPEED * (fastKid ? FAST_KID_SPEED_FACTOR : 1) * (slowKid ? 1 : this.speedyFactor);
+  }
+
+  /** SCREAM-342: how many seconds this customer follows the truck before going home (Infinity: never gives up). */
+  chaseSecondsOf(resident: Resident): number {
+    if (!this.chaseRules) return Infinity;
+    if (resident.kid) return resident.fast ? Infinity : CHASE_SLOW_KID_SECONDS;
+    return CHASE_ADULT_SECONDS;
+  }
 
   /**
    * SCREAM-249 (PO): in Story, people with hours are only home inside them. Quick play ignores hours.
@@ -557,6 +591,7 @@ export class Residents {
   private wantIceCream(p: Running): void {
     p.customer = 'running';
     p.missedOut = false;
+    p.chased = 0;
     p.patience = CUSTOMER_WAIT_SECONDS;
     p.waitAt = undefined;
     const fromDoor = !p.outside;
@@ -573,7 +608,7 @@ export class Residents {
     }
     const stand: [number, number] = [p.resident.curb[0], p.resident.curb[1]];
     // Yard spots are chosen so the walk to the door never crosses the house; the run to the curb starts there.
-    this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], CUSTOMER_RUN_SPEED, 'curb');
+    this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], this.runSpeedOf(p.resident), 'curb');
   }
 
   /**
@@ -635,7 +670,7 @@ export class Residents {
       if (join) {
         p.waitAt = join.square;
         p.spotStand = join.base;
-        this.walkTo(p, [join.stand], CUSTOMER_RUN_SPEED, 'curb');
+        this.walkTo(p, [join.stand], this.runSpeedOf(p.resident), 'curb');
         return;
       }
       const taken: [number, number][] = [];
@@ -648,7 +683,7 @@ export class Residents {
       if (spot) {
         p.waitAt = spot.square;
         p.spotStand = spot.stand;
-        this.walkTo(p, [spot.stand], CUSTOMER_RUN_SPEED, 'curb');
+        this.walkTo(p, [spot.stand], this.runSpeedOf(p.resident), 'curb');
         return;
       }
       // SCREAM-150: no room for a pink square anywhere near the truck. Rather than stand in
@@ -657,11 +692,19 @@ export class Residents {
       p.waitAt = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
       p.spotStand = [p.resident.curb[0], p.resident.curb[1]];
       p.follows = false;
-      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], CUSTOMER_RUN_SPEED, 'curb');
+      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], this.runSpeedOf(p.resident), 'curb');
       return;
     }
     // Toward the truck, but not into it; SCREAM-161: round any building in the way.
-    const step = Math.min(CUSTOMER_RUN_SPEED * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
+    // SCREAM-342: only so long after the truck, then home (adults and the slower kids, in Story).
+    p.chased = (p.chased ?? 0) + dt;
+    if (p.chased >= this.chaseSecondsOf(p.resident)) {
+      p.customer = 'done';
+      this.chaseGiveUps++;
+      this.walkHome(p);
+      return;
+    }
+    const step = Math.min(this.runSpeedOf(p.resident) * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
     p.walking = step > 0;
     if (step <= 0) return;
     const [vx, vy] = detour(this.walls, p.x, p.y, tx, ty);
@@ -693,6 +736,7 @@ export class Residents {
         p.patience = p.waitLeft;
         p.spotStand = undefined;
         p.customer = 'running';
+        p.chased = 0; // SCREAM-342: they stood at the curb: the count starts again
         p.walking = true;
         p.plan = { kind: 'follow' };
         return;
