@@ -111,14 +111,15 @@ test('SCREAM-333: the eclair on top, SpongePop and the Explorer Pop side by side
   // The Explorer Pop no longer waits for SpongePop.
   assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 2500, true), 'ok');
   assert.equal(buyStatus(left, FREE_NOTE_IDS, 3000, true), 'locked');
-  // SCREAM-334: the Two Ball Lou Ball, $30, the PO's line, $3.75 at most.
+  // SCREAM-334: the Two Ball Lou Ball, $30, the PO's line, $3.00 at most (PO, November 15: "can be sold for $3").
   assert.deepEqual([left.name, left.flavour, left.logo], ['TWO BALL LOU BALL', 'louball', 'louball']);
-  assert.equal(left.description, "High upside, crazy downside. The average person won't pay more than $3.75 for one.");
-  assert.equal(storyRefuseAboveCents('louball'), 375);
+  assert.equal(left.description, "High upside, crazy downside. The average person won't pay more than $3.00 for one.");
+  assert.equal(storyRefuseAboveCents('louball'), 300);
   assert.equal(buyStatus(right, [...FREE_NOTE_IDS, explorer.id], 3000, true), 'ok');
-  // SCREAM-335: the Drum Cone, $30, the PO's line, $3.75 at most.
+  // SCREAM-335: the Drum Cone, $30, the PO's line, $3.00 at most.
   assert.deepEqual([right.name, right.flavour, right.logo], ['DRUM CONE', 'drumcone', 'drumcone']);
-  assert.equal(right.description, "Drum solo reaches more of the neighborhood. The average person won't pay more than $3.75 for one.");
+  assert.equal(storyRefuseAboveCents('drumcone'), 300);
+  assert.equal(right.description, "Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one.");
   // The sandwich needs either third-row note.
   assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, sponge.id, explorer.id], 1500, true), 'locked');
   assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, explorer.id, right.id], 1500, true), 'ok');

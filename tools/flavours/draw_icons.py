@@ -113,29 +113,35 @@ def cookie():
 
 
 def louball():
-    """SCREAM-334 (the PO's second sketch, November 15, "Lets switch to this design"): a long
-    cone-shaped cup lying on a slant, point down to the left; a round lid on top that says
-    "Lou" with "II" under it; two gumballs side by side in the point. (His first sketch had a
-    crowned smiling face on the lid.)"""
+    """SCREAM-334 (the PO's second sketch, November 15, "Lets switch to this design", then "It
+    should look more like this" with a photo of a cup of ice, and "Make sure to include the two
+    balls at the bottom of the cone"): a clear plastic cone cup lying on a slant, point down to
+    the left, full of cherry ice; a flat round lid with a rim that says "Lou" with "II" under
+    it (our own lettering, no real product's label); two gumballs side by side in the point."""
     img, d, R = frame(4)
     ink = (60, 34, 30, 255)
     blue = (40, 70, 160, 255)
-    # The cup: a cone from the lid down to a rounded point, bottom left. Cherry ice inside.
-    d.polygon([(8, 11), (25, 17), (6, 35), (2, 34), (1, 30)], fill=ink)
-    d.polygon([(9, 13), (23, 18), (6, 33), (3, 32), (3, 30)], fill=(232, 70, 96, 255))
-    d.polygon([(10, 14), (14, 15), (5, 30), (4, 30)], fill=(248, 128, 146, 255))  # a shine down one side
-    # Two gumballs in the point, side by side.
-    d.ellipse([3, 27, 8, 32], fill=ink)
-    d.ellipse([4, 28, 7, 31], fill=(70, 150, 240, 255))
-    d.ellipse([8, 25, 13, 30], fill=ink)
-    d.ellipse([9, 26, 12, 29], fill=(250, 214, 70, 255))
-    R(5, 28, 1, 1, (200, 226, 255, 255))
-    R(10, 26, 1, 1, (255, 246, 190, 255))
-    # The lid: a flat oval, tilted with the cup.
-    d.ellipse([5, 0, 27, 16], fill=ink)
-    d.ellipse([6, 1, 26, 15], fill=(250, 246, 234, 255))
+    plastic = (236, 226, 230, 255)
+    # The cup: a long smooth cone from the lid down to a rounded point, bottom left.
+    d.polygon([(7, 10), (25, 16), (8, 35), (3, 35), (1, 32), (1, 29)], fill=ink)
+    # Clear plastic wall, then the cherry ice inside it, with a shine down one side.
+    d.polygon([(8, 12), (23, 17), (7, 34), (4, 34), (2, 32), (2, 30)], fill=plastic)
+    d.polygon([(9, 13), (22, 18), (10, 31), (6, 27)], fill=(226, 60, 88, 255))
+    d.polygon([(10, 14), (14, 15), (8, 26), (7, 25)], fill=(246, 122, 140, 255))
+    d.polygon([(19, 18), (21, 18), (11, 30), (10, 30)], fill=(190, 40, 70, 255))
+    # The two balls at the bottom of the cone, side by side, big enough to read.
+    d.ellipse([2, 27, 8, 33], fill=ink)
+    d.ellipse([3, 28, 7, 32], fill=(70, 150, 240, 255))
+    d.ellipse([7, 24, 13, 30], fill=ink)
+    d.ellipse([8, 25, 12, 29], fill=(250, 214, 70, 255))
+    R(4, 29, 1, 1, (210, 232, 255, 255))
+    R(9, 26, 1, 1, (255, 248, 200, 255))
+    # The lid: a flat disc seen from above, with a raised rim.
+    d.ellipse([4, 0, 27, 16], fill=ink)
+    d.ellipse([5, 1, 26, 15], fill=(214, 216, 226, 255))
+    d.ellipse([6, 2, 25, 14], fill=(252, 250, 244, 255))
     # "LOU" in 3 x 5 pixel letters...
-    x, y = 9, 3
+    x, y = 9, 4
     R(x, y, 1, 5, blue); R(x, y + 4, 3, 1, blue)                                   # L
     x += 4
     R(x, y, 1, 5, blue); R(x + 2, y, 1, 5, blue); R(x, y, 3, 1, blue); R(x, y + 4, 3, 1, blue)  # O
