@@ -1,5 +1,6 @@
-import { TRAIN_ID, BRAKES_ID, STEAM_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
+import { BACK_IT_UP_ID, TRAIN_ID, BRAKES_ID, STEAM_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
 import {
+  BACK_IT_UP_REVERSE_FACTOR,
   COOLER_CAPACITY,
   GITTY_UP_ACCELERATION_FACTOR,
   STEAM_CREEP_FACTOR,
@@ -99,7 +100,8 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     creepSpeed,
     // Story: from top speed down to the creep in STORY_TRUCK_ROLL_SECONDS.
     coastKeep: weak ? (creepSpeed / topSpeed) ** (TRUCK_COAST_KEEP_SECONDS / STORY_TRUCK_ROLL_SECONDS) : TRUCK_COAST_KEEP,
-    reverseSpeed: weak ? TRUCK_REVERSE_SPEED * STORY_TRUCK_REVERSE_SPEED_FACTOR : TRUCK_REVERSE_SPEED,
+    // SCREAM-340: Back It Up, top reverse speed x 1.5.
+    reverseSpeed: (weak ? TRUCK_REVERSE_SPEED * STORY_TRUCK_REVERSE_SPEED_FACTOR : TRUCK_REVERSE_SPEED) * (has(BACK_IT_UP_ID) ? BACK_IT_UP_REVERSE_FACTOR : 1),
     reverseAccelerationSeconds: weak ? TRUCK_REVERSE_ACCELERATION_SECONDS * STORY_TRUCK_REVERSE_ACCELERATION_FACTOR : TRUCK_REVERSE_ACCELERATION_SECONDS,
     maxTurnDegrees: weak ? TRUCK_MAX_TURN_DEGREES_PER_SECOND * STORY_TRUCK_TURN_FACTOR : TRUCK_MAX_TURN_DEGREES_PER_SECOND,
     turnAboveRoll: weak ? STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR : 1,

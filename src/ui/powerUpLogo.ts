@@ -85,6 +85,8 @@ export function addPowerUpLogo(
     drawBrakeDisc(g, size, grey);
   } else if (tree === 'steam-engine') {
     drawSteamEngine(g, size, grey);
+  } else if (tree === 'back-it-up') {
+    drawBackItUp(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -598,4 +600,36 @@ export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: b
   box(tiles[0], 31, 22, 17, 17, thin);
   box(tiles[1], 52, 22, 17, 17, thin);
   box(tiles[2], 31, 45, 24, 28, thin);
+}
+
+/**
+ * SCREAM-340: Back It Up. Engineering's own picture (the PO's sketch gives the name only): the back
+ * of a truck with its two red lights, and a thick arrow under it pointing backwards.
+ */
+export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xdcdcdc : 0xfff3d6;
+  const red = grey ? 0x9a9a9a : 0xd9412b;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // Wheels, then the truck's back: body, door line, bumper, two lights.
+  box(dark, 26, 50, 10, 12);
+  box(dark, 64, 50, 10, 12);
+  box(body, 22, 8, 56, 44);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(50), X(8), X(50), X(52));
+  box(dark, 18, 50, 64, 6);
+  box(red, 26, 38, 9, 8);
+  box(red, 65, 38, 9, 8);
+  // The arrow, pointing down (backwards, seen from behind the truck).
+  const arrow = [
+    [42, 62], [58, 62], [58, 78], [70, 78], [50, 97], [30, 78], [42, 78],
+  ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+  g.fillStyle(red, 1).fillPoints(arrow, true);
+  g.lineStyle(line, ink, 1).strokePoints(arrow, true, true);
 }

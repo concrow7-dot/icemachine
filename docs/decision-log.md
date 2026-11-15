@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 144 — Back It Up: the truck reverses faster, $40 (2026-11-15)
+
+**Decision (Jira SCREAM-340, under SCREAM-78, PO, November 15 notepad sketches "Next power-ups, truck and customer" and "Names for the next power-ups"):** under "Truck upgrade:" he wrote "Reverse speed", and named it: "Reverse Speed - 'Back it up'". A new note on the Truck tree; once bought, the truck's top speed in reverse is higher. Story only (decision 076).
+
+**Options considered:** none offered. Asked for names and places, he sent the names; the page gives no places.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Place: the Truck 7 dummy's spot (fourth row, under Brakes Made This Century). Truck 8 and 9 now hang from it.
+- Price: $40 (the third row is $30).
+- Strength: top reverse speed x 1.5 (Story's about 46 px/s to about 68). How quickly it picks up is unchanged. Not shown on the note (decision 132).
+- The note's words: "Increase the speed of the truck in reverse."
+- The picture is engineering's own: the back of a truck with a red arrow pointing backwards.
+
 ## 143 — Ice cream notes show what the ice cream costs to stock, with a space between paragraphs (2026-11-15)
 
 **Decision (Jira SCREAM-352, under SCREAM-78, PO, November 15, 02:14, with a screenshot of the SpongePop note):** "I want to add the cost of buying each ice cream to the powerup card." and "I want to add a space between each paragraph". An opened ice cream note now reads, each as its own paragraph with an empty line between: what the ice cream does; the most a customer pays; "Costs you $1.50 each to stock."

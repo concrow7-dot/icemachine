@@ -5,14 +5,14 @@
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
 import { getFlavour, type FlavourId } from './flavours';
-import { BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { BACK_IT_UP_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
 export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
+export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'back-it-up' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
@@ -68,6 +68,9 @@ export const BRAKES_ID = 'brakes-made-this-century';
 
 /** SCREAM-326: the Steam Engine note (Truck tree, third row). */
 export const STEAM_ID = 'steam-engine';
+
+/** SCREAM-340: the Back It Up note (Truck tree, fourth row): the truck reverses faster. */
+export const BACK_IT_UP_ID = 'back-it-up';
 
 /** SCREAM-122: the Temporary Gas Can's note. */
 export const GAS_CAN_ID = 'temp-gas-can';
@@ -230,9 +233,20 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Increase the speed of the truck as it rolls.',
         logo: 'steam-engine',
       },
-      { id: 'truck-7', col: 1, row: 3, from: [BRAKES_ID], priceCents: 2000 },
-      { id: 'truck-8', col: 0, row: 4, from: ['truck-7'], priceCents: 2500 },
-      { id: 'truck-9', col: 2, row: 4, from: ['truck-7'], priceCents: 2500 },
+      // SCREAM-340 (PO, November 15, notepad sketches): "Reverse Speed - 'Back it up'". It takes the
+      // Truck 7 dummy's place (engineering's proposal; the sketch gives no place).
+      {
+        id: BACK_IT_UP_ID,
+        col: 1,
+        row: 3,
+        from: [BRAKES_ID],
+        priceCents: BACK_IT_UP_PRICE_CENTS,
+        name: 'BACK IT UP',
+        description: 'Increase the speed of the truck in reverse.',
+        logo: 'back-it-up',
+      },
+      { id: 'truck-8', col: 0, row: 4, from: [BACK_IT_UP_ID], priceCents: 2500 },
+      { id: 'truck-9', col: 2, row: 4, from: [BACK_IT_UP_ID], priceCents: 2500 },
     ],
   },
   {
