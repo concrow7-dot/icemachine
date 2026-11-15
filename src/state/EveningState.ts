@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
-import { generateOrder, orderTotalCents, Sale, withExtraEclair, type OrderLine } from './Sale';
+import { generateOrder, orderTotalCents, Sale, withExtraIceCream, type OrderLine } from './Sale';
 import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
@@ -990,8 +990,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     // SCREAM-218: an empty cooler (the HUD's SOLD OUT) is "sold out", not "too expensive".
     const refuse = (f: FlavourId) => this.refuseAboveCents(f);
     let order = generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, refuse);
-    // SCREAM-315 (PO, November 14): with a Chocolate Eclair in the cooler, every Story customer orders one more eclair.
-    if (this.story) order = withExtraEclair(order, this.coolerSlots, refuse);
+    // SCREAM-315 (PO, November 14): with a Chocolate Eclair in the cooler, every Story customer orders one more ice cream.
+    // SCREAM-354 (PO, November 15): of any kind they'd buy, not only an eclair.
+    if (this.story) order = withExtraIceCream(order, this.coolerSlots, Math.random, refuse);
     this.saleNow = new Sale(order, this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
