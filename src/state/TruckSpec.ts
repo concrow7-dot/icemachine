@@ -1,7 +1,8 @@
-import { GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
+import { TRAIN_ID, GITTY_UP_ID, SPEAKER_ID, TROT_ID } from '../config/powerUps';
 import {
   COOLER_CAPACITY,
   GITTY_UP_ACCELERATION_FACTOR,
+  TRAIN_TOP_SPEED_FACTOR,
   SPEAKER_RADIUS_FACTOR,
   TROT_CREEP_FACTOR,
   CRATE_SIDE,
@@ -79,7 +80,8 @@ export interface TruckSpec {
 export function truckSpec(weak: boolean, powerUps: readonly string[] = []): TruckSpec {
   const has = (id: string) => powerUps.includes(id);
   const halfCovered = weak && STORY_COOLER_HALF_COVERED;
-  const topSpeed = weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED;
+  // SCREAM-80: Train Off The Tracks, top speed x 1.05 (the roll down still takes STORY_TRUCK_ROLL_SECONDS).
+  const topSpeed = (weak ? TRUCK_SPEED * STORY_TRUCK_SPEED_FACTOR : TRUCK_SPEED) * (has(TRAIN_ID) ? TRAIN_TOP_SPEED_FACTOR : 1);
   // SCREAM-310: Trot raises the creep (Story's 12 px/s to 18). The roll down from top speed still
   // takes STORY_TRUCK_ROLL_SECONDS, ending at the new creep; turns widen above it (SCREAM-280).
   const creepSpeed = (weak ? TRUCK_CREEP_SPEED * STORY_TRUCK_CREEP_FACTOR : TRUCK_CREEP_SPEED) * (has(TROT_ID) ? TROT_CREEP_FACTOR : 1);

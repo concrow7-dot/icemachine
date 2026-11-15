@@ -79,6 +79,8 @@ export function addPowerUpLogo(
       g.lineBetween(0, 0, Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
     }
     g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
+  } else if (tree === 'train-off-tracks') {
+    drawTrainOffTracks(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -348,4 +350,37 @@ export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, gre
       g.lineStyle(Math.max(1, 2 * u), ink, 1).strokeRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
     }
   }
+}
+
+/**
+ * SCREAM-80: Train Off The Tracks. The PO (November 14): a speedometer, "but the needle should be on
+ * the left side, indicating it is still slow" (the truck is still slow; this note makes it faster).
+ * An original drawing after his web reference: a half dial with ticks, the red needle low on the left.
+ */
+export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const face = grey ? 0xe0e0e0 : 0xfff6dc;
+  const red = grey ? 0x9a9a9a : 0xd8332a;
+  const green = grey ? 0xbdbdbd : 0x5fa874;
+  const line = Math.max(2, 6 * u);
+  const cy = 22 * u; // the dial's centre, low in the picture
+  const r = 44 * u;
+  // The face: a half disc on a flat base, with a coloured band (green low, red high).
+  g.fillStyle(face, 1).slice(0, cy, r, Math.PI, 0, false).fillPath();
+  g.lineStyle(9 * u, green, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI, Math.PI * 1.45, false).strokePath();
+  g.lineStyle(9 * u, red, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI * 1.75, Math.PI * 2, false).strokePath();
+  g.lineStyle(line, ink, 1).beginPath().arc(0, cy, r, Math.PI, 0, false).strokePath();
+  g.lineBetween(-r - 6 * u, cy, r + 6 * u, cy);
+  // Ticks.
+  g.lineStyle(Math.max(1.5, 4 * u), ink, 1);
+  for (let i = 0; i <= 6; i++) {
+    const t = Math.PI + (i / 6) * Math.PI;
+    g.lineBetween(Math.cos(t) * (r - 2 * u), cy + Math.sin(t) * (r - 2 * u), Math.cos(t) * (r - 13 * u), cy + Math.sin(t) * (r - 13 * u));
+  }
+  // The needle, low on the left: still slow.
+  const t = Math.PI * 1.17;
+  g.lineStyle(Math.max(2, 5 * u), ink, 1).lineBetween(0, cy, Math.cos(t) * (r - 10 * u), cy + Math.sin(t) * (r - 10 * u));
+  g.fillStyle(ink, 1).fillCircle(0, cy, 7 * u);
+  g.fillStyle(red, 1).fillCircle(0, cy, 3.5 * u);
 }

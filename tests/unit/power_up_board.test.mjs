@@ -28,7 +28,7 @@ test('every note has its own place, and hangs only from notes above it in its ow
 
 test('the arrow keys move to the nearest note that way', () => {
   assert.equal(nextNote(notes, 'temp-gas-can', 'down'), 'truck-5');
-  assert.equal(nextNote(notes, 'truck-5', 'left'), 'truck-4');
+  assert.equal(nextNote(notes, 'truck-5', 'left'), 'train-off-the-tracks');
   assert.equal(nextNote(notes, 'truck-5', 'right'), 'truck-6');
   assert.equal(nextNote(notes, 'truck-5', 'up'), 'temp-gas-can');
 });
@@ -40,7 +40,7 @@ test('...and cross from one tree to the next', () => {
 });
 
 test('...and stay put at the edge of the board', () => {
-  assert.equal(nextNote(notes, 'truck-4', 'left'), 'truck-4');
+  assert.equal(nextNote(notes, 'train-off-the-tracks', 'left'), 'train-off-the-tracks');
   assert.equal(nextNote(notes, 'temp-gas-can', 'up'), 'temp-gas-can');
   assert.equal(nextNote(notes, 'customer-8', 'down'), 'customer-8');
 });
@@ -79,8 +79,8 @@ test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own
   const can = notes.find((n) => n.id === 'temp-gas-can');
   assert.deepEqual([can.tree, can.number, can.name, can.priceCents, can.logo], [0, 1, 'TEMPORARY GAS CAN', 1500, 'gas-can']);
   assert.match(can.description, /fifth of a tank/);
-  const dummy = notes.find((n) => n.id === 'truck-4');
-  assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 4', 'truck', ['gitty-up']]);
+  const dummy = notes.find((n) => n.id === 'truck-8');
+  assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 8', 'truck', ['truck-7']]);
 });
 
 test('SCREAM-309: Gitty Up is the left note under the gas can, $20, with its own name and picture', () => {
@@ -122,4 +122,9 @@ test('SCREAM-303: Service With A Smile is the only top note of the Customer tree
   // SCREAM-81: the left one is Upgrade Speaker, $30.
   const speaker = notes.find((n) => n.id === 'upgrade-speaker');
   assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 3000, 'Increase the reach of the speaker by 10%.']);
+});
+
+test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $30', () => {
+  const n = notes.find((x) => x.id === 'train-off-the-tracks');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['gitty-up'], 'Max velocity increased by 5%.']);
 });
