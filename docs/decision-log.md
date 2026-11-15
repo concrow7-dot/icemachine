@@ -2,6 +2,20 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 130 — Story is 10 days: Monday to Friday twice (2026-11-14)
+
+**Decision (Jira SCREAM-322, PO, November 14):** "making the story 10 days long. Monday through friday for day 1-5 and 6-10". Asked: the bike **stays $600**; after Friday (day 5) **skip straight to Monday** (day 6); customers' schedules are **the same both weeks**. Before, 5 days (decision 046).
+
+**Options considered:** a $1,200 bike; a "the weekend passes" card; a second week with different ticks.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- `STORY_DAYS` 10; `weekdayOf` counts Monday to Friday only (`STORY_WEEK_DAYS` 5), so Day 6 is Monday.
+- Schedule lines count played days: Friday's "see you Monday" is the next day; someone ticked only Saturday or Sunday never gets a "[Next]" line (`daysUntilHome` returns null).
+- An old 5-day save carries on as a 10-day run.
+
 ## 129 — Steam Engine: the roll +10%, $30 (2026-11-14)
 
 **Decision (Jira SCREAM-326, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "3. Steam Engine. Increase the speed of the truck as it rolls.", under Trot. Asked, he set the price at **$30** (like the second Customer row). Asked how much: **+10%**, on top of Trot: Story's roll 12 → 13.2 px/s, or 18 → 19.8 with Trot. **While testing (22:50):** "For steam engine, it should be the same effect as trot, just on top of it." So it adds Trot's step again: 18 → 24 px/s (`STEAM_CREEP_FACTOR` = Trot's; engineering read "the same effect" as the same +6 px/s, not another x 1.5).

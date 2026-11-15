@@ -18,10 +18,10 @@ const zero = { ...base, likelihood: 0, days: [0] };
 const story = (day) => ({ day, seed: 99 });
 const never = () => { throw new Error('Story with ticks must not roll the dice'); };
 
-test('Story starts on a Monday: Day 1 Monday ... Day 5 Friday, Day 8 Monday again', () => {
+test('Story starts on a Monday: Day 1 Monday ... Day 5 Friday; SCREAM-322: Day 6 Monday again, Day 10 Friday (no weekend)', () => {
   assert.deepEqual([1, 2, 3, 4, 5].map(weekdayName), ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
-  assert.equal(weekdayOf(8), 0);
-  assert.equal(weekdayName(14), 'Sunday');
+  assert.deepEqual([6, 7, 8, 9, 10].map(weekdayName), ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  assert.equal(weekdayOf(6), 0);
 });
 
 test('PO: ticked days a bit likelier, other days much less likely (Mon and Thu ticked)', () => {

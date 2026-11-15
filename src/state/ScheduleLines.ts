@@ -60,10 +60,13 @@ export function dayList(days: readonly number[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-/** How many days from this Story day until they're next home (1 = tomorrow, up to 7), or null with no ticks. */
+/**
+ * How many played days from this Story day until they're next home (1 = tomorrow, up to 5), or null
+ * when none of their ticked days is played. SCREAM-322: Story skips the weekend, so Friday's
+ * "tomorrow" is Monday, and Saturday and Sunday ticks never come round.
+ */
 export function daysUntilHome(days: readonly number[], day: number): number | null {
-  const today = weekdayOf(day);
-  for (let n = 1; n <= 7; n++) if (days.includes((today + n) % 7)) return n;
+  for (let n = 1; n <= 5; n++) if (days.includes(weekdayOf(day + n))) return n;
   return null;
 }
 
@@ -88,8 +91,8 @@ export function kindFits(kind: ScheduleKind, resident: Pick<Resident, 'days' | '
   if (days.length >= 7) return false;
   if (kind === 'home') return days.length <= SCHEDULE_LIST_MAX;
   if (kind === 'away') return 7 - days.length <= SCHEDULE_LIST_MAX;
-  const wait = daysUntilHome(days, day)!;
-  if (day + wait > lastDay) return false;
+  const wait = daysUntilHome(days, day);
+  if (wait === null || day + wait > lastDay) return false;
   return kind === 'next' || wait >= 2;
 }
 
@@ -104,7 +107,7 @@ export function timeText(minutes: number): string {
 export function fillSchedule(text: string, resident: Pick<Resident, 'days' | 'hours'>, day: number): string {
   const days = resident.days ?? [];
   const wait = daysUntilHome(days, day);
-  const next = wait === null ? '' : WEEKDAYS[(weekdayOf(day) + wait) % 7]!;
+  const next = wait === null ? '' : WEEKDAYS[weekdayOf(day + wait)]!;
   const away = [0, 1, 2, 3, 4, 5, 6].filter((d) => !days.includes(d));
   return text
     .split(SCHEDULE_TAGS.next).join(next)

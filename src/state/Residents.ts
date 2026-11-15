@@ -93,9 +93,20 @@ export function homeAt(resident: Pick<Resident, 'hours'>, minutes: number): bool
 /** SCREAM-221: the days of the week, Monday first (Story's Day 1 is a Monday). */
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
-/** SCREAM-221: which day of the week a Story day is (0 = Monday): Day 1 is Monday, Day 8 Monday again. */
+/** Story's days are Monday to Friday; the weekend is skipped (SCREAM-322). */
+export const STORY_WEEK_DAYS = 5;
+
+/**
+ * SCREAM-221: which day of the week a Story day is (0 = Monday): Day 1 is Monday. SCREAM-322 (PO,
+ * November 14): "Monday through friday for day 1-5 and 6-10": after Friday comes Monday (Day 6).
+ */
 export function weekdayOf(day: number): number {
-  return (((day - 1) % 7) + 7) % 7;
+  return (((day - 1) % STORY_WEEK_DAYS) + STORY_WEEK_DAYS) % STORY_WEEK_DAYS;
+}
+
+/** SCREAM-327 (PO, November 14): "Tuesday Day 2/10", on the HUD and on Continue Story. */
+export function dayText(day: number, days: number): string {
+  return `${weekdayName(day)} Day ${day}/${days}`;
 }
 
 /** SCREAM-221: a Story day's name, e.g. "Monday" for Day 1. */

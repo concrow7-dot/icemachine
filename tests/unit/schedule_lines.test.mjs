@@ -27,10 +27,11 @@ test('Lists of days read naturally, in the week\'s order', () => {
   assert.equal(dayList([4, 0, 2]), 'Monday, Wednesday and Friday');
 });
 
-test('The next day home: Monday → Thursday for Mon+Thu; Thursday → Monday; a one-day person waits a week', () => {
+test('The next day home (played days; SCREAM-322 skips the weekend): Monday → Thursday for Mon+Thu; Thursday → Monday; a one-day person waits a week', () => {
   assert.equal(daysUntilHome([0, 3], 1), 3);
-  assert.equal(daysUntilHome([0, 3], 4), 4);
-  assert.equal(daysUntilHome([2], 3), 7);
+  assert.equal(daysUntilHome([0, 3], 4), 2);
+  assert.equal(daysUntilHome([2], 3), 5);
+  assert.equal(daysUntilHome([5, 6], 1), null); // weekend only: never on a played day
   assert.equal(daysUntilHome([], 1), null);
 });
 

@@ -41,7 +41,8 @@ export const HOW_TO_DRIVE_DELAY_MS = 600;
  * SCREAM-85 (PO, November 8): 5 evenings, a full week; the uncle's evening is Day 1 (SCREAM-205).
  * Lower it to 1 or 2 to test the end of a run quickly.
  */
-export const STORY_DAYS = 5;
+// SCREAM-322 (PO, November 14): "making the story 10 days long. Monday through friday for day 1-5 and 6-10".
+export const STORY_DAYS = 10;
 
 /** SCREAM-18 (PO, October 31): the story's goal, a new bike, cost $200. SCREAM-85 (PO, November 8): $600 for the 5-day run. */
 export const BIKE_PRICE_CENTS = 60000;

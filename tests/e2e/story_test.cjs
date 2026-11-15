@@ -3,7 +3,7 @@
 // is game over, and Quick play is unchanged.
 // SCREAM-17: the run is saved at the end of each evening; Continue and New story.
 // SCREAM-18: the bike story: intro screen, bike goal, end of run with the Story high scores.
-// SCREAM-205, SCREAM-85: on the tutorial map, 5 days, $25 to start, a $600 bike. These play
+// SCREAM-205, SCREAM-85: on the tutorial map, 10 days (SCREAM-322), $25 to start, a $600 bike. These play
 // On My Own (the uncle's Day 1 is in the tutorial suite).
 const { chromium } = require('playwright');
 (async () => {
@@ -70,7 +70,7 @@ const { chromium } = require('playwright');
   await press('Enter'); await wait(300);
   const intro = await texts('StoryIntro');
   check('A new story opens with the intro screen', await scenes(), 'StoryIntro');
-  check('...about the $600 bike and school in 5 days, marked as a placeholder', /\$600\.00/.test(intro) && /School starts in 5 days/.test(intro) && /Placeholder/.test(intro), true);
+  check('...about the $600 bike and school in 10 days (SCREAM-322), marked as a placeholder', /\$600\.00/.test(intro) && /School starts in 10 days/.test(intro) && /Placeholder/.test(intro), true);
   await page.screenshot({ path: outDir + '/story_intro.png' });
 
   // ---- Day 1 ----
@@ -82,7 +82,7 @@ const { chromium } = require('playwright');
   check('SCREAM-243: title to New Bike screen to cooler without the loading screen', await page.evaluate(() => Number(window.__game.registry.get('loadingShown')) || 0), 0);
   check('...and the cooler fades in', await sc('Cooler', 's.cameras.main.fadeEffect.isRunning || s.cameras.main.fadeEffect.isComplete'), true);
   check('SCREAM-297: the shut lids are drawn above the grey covered halves', await sc('Cooler', "(() => { const d = (n) => s.children.list.filter(o => o.name === n).map(o => o.depth); const lids = d('cooler-lid'), halves = d('covered-half'); return lids.length + ' ' + halves.length + ' ' + (Math.min(...lids) > Math.max(...halves)); })()"), '2 3 true');
-  check('Story starts on day 1 of 5', await story('r.day + "/" + r.days'), '1/5');
+  check('Story starts on day 1 of 10 (SCREAM-322)', await story('r.day + "/" + r.days'), '1/10');
   check('Story starts with $25', await ev('e.moneyCents'), 2500);
   check('...on the tutorial map, without the uncle (On My Own)', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
   // ---- SCREAM-204 (PO, November 11-12): Story starts with a weaker truck ----
@@ -465,12 +465,16 @@ const { chromium } = require('playwright');
   await press('y'); await wait(400);
   check('Restart: back to $22 and 3 bars, still day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')) + ' ' + (await story('r.day')), '2200 3 2');
 
-  // ---- Days 3 and 4, then day 5, the last ----
+  // ---- Days 3 to 9, then day 10, the last (SCREAM-322: Monday to Friday twice) ----
   await shift(3); await press('Enter'); await wait(300);
   check('Day 3 starts', await story('r.day'), 3);
   await shift(3); await press('Enter'); await wait(300);
   await shift(3); await press('Enter'); await wait(300);
-  check('Day 5 starts, the last', (await story('r.day')) + ' ' + /Friday/.test(await hudClock()), '5 true');
+  check('Day 5 is a Friday', (await story('r.day')) + ' ' + /Friday/.test(await hudClock()), '5 true');
+  await shift(3); await press('Enter'); await wait(300);
+  check('SCREAM-322: after Friday comes Monday: Day 6, no weekend', (await story('r.day')) + ' ' + /Monday/.test(await hudClock()), '6 true');
+  for (let d = 7; d <= 10; d++) { await shift(3); await press('Enter'); await wait(300); }
+  check('Day 10 starts, the last, a Friday', (await story('r.day')) + ' ' + /Friday/.test(await hudClock()), '10 true');
   // ---- SCREAM-313: what a SpongePop earned is counted on its own (a stand-in paid sale; the wallet is put back after) ----
   const sponge = await page.evaluate(async () => {
     const e = window.__game.registry.get('evening');
@@ -516,13 +520,13 @@ const { chromium } = require('playwright');
   check('SCREAM-312: ...and its own Exploration tips row, under that', (() => { const a = last.indexOf('SpongePop tips'), b = last.indexOf('Exploration tips'); return a >= 0 && b > a && last.includes(exploreText); })(), true);
   check('...eight rows, all above the line', await sc('DayEnd', "(() => { const line = s.children.list.find(o => o.type === 'Rectangle' && o.x === 110 && o.width === 310); const rows = s.children.list.filter(o => o.type === 'Text' && o.x === 110 && o.y >= 165 && o.y < line.y); return rows.length + ' ' + rows.every(o => o.getBounds().bottom <= line.y); })()"), '8 true');
   await page.screenshot({ path: outDir + '/story_day_end_exploration.png' });
-  check('After day 5: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
+  check('After day 10: STORY COMPLETE', /STORY COMPLETE/.test(last), true);
   check('...short of the bike ($22 of $600: $578 short)', /\$578\.00 short of the bike/.test(last), true);
   check('...Click Or Enter goes to the Story high scores (SCREAM-295)', /Click Or Enter: Story High Scores/.test(last), true);
   await press('Enter'); await wait(300);
   check('Story results screen', await scenes(), 'Results');
   const runRes = await texts('Results');
-  check('...run stats: 5 days, $3 stock, final cash $22, no bike', /5 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$22\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
+  check('...run stats: 10 days, $3 stock, final cash $22, no bike', /10 DAYS/.test(runRes) && /-\$3\.00/.test(runRes) && /Final cash/.test(runRes) && /\$22\.00/.test(runRes) && /Maybe Next Summer/.test(runRes), true);
   check('SCREAM-312: the run stats have the Exploration tips row too', /Exploration tips/.test(runRes) && runRes.includes(exploreText), true);
   await page.screenshot({ path: outDir + '/story_results_exploration.png' });
   check('SCREAM-313: the run stats have the SpongePop tips row too', /SpongePop tips/.test(runRes) && runRes.includes('$0.30'), true);
