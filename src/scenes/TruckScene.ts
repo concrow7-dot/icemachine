@@ -51,24 +51,25 @@ export const ZONES: Zone[] = [
     points: [290, 108, 672, 108, 672, 392, 362, 392, 362, 282, 290, 282],
     tag: { x: 481, y: 140 },
   },
-  // SCREAM-245 (PO, November 14: "Notebook should be a new clickable item in the truck view"): the
-  // Handy Notebook hangs on the side door once it is owned. Where it hangs is engineering's proposal.
-  {
-    id: 'notebook',
-    name: 'NOTEBOOK',
-    points: [702, 308, 764, 308, 764, 384, 702, 384],
-    tag: { x: 733, y: 290 },
-  },
   {
     id: 'window',
     name: 'WINDOW',
     points: [845, 82, 955, 78, 955, 362, 785, 352, 785, 268, 845, 268],
     tag: { x: 880, y: 200 },
   },
+  // SCREAM-245 (PO, November 14: "Notebook should be a new clickable item in the truck view"): the
+  // Handy Notebook, once it is owned. PO, November 14, on the first build (it hung on the side door):
+  // "Lets have notebook hang under the tip jar": under the green cup on the shelf by the window.
+  {
+    id: 'notebook',
+    name: 'NOTEBOOK',
+    points: [866, 364, 928, 364, 928, 438, 866, 438],
+    tag: { x: 880, y: 456 },
+  },
 ];
 
 /** SCREAM-245: where the Handy Notebook hangs (the middle of its picture) and how big it is drawn. */
-export const NOTEBOOK_AT = { x: 733, y: 348, size: 58 };
+export const NOTEBOOK_AT = { x: 897, y: 402, size: 58 };
 
 export class TruckScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -95,7 +96,7 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
 
-    // SCREAM-245: the notebook itself, on a nail in the side door (only once it is owned).
+    // SCREAM-245: the notebook itself, on a nail under the tip jar's shelf (only once it is owned).
     if (this.evening.hasNotebook) {
       const pad = this.add.graphics().setPosition(NOTEBOOK_AT.x, NOTEBOOK_AT.y);
       pad.lineStyle(2, OUTLINE, 1).lineBetween(-12, -24, 0, -38).lineBetween(12, -24, 0, -38);
