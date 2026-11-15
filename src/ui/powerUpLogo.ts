@@ -637,34 +637,37 @@ export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey:
 }
 
 /**
- * SCREAM-25: More Space for Scream. Engineering's own picture (the PO's sketches give the name only): an open
- * cooler crate with ice creams standing in it, and a green plus at its top right.
+ * SCREAM-25: More Space for Scream. The PO's sketch (Personal Notes, "Pictures for the next
+ * power-ups", November 15): a freezer with its top door swung open to the left: ice creams on
+ * the shelves inside and on the door, and a handle on the closed part below.
  */
 export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
   const u = size / 100;
   const ink = grey ? 0x6f6f6f : INK;
-  const crate = grey ? 0xdcdcdc : 0xbfe3f5;
-  const deep = grey ? 0xb4b4b4 : 0x7fbfe0;
+  const shell = grey ? 0xdcdcdc : 0xe9f4fb;
+  const inside = grey ? 0x9a9a9a : 0x2b4a6b;
   const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
   const X = (v: number) => (v - 50) * u;
-  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+  const box = (colour: number, x: number, y: number, w: number, h: number, stroke = line) => {
     g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
-    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(stroke, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
   };
-  // Three ice creams on sticks, standing up out of the crate.
-  const pops: [number, number][] = [[22, grey ? 0xcfcfcf : 0xf4d35e], [40, grey ? 0xbdbdbd : 0x8b5a3c], [58, grey ? 0xd6d6d6 : 0xf28ca0]];
-  for (const [x, colour] of pops) {
-    box(grey ? 0xe2e2e2 : 0xe8c98f, x + 5, 40, 4, 16);
-    box(colour, x, 14, 14, 30);
-  }
-  // The crate: back lip, front, and a band.
-  box(deep, 8, 50, 76, 8);
-  box(crate, 12, 56, 68, 34);
-  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(72), X(80), X(72));
-  // The plus, top right.
-  const px = X(86);
-  const py = X(22);
-  const arm = 11 * u;
-  g.lineStyle(Math.max(3, 9 * u), grey ? 0x8a8a8a : 0x2e9e44, 1);
-  g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
+  const pops = grey ? [0xcfcfcf, 0xbdbdbd, 0xd6d6d6, 0xc6c6c6] : [0xf4d35e, 0xf28ca0, 0x8b5a3c, 0x9fd3a7];
+  // The closed part below, with its handle.
+  box(shell, 44, 46, 44, 48);
+  g.fillStyle(grey ? 0xb4b4b4 : 0x8a9096, 1).fillRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  g.lineStyle(thin, ink, 1).strokeRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  // The open top: dark inside, a shelf, and four ice creams.
+  box(inside, 44, 10, 44, 36);
+  g.lineStyle(thin, ink, 1).lineBetween(X(44), X(28), X(88), X(28));
+  box(pops[0] ?? 0, 50, 14, 13, 12, thin);
+  box(pops[1] ?? 0, 69, 14, 13, 12, thin);
+  box(pops[2] ?? 0, 50, 32, 13, 12, thin);
+  box(pops[3] ?? 0, 69, 32, 13, 12, thin);
+  // Its door, swung open to the left, with two more on the door's shelf.
+  g.fillStyle(shell, 1).fillRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  box(pops[1] ?? 0, 11, 19, 11, 14, thin);
+  box(pops[0] ?? 0, 26, 19, 11, 14, thin);
 }

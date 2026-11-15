@@ -17,7 +17,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 - Bought at home or before DRIVE, the new squares can be filled straight away.
 - The right half of every crate stays covered, for later notes.
 - The note's words: "More room in the cooler: a new bottom row opens in every crate."
-- The picture is engineering's own: an open crate of ice creams with a green plus.
+- The picture: engineering's own at first (a crate of ice creams with a green plus); then he sent his sketch (02:58) and it was redrawn from it: a freezer with its top door swung open, ice creams on the shelves and the door.
 
 ## 144 — Back It Up: the truck reverses faster, $40 (2026-11-15)
 
