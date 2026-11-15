@@ -38,6 +38,8 @@ import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLo
 import { UNCLE_URL } from '../ui/smoothPixels';
 
 import type { ResidentNow } from '../state/Residents';
+import { edgeMarker } from '../state/EdgeMarker';
+import { MIRROR_MARKER_BOTTOM_EXTRA, MIRROR_MARKER_DIAL, MIRROR_MARKER_MARGIN, MIRROR_MARKER_RADIUS, MIRROR_MARKER_TOP_EXTRA } from '../config/tuning';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { gasStations } from '../config/gasStation';
@@ -161,6 +163,8 @@ export class DriveScene extends Phaser.Scene {
   private pickupZones = new Map<number, Phaser.GameObjects.Rectangle>();
   /** The "!" thought bubble over each customer running to (or waiting at) the curb, by resident index. */
   private bubbles = new Map<number, Phaser.GameObjects.Container>();
+  /** SCREAM-341: Better Mirrors' markers, one per customer on their way (by their place in the residents' list). Test hook. */
+  mirrorMarkers = new Map<number, Phaser.GameObjects.Container>();
   private music!: Music;
   private songLabel!: Phaser.GameObjects.Text;
   private songLabelTween?: Phaser.Tweens.Tween;
@@ -294,6 +298,7 @@ export class DriveScene extends Phaser.Scene {
     this.placeObstacles();
     this.pickupZones.clear();
     this.bubbles.clear();
+    this.mirrorMarkers.clear();
     this.ring = this.add.circle(0, 0, this.evening.spec.musicRadius).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
     this.tweens.add({ targets: this.ring, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.residentSprites = this.evening.residents.all.map(() =>
@@ -585,6 +590,7 @@ export class DriveScene extends Phaser.Scene {
     });
     this.drawResidents(time);
     this.drawCustomers();
+    this.drawMirrorMarkers();
     this.updateTruckLook();
     if (this.spinning) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
@@ -1331,6 +1337,53 @@ export class DriveScene extends Phaser.Scene {
       if (waiting && zone && (zone.x !== p.pickup[0] || zone.y !== p.pickup[1])) zone.setPosition(p.pickup[0], p.pickup[1]).setAngle(p.pickup[2]);
       zone?.setVisible(waiting);
     });
+  }
+
+  /**
+   * SCREAM-341 (PO, November 15: "Better Mirrors: indicator for customers, show exact customer"):
+   * with the note owned, every customer on their way to the truck (walking to it or waiting at the
+   * curb) who is outside the view gets a round marker at the screen's edge, in their direction, with
+   * their own face on it. It goes when they come on screen, are served, or give up.
+   */
+  private drawMirrorMarkers(): void {
+    const on = this.evening.hasBetterMirrors;
+    const whole = this.cameras.main.worldView;
+    // The labels along the top and bottom of the road view, and the gas dial's corner, stay clear.
+    const view = { x: whole.x, y: whole.y + MIRROR_MARKER_TOP_EXTRA, right: whole.right, bottom: whole.bottom - MIRROR_MARKER_BOTTOM_EXTRA };
+    const dialTop = whole.bottom - MIRROR_MARKER_DIAL.h;
+    this.evening.residents.all.forEach((p, i) => {
+      const coming = on && p.outside && (p.customer === 'running' || p.customer === 'waiting');
+      // Someone on screen needs no marker (the whole view counts, not the smaller box the markers sit in).
+      const seen = p.x >= whole.x && p.x <= whole.right && p.y - 16 >= whole.y && p.y - 16 <= whole.bottom;
+      const at = coming && !seen ? edgeMarker(view, p.x, p.y - 16, MIRROR_MARKER_MARGIN) : null;
+      if (at && at.x < whole.x + MIRROR_MARKER_DIAL.w && at.y > dialTop) {
+        at.y = dialTop;
+        at.angle = Math.atan2(p.y - 16 - at.y, p.x - at.x);
+      }
+      let marker = this.mirrorMarkers.get(i);
+      if (at && !marker) {
+        marker = this.makeMirrorMarker(p.resident.look);
+        this.mirrorMarkers.set(i, marker);
+      }
+      if (!marker) return;
+      marker.setVisible(!!at);
+      if (!at) return;
+      marker.setPosition(Math.round(at.x), Math.round(at.y));
+      (marker.getByName('pointer') as Phaser.GameObjects.Graphics).setRotation(at.angle);
+    });
+  }
+
+  /** SCREAM-341: one marker: a pointer (turned toward the customer), a round badge, and the customer's head. */
+  private makeMirrorMarker(look: number): Phaser.GameObjects.Container {
+    const r = MIRROR_MARKER_RADIUS;
+    // The pointer is drawn pointing right, its base hidden under the badge.
+    const pointer = this.add.graphics().setName('pointer');
+    pointer.fillStyle(0xff4f9a, 1).fillTriangle(0, -r * 0.62, 0, r * 0.62, r * 1.85, 0);
+    pointer.lineStyle(1.5, 0x2b1d10, 1).strokeTriangle(0, -r * 0.62, 0, r * 0.62, r * 1.85, 0);
+    const badge = this.add.circle(0, 0, r, 0xfffdf2).setStrokeStyle(2.5, 0xff4f9a);
+    // The head: rows 8 to 25 of the standing, front-facing frame (frames are 16 x 32).
+    const head = this.add.sprite(0, 0, residentsKey(), residentFrame(look, false, 'down', 0)).setCrop(0, 8, 16, 17).setOrigin(0.5, 16.5 / 32).setScale(1.25).setName('head');
+    return this.add.container(0, 0, [pointer, badge, head]).setDepth(40).setVisible(false);
   }
 
   /**

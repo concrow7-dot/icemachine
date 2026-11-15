@@ -2,6 +2,23 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 146 — Better Mirrors: markers at the screen's edge for customers on their way, $50 (2026-11-15)
+
+**Decision (Jira SCREAM-341, under SCREAM-78, PO, November 15 notepad sketches):** under "Customer" he wrote "Better Mirrors: indicator for customers, show exact customer"; the name stays "Better Mirrors". Asked what the player should see, he chose **edge markers**: a small marker at the edge of the screen points at each customer who is coming but is off screen, showing that person's face. Story only (decision 076).
+
+**Options considered:** edge markers (chosen); a wing-mirror picture on the driving screen showing the customers behind the truck; marking the people who will buy tonight on their house before they hear the music.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- This is a bought exception to decision 015 (customers are found from the music ring, with no arrow): without the note nothing changes.
+- A marker is only for a customer already on their way (the ones with a "!"), walking or waiting at the curb, never for someone who hasn't heard the music.
+- The marker is a round badge with the customer's head and a pink pointer toward them. It keeps clear of the gas dial, the key hints and the song's name, and goes when the customer is on screen, served or gone home.
+- Place: the Customer 7 dummy's spot (fourth row, under the Handy Notebook); Customer 8 and 9 hang from it. Price: $50.
+- The note's words: "A marker at the edge of the screen points at each customer on their way to you."
+- The picture is engineering's own: a wing mirror with a customer and a "!" in the glass.
+
 ## 145 — More Junk: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
 
 **Decision (Jira SCREAM-25, under SCREAM-78, PO, November 15 notepad sketches):** under "Truck upgrade:" he wrote "Cooler size", and named it: "Cooler Size - 'More Junk'". Asked how much it should open up, he wrote his own answer: "The two slots in a row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot". Once bought, each of Story's three crates has a fourth row of two open squares: 18 ice creams become 24. Story only (decision 076). This is the old "bigger cooler" ticket, rewritten.

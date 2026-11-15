@@ -163,6 +163,24 @@ const { chromium } = require('playwright');
     check('SCREAM-340: with Back It Up the truck\'s top reverse speed is half as much again', Math.round((await ev('e.spec.reverseSpeed')) / before * 100) / 100, 1.5);
   }
 
+  // ---- SCREAM-341: Better Mirrors ----
+  {
+    await ev('(e.residents.hearingOff = true, true)');
+    const far = await drive("(() => { const e = window.__game.registry.get('evening'); const v = s.cameras.main.worldView; let best = -1, bd = 0; e.residents.all.forEach((p, i) => { const d = Math.hypot(p.x - s.truck.x, p.y - s.truck.y); const off = p.x < v.x - 60 || p.x > v.right + 60 || p.y < v.y - 60 || p.y > v.bottom + 60; if (off && p.customer === 'none' && d > bd && d < 900) { bd = d; best = i; } }); return best; })()");
+    await ev(`(e.residents.callNow(e.residents.all[${far}]), true)`); await wait(400);
+    const marker = (fn) => drive(`(() => { const m = s.mirrorMarkers.get(${far}); return ${fn}; })()`);
+    check('Without Better Mirrors: a customer waiting off screen has no marker', (await ev(`e.residents.all[${far}].customer`)) + ' ' + (await marker('!!m && m.visible')), 'waiting false');
+    await ev("(e.powerUpsOwned.push('better-mirrors'), true)"); await wait(300);
+    check('SCREAM-341: with Better Mirrors that customer has a marker at the edge of the screen', await marker('!!m && m.visible'), true);
+    check('...it sits just inside the view, clear of the labels and the gas dial', await drive(`(() => { const m = s.mirrorMarkers.get(${far}); const v = s.cameras.main.worldView; const dx = Math.min(m.x - v.x, v.right - m.x); const dy = Math.min(m.y - v.y, v.bottom - m.y); const dial = m.x - v.x < 175 && v.bottom - m.y < 119; return dx >= 23 && m.y - v.y >= 36 && v.bottom - m.y >= 81 && !dial; })()`), true);
+    check('...its pointer aims at the customer', await drive(`(() => { const e = window.__game.registry.get('evening'); const m = s.mirrorMarkers.get(${far}); const p = e.residents.all[${far}]; const want = Math.atan2(p.y - 16 - m.y, p.x - m.x); const d = Math.abs(m.getByName('pointer').rotation - want); return Math.min(d, Math.PI * 2 - d) < 0.05; })()`), true);
+    check('...and shows that customer\'s own face', await drive(`(async () => { const { residentFrame } = await import('/src/ui/residentLook.js'); const e = window.__game.registry.get('evening'); const m = s.mirrorMarkers.get(${far}); return m.getByName('head').frame.name === residentFrame(e.residents.all[${far}].resident.look, false, 'down', 0); })()`), true);
+    await page.screenshot({ path: outDir + '/icecreams_better_mirrors.png' });
+    check('...only customers on their way have one', await drive('[...s.mirrorMarkers.values()].filter(m => m.visible).length') <= await ev("e.residents.all.filter(p => p.customer === 'running' || p.customer === 'waiting').length"), true);
+    await drive(`(() => { const e = window.__game.registry.get('evening'); const p = e.residents.all[${far}]; s.truck.setPosition(p.x + 60, p.y + 40); s.speed = 0; return true; })()`); await wait(2600);
+    check('...when the customer is on screen the marker goes', await marker('m.visible'), false);
+  }
+
   console.log(`\n${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' | ') : 'none'}`);
   await browser.close();
 })();

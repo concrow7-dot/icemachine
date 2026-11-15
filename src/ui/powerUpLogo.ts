@@ -89,6 +89,8 @@ export function addPowerUpLogo(
     drawBackItUp(g, size, grey);
   } else if (tree === 'more-junk') {
     drawMoreJunk(g, size, grey);
+  } else if (tree === 'mirror') {
+    drawMirror(g, size, grey);
   } else if (tree === 'calculator') {
     drawCalculator(g, size, grey);
   } else if (tree === 'speaker') {
@@ -667,4 +669,33 @@ export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey:
   const arm = 11 * u;
   g.lineStyle(Math.max(3, 9 * u), grey ? 0x8a8a8a : 0x2e9e44, 1);
   g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
+}
+
+/**
+ * SCREAM-341: Better Mirrors. Engineering's own picture (the PO's sketches give the name only): a
+ * truck's wing mirror on its arm, with a little customer and a "!" showing in the glass.
+ */
+export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shell = grey ? 0xb4b4b4 : 0x8a9096;
+  const glass = grey ? 0xe6e6e6 : 0xcfeaf7;
+  const skin = grey ? 0xcfcfcf : 0xf2c79b;
+  const shirt = grey ? 0xa8a8a8 : 0xe0564a;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  // The arm to the truck's door (off to the right), then the mirror's shell and glass.
+  g.fillStyle(shell, 1).fillRect(X(70), X(44), 26 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRect(X(70), X(44), 26 * u, 8 * u);
+  g.fillStyle(shell, 1).fillRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(8), X(10), 66 * u, 80 * u, 10 * u);
+  g.fillStyle(glass, 1).fillRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRoundedRect(X(16), X(18), 50 * u, 64 * u, 6 * u);
+  // A customer in the glass: head and shoulders, bottom left.
+  g.fillStyle(shirt, 1).fillRect(X(22), X(64), 22 * u, 18 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(22), X(64), 22 * u, 18 * u);
+  g.fillStyle(skin, 1).fillCircle(X(33), X(54), 10 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(X(33), X(54), 10 * u);
+  // The "!" beside them.
+  g.fillStyle(ink, 1).fillRect(X(50), X(28), 7 * u, 22 * u).fillRect(X(50), X(55), 7 * u, 7 * u);
 }
