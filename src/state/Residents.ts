@@ -24,6 +24,7 @@ import {
   CUSTOMER_FOLLOW_AGAIN,
   CUSTOMER_QUEUE_GAP,
   CHASE_ADULT_SECONDS,
+  CHASE_REGULAR_SHARE,
   CHASE_SLOW_KID_SECONDS,
   CUSTOMER_RUN_SPEED,
   FAST_KID_SPEED_FACTOR,
@@ -357,8 +358,37 @@ export class Residents {
   /** SCREAM-342: how many seconds this customer follows the truck before going home (Infinity: never gives up). */
   chaseSecondsOf(resident: Resident): number {
     if (!this.chaseRules) return Infinity;
-    if (resident.kid) return resident.fast ? Infinity : CHASE_SLOW_KID_SECONDS;
-    return CHASE_ADULT_SECONDS;
+    if (this.chasesForever(resident)) return Infinity;
+    return resident.kid ? CHASE_SLOW_KID_SECONDS : CHASE_ADULT_SECONDS;
+  }
+
+  /**
+   * SCREAM-168 (PO, November 15): "Let's have 70% of regulars chase": the regulars who follow the
+   * truck forever. The game picks them (his choice): tonight's regulars in the order of a number
+   * made from each ID, the first CHASE_REGULAR_SHARE of them, so it is the same people every evening.
+   */
+  private readonly chasers = new Set<string>();
+  private pickChasers(list: readonly Resident[]): void {
+    const regulars = list.filter((r) => this.kindOf(r) === 'regular');
+    const mark = (id: string): number => {
+      let h = 2166136261;
+      for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+      return h >>> 0;
+    };
+    regulars.sort((a, b) => mark(a.id) - mark(b.id) || (a.id < b.id ? -1 : 1));
+    for (const r of regulars.slice(0, Math.round(regulars.length * CHASE_REGULAR_SHARE))) this.chasers.add(r.id);
+  }
+  /** SCREAM-168: a regular picked to chase the truck forever (whether or not the chasing rules are on tonight). */
+  isChaser(resident: Resident): boolean {
+    return this.chasers.has(resident.id);
+  }
+  /** SCREAM-168: never gives up following the truck (Story's chasing rules): a fast kid or a chasing regular. */
+  chasesForever(resident: Resident): boolean {
+    return this.chaseRules && ((resident.kid && !!resident.fast) || this.chasers.has(resident.id));
+  }
+  /** SCREAM-168 (PO): the other regulars "Wait at their own curb": they never follow the truck. */
+  staysAtCurb(resident: Resident): boolean {
+    return this.chaseRules && this.kindOf(resident) === 'regular' && !this.chasesForever(resident);
   }
 
   /**
@@ -392,6 +422,7 @@ export class Residents {
     this.rnd = rnd;
     this.curbs = curbs;
     this.story = story;
+    this.pickChasers(list);
     this.people = list.map((resident) => {
       const times = routineFor(resident, story);
       // SCREAM-249: in Story, someone who only gets home later in the evening starts indoors.
@@ -600,8 +631,9 @@ export class Residents {
       p.x = p.resident.door[0];
       p.y = p.resident.door[1];
     }
-    p.follows = !!this.curbs;
-    if (this.curbs) {
+    // SCREAM-168: a regular who doesn't chase waits at their own curb and never follows the truck.
+    p.follows = !!this.curbs && !this.staysAtCurb(p.resident);
+    if (p.follows) {
       p.walking = true;
       p.plan = { kind: 'follow' };
       return;
