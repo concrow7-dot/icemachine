@@ -113,6 +113,7 @@ const { chromium } = require('playwright');
     const noteNow = () => sc('Cooler', "s.flavourNote ? s.flavourNote.flavour + ' | ' + s.flavourNote.texts.join(' / ') : 'none'");
     const before = await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents");
     check('SCREAM-355: each clipboard row has an "i" button (one ice cream on day 1)', await sc('Cooler', "s.infoButtons.size + ' ' + [...s.infoButtons.keys()].join()"), '1 eclair');
+    check('SCREAM-359 (PO): the "i" button is grey, not blue', await sc('Cooler', "s.infoButtons.get('eclair').list[0].fillColor.toString(16)"), 'a59c90');
     const info = JSON.parse(await sc('Cooler', "JSON.stringify((b => ({ x: b.x, y: b.y }))(s.infoButtons.get('eclair')))"));
     await page.mouse.click(info.x, info.y); await wait(200);
     check('...clicking it opens the Chocolate Eclair\'s note from the cork board: its power, its limit and its cost', await noteNow(), 'eclair | CHOCOLATE ECLAIR / Owned from the start. / If you have these stocked in your cooler, every customer will buy an extra ice cream. / The average person won\'t pay more than $2.50 for one. / Costs you $1.00 each to stock.');
@@ -140,8 +141,8 @@ const { chromium } = require('playwright');
   check('...and that is a real street name', (await ev('e.street')).length > 3, true);
   // SCREAM-232: ticked today a bit likelier, not ticked much less likely; anyone but 0% may come.
   check('Day 1 (Monday): everyone but 0% may come out tonight', await ev('e.residents.all.every(p => p.buys === (p.resident.likelihood > 0))'), true);
-  check('...people ticked for Monday are likelier, the rest much less likely', await ev(`(() => { const R = e.residents.constructor; const st = { day: 1, seed: 1 }; return e.residents.all.every(p => (R.scheduleFactor(p.resident, st) > 1) === p.resident.days.includes(0) && R.scheduleFactor(p.resident, st) !== 1); })()`), true);
-  check('...the ones ticked every day are the regulars tonight', await ev(`e.residents.all.every(p => (e.residents.kindOf(p.resident) === 'regular') === (p.resident.days.length === 7))`), true);
+  check('...people ticked for Monday are likelier, the rest much less likely', await ev(`(() => { const R = e.residents.constructor; const st = { day: 1, seed: 1 }; return e.residents.all.filter(p => !p.resident.visitor).every(p => (R.scheduleFactor(p.resident, st) > 1) === p.resident.days.includes(0) && R.scheduleFactor(p.resident, st) !== 1); })()`), true);
+  check('...the ones ticked every day are the regulars tonight', await ev(`e.residents.all.filter(p => !p.resident.visitor).every(p => (e.residents.kindOf(p.resident) === 'regular') === (p.resident.days.length === 7))`), true);
   check('Top bar no longer shows the bike (end-of-day screen only)', /Bike/.test(await hudClock()), false);
   // SCREAM-220: players see no debug hint (it shows only with ?debug; checked at the end).
   check('No debug hint on the HUD for players (SCREAM-220)', await sc('Hud', 's.debugText === undefined'), true);
@@ -339,15 +340,36 @@ const { chromium } = require('playwright');
   check('Stock carried over (3 bars, same flavour)', await ev('e.coolerSlots[0].quantity + " " + e.coolerSlots[0].flavour'), '3 eclair');
   check("Tonight's profit starts at $0", await ev('e.profitCents'), 0);
   check('HUD says Tuesday Day 2/10', /Tuesday Day 2\/10/.test(await hudClock()), true);
-  check('Day 2 (Tuesday): people ticked for Tuesday are the likelier ones', await ev(`(() => { const R = e.residents.constructor; return e.residents.all.every(p => (R.scheduleFactor(p.resident, { day: 2, seed: 1 }) > 1) === p.resident.days.includes(1)); })()`), true);
+  check('Day 2 (Tuesday): people ticked for Tuesday are the likelier ones', await ev(`(() => { const R = e.residents.constructor; return e.residents.all.filter(p => !p.resident.visitor).every(p => (R.scheduleFactor(p.resident, { day: 2, seed: 1 }) > 1) === p.resident.days.includes(1)); })()`), true);
   check('Visits and the rotary hint carried over to day 2 (SCREAM-145)', (await ev(`e.visits['${r1}']`)) + ' ' + (await ev('e.rotaryHintGiven')) + ' ' + (await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); return d.rotaryHintGiven + ' ' + Object.keys(d.visits).length; })), '3 true true 5');
   check('Hints (PO): each regular keeps the same line on day 2 as on day 1', await ev("JSON.stringify([...e.hintFor.entries()].sort())"), day1Hints);
   check('Schedule lines (063): everyone keeps the same lines on day 2 as on day 1', await ev("JSON.stringify([...e.scheduleLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Sched);
   check('Neighbour lines: the street says the same about everyone on day 2 as on day 1', await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Neighbours);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
+  const truckCooler = async () => { await page.evaluate(() => { const t = window.__game.scene.getScene('Truck'); t.selected = 'cooler'; t.refresh(); }); await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); };
+  // ---- SCREAM-368 (PO): DRIVE without buying any stock tonight: a pop-up warns, with two buttons ----
+  {
+    const truck = (fn) => sc('Truck', fn);
+    await truck("(s.selected = 'driver', s.refresh(), true)");
+    await press('Enter'); await wait(300);
+    check('SCREAM-368: day 2, stock left but none bought tonight: DRIVE opens the warning and stays home', (await truck('!!s.restockWarning')) + ' ' + (await scenes()) + ' ' + (await ev('e.isPrepLocked')) + ' ' + (await ev('e.stockLeft > 0')), 'true Truck,Hud false true');
+    check('...it says so, with GO TO THE COOLER and DRIVE ANYWAY buttons', await truck("s.restockWarning.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')"), "YOU HAVEN'T RESTOCKED | You haven't bought any ice cream tonight.\nThere are 3 ice creams left in the cooler. | C  GO TO THE COOLER | Y  DRIVE ANYWAY | B: Close");
+    await page.screenshot({ path: outDir + '/story_restock_warning.png' });
+    await press('ArrowRight'); await press('Enter');
+    check('...while it is open the other keys do nothing', (await truck('!!s.restockWarning')) + ' ' + (await scenes()), 'true Truck,Hud');
+    await press('b');
+    check('...B closes it, still at the truck', (await truck('!!s.restockWarning')) + ' ' + (await scenes()), 'false Truck,Hud');
+    await truck("(s.selected = 'driver', s.refresh(), true)"); await press('Enter'); await wait(200);
+    // A click on GO TO THE COOLER (as on a phone).
+    const at = await truck("(() => { const r = s.restockWarning.list.filter(o => o.type === 'Rectangle' && o.input)[1]; return [r.x, r.y]; })()");
+    await page.mouse.click(at[0], at[1]); await until(async () => (await scenes()).startsWith('Cooler'));
+    check('...GO TO THE COOLER opens the cooler', await scenes(), 'Cooler,Hud');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Truck')); await until(async () => (await scenes()) === 'Truck,Hud');
+  }
+
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
-  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
+  await truckCooler();
   check('SCREAM-307: Enter opens the cooler from there, the clock still waiting', (await scenes()) + ' ' + (await ev('e.isClockRunning')), 'Cooler,Hud false');
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
@@ -361,8 +383,55 @@ const { chromium } = require('playwright');
     check('SCREAM-251: every resident has a porch light in Story', await sc('Drive', 's.porchLights.length === s.evening.residents.all.length && s.porchLights.length > 0'), true);
     check('...someone indoors has theirs on; someone out in the yard has theirs off', await ev("(() => { const r = e.residents; const inP = r.all.find(p => !p.outside && r.homeNow(p.resident)); const outP = r.all.find(p => p.outside); return r.porchLit(inP) + ' ' + r.porchLit(outP); })()"), 'true false');
     check('...it is drawn by their front door, and only for the people who are in', await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); const r = s.evening.residents; const cam = s.cameras.main; const was = { x: cam.scrollX, y: cam.scrollY }; const i = r.all.findIndex(p => !p.outside && r.homeNow(p.resident)); const d = r.all[i].resident.door; cam.stopFollow(); cam.centerOn(d[0], d[1]); cam.preRender(); s.drawResidents(0); const g = s.porchLights[i]; const near = Math.hypot(g.x - d[0], g.y - d[1]) < 30; const wrong = r.all.filter((p, k) => s.porchLights[k].visible && !r.porchLit(p)).length; const out = g.visible + ' ' + near + ' ' + wrong; cam.startFollow(s.truck, true, 0.15, 0.15); return out; }), 'true true 0');
-    check('...it goes off when they come out for the truck, and stays off while they are at the window', await ev("(() => { const r = e.residents; r.hearingOff = true; const p = r.all.find(q => !q.outside && q.customer === 'none' && r.homeNow(q.resident) && !q.resident.hardToFind); r.wantIceCream(p); const out = r.porchLit(p); const was = [p.outside, p.customer]; p.outside = false; p.customer = 'window'; const atWindow = r.porchLit(p); p.outside = was[0]; p.customer = 'done'; r.walkHome(p); r.hearingOff = false; return out + ' ' + atWindow; })()"), 'false false');
+    check('...it goes off when they come out for the truck, and stays off while they are at the window', await ev("(() => { const r = e.residents; r.hearingOff = true; const p = r.all.find(q => !q.outside && !q.gone && q.customer === 'none' && r.homeNow(q.resident) && !q.resident.hardToFind); r.wantIceCream(p); const out = r.porchLit(p); const was = [p.outside, p.customer]; p.outside = false; p.customer = 'window'; const atWindow = r.porchLit(p); p.outside = was[0]; p.customer = 'done'; r.walkHome(p); r.hearingOff = false; return out + ' ' + atWindow; })()"), 'false false');
     check('...someone with hours who is not home yet is dark, though they are indoors', await ev("(() => { const r = e.residents; const p = r.all.find(q => q.resident.hours && !q.resident.hardToFind && q.resident.hours[0] !== null); if (!p) return 'nobody'; const now = r.nowMinutes; const was = p.outside; p.outside = false; r.nowMinutes = () => p.resident.hours[0] - 5; const early = r.porchLit(p); r.nowMinutes = () => p.resident.hours[0] + 5; const home = r.porchLit(p); r.nowMinutes = now; p.outside = was; return early + ' ' + home; })()"), 'false true');
+  }
+  // ---- SCREAM-224 (PO, November 15): people at the park (the basketball court and the sand) ----
+  {
+    check('SCREAM-224: Story, 5 PM: 13 people at the park, 10 of them visitors and the 3 residents who get home late', await ev("(() => { const here = e.residents.atParkNow; return here.length + ' ' + here.filter(p => p.resident.visitor).length + ' ' + here.filter(p => !p.resident.visitor).map(p => p.resident.name).sort().join(); })()"), '13 10 Drake Maye,Joe Sullivan,Kathleen Scoopley');
+    check('...the other 3 visitors are not on the map tonight, and none has a porch light on', await ev("(() => { const r = e.residents; const v = r.all.filter(p => p.resident.visitor); return v.length + ' ' + v.filter(p => p.gone && !p.outside).length + ' ' + v.filter(p => r.porchLit(p)).length; })()"), '13 3 0');
+    // Drive up beside the park (nobody may want ice cream meanwhile) and look.
+    const seen = await page.evaluate(async () => { const s = window.__game.scene.getScene('Drive'); const r = s.evening.residents; const was = { x: s.truck.x, y: s.truck.y }; r.hearingOff = true; const c = r.all.find(p => p.resident.visitor).resident.curb; s.truck.setPosition(c[2], c[3]); await new Promise(f => setTimeout(f, 1200)); const shown = r.all.filter((p, i) => p.atPark && s.residentSprites[i].visible).length; const flat = [...s.occluders].filter(([i, image]) => image.visible && /^(court_|play_)/.test(s.map.objects[i].key)).length; const court = s.map.objects.find(o => o.key === 'court_basketball'); const size = s.map.sprites.find(x => x.key === 'court_basketball'); const onCourt = r.all.filter(p => p.atPark && Math.abs(p.x - court.x) < size.w / 2 && p.y < court.y && p.y > court.y - size.h).length; return { was, out: shown + ' ' + flat + ' ' + (onCourt >= 2) }; });
+    await page.screenshot({ path: outDir + '/story_park_5pm.png' });
+    check('...beside the park all 13 are drawn, on top of the court and the sand (never hidden behind them), some of them on the court', seen.out, '13 0 true');
+    await page.evaluate((was) => { const s = window.__game.scene.getScene('Drive'); s.homeArmed = false; s.truck.setPosition(was.x, was.y); s.evening.residents.hearingOff = false; }, seen.was);
+    await wait(300);
+  }
+  // ---- SCREAM-252 (PO): residents' cars on the street while they're home; Elm Park's old parked cars are gone ----
+  {
+    const want = await ev("e.residents.all.filter(p => e.residents.carWanted(p.resident)).map(p => p.resident.id).sort().join()");
+    check('SCREAM-252: Tuesday: the cars out are exactly the owners home today; none of the old parked cars', (await ev("e.residents.carsNow.map(c => c.id).sort().join()")) === want && want.length > 0, true);
+    check('...each is drawn and is an obstacle', await sc('Drive', "(() => { const now = s.evening.residents.carsNow; return now.every(c => s.residentCars.get(c.id) && s.residentCars.get(c.id).visible) + ' ' + (s.cars.length === now.length); })()"), 'true true');
+    // Driving into one is a car crash, like a parked car (the same bump and cost: DriveScene.crash).
+    const hit = await page.evaluate(async () => {
+      const s = window.__game.scene.getScene('Drive');
+      const c = s.evening.residents.carsNow[0]; const rad = c.angle * Math.PI / 180;
+      s.cameras.main.stopFollow(); s.cameras.main.centerOn(c.x, c.y);
+      await new Promise(r => setTimeout(r, 300));
+      const into = s.obstacleAt(c.x - Math.cos(rad) * 40, c.y - Math.sin(rad) * 40, c.angle);
+      // The car is snug against the curb (PO, November 16), so a truck behind it sits a little out from the curb: either side, one is clear.
+      const clear = [1, -1].map((k) => s.obstacleAt(c.x - Math.cos(rad) * 140 - Math.sin(rad) * 16 * k, c.y - Math.sin(rad) * 140 + Math.cos(rad) * 16 * k, c.angle)).includes(null) ? null : 'blocked';
+      return into + ' ' + clear;
+    });
+    await page.screenshot({ path: outDir + '/story_resident_car.png' });
+    check('...nose to tail with one, the truck hits a car; further back it is clear', hit, 'car null');
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.cameras.main.startFollow(s.truck, true, 0.15, 0.15); });
+    await wait(300);
+  }
+  // ---- SCREAM-363 (PO): Shift+F freezes the game as it looks, for screenshots ----
+  {
+    const snap = () => page.evaluate(() => { const g = window.__game; const e = g.registry.get('evening'); const s = g.scene.getScene('Drive'); return [Math.round(e.clockMinutes * 100), Math.round(s.truck.x), Math.round(s.truck.y), e.residents.all.map(p => Math.round(p.x) + ',' + Math.round(p.y)).join(';')].join('|'); });
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.speed = s.topSpeed * 0.5; });
+    await page.keyboard.down('Shift'); await page.keyboard.press('KeyF'); await page.keyboard.up('Shift');
+    await wait(200);
+    const a = await snap(); await wait(1200); const b = await snap();
+    check('SCREAM-363: Shift+F freezes it: the clock, the truck and everyone stand still; the road is paused; nothing new on screen', (a === b) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('Hud', 's.frozen !== null')) + ' ' + /Closed|Frozen|Paused/i.test(await sc('Hud', 's.clockText.text')), 'true true true false');
+    await page.keyboard.press('Escape'); await wait(300);
+    check('...other keys do nothing while frozen (Esc does not open the pause menu)', (await page.evaluate(() => window.__game.scene.isActive('Pause'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false true');
+    await page.keyboard.down('Shift'); await page.keyboard.press('KeyF'); await page.keyboard.up('Shift');
+    await wait(600);
+    check('...Shift+F again: it all carries on', (await snap()) !== b && !(await page.evaluate(() => window.__game.scene.isPaused('Drive'))), true);
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.speed = 0; });
   }
   // ---- SCREAM-237 (PO, November 15: "Street instead"): the top bar names the street the truck is on ----
   {
@@ -745,7 +814,7 @@ const { chromium } = require('playwright');
   check('...and reach the second column', await fillS('s.focus % 4'), 1);
   await page.screenshot({ path: outDir + '/story_fill_half_doors.png' });
 
-  // ---- SCREAM-268: On My Own, the uncle's $20 for gas waits at the first pump ----
+  // ---- SCREAM-268: On My Own, the uncle's gas waits at the first pump (SCREAM-360: a whole tank) ----
   {
     const flow = (call) => page.evaluate(`(async () => { const f = await import('/src/flow.js'); const s = window.__game.scene.getScenes(true)[0]; ${call}; return true; })()`);
     const pump = async () => { await page.evaluate(() => { const g = window.__game; if (g.scene.isActive('Drive')) g.scene.getScene('Drive').scene.pause(); g.scene.start('Pump'); }); await wait(600); };
@@ -754,16 +823,19 @@ const { chromium } = require('playwright');
     await until(async () => (await scenes()).includes('Cooler')); await wait(300);
     check('SCREAM-268: On My Own: the uncle\'s gas is waiting', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'true true');
     await pump();
-    check('...the first pump says he left $20', await sc('Pump', 's.noteText.text'), 'Your uncle left $20 for you to use.');
-    const cash0 = await ev('e.cashCents'); const fuel0 = await ev('e.fuel');
-    await press('ArrowUp', 6);
-    check('...up to $20, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), "2000 | UNCLE PAYS $20.00 | That's the uncle's $20.");
+    check('SCREAM-360: ...the first pump says he is paying for the first tank', await sc('Pump', 's.noteText.text'), 'Your uncle is paying for your first tank.');
+    // A nearly empty tank, so a fill-up costs more than the old $20.
+    await ev('(e.fuelLeft = 0.1, true)');
+    const cash0 = await ev('e.cashCents'); const fillUp = await ev('e.fillUpCents');
+    check('...a fill-up costs $27.00 now, more than he had before', fillUp, 2700);
+    await press('ArrowUp', 12);
+    check('SCREAM-360: ...up to a full tank, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.addsText.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), '2700 | UNCLE PAYS $27.00 | Fills it up | Your uncle is paying for your first tank.');
     // SCREAM-316 (PO, November 14): in Story, Buy Gas is bottom right and Leave bottom left (right of the gas dial, under the pump).
     check('SCREAM-316: the pay button is in the bottom-right corner', await sc('Pump', '(b => b.right <= s.scale.width && b.right >= s.scale.width - 24 && b.bottom >= s.scale.height - 40 && b.bottom <= s.scale.height)(s.payButton.getBounds())'), true);
     check('...DRIVE OFF in the bottom left, clear of the pump, the gas dial and the key line', await sc('Pump', `(() => { const d = s.driveOffButton.getBounds(), p = s.children.getByName('pump').getBounds(); const hud = s.scene.get('Hud'); const g = hud && hud.fuelGauge && hud.fuelGauge.visible ? hud.fuelGauge.x + 72 : 0; const line = s.children.list.find(o => o.type === 'Text' && /B: Drive Off/.test(o.text)).getBounds(); return d.left < 200 && d.bottom >= s.scale.height - 40 && d.top >= p.bottom && d.left >= g && d.bottom <= line.top && s.payButton.getBounds().bottom <= line.top; })()`), true);
     await page.screenshot({ path: outDir + '/story_pump_buttons.png' });
     await press('Enter'); await wait(400);
-    check('...the tank fills by $20 and the cash is untouched', ((await ev('e.fuel')) - fuel0 > 0.6) + ' ' + ((await ev('e.cashCents')) === cash0), 'true true');
+    check('...the tank is full and the cash is untouched', (await ev('e.fuel')) + ' ' + ((await ev('e.cashCents')) === cash0) + ' ' + (await ev('e.breakdown.gasCents')), '1 true 0');
     check('...used up: the next pump is the player\'s', await ev('e.uncleLeftGas + " " + e.unclePaysGas + " " + e.uncleGasUsed'), 'false false true');
     await flow("f.endEvening(window.__game.scene.getScenes(true)[0])"); await until(async () => (await scenes()).includes('DayEnd')); await wait(300);
     check('SCREAM-276: the end-of-day screen shows the gas dial, bottom left, at tomorrow\'s level', await sc('DayEnd', "(d => !!d && d.container.x < 160 && d.container.y > 450)(s.gasDial)"), true);

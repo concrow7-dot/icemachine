@@ -4,7 +4,7 @@
 // power-up ticket replaces a dummy note with a real one (name, price, what it does).
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
-import { getFlavour, type FlavourId } from './flavours';
+import { getFlavour, stockCostOf, type FlavourId } from './flavours';
 import { BACK_IT_UP_PRICE_CENTS, SPEEDY_PRICE_CENTS, MIRRORS_PRICE_CENTS, MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
@@ -150,7 +150,7 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
   const place = ICE_CREAM_PLACES[flavour];
   const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
   // SCREAM-352 (PO, November 15): "I want to add the cost of buying each ice cream to the powerup card."
-  const cost = `Costs you ${dollars(f.costCents)} each to stock.`;
+  const cost = `Costs you ${dollars(stockCostOf(flavour, true))} each to stock.`; // SCREAM-365: the notes are Story's
   // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
   const paragraphs = [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour] ?? '', limit, cost].filter(Boolean);
   return {
@@ -187,16 +187,19 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Run out of gas and it pours itself in: a splash to get you going. Full again every day.',
         logo: 'gas-can',
       },
-      // SCREAM-309 (PO, November 14): the left note under the gas can.
+      // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'", then
+      // (02:40) "Change \"more Junk\" to \"More Space for Scream\"". It takes the
+      // Truck 8 dummy's place (engineering's proposal; the sketch gives no place).
+      // SCREAM-364 (PO, November 16): the left note under the gas can now (Gitty Up's old place and price).
       {
-        id: GITTY_UP_ID,
+        id: MORE_JUNK_ID,
         col: 0,
         row: 1,
         from: [GAS_CAN_ID],
-        priceCents: GITTY_UP_PRICE_CENTS,
-        name: 'GITTY UP',
-        description: "Increase acceleration. The truck still is heavy, so don't expect much.",
-        logo: 'gitty-up',
+        priceCents: MORE_JUNK_PRICE_CENTS,
+        name: 'MORE SPACE FOR SCREAM',
+        description: 'More room in the cooler: a new bottom row opens in every crate.',
+        logo: 'more-junk',
       },
       // SCREAM-310 (PO, November 14): the right note under the gas can.
       {
@@ -214,7 +217,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         id: TRAIN_ID,
         col: 0,
         row: 2,
-        from: [GITTY_UP_ID],
+        from: [MORE_JUNK_ID], // SCREAM-364: from the left note under the gas can, now More Space for Scream
         priceCents: TRAIN_PRICE_CENTS,
         name: 'TRAIN OFF THE TRACKS',
         description: 'Max velocity increased.',
@@ -225,7 +228,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         id: BRAKES_ID,
         col: 1,
         row: 2,
-        from: [GITTY_UP_ID, TROT_ID],
+        from: [MORE_JUNK_ID, TROT_ID], // SCREAM-364
         priceCents: BRAKES_PRICE_CENTS,
         name: 'BRAKES MADE THIS CENTURY',
         description: 'Brakes are better.',
@@ -256,21 +259,20 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         description: 'Increase the speed of the truck in reverse.',
         logo: 'back-it-up',
       },
-      // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'", then
-      // (02:40) "Change \"more Junk\" to \"More Space for Scream\"". It takes the
-      // Truck 8 dummy's place (engineering's proposal; the sketch gives no place).
+      // SCREAM-309 (PO, November 14): the left note under the gas can. SCREAM-364 (PO, November 16: "I want
+      // to switch "more space for scream" with "gitty up" in both location and price"): under Brakes now.
       {
-        id: MORE_JUNK_ID,
+        id: GITTY_UP_ID,
         col: 2,
         row: 3,
         from: [BRAKES_ID],
-        priceCents: MORE_JUNK_PRICE_CENTS,
-        name: 'MORE SPACE FOR SCREAM',
-        description: 'More room in the cooler: a new bottom row opens in every crate.',
-        logo: 'more-junk',
+        priceCents: GITTY_UP_PRICE_CENTS,
+        name: 'GITTY UP',
+        description: "Increase acceleration. The truck still is heavy, so don't expect much.",
+        logo: 'gitty-up',
       },
       // The last dummy hangs in the middle of the fifth row, from either of the two above (engineering's call).
-      { id: 'truck-9', col: 1, row: 4, from: [BACK_IT_UP_ID, MORE_JUNK_ID], priceCents: 2500 },
+      { id: 'truck-9', col: 1, row: 4, from: [BACK_IT_UP_ID, GITTY_UP_ID], priceCents: 2500 }, // SCREAM-364
     ],
   },
   {

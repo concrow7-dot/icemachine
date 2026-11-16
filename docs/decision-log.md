@@ -2,6 +2,186 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 170 — Bigger − and + price buttons on Today's Menu (2026-11-16)
+
+**Decision (Jira SCREAM-370, under SCREAM-154, PO, November 16, 12:58):** "I want to increase the size of the blue + and - buttons. Not much larger". The − and + on each menu card in the cooler grow from about 22 x 20 px to about 28 x 28 px (text 16 → 20 px, more padding) and sit 2 px further in from the card's edges.
+
+**Why (product owner's rationale):** "they are small enough where I occasionally mis click".
+
+**Engineering's calls (proposals):** how much bigger (kept small so "$2.50" still fits between them); the same colour and place; Quick Play gets them too (it uses the same cards).
+
+## 169 — A warning when the player sets off without restocking (2026-11-16)
+
+**Decision (Jira SCREAM-368, under SCREAM-11, PO, November 16, 01:49):** "If the player goes to drive and they haven't restocked the truck, warn them." His answers: **"No stock bought tonight"** (warn when nothing was bought this evening, even with some left from yesterday) and **"Pop-up with two buttons"**: "YOU HAVEN'T RESTOCKED", with GO TO THE COOLER (C) and DRIVE ANYWAY (Y). An empty cooler still opens the cooler with its warning, as before (decision 111).
+
+**Options considered:** when: nothing bought tonight (his choice), the cooler running low, or either. How: a pop-up (his choice) or the cooler opening instead.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** Story, not the uncle's evening; only when first setting off (not leaving a stop at home); the wording; B closes it; while it's open nothing else on the truck screen answers.
+
+## 168 — People indoors a quarter as likely to come out; Speaker with Heavier Bass brings it back to half (2026-11-16)
+
+**Decision (Jira SCREAM-366, under SCREAM-78, PO, November 16, 01:40):** "I want to make it harder for people in their home to become customers. That way the powerup has a bigger effect." His answers: **"A quarter as likely"** (as someone in their yard; it was half) and **"Bass: indoors back to half"**: with Speaker with Heavier Bass, people indoors are half as likely again, as its note says ("More likely to get customers in their home"). It no longer makes the some-days people 10% likelier (decision 133).
+
+**Why (product owner's rationale):** "That way the powerup has a bigger effect."
+
+**Engineering's calls (proposals):** Story only (Quick play keeps half); everyone indoors, regulars included; the likelihood curve (decision 161) is scaled the same way.
+
+## 167 — Cheaper to stock in Story: SpongePop and Lil Explorer Pop $1.25, Lou Ball and Drum Cone $0.75 (2026-11-16)
+
+**Decision (Jira SCREAM-365, under SCREAM-78, PO, November 16, 01:37):** "reduce the price of the ice creams at the "available ice cream" clipboard in the cooler. The spongepop and explorer pop ice cream should reduce to $1.25 each. The 2 ball lou ball and drumcone should be $0.75 each". SpongePop and the Explorer Pop were $1.50; the Lou Ball and the Drum Cone $1.00 (decision 142).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** Story only (the standing rule): Quick play's SpongePop and Explorer Pop stay $1.50 (`Flavour.storyCostCents`, `stockCostOf`); the Lou Ball and the Drum Cone are Story's alone. The cork board's notes say the new prices. What customers pay is unchanged.
+
+## 166 — More Space for Scream and Gitty Up swap places and prices (2026-11-16)
+
+**Decision (Jira SCREAM-364, under SCREAM-78, PO, November 16, 01:32):** "I want to switch "more space for scream" with "gitty up" in both location and price." More Space for Scream is now the left note under the Temporary Gas Can, $20; Gitty Up the right note under Brakes Made This Century, $50.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the tree's shape stays: Train Off The Tracks and Brakes Made This Century now hang from More Space for Scream (where Gitty Up was); the Truck 9 dummy from Back It Up or Gitty Up. A save that owns either keeps it.
+
+## 165 — A hidden Shift+F freezes the game as it looks, for screenshots (2026-11-16)
+
+**Decision (Jira SCREAM-363, under SCREAM-202, PO, November 16, 01:20; "Build all four", 01:45):** "I want to be able to pause mid game showing the screen that I'm seeing. This will help getting screenshots. It should be Shift + something. It should be hidden so that it isn't available to regular players."
+
+**Why (product owner's rationale):** "This will help getting screenshots."
+
+**Engineering's calls (proposals):** Shift+F ("freeze"; the Shift + number keys are all taken); every evening screen, both modes; every scene but the top bar pauses, the top bar's clock stops, the sound pauses, other keys do nothing; nothing on screen says it's frozen (it would be in the screenshot); not in any key list, like the other debug keys.
+
+## 164 — Residents' cars are the art pack's cars, 30% smaller than the pack, every owner a different one (2026-11-16)
+
+**Decision (Jira SCREAM-361, under SCREAM-6, PO, November 16, 01:00 to 01:14):** "How much effort would it be to use cars from the art pack to replace those cars." Shown one of the pack's cars at today's size and at the pack's own size: "Lets make the cars 30% smaller, show me an example of that. The hitbox should match the car. Lets only do cars on the elm park map for now." Shown that: "I like that, lets go ahead with that." And: "I would also like to use as much variety in the cars as possible."
+
+So the residents' cars in Elm Park are drawn with LimeZu Modern Exteriors' 26 cars, 30% smaller than the pack (its shortest car is 66 px long on the map; the truck is 104), each owner a different car, and the truck bumps into the car's own size. Foley Stadium's parked cars are unchanged.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- Shrunk with nearest-neighbour, as in the mock-up he approved; longer cars in the pack stay longer (66 to 83 px).
+- Each car uses the pack's view nearest the way it faces (right, down, left, up), turned the last few degrees, and faces the way traffic goes on its side of the street.
+- The bigger cars keep room for the truck at every pink square (half the car plus 62 px), so some park further from their owner's house than before (Ruth Butter Ginsburg's is about 440 px along Germain Street).
+- Which owner gets which car is a fixed shuffle, the same every build.
+
+**Changed while in review (PO, November 16, 13:01 to 13:05):** "I want to move the parked cars so they look more on the side of the road. Currently they look like they are in the street driving, not next to the curb parked" (with a screenshot: one car a little off the curb, one far from it), and "Make the cars 15% smaller". Each car now sits against the curb (3 px from where the asphalt ends), and every car is 15% smaller (the shortest is 56 px long, was 66). Larry Birdseed's car moved nearer his house along Institute Road.
+
+## 163 — "C Close" in the line of keys (withdrawn before it was merged) (2026-11-16)
+
+**Decision (Jira SCREAM-362, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Built as PR #275; closed unmerged with decision 160 (SCREAM-367).
+
+## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
+
+**Decision (Jira SCREAM-252, under SCREAM-11, PO, November 10 brainstorm; built November 16):** "Maybe days they are home, a car is parked in their driveway and/or in front of the house on the street." Story only. His answers (November 15, about 23:55):
+
+- Who has a car: **"A Car column in the sheet"** (the Residents sheet's Elm Park tab, column X).
+- Where it parks: he typed **"1, lets remove the old parked cars"**: on the street in front of their house, and Elm Park's old parked cars go.
+- Can the truck hit one: **"Yes, like parked cars"**: the same bump and damage cost ("Parked car").
+
+**Options considered:** who: a sheet column, the game picks about half, or everyone. Where: on the street in front, or in the driveway (which would need each driveway marked in Tiled). Obstacle or not.
+
+**Why (product owner's rationale):** _to be filled in by the PO._ From the brainstorm: a tell that someone is home, alongside the porch lights (decision 155).
+
+**Engineering's calls (proposals):**
+
+- The draft Car column ticks 14 adults (every other adult with a house). Kids and park visitors have none. Three of the 14 (Sophie Scoops, Sully Babe, Tomas Thanks) have no ticked days, so their cars never show: change the sheet as you like.
+- A car parks in the curb lane on its owner's street, about 90 px along from their pink square (so the truck can still pull in there), clear of every pink square, other cars, junctions, the pump bays and home's driveway.
+- A car is out on its owner's ticked days, inside their From and Until; it pulls up only when the truck (and anyone waiting) is well clear of its spot, and leaves at their Until. Someone at the park (Kathleen Scoopley) left their car at home.
+- Not in the uncle's evening (so his drive is unchanged); Foley Stadium, and so Quick play, keep their parked cars.
+- Drawn like the old parked cars; each owner always has the same colour.
+
+## 161 — Story's customer likelihood curve: the chance rises, peaks, then fades (2026-11-16)
+
+**Decision (Jira SCREAM-182, under SCREAM-11, PO, November 6, his drawing "Customer Likelihood"; built November 16):** once someone hears the truck, their chance of coming out starts partway up, climbs to a peak at about 6 to 8 seconds, then slopes down to just above nothing by 30 seconds. Before, it was highest in the first second and only fell (decisions 015, 034). "It will change per customer": his answer (November 15) was **"Height and peak time"**: their Likelihood from the sheet sets the height, as before, and each person's peak comes a little earlier or later, so they don't all come out together.
+
+**Options considered:** height only; height and peak time (his choice); height, peak time and how long it lasts.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- The time along the bottom is how long they have heard the truck in a row (as before); the height is the chance each second.
+- The curve's points are in `tuning.ts` (`CUSTOMER_CURVE_POINTS`): 45% of the top at 0 s, 93% at 7 s, 35% at 15 s, 12% at 22 s, 3% at 30 s, read off his drawing.
+- Its size (`CUSTOMER_CURVE_SCALE`) is set so that over the 30 seconds as many people come out as before: decisions 033 and 034 cut the numbers on purpose, so only the timing changes. Say if you want more customers too.
+- Each resident's peak is up to 2 seconds earlier or later (5 to 9 s), the same for them every evening.
+- Story only (the standing rule): Quick play keeps the old falling chance. Regulars keep their steady chance (decision 034). After 30 seconds they have still decided for the evening. Hard-to-find customers are unchanged.
+
+## 160 — Closing the truck for business (withdrawn before it was merged) (2026-11-16)
+
+**Decision (Jira SCREAM-233, PO, November 10; built November 16 as PR #272, never merged):** "Allow the truck to shut down for business while driving around." His answers: "Separate Closed sign" (C and a CLOSE / OPEN FOR BUSINESS button; the music kept playing), customers on their way "turn back home", "Top bar only".
+
+**Withdrawn (Jira SCREAM-367, PO, November 16, 01:48):** "I want to remove the close and close for business mechanic", while testing it. Asked how, he chose "Drop #272 and #275": both pull requests were closed unmerged, so it never reached main. Decision 163 (C in the line of keys, SCREAM-362, PR #275) went with it.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+## 159 — The uncle pays for the whole first tank of gas (2026-11-15)
+
+**Decision (Jira SCREAM-360, under SCREAM-5, PO, November 15, 23:06):** "New high priority ticket: The uncle pays for the whole first tank of gas." Before, he paid up to $20 (decision 040's pump stop, SCREAM-173), and a full tank costs $30, so his money never filled it.
+
+His answers the same evening: it covers **"Both"**: the player with the uncle, at his pump stop, and the player who skips him or plays On My Own, at their first pump (SCREAM-268). The words are engineering's draft (**"My draft"**): the uncle says "Fill her right up. This first tank is on me."; On My Own, the pump says "Your uncle is paying for your first tank."
+
+**Options considered:** both players, or only with the uncle (the other keeping $20).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- It is used up the first time gas is bought with it, as before, even if the player takes less than a full tank.
+- The pump's old "That's the uncle's $20." line is gone: with the uncle paying, the amount stops at a full tank ("Fills it up").
+
+## 158 — People at the park: about 13 at 5 PM, emptying out from 5:45, 1 or 2 left by 7 (2026-11-15)
+
+**Decision (Jira SCREAM-224, under SCREAM-11, PO, November 15, 21:39):** "I want to add customers to the park area on the elm park map. The basketball court and sand area in the bottom right corner of the map. There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to empty out. so that by 7 there are only 1 or 2 people left."
+
+His answers the same evening:
+
+- Who they are: **"A mix"**: the three residents who already get home late (Joe Sullivan 6:00, Kathleen Scoopley 6:30, Drake Maye 7:00) are at the park until then, plus about 10 new visitors who live in none of the houses.
+- How they buy: he typed "Eventually I want to add the permit. But for now, just to make testing easier. I want to make it so I don't" (the answer was cut off there). Read as: no park permit for now; they buy like any customer. The permit stays its own ticket (SCREAM-213).
+- Whether it is the same every evening: **"Random each evening"**: who is there and when each one leaves is rolled fresh every evening.
+
+So, in Story (not the uncle's evening): at 5:00 there are 13 people at the basketball court and the sandy playground below Highland Street: 10 of the 13 visitors on the Residents sheet (picked by the evening's dice) and the 3 residents. Each visitor sets off at their own random time from 5:45, except 1 or 2 who stay all evening; they walk off the bottom of the map. The residents set off in time to be home at their From time. When they hear the truck they come to it like anyone else, and afterwards go back to the park.
+
+**Options considered:** who: new visitors only, Elm Park residents only, or a mix (his choice). Buying: like any customer, everyone at the park comes for sure, or only with a park permit (his answer: the permit later). Evenings: the same every evening, busier on some weekdays, or random each evening (his choice).
+
+**Why (product owner's rationale):** _to be filled in by the PO._ On the permit, his words: "for now, just to make testing easier".
+
+**Engineering's calls (proposals):**
+
+- A new **Park** column on the sheet's Elm Park tab. Yes with no House is a visitor; Yes with a House and a From time is a resident who is at the park until they come home. So he can send any resident to the park from the sheet.
+- 13 visitors on the sheet (T041 to T053), 10 at the park each evening, so the crowd changes. Their names, ages, looks and Likelihoods (35% to 65%) are engineering's drafts for him to change.
+- The visitors who leave set off between 5:45 and 6:40, and walk out briskly, so that by 7:00 only the ones who stay are left.
+- A resident at the park sets off 20 game minutes before their From time, so the sheet's From time (and the lines customers say about it) stays true. Their porch light is off until they are home.
+- Visitors always count as some-days customers, never regulars (so the regulars who chase the truck forever are the same people as before); they have no days, and nobody talks about them in schedule or neighbour lines.
+- At the park the usual chasing rules apply: after giving up, or after a sale, they walk back to the park.
+- People standing on the court or the sand are drawn on top of them (before, the court's picture was drawn over anyone standing "behind" its bottom edge).
+- Kids stand on the court or in the sand, adults on the court or on the grass beside it. The spots are measured from the court's and the playground's pictures, so they move with them if he moves them in Tiled.
+
+## 157 — The cooler's "i" buttons are grey, not blue (2026-11-15)
+
+**Decision (Jira SCREAM-359, under SCREAM-78, PO, November 15, 21:08; a change to SCREAM-355):** "I want to change the "i" button on the available ice cream to be grey and not blue. It sticks out too much at the moment."
+
+**Why (product owner's rationale):** "It sticks out too much at the moment."
+
+**Engineering's calls (proposals):** a soft warm grey (`INFO_GREY`) that sits with the clipboard's pencil-brown text, a touch smaller, with no white ring. Its place and what it does are unchanged.
+
+## 156 — The Lou Ball's reversed steering counts down only while the truck is moving (2026-11-15)
+
+**Decision (Jira SCREAM-358, under SCREAM-78; a fix to decision 138, SCREAM-334):** the PO, November 15, 20:53: "The key bindings reversing isn't happening on the 2 ball lou ball". Played through in the browser, the sale did start the 10 seconds and swap the steering, but the 10 seconds ran down whenever the road view was open, parked or not. After a sale the truck is parked on the brake, so with a wait for the next customer, or more customers to serve, they were gone before the truck moved.
+
+So the 10 seconds now run down only while the truck is moving. Parked, the countdown waits and the "STEERING REVERSED" label stays up.
+
+**Options considered (engineering):** count only while moving (chosen: it is what "10 seconds of driving" was meant to be), or start the 10 seconds when the truck first moves after the sale.
+
+**Why (product owner's rationale):** his report that it "isn't happening". Engineering's reading of the cause, to confirm with him: no other way to make it fail was found.
+
+**Engineering's calls (proposals):**
+
+- Rolling at roll speed counts as moving.
+- The Drum Cone's drum solo is unchanged: its 30 seconds still count parked or moving, because the solo calls customers while the truck is parked too.
+
 ## 155 — A porch light by the front door of everyone who is in (2026-11-15)
 
 **Decision (Jira SCREAM-251, under SCREAM-11, PO, November 10 and 15):** from the customers brainstorm (November 10): a tell on the house when a resident is home, lights and cars with variety ("some people park, some don't have a car so the lights on, some are both"), Story only. On November 15 he chose: the look, "A porch light at the door"; a house counts as home "Only while they are physically in"; who shows one, "Everyone for now"; and it is "Always right".

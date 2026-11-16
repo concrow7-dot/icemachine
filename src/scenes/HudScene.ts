@@ -158,6 +158,12 @@ export class HudScene extends Phaser.Scene {
 
     // Shift + number, so the plain number keys are free for typing prices (PO, doc 08 Q30).
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      // SCREAM-363 (PO, November 16): Shift+F freezes the game exactly as it looks, for screenshots; again to carry on.
+      if (event.shiftKey && event.code === 'KeyF' && !event.repeat) {
+        this.toggleFreeze();
+        return;
+      }
+      if (this.frozen) return; // frozen: no other key does anything
       // Esc pauses the evening from any screen (#19). The HUD runs during every evening screen, so it listens here.
       if (event.key === 'Escape') {
         pauseEvening(this);
@@ -222,7 +228,31 @@ export class HudScene extends Phaser.Scene {
     this.debugText?.setX(this.clockText.x + this.clockText.width + 24);
   }
 
+  /**
+   * SCREAM-363 (PO, November 16: "pause mid game showing the screen that I'm seeing ... It should be
+   * Shift + something. It should be hidden"): the scenes Shift+F froze (null when not frozen). Every
+   * evening scene but this one is paused, this one stops ticking, and the sound stops; nothing is drawn
+   * to say so (it would be in the screenshot). A debug key: not in the key lists.
+   */
+  frozen: string[] | null = null;
+
+  toggleFreeze(): void {
+    if (this.frozen) {
+      for (const key of this.frozen) this.scene.resume(key);
+      this.frozen = null;
+      this.sound.resumeAll();
+      return;
+    }
+    this.frozen = this.scene.manager
+      .getScenes(true)
+      .map((s) => s.scene.key)
+      .filter((key) => key !== this.scene.key && !this.scene.isPaused(key));
+    for (const key of this.frozen) this.scene.pause(key);
+    this.sound.pauseAll();
+  }
+
   update(_time: number, delta: number): void {
+    if (this.frozen) return; // SCREAM-363: the clock and everything else wait
     this.uncleBox?.place(this.onIntro() ? 'intro' : this.scene.isActive(SceneKeys.Cooler) ? 'cooler' : 'other');
     // SCREAM-177: the opening credits fill the screen, so the top bar waits until they're over.
     this.cameras.main.setVisible(!this.scene.isActive(SceneKeys.TutorialCrawl));

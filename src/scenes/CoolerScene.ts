@@ -57,6 +57,8 @@ const LID_OPEN_MS = 600;
 const LID_WAIT_MS = 250;
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
+/** SCREAM-359: the clipboard's "i" buttons: a soft warm grey, so they don't stand out on the paper. */
+const INFO_GREY = 0xa59c90;
 const UNPAID = 0xffcf33;
 
 /**
@@ -114,7 +116,8 @@ export class CoolerScene extends Phaser.Scene {
   /** SCREAM-355: a small round "i" button at (x, y) that opens this ice cream's note. */
   private makeInfoButton(x: number, y: number, flavour: FlavourId): void {
     const button = this.add.container(x, y, [
-      this.add.circle(0, 0, 9, 0x2884d6).setStrokeStyle(2, 0xffffff),
+      // SCREAM-359 (PO, November 15): grey, not blue: "It sticks out too much at the moment."
+      this.add.circle(0, 0, 8, INFO_GREY),
       this.add.text(0, 0, 'i', { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
     ]).setName(`info-${flavour}`);
     // A zone bigger than the circle, so a finger can hit it (SCREAM-77).
@@ -179,7 +182,7 @@ export class CoolerScene extends Phaser.Scene {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
     this.evening.capMenuPrices();
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f));
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f), (f) => this.evening.stockCostOf(f));
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -298,7 +301,7 @@ export class CoolerScene extends Phaser.Scene {
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
-      this.add.text(textLeft, lowerY, `${formatMoney(flavour.costCents)} each`, {
+      this.add.text(textLeft, lowerY, `${formatMoney(this.evening.stockCostOf(flavour.id))} each`, { // SCREAM-365
         fontFamily: 'monospace',
         fontSize: compact ? '11px' : '12px',
         color: '#5a4636',
@@ -493,8 +496,9 @@ export class CoolerScene extends Phaser.Scene {
           this.order.changePrice(flavour.id, direction * PRICE_STEP_CENTS);
           this.refresh();
         };
-        container.add(this.makeButton(16, 120, '−', change(-1), 16, false));
-        plus = this.makeButton(w - 16, 120, '+', change(1), 16, false);
+        // SCREAM-370 (PO, November 16): "Not much larger but they are small enough where I occasionally mis click".
+        container.add(this.makeButton(18, 120, '−', change(-1), 20, false, { x: 8, y: 3 }));
+        plus = this.makeButton(w - 18, 120, '+', change(1), 20, false, { x: 8, y: 3 });
         container.add(plus);
       }
       this.cards.push({ flavour: flavour.id, container, frame, price, margin, plus });
@@ -538,9 +542,10 @@ export class CoolerScene extends Phaser.Scene {
     onClick: () => void,
     size: number,
     addToScene = true,
+    padding = { x: 6, y: 1 },
   ): Phaser.GameObjects.Text {
     const button = (addToScene ? this.add.text(x, y, label) : this.make.text({ x, y, text: label }, false))
-      .setStyle({ fontFamily: 'monospace', fontSize: `${size}px`, color: '#ffffff', backgroundColor: BUTTON, padding: { x: 6, y: 1 } })
+      .setStyle({ fontFamily: 'monospace', fontSize: `${size}px`, color: '#ffffff', backgroundColor: BUTTON, padding })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
@@ -784,7 +789,7 @@ export class CoolerScene extends Phaser.Scene {
       card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
       // SCREAM-343: at the top price the + is greyed out, so the player sees why it stopped.
       card.plus?.setAlpha(this.order.atTopPrice(card.flavour, PRICE_STEP_CENTS) ? TOP_PRICE_PLUS_ALPHA : 1);
-      const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
+      const profitEach = slot.priceCents - this.evening.stockCostOf(slot.flavour);
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
       if (profitEach <= 0) card.margin.setText('No profit at this price').setColor('#b3261e');
       else card.margin.setText(`Profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');

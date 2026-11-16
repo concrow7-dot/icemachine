@@ -159,11 +159,9 @@ export class PumpScene extends Phaser.Scene {
           ? 'Not enough cash for gas.'
           : this.amount < max || fills
             ? this.evening.uncleLeftGas
-              ? 'Your uncle left $20 for you to use.'
+              ? 'Your uncle is paying for your first tank.' // SCREAM-360 (PO: "My draft")
               : ''
-            : uncle
-              ? "That's the uncle's $20."
-              : "That's all the cash allows.",
+            : "That's all the cash allows.",
     );
     // SCREAM-173: in the tutorial the uncle pays.
     this.payButton.setText(`${uncle ? 'UNCLE PAYS' : 'PAY'} ${formatMoney(this.amount)}`).setVisible(this.amount > 0);

@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import type { WorcesterMap } from '../config/mapTypes';
+import { currentMap, fixedParkedCars } from '../config/maps';
 import { gasStations } from '../config/gasStation';
 import { AutoRoute, nextSpeed } from '../state/AutoRoute';
 import type { EveningState } from '../state/EveningState';
@@ -97,7 +98,8 @@ export class UncleDrive {
     // SCREAM-185: home from the pump is a route of its own.
     if (leg === 'toHome' && this.routeName !== 'home') this.route = undefined;
     this.routeName = leg === 'toHome' ? 'home' : 'out';
-    const cars = host.map.parkedCars.map((c) => [c.x, c.y] as [number, number]);
+    // SCREAM-252: Elm Park has no parked cars of its own any more, and no residents' cars in the uncle's evening.
+    const cars = [...fixedParkedCars(currentMap()), ...host.evening.residents.carsNow].map((c) => [c.x, c.y] as [number, number]);
     this.route ??=
       leg === 'toHome'
         ? new AutoRoute({ corners: UNCLE_HOME_CORNERS, lanes: UNCLE_HOME_LANES, radius: UNCLE_ROUTE_RADIUS, cars, passOffset: UNCLE_PASS_OFFSET })

@@ -3,13 +3,16 @@ import { BUBBLE_INK, drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
-import { currentMap, versioned, type GameMap } from '../config/maps';
+import { currentMap, fixedParkedCars, versioned, type GameMap } from '../config/maps';
 import { LapCounter, portalStrength, ringOf } from '../state/RingLaps';
 import { RingPortal } from '../ui/ringPortal';
 import { PortalSound } from '../audio/PortalSound';
 import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
+  CARS_JSON,
+  CARS_KEY,
+  CARS_PNG,
   HIT_MIN_SPEED_FRACTION,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
@@ -128,6 +131,8 @@ const PORCH_LIGHT_DY = -24;
 const PORCH_GLOW = 0xffd36b;
 /** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
 const OCCLUDER_CELL = 128;
+/** SCREAM-224: map pieces that lie flat on the ground (the basketball court, the playground's sand). */
+const FLAT_PIECE = /^(court_|play_)/;
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
@@ -267,6 +272,8 @@ export class DriveScene extends Phaser.Scene {
     if (!this.textures.exists(a.atlasKey)) this.load.atlas(a.atlasKey, a.atlasPng, a.atlasJson);
     for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, versioned(`${a.roadDir}/${key}.png`, this.map));
     loadResidentSheet(this);
+    // SCREAM-361: the residents' cars, from the art pack (Elm Park).
+    if (a.residentCars && !this.textures.exists(CARS_KEY)) this.load.atlas(CARS_KEY, CARS_PNG, CARS_JSON);
     if (!this.textures.exists(UNCLE_WALKER_KEY)) this.load.spritesheet(UNCLE_WALKER_KEY, UNCLE_URL, { frameWidth: 16, frameHeight: 32 });
     showLoadingWhileLoading(this); // SCREAM-75
   }
@@ -313,10 +320,13 @@ export class DriveScene extends Phaser.Scene {
     // SCREAM-251: Story's porch lights (Quick play's houses are unchanged).
     this.porchLights = getStory(this) ? this.evening.residents.all.map((p) => this.makePorchLight(p.resident.door)) : [];
     this.occluders.clear();
+    this.residentCars.clear(); // SCREAM-252: a restart (the other map) made new drawings
     this.objectGrid.clear();
     this.map.objects.forEach((o, i) => {
       const size = this.objectSizes.get(o.key);
       if (!size) return;
+      // SCREAM-224: the court and the playground lie flat on the ground: people stand on them, never behind them.
+      if (FLAT_PIECE.test(o.key)) return;
       const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
       const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
       const top = Math.floor((o.y - size.h) / OCCLUDER_CELL);
@@ -599,6 +609,7 @@ export class DriveScene extends Phaser.Scene {
       open: this.evening.acceptingCustomers,
       soldOut: this.evening.isSoldOut, // SCREAM-155
     });
+    this.updateResidentCars(); // SCREAM-252
     this.drawResidents(time);
     this.drawCustomers();
     this.drawMirrorMarkers();
@@ -616,7 +627,7 @@ export class DriveScene extends Phaser.Scene {
       this.parkLabel.setVisible(true);
     } else {
       this.driveHard(dt);
-      this.evening.driveTick(dt * 1000); // SCREAM-334: timers that count only while the player drives
+      this.evening.driveTick(dt * 1000, this.speed !== 0); // SCREAM-334: timers that count only while the player drives; SCREAM-358: the reversed steering only while moving
     }
     // SCREAM-335: a Drum Cone's drum solo plays in place of the tune while its 30 seconds run.
     this.music.setDrumSolo(this.evening.drumSolo);
@@ -933,7 +944,7 @@ export class DriveScene extends Phaser.Scene {
       g.fillStyle(0x8d9196, 1).fillPoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
       g.lineStyle(2, 0x6b6f74, 1).strokePoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
     }
-    this.map.parkedCars.forEach(({ x, y, angle }, i) => {
+    fixedParkedCars(this.assets).forEach(({ x, y, angle }, i) => {
       if (x < x0 - 60 || x > x1 + 60 || y < y0 - 60 || y > y1 + 60) return;
       g.fillStyle(0x1b1b1b, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH + 1, CAR_HALF_WIDTH + 1), true);
       g.fillStyle(CAR_COLOURS[i % CAR_COLOURS.length] ?? 0x888888, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH - 1, CAR_HALF_WIDTH - 1), true);
@@ -1175,7 +1186,41 @@ export class DriveScene extends Phaser.Scene {
     // Drawn in the map image (refreshVisibleMap); these are what the truck runs into.
     for (const { x, y } of this.map.potholes) this.potholes.push({ x, y, armed: true });
     // Parked against the curb, along the road (SCREAM-10: at the road's angle).
-    for (const { x, y, angle } of this.map.parkedCars) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+    for (const { x, y, angle } of fixedParkedCars(this.assets)) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+    this.fixedCars = this.cars.length;
+  }
+
+  /** SCREAM-252: how many of `cars` are the map's own (the rest are residents' cars, refreshed each frame). */
+  private fixedCars = 0;
+  /** SCREAM-252, SCREAM-361: one picture per resident's car, by owner. */
+  readonly residentCars = new Map<string, Phaser.GameObjects.Image>();
+
+  /**
+   * SCREAM-252 (PO, November 15): residents' cars on the street while their owner is home. They are
+   * obstacles like the parked cars (the same bump and cost). SCREAM-361 (PO, November 16): drawn with
+   * the art pack's cars, "30% smaller" than the pack, each owner a different one, and "The hitbox
+   * should match the car": the obstacle is the car's own size. Each uses the view nearest the way it
+   * faces (right, down, left or up), turned the last few degrees.
+   */
+  private updateResidentCars(): void {
+    const now = this.evening.residents.carsNow;
+    this.cars.length = this.fixedCars;
+    const seen = new Set<string>();
+    for (const c of now) {
+      this.cars.push({ x: c.x, y: c.y, angle: c.angle, halfLength: c.halfLength, halfWidth: c.halfWidth });
+      seen.add(c.id);
+      let g = this.residentCars.get(c.id);
+      if (!g) {
+        const view = carView(c.angle);
+        g = this.add
+          .image(c.x, c.y, CARS_KEY, `car${c.model}_${view.name}`)
+          .setAngle(c.angle - view.angle)
+          .setDepth(RESIDENT_DEPTH + c.y / DEPTH_PER_PX);
+        this.residentCars.set(c.id, g);
+      }
+      g.setVisible(true);
+    }
+    for (const [id, g] of this.residentCars) if (!seen.has(id)) g.setVisible(false);
   }
 
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */
@@ -1604,3 +1649,9 @@ function squareOverlap(truck: { x: number; y: number; heading: number }, zone: P
   }
 }
 
+/** SCREAM-361: the pack draws each car facing right, down, left or up: the one nearest `angle`, and that view's own angle. */
+export function carView(angle: number): { name: 'right' | 'down' | 'left' | 'up'; angle: number } {
+  const a = ((angle % 360) + 360) % 360;
+  const k = Math.round(a / 90) % 4;
+  return { name: (['right', 'down', 'left', 'up'] as const)[k]!, angle: k * 90 };
+}

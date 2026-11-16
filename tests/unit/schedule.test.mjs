@@ -62,7 +62,8 @@ test('Without ticks, Story falls back to Likelihood (as before SCREAM-221)', () 
 
 test('Both maps have ticks for everyone, from the Residents sheet', () => {
   for (const list of [TUTORIAL_RESIDENTS, RESIDENTS]) {
-    assert.ok(list.every((r) => Array.isArray(r.days) && r.days.every((d) => d >= 0 && d <= 6)));
+    // SCREAM-224: a park visitor has no days (who is at the park is rolled each evening).
+    assert.ok(list.filter((r) => !r.visitor).every((r) => Array.isArray(r.days) && r.days.every((d) => d >= 0 && d <= 6)));
   }
   // Chloe Hogan, the uncle's regular on Day 1 (Monday), is ticked every day.
   assert.equal(TUTORIAL_RESIDENTS.find((r) => r.id === 'T008').days.length, 7);
@@ -73,18 +74,14 @@ test('Each weekday favours a different crowd (decision 057: neighbourhoods diffe
   assert.equal(new Set([1, 2, 3, 4, 5].map(crowd)).size, 5);
 });
 
-test('SCREAM-329: Speaker with Heavier Bass: the some-days people count 10% likelier; every-day regulars and 0% are unchanged', () => {
-  const { BASS_SOMETIMES_FACTOR } = tuning;
-  assert.equal(BASS_SOMETIMES_FACTOR, 1.1);
-  const people = new Residents([monThu, everyDay, zero], () => 0.99, undefined, story(1));
-  const before = [monThu, everyDay, zero].map((r) => people.likelihoodNow(r));
-  assert.deepEqual(before, [0.3 * SCHEDULE_TICKED_FACTOR, 0.15 * SCHEDULE_TICKED_FACTOR, 0]);
-  people.sometimesFactor = BASS_SOMETIMES_FACTOR;
-  const after = [monThu, everyDay, zero].map((r) => people.likelihoodNow(r));
-  assert.ok(Math.abs(after[0] - before[0] * 1.1) < 1e-12, 'Mon and Thu ticked: a some-days person');
-  assert.deepEqual(after.slice(1), before.slice(1));
-  // Never more than certain.
-  const sure = new Residents([{ ...monThu, likelihood: 0.79 }], () => 0.99, undefined, story(1));
-  sure.sometimesFactor = BASS_SOMETIMES_FACTOR;
-  assert.equal(sure.likelihoodNow({ ...monThu, likelihood: 0.79 }), 1);
+test('SCREAM-366 (PO: "harder for people in their home to become customers. That way the powerup has a bigger effect"): Story indoors a quarter as likely, half with Speaker with Heavier Bass; Quick play keeps half', () => {
+  const { STORY_INDOORS_FACTOR, BASS_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR } = tuning;
+  assert.deepEqual([STORY_INDOORS_FACTOR, BASS_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR], [0.25, 0.5, 0.5]);
+  const out = Residents.chance(1, 0.4, false, false, STORY_INDOORS_FACTOR);
+  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, STORY_INDOORS_FACTOR) - out / 4) < 1e-12, 'indoors: a quarter');
+  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, BASS_INDOORS_FACTOR) - out / 2) < 1e-12, 'with the bass: half');
+  assert.ok(Math.abs(Residents.curveChance(7, 0.4, true, 7, STORY_INDOORS_FACTOR) - Residents.curveChance(7, 0.4, false, 7) / 4) < 1e-12, 'the curve too');
+  // The bass no longer touches people in their yards, or the some-days people's Likelihood.
+  const people = new Residents([monThu, everyDay], () => 0.99, undefined, story(1));
+  assert.deepEqual([monThu, everyDay].map((r) => people.likelihoodNow(r)), [0.3 * SCHEDULE_TICKED_FACTOR, 0.15 * SCHEDULE_TICKED_FACTOR]);
 });

@@ -33,7 +33,7 @@ const { chromium } = require('playwright');
   await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
   check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
   check('...Day 1 of 10, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/10 2500');
-  check('...with its own 40 residents (sheet 23)', await ev('e.residents.all.length + " " + e.residents.all.every(p => p.resident.id.startsWith("T"))'), '40 true');
+  check('...with its own 40 residents (sheet 23), and SCREAM-224: 13 park visitors, 10 of them at the park tonight with the 3 residents (On My Own)', await ev('e.residents.all.filter(p => !p.resident.visitor).length + " " + e.residents.all.every(p => p.resident.id.startsWith("T")) + " " + e.residents.all.filter(p => p.resident.visitor).length + " " + e.residents.all.filter(p => p.resident.visitor && (p.outside || !p.gone)).length + " " + e.residents.atParkNow.length'), '40 true 13 10 13');
 
   // ---- On the road ----
   await press('+', 5); await press('Enter'); await wait(250);
@@ -44,7 +44,7 @@ const { chromium } = require('playwright');
   check('...starting outside home on Westland Street', await drive('Math.round(Math.hypot(s.map.homeStart.x - s.truck.x, s.map.homeStart.y - s.truck.y)) < 10'), true);
   check('...with Westland Street on the map', await drive('s.map.roads.some(r => r.name === "Westland Street") && !s.map.roads.some(r => r.name === "Dover Street")'), true);
   check('One gas station, with its bay', await drive('s.pumpBays.length'), 1);
-  check('Residents drawn from the tutorial sheet', await drive('s.residentSprites.length + " " + s.residentSprites[0].texture.key'), '40 residents-tutorial');
+  check('Residents drawn from the tutorial sheet', await drive('s.residentSprites.length + " " + s.residentSprites[0].texture.key'), '53 residents-tutorial');
   await wait(2500);
   await page.screenshot({ path: outDir + '/tutorial_drive.png' });
 
@@ -108,7 +108,7 @@ const { chromium } = require('playwright');
   // SCREAM-162: nobody gets stuck at a corner: every resident, truck at their pink square and 250 px either way.
   const stuck = await ev(`(() => {
     const R = e.residents; let tries = 0; const out = [];
-    R.all.forEach(p => {
+    R.all.filter(p => !p.resident.visitor).forEach(p => { // SCREAM-224: the park visitors have no house to come from
       const c = p.resident.curb, a = c[4] * Math.PI / 180;
       for (const off of [0, 250, -250]) {
         const tx = c[2] + Math.cos(a) * off, ty = c[3] + Math.sin(a) * off;
@@ -178,6 +178,7 @@ const { chromium } = require('playwright');
   // SCREAM-235 (PO, November 10): riding with the uncle skips the New Bike screen.
   check('First Story: no question, no New Bike screen', (await sc('Title', 's.confirming')) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('StoryIntro'))), 'false false');
   check('...straight into Day 1 with the uncle, on the tutorial map', (await ev('!!e.tutorial')) + ' ' + (await ev('e.mapId')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'true tutorial 1');
+  check('SCREAM-224: nobody is at the park in the uncle\'s evening, and no park visitor is on the map', await ev('e.residents.atParkNow.length + " " + e.residents.all.filter(p => p.resident.visitor && (p.outside || !p.gone)).length + " " + e.residents.parkOpen'), '0 0 false');
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(1500);
   check('...the ice cream truck tune playing', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => t.isPlaying)'), true);
   check('...over the tutorial map, zoomed out', await sc('TutorialCrawl', '(m => !!m && m.scale < 0.5)(s.children.getByName("crawl-map"))'), true);
@@ -330,14 +331,15 @@ const { chromium } = require('playwright');
   await wait(500);
   check('He drives there fast (under 9 seconds)', toPump < 9 ? 'ok' : toPump.toFixed(1), 'ok');
   check('He stops in the pump bay: the pump opens at $0.00', (await scenes()) + ' ' + (await sc('Pump', 's.amount')), 'Pump,Hud 0');
-  check('...he says he has twenty bucks on him; the outline goes', (await uncle()) + ' | ' + (await sc('Hud', 's.children.getByName("uncle-pointer").visible')), "I have twenty bucks on me, add that and I'll pay this time. | false");
-  await press('ArrowUp', 6);
-  check('...up to his $20, no more; the button says he pays', (await sc('Pump', 's.amount')) + ' ' + (await sc('Pump', 's.payButton.text')), '2000 UNCLE PAYS $20.00');
+  check('SCREAM-360: ...he says the first tank is on him; the outline goes', (await uncle()) + ' | ' + (await sc('Hud', 's.children.getByName("uncle-pointer").visible')), "Fill her right up. This first tank is on me. | false");
+  const fillUp = await ev('e.fillUpCents');
+  await press('ArrowUp', 12);
+  check('SCREAM-360: ...up to a full tank (more than $20), no more; the button says he pays; "Fills it up"', (await sc('Pump', 's.amount')) + ' ' + (fillUp > 2000) + ' ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.addsText.text')), fillUp + ' true UNCLE PAYS $' + (fillUp / 100).toFixed(2) + ' | Fills it up');
   await page.screenshot({ path: outDir + '/uncle_pump.png' });
   const cashBefore = await ev('e.moneyCents');
   const fuelBefore = await ev('e.fuel');
   await press('Enter'); await wait(800);
-  check('...he pays: none of it on your gas bill, $20 of gas in', ((await ev('e.breakdown.gasCents')) === 0) + ' ' + (Math.abs((await ev('e.fuel')) - fuelBefore - 2 / 3) < 0.01), 'true true');
+  check('...he pays: none of it on your gas bill, and the tank is full (less the bit he has driven since)', ((await ev('e.breakdown.gasCents')) === 0) + ' ' + ((await ev('e.fuel')) > 0.98) + ' ' + (fuelBefore < 0.25), 'true true true');
   // ---- SCREAM-185: the uncle drives home ----
   check('Gas bought: he drives home, saying to come home for stock', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')) + ' | ' + (await uncle()), "Drive,Hud home toHome | Return home to fill up on stock when you need.");
   check('...no more cash from him (the $25 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);

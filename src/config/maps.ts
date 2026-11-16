@@ -29,6 +29,16 @@ export interface GameMap {
   roadDir: string;
   residentsKey: string;
   residentsUrl: string;
+  /**
+   * SCREAM-252 (PO, November 15: "lets remove the old parked cars"): the map's own parked cars are
+   * gone; the cars on its streets are the residents' (Story, while their owner is home).
+   */
+  residentCars?: boolean;
+}
+
+/** SCREAM-252: the map's own parked cars, always there (none on a map with residents' cars). */
+export function fixedParkedCars(map: GameMap): readonly { x: number; y: number; angle: number }[] {
+  return map.residentCars ? [] : map.data.parkedCars;
 }
 
 /**
@@ -71,6 +81,7 @@ export const MAPS: Record<MapId, GameMap> = {
     roadDir: 'assets/map-tutorial',
     residentsKey: 'residents-tutorial',
     residentsUrl: 'assets/limezu/residents-tutorial.png',
+    residentCars: true,
   },
 };
 

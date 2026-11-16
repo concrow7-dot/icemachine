@@ -318,7 +318,15 @@ export const CUSTOMER_INDOORS_FACTOR = 0.5;
  * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
  */
 export const BASS_PRICE_CENTS = 4000;
-export const BASS_SOMETIMES_FACTOR = 1.1;
+/**
+ * SCREAM-366 (PO, November 16: "I want to make it harder for people in their home to become customers.
+ * That way the powerup has a bigger effect"; his answers "A quarter as likely" and "Bass: indoors back
+ * to half"): in Story, people indoors are a quarter as likely as people in their yard, and with
+ * Speaker with Heavier Bass half as likely again (CUSTOMER_INDOORS_FACTOR). The bass no longer makes
+ * the some-days people 10% likelier (it was BASS_SOMETIMES_FACTOR, 1.1).
+ */
+export const STORY_INDOORS_FACTOR = 0.25;
+export const BASS_INDOORS_FACTOR = 0.5;
 
 /** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
 export const CUSTOMER_RUN_SPEED = 37;
@@ -368,8 +376,6 @@ export const FUEL_STEP_CENTS = 500;
  */
 export const FUEL_CENT_STEP = 50;
 
-/** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
-export const UNCLE_GAS_CENTS = 2000;
 
 /**
  * SCREAM-185 (PO, November 6): "I left $50 on the truck for you."
@@ -466,7 +472,7 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
  */
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
-export const GITTY_UP_PRICE_CENTS = 2000;
+export const GITTY_UP_PRICE_CENTS = 5000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20)
 /**
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
@@ -691,7 +697,7 @@ export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
  * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
  * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
  */
-export const MORE_JUNK_PRICE_CENTS = 5000;
+export const MORE_JUNK_PRICE_CENTS = 2000; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50)
 export const MORE_JUNK_EXTRA_ROWS = 1;
 
 /**
@@ -736,3 +742,54 @@ export const SPEEDY_SPEED_FACTOR = 1.25;
  * chasing rules only (not Quick play or the uncle's evening).
  */
 export const CHASE_REGULAR_SHARE = 0.7;
+
+// ---- SCREAM-224 (PO, November 15): people at the park in Elm Park (Story only) ----
+// "There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to
+// empty out. so that by 7 there are only 1 or 2 people left." His answers: "A mix" (the three
+// residents who get home late, plus new visitors) and "Random each evening".
+/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 at 5:00). */
+export const PARK_VISITORS_TONIGHT = 10;
+/** How many of tonight's visitors stay at the park all evening: from, to (rolled each evening). */
+export const PARK_STAY_LATE: readonly [number, number] = [1, 2];
+/**
+ * The other visitors each set off at their own time between these (minutes since midnight: 5:45
+ * to 6:40). Engineering's call: they stop at 6:40 because the walk out of the park takes up to
+ * 15 game minutes, so by 7:00 only the ones who stay are left.
+ */
+export const PARK_LEAVE_MINUTES: readonly [number, number] = [17 * 60 + 45, 18 * 60 + 40];
+/** A resident at the park sets off this many game minutes before their From time, to be home by then (engineering's call). */
+export const PARK_HOME_WALK_MINUTES = 20;
+/** How fast someone walks out of the park when it's time to go, px per second: brisker than a stroll (11), slower than a run for the truck (37). */
+export const PARK_LEAVE_SPEED = 22;
+/** People at the park pick a spot at least this far (px) from anyone else's. */
+export const PARK_SPOT_GAP = 12;
+
+// ---- SCREAM-182 (PO, November 6, his drawing "Customer Likelihood"; built November 16): Story's curve ----
+// Once someone hears the truck, their chance of coming out rises, peaks, then fades over 30 seconds.
+// His answer (November 15): "Height and peak time" change per customer: their Likelihood sets the
+// height (as before) and each person's peak comes a little earlier or later.
+/**
+ * The curve's shape, from his drawing: [seconds heard, height], height 1 = the top of his graph.
+ * It starts partway up, peaks at about 7 seconds and fades to just above nothing by 30.
+ */
+export const CUSTOMER_CURVE_POINTS: readonly (readonly [number, number])[] = [[0, 0.45], [7, 0.93], [15, 0.35], [22, 0.12], [30, 0.03]];
+/**
+ * The chance each second at height 1, before Likelihood (engineering's call): picked so that, over
+ * the 30 seconds, as many people come out as with the old falling chance (decisions 033, 034 cut the
+ * numbers on purpose). Only when they come out changes.
+ */
+export const CUSTOMER_CURVE_SCALE = 0.1125;
+/** Each resident's peak comes up to this many seconds earlier or later than the drawing's 7 (the same for them every evening). */
+export const CUSTOMER_CURVE_PEAK_SPREAD = 2;
+
+// ---- SCREAM-252 (PO, November 15): a resident's car on the street while they are home (Story, Elm Park) ----
+/** A car only pulls up when the truck is at least this far away (px, centre to centre), so it never lands on it. */
+export const RESIDENT_CAR_ARRIVE_CLEAR = 160;
+
+// ---- SCREAM-361 (PO, November 16): the residents' cars are the art pack's cars ----
+/** Room kept between a pink square and the end of a resident's car, so the truck (half length 52) can pull in (px). */
+export const RESIDENT_CAR_TRUCK_ROOM = 62;
+/** The pack's cars' picture sheet (tools/cars/build_cars.py). */
+export const CARS_KEY = 'pack-cars';
+export const CARS_PNG = 'assets/limezu/cars.png';
+export const CARS_JSON = 'assets/limezu/cars.json';

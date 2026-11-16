@@ -53,9 +53,9 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
   await until(async () => (await scenes()).includes('Cooler')); await wait(300);
   await ev("(e.changeMoney(30000, 'Test', false), true)");
-  check('SCREAM-334: the Two Ball Lou Ball\'s note: $30, under SpongePop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 3000 | 0 | 2 | icecream-spongepop | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $1.00 each to stock.");
+  check('SCREAM-334: the Two Ball Lou Ball\'s note: $30, under SpongePop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 3000 | 0 | 2 | icecream-spongepop | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
   check('...it can\'t be bought before SpongePop; after SpongePop it can', (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true true eclair,spongepop,louball');
-  check('...it costs $1.00 to stock (SCREAM-351) and is refused above $3.00', await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('louball').costCents + ' ' + e.refuseAboveCents('louball') + ' ' + e.slots.find(x => x.flavour === 'louball').priceCents; }), '100 300 300');
+  check('...it costs $0.75 to stock (SCREAM-365; was $1.00) and is refused above $3.00', await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('louball').costCents + ' ' + e.refuseAboveCents('louball') + ' ' + e.slots.find(x => x.flavour === 'louball').priceCents; }), '75 300 300');
   check('...the sandwich hangs from it: it can be bought now', await ev("e.buyPowerUp('icecream-cookie')"), true);
   await ev("(e.buyPowerUp('icecream-explorer'), true)");
 
@@ -105,8 +105,8 @@ const { chromium } = require('playwright');
     check('...a small card\'s + still raises its price', (await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents")) - was, 25);
   }
   // ---- SCREAM-335: the Drum Cone's note, and the cooler with all six ----
-  check('SCREAM-335: the Drum Cone\'s note: $30, under the Lil Explorer Pop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 3000 | 2 | 2 | icecream-explorer | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $1.00 each to stock.");
-  check('...bought (the Explorer Pop is owned): $1.00 to stock (SCREAM-351), refused above $3.00', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone') + ' ' + e.slots.find(x => x.flavour === 'drumcone').priceCents; })), 'true 100 300 300');
+  check('SCREAM-335: the Drum Cone\'s note: $30, under the Lil Explorer Pop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 3000 | 2 | 2 | icecream-explorer | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
+  check('...bought (the Explorer Pop is owned): $0.75 to stock (SCREAM-365), refused above $3.00', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone') + ' ' + e.slots.find(x => x.flavour === 'drumcone').priceCents; })), 'true 75 300 300');
   await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
   check('Six ice creams unlocked: six rows, all above the totals', await sc('Cooler', "s.offered.map(f => f.id).join() + ' ' + s.rowYs.join() + ' ' + (Math.max(...s.rowYs) + 20 < s.totals.y - 14)"), 'eclair,spongepop,explorer,cookie,louball,drumcone 140,182,224,266,308,350 true');
   for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball', 'drumcone']) {
@@ -131,15 +131,17 @@ const { chromium } = require('playwright');
   check('SCREAM-334: a sale with a Two Ball Lou Ball pays double the tip, and the steering is reversed for 10 seconds', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
   await wait(400);
   check('...the countdown shows, starting at 10', (await drive('s.reversedLabel.visible')) + ' | ' + (await drive('s.reversedLabel.text')) + ' | ' + (await ev('e.steeringReversedMs') >= 9000), 'true | STEERING REVERSED  10 | true');
+  // SCREAM-358 (PO, November 15): the 10 seconds only run while the truck is moving.
+  check('SCREAM-358: parked since the sale, none of the 10 seconds has gone, and the countdown still shows', (await ev('e.steeringReversedMs')) + ' ' + (await drive('s.reversedLabel.visible')), '10000 true');
   await page.screenshot({ path: outDir + '/icecreams_steering_reversed.png' });
   // Driving with Right held, frame by frame (like the feel suite). Reversed, the truck turns left (its heading goes down).
   const turned = () => drive(`(() => { const g = s.roads.nearestSegment(s.truck.x, s.truck.y); s.truck.setPosition((g.ax + g.bx) / 2, (g.ay + g.by) / 2); s.setHeading(Math.atan2(g.by - g.ay, g.bx - g.ax) * 180 / Math.PI); const h0 = s.heading; s.parkBrake = false; s.held = ['right']; for (let i = 0; i < 6; i++) { s.speed = 40; s.update(0, 16); } const d = s.heading - h0; s.held = []; s.speed = 0; s.parkBrake = true; return Math.abs(d) < 0.2 ? 0 : Math.sign(d); })()`);
   check('...holding Right turns the truck left', await turned(), -1);
-  check('...the 10 seconds run down in the driving view', await ev('e.steeringReversedMs < 9600 && e.steeringReversedMs > 7500'), true);
+  check('...they run down while the truck moves (the six frames driven above)', await ev('e.steeringReversedMs < 10000 && e.steeringReversedMs > 9000'), true);
   const left = await ev('e.steeringReversedMs'); await wait(600);
-  check('...parked on the brake they still count', (await ev('e.steeringReversedMs')) < left, true);
+  check('...and wait again once it is parked on the brake', (await ev('e.steeringReversedMs')) === left, true);
   check('...a second sale starts the 10 seconds again; it doesn\'t add up', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
-  await ev('(e.steeringReversedMs = 200, true)'); await wait(500);
+  await ev('(e.steeringReversedMs = 60, true)'); await turned(); await wait(200); // six moving frames (96 ms) use them up
   check('...when they run out the steering is normal again and the countdown goes', (await ev('e.steeringReversed')) + ' ' + (await drive('s.reversedLabel.visible')) + ' ' + (await turned()), 'false false 1');
 
   // ---- SCREAM-335: the Drum Cone's drum solo ----

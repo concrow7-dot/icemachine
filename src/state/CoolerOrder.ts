@@ -24,6 +24,8 @@ export class CoolerOrder {
   readonly slots: CoolerSlot[];
   private readonly owned: readonly Readonly<CoolerSlot>[];
   private readonly cash: () => number;
+  /** SCREAM-365: what one costs to stock (Story has its own prices). */
+  private readonly cost: (flavour: FlavourId) => number;
   private readonly draft: CoolerCell[];
   /** SCREAM-269: how many squares can be used (in Story half of every crate is covered to start). */
   readonly capacity: number;
@@ -43,8 +45,9 @@ export class CoolerOrder {
    * `owned` is the cooler's stock as it is now, `cells` where each of those ice creams sits,
    * `cash` reads the player's current cash.
    */
-  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], open: (cell: number) => boolean = () => true, topPrice: (flavour: FlavourId) => number = () => MAX_PRICE_CENTS) {
+  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], open: (cell: number) => boolean = () => true, topPrice: (flavour: FlavourId) => number = () => MAX_PRICE_CENTS, cost: (flavour: FlavourId) => number = (f) => getFlavour(f).costCents) {
     this.open = open;
+    this.cost = cost; // SCREAM-365: Story's stock prices
     this.topPrice = (flavour) => Math.min(MAX_PRICE_CENTS, topPrice(flavour));
     this.capacity = Array.from({ length: COOLER_CAPACITY }, (_, i) => i).filter((i) => open(i)).length;
     this.owned = owned.map((s) => ({ ...s }));
@@ -82,7 +85,7 @@ export class CoolerOrder {
 
   /** What Buy Stock will charge: only what's been picked in this draft. */
   get costCents(): number {
-    return this.picked.reduce((sum, i) => sum + getFlavour(this.draft[i]?.flavour ?? 'eclair').costCents, 0);
+    return this.picked.reduce((sum, i) => sum + this.cost(this.draft[i]?.flavour ?? 'eclair'), 0);
   }
 
   /** Cash the player will have left after buying this order. */
@@ -120,7 +123,7 @@ export class CoolerOrder {
     const slot = this.slot(flavour);
     if (!slot) return false;
     if (this.isFull) return this.refuse('full');
-    if (getFlavour(flavour).costCents > this.cashAfterCents) return this.refuse('cash');
+    if (this.cost(flavour) > this.cashAfterCents) return this.refuse('cash');
     // The chosen crate's next empty square; if that crate is full, the next crate with room
     // (which becomes the chosen one), so stocking up never stalls.
     const crates = COOLER_CAPACITY / CRATE_CELLS;
