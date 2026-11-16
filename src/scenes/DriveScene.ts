@@ -407,8 +407,9 @@ export class DriveScene extends Phaser.Scene {
     // SCREAM-114 (PO, November 2): a little closer to the street.
     camera.setZoom(DRIVE_CAMERA_ZOOM);
 
-    this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song', {
+    // SCREAM-362 (PO: "Add the closed for business C button to the regular menu"): C is listed when it works.
+    this.keyLine = this.add
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song' + (this.evening.canClose ? '  C Close' : ''), {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -1063,6 +1064,8 @@ export class DriveScene extends Phaser.Scene {
    * credit) and moves them away from the middle. This puts each back where it was meant to
    * be on screen, at its normal size. Call once, after the label is placed.
    */
+  /** The line of keys at the bottom of the road view (SCREAM-362: with C when it works). */
+  keyLine!: Phaser.GameObjects.Text;
   /** SCREAM-233: the CLOSE / OPEN button. */
   closeButton!: Phaser.GameObjects.Text;
 

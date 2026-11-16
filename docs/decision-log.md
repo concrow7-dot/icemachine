@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 163 — C in the line of keys at the bottom of the road view (2026-11-16)
+
+**Decision (Jira SCREAM-362, under SCREAM-11, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Read as the line of keys at the bottom of the road view (to confirm with him): it now ends "N Next Song  C Close" on the evenings C works (Story, not the uncle's evening).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** "C Close" (short, so the line stays clear of the CLOSE FOR BUSINESS button); not shown when C does nothing.
+
 ## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
 
 **Decision (Jira SCREAM-252, under SCREAM-11, PO, November 10 brainstorm; built November 16):** "Maybe days they are home, a car is parked in their driveway and/or in front of the house on the street." Story only. His answers (November 15, about 23:55):

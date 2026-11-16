@@ -361,7 +361,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
   await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);
   check('SCREAM-207: the uncle has handed over the wheel: the "How To Drive" pop-up, the road waits', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('HowToDrive', 's.lines.length')), 'true 9');
-  check('SCREAM-233: no CLOSE FOR BUSINESS button in the uncle\'s evening', await sc('Drive', 's.closeButton.visible + " " + s.evening.canClose'), 'false false');
+  check('SCREAM-233: no CLOSE FOR BUSINESS button in the uncle\'s evening, and SCREAM-362: no C in the line of keys', await sc('Drive', 's.closeButton.visible + " " + s.evening.canClose + " " + s.keyLine.text.includes("C Close")'), 'false false false');
   await page.screenshot({ path: outDir + '/how_to_drive_after_uncle.png' });
   await page.mouse.click(600, 300); await wait(400);
   check('...a click closes it and the road runs', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false false');

@@ -386,6 +386,7 @@ const { chromium } = require('playwright');
     // Someone on their way and someone waiting at the curb.
     await ev("(() => { const r = e.residents; r.hearingOff = true; const ok = r.all.filter(p => !p.gone && !p.atPark && p.customer === 'none' && !p.resident.hardToFind && r.homeNow(p.resident)); r.wantIceCream(ok[0]); r.callNow(ok[1]); window.__closeTest = [ok[0], ok[1]]; return true; })()");
     await page.keyboard.press('c'); await wait(400);
+    check('SCREAM-362: the line of keys at the bottom lists C, and does not run into the button', await sc('Drive', "s.keyLine.text.endsWith('N Next Song  C Close') + ' ' + (s.keyLine.getBounds().right < s.closeButton.getBounds().left - 4)"), 'true true');
     check('...C closes it: no new customers, "Closed" in the top bar, the button says OPEN', (await ev('e.closedForBusiness + " " + e.acceptingCustomers')) + ' | ' + / {2}Closed$/.test(await hud()) + ' | ' + (await sc('Drive', 's.closeButton.text')), 'true false | true | C  OPEN FOR BUSINESS');
     check('...the one on their way and the one at the curb turn back home (they may come again later)', await page.evaluate(() => window.__closeTest.map(p => p.customer + ' ' + p.missedOut).join(', ')), 'none true, none true');
     check('...the music keeps playing', await sc('Drive', '!s.music.muted'), true);
