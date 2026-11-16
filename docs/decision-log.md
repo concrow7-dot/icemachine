@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 169 — A warning when the player sets off without restocking (2026-11-16)
+
+**Decision (Jira SCREAM-368, under SCREAM-11, PO, November 16, 01:49):** "If the player goes to drive and they haven't restocked the truck, warn them." His answers: **"No stock bought tonight"** (warn when nothing was bought this evening, even with some left from yesterday) and **"Pop-up with two buttons"**: "YOU HAVEN'T RESTOCKED", with GO TO THE COOLER (C) and DRIVE ANYWAY (Y). An empty cooler still opens the cooler with its warning, as before (decision 111).
+
+**Options considered:** when: nothing bought tonight (his choice), the cooler running low, or either. How: a pop-up (his choice) or the cooler opening instead.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** Story, not the uncle's evening; only when first setting off (not leaving a stop at home); the wording; B closes it; while it's open nothing else on the truck screen answers.
+
 ## 168 — People indoors a quarter as likely to come out; Speaker with Heavier Bass brings it back to half (2026-11-16)
 
 **Decision (Jira SCREAM-366, under SCREAM-78, PO, November 16, 01:40):** "I want to make it harder for people in their home to become customers. That way the powerup has a bigger effect." His answers: **"A quarter as likely"** (as someone in their yard; it was half) and **"Bass: indoors back to half"**: with Speaker with Heavier Bass, people indoors are half as likely again, as its note says ("More likely to get customers in their home"). It no longer makes the some-days people 10% likelier (decision 133).

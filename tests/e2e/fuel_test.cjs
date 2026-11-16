@@ -254,6 +254,8 @@ const { chromium } = require('playwright');
   await ev('(e.residents.hearingOff = true, true)');
   // SCREAM-208: the tank only runs dry on the road, so drive off first.
   if ((await scenes()).startsWith('Truck')) { await press('ArrowRight'); await press('Enter'); await wait(400); }
+  // SCREAM-368: no stock bought tonight, so the restock warning shows first; drive anyway.
+  if (await sc('Truck', 's.restockWarning && s.restockWarning.visible')) { await press('y'); await wait(400); }
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
   check('Story: out of gas shows "Needed a tow home." first too', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text')), 'Drive,Hud Needed a tow home.');
   await until(async () => (await scenes()).startsWith('DayEnd'));

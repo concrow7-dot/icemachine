@@ -347,8 +347,29 @@ const { chromium } = require('playwright');
   check('Neighbour lines: the street says the same about everyone on day 2 as on day 1', await ev("JSON.stringify([...e.neighbourLinesFor.entries()].map(([id, l]) => id + ':' + l.map(x => x.id).join('+')).sort())"), day1Neighbours);
   check('High scores untouched by Story', await page.evaluate(() => localStorage.getItem('icemachine.highscores.v1')), 'null');
 
+  const truckCooler = async () => { await page.evaluate(() => { const t = window.__game.scene.getScene('Truck'); t.selected = 'cooler'; t.refresh(); }); await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler')); };
+  // ---- SCREAM-368 (PO): DRIVE without buying any stock tonight: a pop-up warns, with two buttons ----
+  {
+    const truck = (fn) => sc('Truck', fn);
+    await truck("(s.selected = 'driver', s.refresh(), true)");
+    await press('Enter'); await wait(300);
+    check('SCREAM-368: day 2, stock left but none bought tonight: DRIVE opens the warning and stays home', (await truck('!!s.restockWarning')) + ' ' + (await scenes()) + ' ' + (await ev('e.isPrepLocked')) + ' ' + (await ev('e.stockLeft > 0')), 'true Truck,Hud false true');
+    check('...it says so, with GO TO THE COOLER and DRIVE ANYWAY buttons', await truck("s.restockWarning.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')"), "YOU HAVEN'T RESTOCKED | You haven't bought any ice cream tonight.\nThere are 3 ice creams left in the cooler. | C  GO TO THE COOLER | Y  DRIVE ANYWAY | B: Close");
+    await page.screenshot({ path: outDir + '/story_restock_warning.png' });
+    await press('ArrowRight'); await press('Enter');
+    check('...while it is open the other keys do nothing', (await truck('!!s.restockWarning')) + ' ' + (await scenes()), 'true Truck,Hud');
+    await press('b');
+    check('...B closes it, still at the truck', (await truck('!!s.restockWarning')) + ' ' + (await scenes()), 'false Truck,Hud');
+    await truck("(s.selected = 'driver', s.refresh(), true)"); await press('Enter'); await wait(200);
+    // A click on GO TO THE COOLER (as on a phone).
+    const at = await truck("(() => { const r = s.restockWarning.list.filter(o => o.type === 'Rectangle' && o.input)[1]; return [r.x, r.y]; })()");
+    await page.mouse.click(at[0], at[1]); await until(async () => (await scenes()).startsWith('Cooler'));
+    check('...GO TO THE COOLER opens the cooler', await scenes(), 'Cooler,Hud');
+    await page.evaluate(() => window.__game.scene.getScene('Cooler').scene.start('Truck')); await until(async () => (await scenes()) === 'Truck,Hud');
+  }
+
   // ---- SCREAM-145: the roundabouts join Elm Park (tutorial) and Foley Stadium (worcester) in Story ----
-  await press('Enter'); await until(async () => (await scenes()).startsWith('Cooler'));
+  await truckCooler();
   check('SCREAM-307: Enter opens the cooler from there, the clock still waiting', (await scenes()) + ' ' + (await ev('e.isClockRunning')), 'Cooler,Hud false');
   await press('+'); await press('Enter'); await wait(300);
   check('Bought 1 more on day 2', (await ev('e.moneyCents')) + ' ' + (await ev('e.stockLeft')), '2100 4');
