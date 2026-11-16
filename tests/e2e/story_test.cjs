@@ -397,6 +397,21 @@ const { chromium } = require('playwright');
     await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.cameras.main.startFollow(s.truck, true, 0.15, 0.15); });
     await wait(300);
   }
+  // ---- SCREAM-363 (PO): Shift+F freezes the game as it looks, for screenshots ----
+  {
+    const snap = () => page.evaluate(() => { const g = window.__game; const e = g.registry.get('evening'); const s = g.scene.getScene('Drive'); return [Math.round(e.clockMinutes * 100), Math.round(s.truck.x), Math.round(s.truck.y), e.residents.all.map(p => Math.round(p.x) + ',' + Math.round(p.y)).join(';')].join('|'); });
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.speed = s.topSpeed * 0.5; });
+    await page.keyboard.down('Shift'); await page.keyboard.press('KeyF'); await page.keyboard.up('Shift');
+    await wait(200);
+    const a = await snap(); await wait(1200); const b = await snap();
+    check('SCREAM-363: Shift+F freezes it: the clock, the truck and everyone stand still; the road is paused; nothing new on screen', (a === b) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('Hud', 's.frozen !== null')) + ' ' + /Closed|Frozen|Paused/i.test(await sc('Hud', 's.clockText.text')), 'true true true false');
+    await page.keyboard.press('Escape'); await wait(300);
+    check('...other keys do nothing while frozen (Esc does not open the pause menu)', (await page.evaluate(() => window.__game.scene.isActive('Pause'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false true');
+    await page.keyboard.down('Shift'); await page.keyboard.press('KeyF'); await page.keyboard.up('Shift');
+    await wait(600);
+    check('...Shift+F again: it all carries on', (await snap()) !== b && !(await page.evaluate(() => window.__game.scene.isPaused('Drive'))), true);
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.speed = 0; });
+  }
   // ---- SCREAM-237 (PO, November 15: "Street instead"): the top bar names the street the truck is on ----
   {
     const onStreet = (name) => page.evaluate(async (name) => { const s = window.__game.scene.getScene('Drive'); const road = s.roads.names.indexOf(name); const seg = s.roads.segments.filter(g => g.road === road).sort((a, b) => Math.hypot(b.bx - b.ax, b.by - b.ay) - Math.hypot(a.bx - a.ax, a.by - a.ay))[0]; const was = { x: s.truck.x, y: s.truck.y }; s.truck.setPosition((seg.ax + seg.bx) / 2, (seg.ay + seg.by) / 2); await new Promise(r => setTimeout(r, 150)); const text = window.__game.scene.getScene('Hud').clockText.text; s.homeArmed = false; s.truck.setPosition(was.x, was.y); return text.replace(/^.*Day \d+\/10\s*/, ''); }, name);
