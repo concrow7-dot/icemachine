@@ -2,6 +2,25 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 155 — A porch light by the front door of everyone who is in (2026-11-15)
+
+**Decision (Jira SCREAM-251, under SCREAM-11, PO, November 10 and 15):** from the customers brainstorm (November 10): a tell on the house when a resident is home, lights and cars with variety ("some people park, some don't have a car so the lights on, some are both"), Story only. On November 15 he chose: the look, "A porch light at the door"; a house counts as home "Only while they are physically in"; who shows one, "Everyone for now"; and it is "Always right".
+
+So, in Story, a small lit lamp shows beside each resident's front door while they are indoors. It goes off when they step out into the yard or set off for the truck, and comes back on when they go in.
+
+**Options considered:** the look: a porch light (chosen), lit windows (the game doesn't know where each house picture's windows are), or both. Home means: their day is ticked and inside their hours (engineering's proposal), or only while physically in (chosen). Who: the game picks about half (engineering's proposal), everyone for now (chosen), or a sheet column. Always right (chosen), or a few leave it on.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Someone who is not home yet, or any more, by their From and Until hours is dark, though the game keeps them indoors then.
+- Someone being served at the truck's window is out: dark.
+- People who never buy light up too when they are in: the light says "home", not "will buy".
+- Story only, on both maps and in the uncle's evening; Quick play's houses are unchanged.
+- The lamp is drawn by the game (a dark cap, a bright glass, a soft glow, a slight flicker), up and to the right of the door's point.
+- The evening does not get darker in the game yet, so the lamp shows in daylight; darker evenings would make it read better (not in this ticket).
+
 ## 154 — On the cooler screen, click a flavour to read its cork board note (2026-11-15)
 
 **Decision (Jira SCREAM-355, under SCREAM-78, PO, November 15, 17:42, with a screenshot of the cooler screen):** "From this screen, I want to be able to click on flavors and see the power". His answers: where you click, "Both" (a flavour's Today's Menu card, and a small "i" button on each clipboard row); what shows, "The cork board's note"; "Build now".

@@ -44,6 +44,7 @@ const { chromium } = require('playwright');
   check('Quick play: the clipboard offers the four old ice creams only', (await scenes()) + ' ' + (await sc('Cooler', "s.offered.map(f => f.id).join()")), 'Cooler,Hud eclair,spongepop,explorer,cookie');
   check('...and its cooler has no slot for them', await ev("e.slots.map(s => s.flavour).join()"), 'eclair,spongepop,explorer,cookie');
   check('...and the Story ice creams are not unlocked there', await ev("['louball','drumcone'].map(f => e.flavourUnlocked(f)).join()"), 'false,false');
+  check('SCREAM-251: Quick play has no porch lights', await drive('s.porchLights.length'), 0);
   check('SCREAM-342: Quick play has no chasing rules: everyone keeps following at the old speed', await ev("e.residents.chaseRules + ' ' + e.residents.runSpeedOf(e.residents.all[0].resident) + ' ' + e.residents.chaseSecondsOf(e.residents.all[0].resident)"), 'false 37 Infinity');
   check('SCREAM-343: Quick play\'s menu is not capped: the eclair goes past $2.50', await sc('Cooler', "(() => { s.order.addOne('eclair'); for (let i = 0; i < 8; i++) s.order.changePrice('eclair', 25); const p = s.order.slots[0].priceCents; for (let i = 0; i < 8; i++) s.order.changePrice('eclair', -25); s.order.removeOne('eclair'); s.refresh(); return p; })()"), 400);
 

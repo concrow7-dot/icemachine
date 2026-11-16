@@ -399,6 +399,15 @@ export class Residents {
     if (!this.story || !this.nowMinutes || !resident.hours || resident.hardToFind) return true;
     return homeAt(resident, this.nowMinutes());
   }
+  /**
+   * SCREAM-251 (PO, November 15: a porch light, on "Only while they are physically in", "Always
+   * right"): whether this person's porch light is on. On while they are indoors at home; off while
+   * they are out in the yard, on their way to the truck or at its window, and off outside their
+   * From and Until hours (the game keeps them indoors then, but they are not home).
+   */
+  porchLit(p: ResidentNow): boolean {
+    return !p.outside && p.customer !== 'window' && this.homeNow(p.resident);
+  }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
   private readonly curbs?: CurbFinder;
   /** Where the truck was last seen (the ring's centre). */
