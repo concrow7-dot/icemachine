@@ -348,9 +348,9 @@ export function parkDice(seed: number, day: number): () => number {
  * SCREAM-152: regulars have a steady CUSTOMER_REGULAR_CHANCE instead of the falling one, and
  * after CUSTOMER_DECIDE_SECONDS of hearing it, nobody comes out (they've made up their mind).
  */
-export function customerChance(heard: number, likelihood: number, indoors: boolean, regular = false): number {
+export function customerChance(heard: number, likelihood: number, indoors: boolean, regular = false, indoorsOdds = CUSTOMER_INDOORS_FACTOR): number {
   if (heard > CUSTOMER_DECIDE_SECONDS) return 0;
-  const indoorsFactor = indoors ? CUSTOMER_INDOORS_FACTOR : 1;
+  const indoorsFactor = indoors ? indoorsOdds : 1; // SCREAM-366: Story's is smaller (Residents.indoorsFactor)
   if (regular) return CUSTOMER_REGULAR_CHANCE * likelihood * indoorsFactor;
   const settled = 1 - Math.exp(-Math.max(0, heard - 1) / CUSTOMER_CHANCE_SETTLE_SECONDS);
   const base = CUSTOMER_CHANCE_FIRST - (CUSTOMER_CHANCE_FIRST - CUSTOMER_CHANCE_FLOOR) * settled;
@@ -364,7 +364,7 @@ export function customerChance(heard: number, likelihood: number, indoors: boole
  * stretched so its peak comes at `peakAt`); times CUSTOMER_CURVE_SCALE, their likelihood, and halved
  * indoors. Regulars keep their steady chance (decision 034): see `customerChance`.
  */
-export function curveChance(heard: number, likelihood: number, indoors: boolean, peakAt: number): number {
+export function curveChance(heard: number, likelihood: number, indoors: boolean, peakAt: number, indoorsOdds = CUSTOMER_INDOORS_FACTOR): number {
   if (heard > CUSTOMER_DECIDE_SECONDS) return 0;
   const pts = CUSTOMER_CURVE_POINTS;
   const drawnPeak = pts.reduce((best, p) => (p[1] > best[1] ? p : best))[0];
@@ -379,7 +379,7 @@ export function curveChance(heard: number, likelihood: number, indoors: boolean,
       break;
     }
   }
-  return height * CUSTOMER_CURVE_SCALE * likelihood * (indoors ? CUSTOMER_INDOORS_FACTOR : 1);
+  return height * CUSTOMER_CURVE_SCALE * likelihood * (indoors ? indoorsOdds : 1);
 }
 
 /** SCREAM-182: when this resident's curve peaks, in seconds heard: the drawing's peak, nudged by their ID (the same every evening). */
@@ -430,15 +430,15 @@ export class Residents {
   }
 
   /**
-   * SCREAM-329: Speaker with Heavier Bass. Multiplies the Likelihood of the some-days people
-   * (kind `sometimes`) when they roll to come out. 1 without the note (EveningState sets it).
+   * SCREAM-366 (PO, November 16): how likely someone indoors is to come out, against someone in their
+   * yard. Story: a quarter (STORY_INDOORS_FACTOR), or half with Speaker with Heavier Bass
+   * (BASS_INDOORS_FACTOR); Quick play keeps half. EveningState sets it.
    */
-  sometimesFactor = 1;
+  indoorsFactor = CUSTOMER_INDOORS_FACTOR;
 
-  /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232), times the bass (SCREAM-329). */
+  /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232). */
   likelihoodNow(resident: Resident): number {
-    const bass = this.kindOf(resident) === 'sometimes' ? this.sometimesFactor : 1;
-    return Math.min(1, resident.likelihood * scheduleFactor(resident, this.story) * bass);
+    return Math.min(1, resident.likelihood * scheduleFactor(resident, this.story));
   }
 
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
@@ -895,7 +895,7 @@ export class Residents {
       const regular = this.kindOf(p.resident) === 'regular';
       const likelihood = this.likelihoodNow(p.resident);
       // SCREAM-182: in Story the chance rises to a peak, then fades (regulars stay steady).
-      const chance = this.story && !regular ? curveChance(p.heard, likelihood, indoors, peakTimeOf(p.resident.id)) : customerChance(p.heard, likelihood, indoors, regular);
+      const chance = this.story && !regular ? curveChance(p.heard, likelihood, indoors, peakTimeOf(p.resident.id), this.indoorsFactor) : customerChance(p.heard, likelihood, indoors, regular, this.indoorsFactor);
       if (this.rnd() < chance) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }

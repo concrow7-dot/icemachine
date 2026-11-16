@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 168 — People indoors a quarter as likely to come out; Speaker with Heavier Bass brings it back to half (2026-11-16)
+
+**Decision (Jira SCREAM-366, under SCREAM-78, PO, November 16, 01:40):** "I want to make it harder for people in their home to become customers. That way the powerup has a bigger effect." His answers: **"A quarter as likely"** (as someone in their yard; it was half) and **"Bass: indoors back to half"**: with Speaker with Heavier Bass, people indoors are half as likely again, as its note says ("More likely to get customers in their home"). It no longer makes the some-days people 10% likelier (decision 133).
+
+**Why (product owner's rationale):** "That way the powerup has a bigger effect."
+
+**Engineering's calls (proposals):** Story only (Quick play keeps half); everyone indoors, regulars included; the likelihood curve (decision 161) is scaled the same way.
+
 ## 167 — Cheaper to stock in Story: SpongePop and Lil Explorer Pop $1.25, Lou Ball and Drum Cone $0.75 (2026-11-16)
 
 **Decision (Jira SCREAM-365, under SCREAM-78, PO, November 16, 01:37):** "reduce the price of the ice creams at the "available ice cream" clipboard in the cooler. The spongepop and explorer pop ice cream should reduce to $1.25 each. The 2 ball lou ball and drumcone should be $0.75 each". SpongePop and the Explorer Pop were $1.50; the Lou Ball and the Drum Cone $1.00 (decision 142).

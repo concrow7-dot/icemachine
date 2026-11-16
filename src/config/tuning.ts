@@ -318,7 +318,15 @@ export const CUSTOMER_INDOORS_FACTOR = 0.5;
  * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
  */
 export const BASS_PRICE_CENTS = 4000;
-export const BASS_SOMETIMES_FACTOR = 1.1;
+/**
+ * SCREAM-366 (PO, November 16: "I want to make it harder for people in their home to become customers.
+ * That way the powerup has a bigger effect"; his answers "A quarter as likely" and "Bass: indoors back
+ * to half"): in Story, people indoors are a quarter as likely as people in their yard, and with
+ * Speaker with Heavier Bass half as likely again (CUSTOMER_INDOORS_FACTOR). The bass no longer makes
+ * the some-days people 10% likelier (it was BASS_SOMETIMES_FACTOR, 1.1).
+ */
+export const STORY_INDOORS_FACTOR = 0.25;
+export const BASS_INDOORS_FACTOR = 0.5;
 
 /** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
 export const CUSTOMER_RUN_SPEED = 37;
