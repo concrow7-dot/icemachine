@@ -45,6 +45,7 @@ import {
   CUSTOMER_CURVE_SCALE,
   CUSTOMER_CURVE_PEAK_SPREAD,
   RESIDENT_CAR_ARRIVE_CLEAR,
+  RESIDENT_CAR_TRUCK_ROOM,
   PARK_VISITORS_TONIGHT,
   PARK_STAY_LATE,
   PARK_LEAVE_MINUTES,
@@ -52,6 +53,7 @@ import {
   PARK_LEAVE_SPEED,
   PARK_SPOT_GAP,
 } from '../config/tuning';
+import { CAR_MODELS } from '../config/carModels';
 import type { CurbFinder } from './CurbFinder';
 
 /** One resident, as generated from the sheet (src/config/residents.ts). */
@@ -112,9 +114,10 @@ export interface Resident {
   visitor?: boolean;
   /**
    * SCREAM-252 (PO, November 15): the sheet's "Car": where their car parks on the street in front of
-   * their house, [x, y, the road's angle], while they are home (Story).
+   * their house, while they are home (Story). [x, y, the way it faces (degrees), which of the pack's
+   * cars it is (SCREAM-361: 1 to 26, a different one for each owner)].
    */
-  car?: [number, number, number];
+  car?: [number, number, number, number];
 }
 
 /** SCREAM-249: whether a resident with hours is home at this time (minutes since midnight). No hours = always. */
@@ -223,6 +226,21 @@ export type ResidentFacing = 'right' | 'up' | 'left' | 'down';
  * - done: served, or gave up waiting. Nobody is a customer twice in one evening.
  */
 export type CustomerState = 'none' | 'running' | 'waiting' | 'window' | 'done';
+
+/** SCREAM-252, SCREAM-361: a resident's car on the street. */
+export interface ResidentCar {
+  x: number;
+  y: number;
+  /** The way it faces, degrees (0 = right, 90 = down). */
+  angle: number;
+  /** Which of the pack's cars (CAR_MODELS). */
+  model: number;
+  halfLength: number;
+  halfWidth: number;
+  /** How far a pink square's centre keeps from the car's centre (px). */
+  clear: number;
+  id: string;
+}
 
 /** What a resident is doing right now. */
 export interface ResidentNow {
@@ -700,12 +718,19 @@ export class Residents {
   /** SCREAM-252: false in the uncle's evening and outside Story (EveningState sets it). */
   carsOn = false;
 
-  /** SCREAM-252: the residents' cars on the street now, with a colour number for each owner. */
-  get carsNow(): { x: number; y: number; angle: number; colour: number; id: string }[] {
-    const out: { x: number; y: number; angle: number; colour: number; id: string }[] = [];
+  /**
+   * SCREAM-252, SCREAM-361: the residents' cars on the street now: where, which way they face, which
+   * of the pack's cars, half its length and width along the street (what the truck bumps into), and
+   * how far a pink square keeps from its centre.
+   */
+  get carsNow(): ResidentCar[] {
+    const out: ResidentCar[] = [];
     for (const p of this.people) {
       const c = p.resident.car;
-      if (c && this.carsOut.has(p.resident.id)) out.push({ x: c[0], y: c[1], angle: c[2], colour: colourOf(p.resident.id), id: p.resident.id });
+      if (!c || !this.carsOut.has(p.resident.id)) continue;
+      const size = CAR_MODELS.find((m) => m.model === c[3])?.right ?? [66, 40];
+      const halfLength = size[0] / 2;
+      out.push({ x: c[0], y: c[1], angle: c[2], model: c[3], halfLength, halfWidth: size[1] / 2, clear: halfLength + RESIDENT_CAR_TRUCK_ROOM, id: p.resident.id });
     }
     return out;
   }
@@ -1175,13 +1200,6 @@ export class Residents {
     const i = Math.floor(this.rnd() * n);
     return [r.yard[i * 2], r.yard[i * 2 + 1]];
   }
-}
-
-/** SCREAM-252: a colour number for a resident's car, the same for them every time. */
-function colourOf(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return h;
 }
 
 function facingFor(dx: number, dy: number): ResidentFacing {

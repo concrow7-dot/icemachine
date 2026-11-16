@@ -102,12 +102,12 @@ function roadsOf(id: MapId, map: WorcesterMap): RoadNetwork {
   if (!roads) ROAD_NETWORKS.set(id, (roads = new RoadNetwork(map.roads, map.roadMask)));
   return roads;
 }
-function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork, cars: () => readonly { x: number; y: number }[] = () => map.parkedCars) {
+function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork, cars: () => readonly { x: number; y: number; clear?: number }[] = () => map.parkedCars) {
   return (x: number, y: number, road: number): boolean => {
     if (!roads.onRoad(x, y) || roads.nearestSegment(x, y)?.road !== road) return false;
     const near = (a: { x: number; y: number }, d: number) => Math.hypot(a.x - x, a.y - y) < d;
     // SCREAM-252: the cars on the street now (the map's own, and residents' while they're home).
-    if (cars().some((c) => near(c, PINK_CLEAR_CAR))) return false;
+    if (cars().some((c) => near(c, c.clear ?? PINK_CLEAR_CAR))) return false; // SCREAM-361: residents' cars are bigger
     if (map.gasStations.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(map.homeStart, PINK_CLEAR_BAY)) return false;
     return true;
   };

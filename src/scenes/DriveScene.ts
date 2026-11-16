@@ -10,6 +10,9 @@ import { PortalSound } from '../audio/PortalSound';
 import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
+  CARS_JSON,
+  CARS_KEY,
+  CARS_PNG,
   HIT_MIN_SPEED_FRACTION,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
@@ -269,6 +272,8 @@ export class DriveScene extends Phaser.Scene {
     if (!this.textures.exists(a.atlasKey)) this.load.atlas(a.atlasKey, a.atlasPng, a.atlasJson);
     for (const { key } of this.map.roadTiles) this.load.image(a.roadKeyPrefix + key, versioned(`${a.roadDir}/${key}.png`, this.map));
     loadResidentSheet(this);
+    // SCREAM-361: the residents' cars, from the art pack (Elm Park).
+    if (a.residentCars && !this.textures.exists(CARS_KEY)) this.load.atlas(CARS_KEY, CARS_PNG, CARS_JSON);
     if (!this.textures.exists(UNCLE_WALKER_KEY)) this.load.spritesheet(UNCLE_WALKER_KEY, UNCLE_URL, { frameWidth: 16, frameHeight: 32 });
     showLoadingWhileLoading(this); // SCREAM-75
   }
@@ -1187,27 +1192,30 @@ export class DriveScene extends Phaser.Scene {
 
   /** SCREAM-252: how many of `cars` are the map's own (the rest are residents' cars, refreshed each frame). */
   private fixedCars = 0;
-  /** SCREAM-252: one drawing per resident's car, by owner. */
-  readonly residentCars = new Map<string, Phaser.GameObjects.Graphics>();
+  /** SCREAM-252, SCREAM-361: one picture per resident's car, by owner. */
+  readonly residentCars = new Map<string, Phaser.GameObjects.Image>();
 
   /**
    * SCREAM-252 (PO, November 15): residents' cars on the street while their owner is home. They are
-   * obstacles like the parked cars (the same bump and cost), drawn the same way, each owner always
-   * in the same colour.
+   * obstacles like the parked cars (the same bump and cost). SCREAM-361 (PO, November 16): drawn with
+   * the art pack's cars, "30% smaller" than the pack, each owner a different one, and "The hitbox
+   * should match the car": the obstacle is the car's own size. Each uses the view nearest the way it
+   * faces (right, down, left or up), turned the last few degrees.
    */
   private updateResidentCars(): void {
     const now = this.evening.residents.carsNow;
     this.cars.length = this.fixedCars;
     const seen = new Set<string>();
     for (const c of now) {
-      this.cars.push({ x: c.x, y: c.y, angle: c.angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+      this.cars.push({ x: c.x, y: c.y, angle: c.angle, halfLength: c.halfLength, halfWidth: c.halfWidth });
       seen.add(c.id);
       let g = this.residentCars.get(c.id);
       if (!g) {
-        g = this.add.graphics().setPosition(c.x, c.y).setAngle(c.angle).setDepth(1);
-        g.fillStyle(0x1b1b1b, 1).fillRect(-CAR_HALF_LENGTH - 1, -CAR_HALF_WIDTH - 1, CAR_HALF_LENGTH * 2 + 2, CAR_HALF_WIDTH * 2 + 2);
-        g.fillStyle(CAR_COLOURS[c.colour % CAR_COLOURS.length] ?? 0x888888, 1).fillRect(-CAR_HALF_LENGTH + 1, -CAR_HALF_WIDTH + 1, CAR_HALF_LENGTH * 2 - 2, CAR_HALF_WIDTH * 2 - 2);
-        g.fillStyle(0xbfe6ff, 0.9).fillRect(-11, -12, 22, 24);
+        const view = carView(c.angle);
+        g = this.add
+          .image(c.x, c.y, CARS_KEY, `car${c.model}_${view.name}`)
+          .setAngle(c.angle - view.angle)
+          .setDepth(RESIDENT_DEPTH + c.y / DEPTH_PER_PX);
         this.residentCars.set(c.id, g);
       }
       g.setVisible(true);
@@ -1641,3 +1649,9 @@ function squareOverlap(truck: { x: number; y: number; heading: number }, zone: P
   }
 }
 
+/** SCREAM-361: the pack draws each car facing right, down, left or up: the one nearest `angle`, and that view's own angle. */
+export function carView(angle: number): { name: 'right' | 'down' | 'left' | 'up'; angle: number } {
+  const a = ((angle % 360) + 360) % 360;
+  const k = Math.round(a / 90) % 4;
+  return { name: (['right', 'down', 'left', 'up'] as const)[k]!, angle: k * 90 };
+}
