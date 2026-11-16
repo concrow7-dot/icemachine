@@ -6,7 +6,7 @@ import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, fixedParkedCars, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  BASS_SOMETIMES_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
+  BASS_INDOORS_FACTOR, STORY_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -407,7 +407,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.carsOn = !!this.story && !this.tutorial; // SCREAM-252: Story, not the uncle's evening
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
-      people.sometimesFactor = this.bassFactor; // SCREAM-329
+      people.indoorsFactor = this.indoorsFactor; // SCREAM-366
       people.chaseRules = !!this.story && !this.tutorial; // SCREAM-342: Story's chasing rules, not in the uncle's evening
       people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
@@ -773,9 +773,10 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.powerUpsOwned.includes(MIRRORS_ID);
   }
 
-  /** SCREAM-329: how much more the some-days people's Likelihood counts with Speaker with Heavier Bass (Story only: notes are). */
-  get bassFactor(): number {
-    return this.powerUpsOwned.includes(BASS_ID) ? BASS_SOMETIMES_FACTOR : 1;
+  /** SCREAM-366: how likely someone indoors is to come out, against someone in their yard (Story: a quarter; half with the bass). */
+  get indoorsFactor(): number {
+    if (!this.story) return CUSTOMER_INDOORS_FACTOR;
+    return this.powerUpsOwned.includes(BASS_ID) ? BASS_INDOORS_FACTOR : STORY_INDOORS_FACTOR;
   }
 
   /** Buys a note from the cork board with tonight's cash. Returns false, changing nothing, if it can't be bought. */
@@ -785,7 +786,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.powerUpsOwned.push(id);
     if (id === GAS_CAN_ID) this.gasCanReady = true; // it comes full
     this.truckNow = truckSpec(!!this.story, this.powerUpsOwned); // SCREAM-309: a power-up may change the truck
-    if (id === BASS_ID) for (const people of this.residentsByMap.values()) people.sometimesFactor = this.bassFactor; // SCREAM-329: from now on
+    if (id === BASS_ID) for (const people of this.residentsByMap.values()) people.indoorsFactor = this.indoorsFactor; // SCREAM-329, SCREAM-366: from now on
     if (id === SPEEDY_ID) for (const people of this.residentsByMap.values()) people.speedyFactor = this.speedyFactor; // SCREAM-342: from now on
     this.powerUpsSpentCents += note.priceCents;
     this.changeMoney(-note.priceCents, 'Power-up');
