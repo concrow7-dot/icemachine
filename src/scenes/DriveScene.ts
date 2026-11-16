@@ -128,6 +128,8 @@ const PORCH_LIGHT_DY = -24;
 const PORCH_GLOW = 0xffd36b;
 /** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
 const OCCLUDER_CELL = 128;
+/** SCREAM-224: map pieces that lie flat on the ground (the basketball court, the playground's sand). */
+const FLAT_PIECE = /^(court_|play_)/;
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
@@ -317,6 +319,8 @@ export class DriveScene extends Phaser.Scene {
     this.map.objects.forEach((o, i) => {
       const size = this.objectSizes.get(o.key);
       if (!size) return;
+      // SCREAM-224: the court and the playground lie flat on the ground: people stand on them, never behind them.
+      if (FLAT_PIECE.test(o.key)) return;
       const left = Math.floor((o.x - size.w / 2) / OCCLUDER_CELL);
       const right = Math.floor((o.x + size.w / 2) / OCCLUDER_CELL);
       const top = Math.floor((o.y - size.h) / OCCLUDER_CELL);

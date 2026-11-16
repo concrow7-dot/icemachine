@@ -62,7 +62,8 @@ test('Without ticks, Story falls back to Likelihood (as before SCREAM-221)', () 
 
 test('Both maps have ticks for everyone, from the Residents sheet', () => {
   for (const list of [TUTORIAL_RESIDENTS, RESIDENTS]) {
-    assert.ok(list.every((r) => Array.isArray(r.days) && r.days.every((d) => d >= 0 && d <= 6)));
+    // SCREAM-224: a park visitor has no days (who is at the park is rolled each evening).
+    assert.ok(list.filter((r) => !r.visitor).every((r) => Array.isArray(r.days) && r.days.every((d) => d >= 0 && d <= 6)));
   }
   // Chloe Hogan, the uncle's regular on Day 1 (Monday), is ticked every day.
   assert.equal(TUTORIAL_RESIDENTS.find((r) => r.id === 'T008').days.length, 7);
