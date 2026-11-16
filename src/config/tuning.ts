@@ -464,7 +464,7 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
  */
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
-export const GITTY_UP_PRICE_CENTS = 2000;
+export const GITTY_UP_PRICE_CENTS = 5000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20)
 /**
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
@@ -689,7 +689,7 @@ export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
  * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
  * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
  */
-export const MORE_JUNK_PRICE_CENTS = 5000;
+export const MORE_JUNK_PRICE_CENTS = 2000; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50)
 export const MORE_JUNK_EXTRA_ROWS = 1;
 
 /**
