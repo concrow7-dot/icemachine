@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 159 — The uncle pays for the whole first tank of gas (2026-11-15)
+
+**Decision (Jira SCREAM-360, under SCREAM-5, PO, November 15, 23:06):** "New high priority ticket: The uncle pays for the whole first tank of gas." Before, he paid up to $20 (decision 040's pump stop, SCREAM-173), and a full tank costs $30, so his money never filled it.
+
+His answers the same evening: it covers **"Both"**: the player with the uncle, at his pump stop, and the player who skips him or plays On My Own, at their first pump (SCREAM-268). The words are engineering's draft (**"My draft"**): the uncle says "Fill her right up. This first tank is on me."; On My Own, the pump says "Your uncle is paying for your first tank."
+
+**Options considered:** both players, or only with the uncle (the other keeping $20).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- It is used up the first time gas is bought with it, as before, even if the player takes less than a full tank.
+- The pump's old "That's the uncle's $20." line is gone: with the uncle paying, the amount stops at a full tank ("Fills it up").
+
 ## 158 — People at the park: about 13 at 5 PM, emptying out from 5:45, 1 or 2 left by 7 (2026-11-15)
 
 **Decision (Jira SCREAM-224, under SCREAM-11, PO, November 15, 21:39):** "I want to add customers to the park area on the elm park map. The basketball court and sand area in the bottom right corner of the map. There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to empty out. so that by 7 there are only 1 or 2 people left."

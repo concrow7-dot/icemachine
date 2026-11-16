@@ -368,8 +368,6 @@ export const FUEL_STEP_CENTS = 500;
  */
 export const FUEL_CENT_STEP = 50;
 
-/** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
-export const UNCLE_GAS_CENTS = 2000;
 
 /**
  * SCREAM-185 (PO, November 6): "I left $50 on the truck for you."
