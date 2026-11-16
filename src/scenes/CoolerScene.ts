@@ -496,8 +496,9 @@ export class CoolerScene extends Phaser.Scene {
           this.order.changePrice(flavour.id, direction * PRICE_STEP_CENTS);
           this.refresh();
         };
-        container.add(this.makeButton(16, 120, '−', change(-1), 16, false));
-        plus = this.makeButton(w - 16, 120, '+', change(1), 16, false);
+        // SCREAM-370 (PO, November 16): "Not much larger but they are small enough where I occasionally mis click".
+        container.add(this.makeButton(18, 120, '−', change(-1), 20, false, { x: 8, y: 3 }));
+        plus = this.makeButton(w - 18, 120, '+', change(1), 20, false, { x: 8, y: 3 });
         container.add(plus);
       }
       this.cards.push({ flavour: flavour.id, container, frame, price, margin, plus });
@@ -541,9 +542,10 @@ export class CoolerScene extends Phaser.Scene {
     onClick: () => void,
     size: number,
     addToScene = true,
+    padding = { x: 6, y: 1 },
   ): Phaser.GameObjects.Text {
     const button = (addToScene ? this.add.text(x, y, label) : this.make.text({ x, y, text: label }, false))
-      .setStyle({ fontFamily: 'monospace', fontSize: `${size}px`, color: '#ffffff', backgroundColor: BUTTON, padding: { x: 6, y: 1 } })
+      .setStyle({ fontFamily: 'monospace', fontSize: `${size}px`, color: '#ffffff', backgroundColor: BUTTON, padding })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     button.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {

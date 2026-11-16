@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 170 — Bigger − and + price buttons on Today's Menu (2026-11-16)
+
+**Decision (Jira SCREAM-370, under SCREAM-154, PO, November 16, 12:58):** "I want to increase the size of the blue + and - buttons. Not much larger". The − and + on each menu card in the cooler grow from about 22 x 20 px to about 28 x 28 px (text 16 → 20 px, more padding) and sit 2 px further in from the card's edges.
+
+**Why (product owner's rationale):** "they are small enough where I occasionally mis click".
+
+**Engineering's calls (proposals):** how much bigger (kept small so "$2.50" still fits between them); the same colour and place; Quick Play gets them too (it uses the same cards).
+
 ## 169 — A warning when the player sets off without restocking (2026-11-16)
 
 **Decision (Jira SCREAM-368, under SCREAM-11, PO, November 16, 01:49):** "If the player goes to drive and they haven't restocked the truck, warn them." His answers: **"No stock bought tonight"** (warn when nothing was bought this evening, even with some left from yesterday) and **"Pop-up with two buttons"**: "YOU HAVEN'T RESTOCKED", with GO TO THE COOLER (C) and DRIVE ANYWAY (Y). An empty cooler still opens the cooler with its warning, as before (decision 111).
