@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
+import { defaultPriceCents, FLAVOURS, getFlavour, stockCostOf, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale, withExtraIceCream, type OrderLine } from './Sale';
 import { explorationTipCents } from './ExplorationTip';
@@ -1350,7 +1350,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** Total spent on the stock currently in the cooler. */
   get stockCostCents(): number {
-    return this.coolerSlots.reduce((sum, s) => sum + s.quantity * getFlavour(s.flavour).costCents, 0);
+    return this.coolerSlots.reduce((sum, s) => sum + s.quantity * this.stockCostOf(s.flavour), 0);
+  }
+
+  /** SCREAM-365: what one ice cream costs to stock tonight (Story has its own prices). */
+  stockCostOf(flavour: FlavourId): number {
+    return stockCostOf(flavour, !!this.story);
   }
 
   /**

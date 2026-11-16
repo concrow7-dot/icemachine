@@ -11,20 +11,30 @@ export type Flavour = {
   startPriceCents?: number;
   /** SCREAM-334: only in Story (bought on the cork board); Quick play's clipboard never offers it. */
   storyOnly?: boolean;
+  /** SCREAM-365 (PO, November 16): what it costs to stock in Story, when that isn't `costCents` (Quick play keeps `costCents`). */
+  storyCostCents?: number;
 };
+
+/** SCREAM-365: what one costs to stock: Story's price if it has one, else the usual. */
+export function stockCostOf(id: FlavourId, story: boolean): number {
+  const f = getFlavour(id);
+  return story ? (f.storyCostCents ?? f.costCents) : f.costCents;
+}
 
 export const FLAVOURS: Flavour[] = [
   { id: 'eclair', name: 'Chocolate Eclair', costCents: 100 },
-  { id: 'spongepop', name: 'SpongePop', costCents: 150 },
-  { id: 'explorer', name: 'Lil Explorer Pop', costCents: 150 },
+  // SCREAM-365 (PO, November 16): "The spongepop and explorer pop ice cream should reduce to $1.25 each" (Story).
+  { id: 'spongepop', name: 'SpongePop', costCents: 150, storyCostCents: 125 },
+  { id: 'explorer', name: 'Lil Explorer Pop', costCents: 150, storyCostCents: 125 },
   { id: 'cookie', name: 'Cookie Ice Cream Sandwich', costCents: 200 },
   // SCREAM-334 (PO, November 15): a parody name of his own ("two ball lou ball"). New ice creams go
   // at the end: the pictures' sheet and old saves follow this order.
   // SCREAM-351 (PO, November 15): "I want these two ice creams to be more profitable. So they should
   // cost $1 but be able to be sold at $3." They were $2.00 to stock; they still start at $3.00.
-  { id: 'louball', name: 'Two Ball Lou Ball', costCents: 100, startPriceCents: 300, storyOnly: true },
+  // SCREAM-365 (PO, November 16): "The 2 ball lou ball and drumcone should be $0.75 each".
+  { id: 'louball', name: 'Two Ball Lou Ball', costCents: 75, startPriceCents: 300, storyOnly: true },
   // SCREAM-335 (PO, November 15): "drum cone", his own name in place of a real brand's.
-  { id: 'drumcone', name: 'Drum Cone', costCents: 100, startPriceCents: 300, storyOnly: true },
+  { id: 'drumcone', name: 'Drum Cone', costCents: 75, startPriceCents: 300, storyOnly: true },
 ];
 
 export function getFlavour(id: FlavourId): Flavour {

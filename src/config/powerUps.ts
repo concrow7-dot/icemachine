@@ -4,7 +4,7 @@
 // power-up ticket replaces a dummy note with a real one (name, price, what it does).
 // SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
 
-import { getFlavour, type FlavourId } from './flavours';
+import { getFlavour, stockCostOf, type FlavourId } from './flavours';
 import { BACK_IT_UP_PRICE_CENTS, SPEEDY_PRICE_CENTS, MIRRORS_PRICE_CENTS, MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
@@ -150,7 +150,7 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
   const place = ICE_CREAM_PLACES[flavour];
   const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
   // SCREAM-352 (PO, November 15): "I want to add the cost of buying each ice cream to the powerup card."
-  const cost = `Costs you ${dollars(f.costCents)} each to stock.`;
+  const cost = `Costs you ${dollars(stockCostOf(flavour, true))} each to stock.`; // SCREAM-365: the notes are Story's
   // PO, November 14: "Lets remove the line 'Stock it and customers order it.'"
   const paragraphs = [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour] ?? '', limit, cost].filter(Boolean);
   return {
