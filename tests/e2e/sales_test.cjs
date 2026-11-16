@@ -194,13 +194,14 @@ const { chromium } = require('playwright');
   await serveNow(); await wait(200);
   const flashTexts = () => sc('Sales', "s.children.list.filter(o => o.name === 'sale-flash' && o.alpha > 0.5).sort((a, b) => a.y - b.y).map(o => o.text + '@' + Math.round(o.y)).join(' / ')");
   await sc('Sales', '(s.flashLines(300, [{ text: "+$0.60 TIP", colour: "#1d5c8c", size: 44 }, { text: "+$0.30 SPONGEPOP TIP", colour: "#c2185b", size: 30 }, { text: "+$1.60 EXPLORATION TIP", colour: "#6a3d9a", size: 30 }]), true)');
-  await wait(1600);
-  check('SCREAM-313: first the price, then the first tip line under it', await flashTexts(), '+$3.00@300 / +$0.60 TIP@360');
+  // SCREAM-357: wait for each stage to show (up to 5 s) rather than sleep a fixed time: the lines come
+  // in 1.05 s apart, and how long the screenshots take changed which one a fixed wait landed on.
+  const flashBecomes = async (want) => { const end = Date.now() + 5000; let got = ''; while (Date.now() < end) { got = await flashTexts(); if (got === want) break; await wait(40); } return got; };
+  check('SCREAM-313: first the price, then the first tip line under it', await flashBecomes('+$3.00@300 / +$0.60 TIP@360'), '+$3.00@300 / +$0.60 TIP@360');
   await page.screenshot({ path: outDir + '/sale_tips_1.png' });
-  await wait(700);
+  check('...then the second line under it, the first gone up behind the price', await flashBecomes('+$3.00@300 / +$0.30 SPONGEPOP TIP@360'), '+$3.00@300 / +$0.30 SPONGEPOP TIP@360');
   await page.screenshot({ path: outDir + '/sale_tips_2.png' });
-  await wait(600);
-  check('...the first two have scrolled up behind the price; the last stays under it', await flashTexts(), '+$3.00@300 / +$1.60 EXPLORATION TIP@360');
+  check('...the first two have scrolled up behind the price; the last stays under it', await flashBecomes('+$3.00@300 / +$1.60 EXPLORATION TIP@360'), '+$3.00@300 / +$1.60 EXPLORATION TIP@360');
   check('...the price is drawn over the tip lines', await sc('Sales', "(f => f.find(o => o.text === '+$3.00').depth > f.find(o => o.text.endsWith('TIP')).depth)(s.children.list.filter(o => o.name === 'sale-flash'))"), true);
   await page.screenshot({ path: outDir + '/sale_tips_3.png' });
   await ev('(e.driveOffFromSale(), true)'); await sc('Sales', '(s.leave(), true)'); await wait(400);
