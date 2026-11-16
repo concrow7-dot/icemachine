@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 157 — The cooler's "i" buttons are grey, not blue (2026-11-15)
+
+**Decision (Jira SCREAM-359, under SCREAM-78, PO, November 15, 21:08; a change to SCREAM-355):** "I want to change the "i" button on the available ice cream to be grey and not blue. It sticks out too much at the moment."
+
+**Why (product owner's rationale):** "It sticks out too much at the moment."
+
+**Engineering's calls (proposals):** a soft warm grey (`INFO_GREY`) that sits with the clipboard's pencil-brown text, a touch smaller, with no white ring. Its place and what it does are unchanged.
+
 ## 156 — The Lou Ball's reversed steering counts down only while the truck is moving (2026-11-15)
 
 **Decision (Jira SCREAM-358, under SCREAM-78; a fix to decision 138, SCREAM-334):** the PO, November 15, 20:53: "The key bindings reversing isn't happening on the 2 ball lou ball". Played through in the browser, the sale did start the 10 seconds and swap the steering, but the 10 seconds ran down whenever the road view was open, parked or not. After a sale the truck is parked on the brake, so with a wait for the next customer, or more customers to serve, they were gone before the truck moved.
