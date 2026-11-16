@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 166 — More Space for Scream and Gitty Up swap places and prices (2026-11-16)
+
+**Decision (Jira SCREAM-364, under SCREAM-78, PO, November 16, 01:32):** "I want to switch "more space for scream" with "gitty up" in both location and price." More Space for Scream is now the left note under the Temporary Gas Can, $20; Gitty Up the right note under Brakes Made This Century, $50.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the tree's shape stays: Train Off The Tracks and Brakes Made This Century now hang from More Space for Scream (where Gitty Up was); the Truck 9 dummy from Back It Up or Gitty Up. A save that owns either keeps it.
+
 ## 165 — A hidden Shift+F freezes the game as it looks, for screenshots (2026-11-16)
 
 **Decision (Jira SCREAM-363, under SCREAM-202, PO, November 16, 01:20; "Build all four", 01:45):** "I want to be able to pause mid game showing the screen that I'm seeing. This will help getting screenshots. It should be Shift + something. It should be hidden so that it isn't available to regular players."
@@ -26,6 +34,10 @@ So the residents' cars in Elm Park are drawn with LimeZu Modern Exteriors' 26 ca
 - Which owner gets which car is a fixed shuffle, the same every build.
 
 **Changed while in review (PO, November 16, 13:01 to 13:05):** "I want to move the parked cars so they look more on the side of the road. Currently they look like they are in the street driving, not next to the curb parked" (with a screenshot: one car a little off the curb, one far from it), and "Make the cars 15% smaller". Each car now sits against the curb (3 px from where the asphalt ends), and every car is 15% smaller (the shortest is 56 px long, was 66). Larry Birdseed's car moved nearer his house along Institute Road.
+
+## 163 — "C Close" in the line of keys (withdrawn before it was merged) (2026-11-16)
+
+**Decision (Jira SCREAM-362, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Built as PR #275; closed unmerged with decision 160 (SCREAM-367).
 
 ## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
 
@@ -70,10 +82,6 @@ So the residents' cars in Elm Park are drawn with LimeZu Modern Exteriors' 26 ca
 **Withdrawn (Jira SCREAM-367, PO, November 16, 01:48):** "I want to remove the close and close for business mechanic", while testing it. Asked how, he chose "Drop #272 and #275": both pull requests were closed unmerged, so it never reached main. Decision 163 (C in the line of keys, SCREAM-362, PR #275) went with it.
 
 **Why (product owner's rationale):** _to be filled in by the PO._
-
-## 163 — "C Close" in the line of keys (withdrawn before it was merged) (2026-11-16)
-
-**Decision (Jira SCREAM-362, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Built as PR #275; closed unmerged with decision 160 (SCREAM-367).
 
 ## 159 — The uncle pays for the whole first tank of gas (2026-11-15)
 
