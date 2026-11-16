@@ -113,6 +113,7 @@ const { chromium } = require('playwright');
     const noteNow = () => sc('Cooler', "s.flavourNote ? s.flavourNote.flavour + ' | ' + s.flavourNote.texts.join(' / ') : 'none'");
     const before = await sc('Cooler', "s.order.cells.filter(Boolean).length + ' ' + s.evening.moneyCents");
     check('SCREAM-355: each clipboard row has an "i" button (one ice cream on day 1)', await sc('Cooler', "s.infoButtons.size + ' ' + [...s.infoButtons.keys()].join()"), '1 eclair');
+    check('SCREAM-359 (PO): the "i" button is grey, not blue', await sc('Cooler', "s.infoButtons.get('eclair').list[0].fillColor.toString(16)"), 'a59c90');
     const info = JSON.parse(await sc('Cooler', "JSON.stringify((b => ({ x: b.x, y: b.y }))(s.infoButtons.get('eclair')))"));
     await page.mouse.click(info.x, info.y); await wait(200);
     check('...clicking it opens the Chocolate Eclair\'s note from the cork board: its power, its limit and its cost', await noteNow(), 'eclair | CHOCOLATE ECLAIR / Owned from the start. / If you have these stocked in your cooler, every customer will buy an extra ice cream. / The average person won\'t pay more than $2.50 for one. / Costs you $1.00 each to stock.');

@@ -57,6 +57,8 @@ const LID_OPEN_MS = 600;
 const LID_WAIT_MS = 250;
 const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
+/** SCREAM-359: the clipboard's "i" buttons: a soft warm grey, so they don't stand out on the paper. */
+const INFO_GREY = 0xa59c90;
 const UNPAID = 0xffcf33;
 
 /**
@@ -114,7 +116,8 @@ export class CoolerScene extends Phaser.Scene {
   /** SCREAM-355: a small round "i" button at (x, y) that opens this ice cream's note. */
   private makeInfoButton(x: number, y: number, flavour: FlavourId): void {
     const button = this.add.container(x, y, [
-      this.add.circle(0, 0, 9, 0x2884d6).setStrokeStyle(2, 0xffffff),
+      // SCREAM-359 (PO, November 15): grey, not blue: "It sticks out too much at the moment."
+      this.add.circle(0, 0, 8, INFO_GREY),
       this.add.text(0, 0, 'i', { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
     ]).setName(`info-${flavour}`);
     // A zone bigger than the circle, so a finger can hit it (SCREAM-77).
