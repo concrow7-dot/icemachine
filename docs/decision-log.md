@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 167 — Cheaper to stock in Story: SpongePop and Lil Explorer Pop $1.25, Lou Ball and Drum Cone $0.75 (2026-11-16)
+
+**Decision (Jira SCREAM-365, under SCREAM-78, PO, November 16, 01:37):** "reduce the price of the ice creams at the "available ice cream" clipboard in the cooler. The spongepop and explorer pop ice cream should reduce to $1.25 each. The 2 ball lou ball and drumcone should be $0.75 each". SpongePop and the Explorer Pop were $1.50; the Lou Ball and the Drum Cone $1.00 (decision 142).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** Story only (the standing rule): Quick play's SpongePop and Explorer Pop stay $1.50 (`Flavour.storyCostCents`, `stockCostOf`); the Lou Ball and the Drum Cone are Story's alone. The cork board's notes say the new prices. What customers pay is unchanged.
+
 ## 166 — More Space for Scream and Gitty Up swap places and prices (2026-11-16)
 
 **Decision (Jira SCREAM-364, under SCREAM-78, PO, November 16, 01:32):** "I want to switch "more space for scream" with "gitty up" in both location and price." More Space for Scream is now the left note under the Temporary Gas Can, $20; Gitty Up the right note under Brakes Made This Century, $50.

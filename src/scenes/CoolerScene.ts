@@ -182,7 +182,7 @@ export class CoolerScene extends Phaser.Scene {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
     this.evening.capMenuPrices();
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f));
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f), (f) => this.evening.stockCostOf(f));
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
@@ -301,7 +301,7 @@ export class CoolerScene extends Phaser.Scene {
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
-      this.add.text(textLeft, lowerY, `${formatMoney(flavour.costCents)} each`, {
+      this.add.text(textLeft, lowerY, `${formatMoney(this.evening.stockCostOf(flavour.id))} each`, { // SCREAM-365
         fontFamily: 'monospace',
         fontSize: compact ? '11px' : '12px',
         color: '#5a4636',
@@ -787,7 +787,7 @@ export class CoolerScene extends Phaser.Scene {
       card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
       // SCREAM-343: at the top price the + is greyed out, so the player sees why it stopped.
       card.plus?.setAlpha(this.order.atTopPrice(card.flavour, PRICE_STEP_CENTS) ? TOP_PRICE_PLUS_ALPHA : 1);
-      const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
+      const profitEach = slot.priceCents - this.evening.stockCostOf(slot.flavour);
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
       if (profitEach <= 0) card.margin.setText('No profit at this price').setColor('#b3261e');
       else card.margin.setText(`Profit ${formatMoney(profitEach)} each`).setColor('#2e7d32');
