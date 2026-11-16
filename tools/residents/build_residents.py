@@ -31,7 +31,10 @@ times as much, and at other times go by their Likelihood, which should be tiny; 
 Street (SCREAM-353, PO, November 15) is the street the game says they live on: in hints,
 schedule lines and who counts as a neighbour. It must be a street on that map; left blank,
 it is the street nearest the top of their house (how the column was first filled in). It
-does not move the house, door, yard or curb spot. House is a number from 1 to the
+does not move the house, door, yard or curb spot. Park (SCREAM-224, PO, November 15; the
+tutorial map, Elm Park, only): Yes with no House = a park visitor, who lives in none of the
+houses and is only ever at the park (the basketball court and the playground); Yes with a House
+and a From time = a resident who is at the park until they come home. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
 
@@ -76,6 +79,24 @@ TUTORIAL = False
 HEADER = ['ID', 'Name', 'Age', 'Street', 'House', 'Likelihood (%)', 'Look', 'Notes']
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']   # SCREAM-221: optional columns
 EVENING = (17 * 60, 20 * 60)   # SCREAM-249: the evening runs from 5 PM to 8 PM (tuning.ts)
+
+
+# ---- SCREAM-224 (PO, November 15): the park on the tutorial map (Elm Park) ----
+# Where people stand, as offsets from the bottom middle of the basketball court's and the
+# playground's pictures, so the spots move with them if the PO moves them in Tiled. Picked by
+# eye: on the court's floor clear of the hoops, on the sand in front of the playthings, and on
+# the grass beside them (those are measured from the court).
+PARK_COURT_KEY, PARK_PLAY_KEY = 'court_basketball', 'play_ground'
+# Nobody stands along the court's bottom edge or below it: parked on the street beside the park, the
+# player's view ends about there.
+PARK_COURT_SPOTS = [(-55, -127), (-31, -87), (-51, -47), (-11, -117), (23, -63), (49, -123), (57, -77), (22, -104),
+                    (-43, -154), (9, -147), (72, -154), (-23, -64)]
+PARK_PLAY_SPOTS = [(-13, -36), (-47, -38), (-19, -6), (45, -42), (75, -6), (25, -3), (-75, -4), (70, -48), (-50, -10)]
+PARK_SIDE_SPOTS = [(-13, -179), (37, -179), (127, -95), (179, -55), (239, -55), (-103, -181), (319, -97)]
+PARK_SPOTS_EACH = 6
+PARK_GATE = (0, -193)        # from the court: where the park's own curb spot is looked for (toward the street)
+PARK_EXIT_DX = (-60, 300)    # from the court: where along the bottom of the map each person walks off
+PARK_EXIT_BELOW = 30         # how far below the map's bottom edge they go before they're gone
 
 
 def clock_minutes(text):
@@ -216,10 +237,17 @@ def read_csv():
         age = (r['Age'] or '').strip().lower()
         if age not in ('adult', 'kid'):
             bad('Age must be Adult or Kid')
+        # SCREAM-224 (PO, November 15): an optional "Park" column. Yes with no House = a park
+        # visitor; Yes with a House = a resident who is at the park until their From time.
+        park = (r.get('Park') or '').strip().lower()
+        if park not in ('', 'yes', 'no'):
+            bad('Park must be Yes or blank')
+        visitor = park == 'yes' and not (r['House'] or '').strip()
         try:
-            house, likely, look = int(r['House']), float(str(r['Likelihood (%)']).rstrip('%')), int(r['Look'])
+            house = None if visitor else int(r['House'])
+            likely, look = float(str(r['Likelihood (%)']).rstrip('%')), int(r['Look'])
         except ValueError:
-            bad('House, Likelihood (%) and Look must be numbers')
+            bad('House, Likelihood (%) and Look must be numbers (only a park visitor has no House)')
         if not 0 <= likely <= 100:
             bad('Likelihood (%) must be from 0 to 100')
         # SCREAM-189 (PO): an optional "Order size" column: blank is the usual random size.
@@ -229,8 +257,14 @@ def read_csv():
         person = {'id': rid, 'name': (r['Name'] or '').strip(), 'kid': age == 'kid', 'house': house,
                   'likelihood': likely / 100, 'look': look}
         # SCREAM-353 (PO, November 15): the sheet's Street is the street the game uses.
-        if (r.get('Street') or '').strip():
+        if (r.get('Street') or '').strip() and not visitor:
             person['street'] = r['Street'].strip()
+        if park == 'yes':
+            if not TUTORIAL:
+                bad('Park is only for the Elm Park tab (there is no park on this map yet)')
+            person['park'] = True
+            if visitor:
+                person['visitor'] = True
         if size:
             person['orderSize'] = int(size)
         # SCREAM-103 (PO, November 8): an optional "Hinted" column: Yes means other customers
@@ -242,7 +276,9 @@ def read_csv():
             person['hinted'] = True
         # SCREAM-221 (PO, decision 057): optional Mon to Sun columns, the sheet's checkboxes
         # (TRUE or FALSE; blank counts as FALSE): the days of the week they're home, in Story.
-        if all(d in r for d in DAYS):
+        if visitor:
+            pass   # a visitor has no days: who is at the park is rolled each evening
+        elif all(d in r for d in DAYS):
             ticks = [(r[d] or '').strip().upper() for d in DAYS]
             if any(t not in ('TRUE', 'FALSE', '') for t in ticks):
                 bad('Mon to Sun must be TRUE or FALSE (the sheet\'s checkboxes)')
@@ -262,6 +298,10 @@ def read_csv():
             hours.append(minutes)
         if hours[0] is not None and hours[1] is not None and hours[0] >= hours[1]:
             bad('From must be earlier than Until')
+        if visitor and hours != [None, None]:
+            bad('a park visitor has no From or Until: the game rolls when they leave each evening')
+        if park == 'yes' and not visitor and hours[0] is None:
+            bad('a resident with Park needs a From time: they are at the park until they come home')
         if hours != [None, None]:
             person['hours'] = hours
         # SCREAM-250 (PO, November 10): an optional "Hard to find" column: Yes = only there in
@@ -270,6 +310,8 @@ def read_csv():
         if hard not in ('', 'yes', 'no'):
             bad('Hard to find must be Yes or blank')
         if hard == 'yes':
+            if park == 'yes':
+                bad('Hard to find and Park don\'t go together')
             if None in hours:
                 bad('Hard to find needs both From and Until (their window)')
             if not person.get('days'):
@@ -519,6 +561,17 @@ def place(m, people, index):
     street_names = {r['name'] for r in m['roads'] if not r.get('ring')}
     out = []
     for p in people:
+        # SCREAM-224: a park visitor has no house: their "door" is where they walk off the map,
+        # their "yard" is their spots at the park and their curb spot is the park's.
+        if p.get('visitor'):
+            pk = park_of(m, segs, blocks, p)
+            out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': pk['street'],
+                        'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
+                        'door': pk['exit'], 'yard': pk['spots'], 'curb': pk['curb'],
+                        **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
+                        **({'fast': True} if p.get('fast') else {}),
+                        'visitor': True, 'park': {'spots': pk['spots'], 'exit': pk['exit'], 'curb': pk['curb']}})
+            continue
         if p['house'] not in by_number:
             sys.exit(f'{p["id"]}: there is no house {p["house"]} on the map')
         h = by_number[p['house']]
@@ -539,7 +592,35 @@ def place(m, people, index):
                     **({'hours': p['hours']} if 'hours' in p else {}),
                     **({'hardToFind': True} if p.get('hardToFind') else {}),
                     **({'fast': True} if p.get('fast') else {})})
+        if p.get('park'):
+            pk = park_of(m, segs, blocks, p)
+            out[-1]['park'] = {'spots': pk['spots'], 'exit': pk['exit'], 'curb': pk['curb']}
     return out
+
+
+def park_of(m, segs, blocks, p):
+    """SCREAM-224: one person's places at the park: their own few spots (kids on the court or in
+    the sand, adults on the court or on the grass beside it; seeded by their ID, like yards),
+    where they walk off the bottom of the map, and the park's curb spot on the street beside it."""
+    court = next((o for o in m['objects'] if o['key'] == PARK_COURT_KEY), None)
+    play = next((o for o in m['objects'] if o['key'] == PARK_PLAY_KEY), None)
+    if not court or not play:
+        sys.exit(f'{p["id"]} {p["name"]}: Park needs the basketball court and the playground on the map')
+    rnd = random.Random(f'224-{p["id"]}')
+    on_court = [(court['x'] + dx, court['y'] + dy) for dx, dy in PARK_COURT_SPOTS]
+    in_sand = [(play['x'] + dx, play['y'] + dy) for dx, dy in PARK_PLAY_SPOTS]
+    beside = [(court['x'] + dx, court['y'] + dy) for dx, dy in PARK_SIDE_SPOTS]
+    if p['kid']:
+        pool = on_court if rnd.random() < 0.55 else in_sand
+    else:
+        pool = on_court if rnd.random() < 0.45 else beside
+    spots = rnd.sample(pool, min(PARK_SPOTS_EACH, len(pool)))
+    exit_at = [round(court['x'] + rnd.uniform(*PARK_EXIT_DX), 1), m['height'] + PARK_EXIT_BELOW]
+    gate = [court['x'] + PARK_GATE[0], court['y'] + PARK_GATE[1]]
+    spot = curb(m, segs, gate, blocks)
+    streets = list(segments(m, rings=False))
+    return {'spots': [round(v, 1) for xy in spots for v in xy], 'exit': exit_at, 'curb': spot,
+            'street': nearest_road(streets, spot[2], spot[3])[1]}
 
 
 def look_index(people):
@@ -601,7 +682,7 @@ def check():
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1
             continue
-        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours', 'hardToFind', 'orderSize') if old.get(k) != r.get(k)]
+        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours', 'hardToFind', 'orderSize', 'park', 'visitor') if old.get(k) != r.get(k)]
         if diffs:
             moved += 1
             what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)

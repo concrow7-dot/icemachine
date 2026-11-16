@@ -2,6 +2,33 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 158 — People at the park: about 13 at 5 PM, emptying out from 5:45, 1 or 2 left by 7 (2026-11-15)
+
+**Decision (Jira SCREAM-224, under SCREAM-11, PO, November 15, 21:39):** "I want to add customers to the park area on the elm park map. The basketball court and sand area in the bottom right corner of the map. There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to empty out. so that by 7 there are only 1 or 2 people left."
+
+His answers the same evening:
+
+- Who they are: **"A mix"**: the three residents who already get home late (Joe Sullivan 6:00, Kathleen Scoopley 6:30, Drake Maye 7:00) are at the park until then, plus about 10 new visitors who live in none of the houses.
+- How they buy: he typed "Eventually I want to add the permit. But for now, just to make testing easier. I want to make it so I don't" (the answer was cut off there). Read as: no park permit for now; they buy like any customer. The permit stays its own ticket (SCREAM-213).
+- Whether it is the same every evening: **"Random each evening"**: who is there and when each one leaves is rolled fresh every evening.
+
+So, in Story (not the uncle's evening): at 5:00 there are 13 people at the basketball court and the sandy playground below Highland Street: 10 of the 13 visitors on the Residents sheet (picked by the evening's dice) and the 3 residents. Each visitor sets off at their own random time from 5:45, except 1 or 2 who stay all evening; they walk off the bottom of the map. The residents set off in time to be home at their From time. When they hear the truck they come to it like anyone else, and afterwards go back to the park.
+
+**Options considered:** who: new visitors only, Elm Park residents only, or a mix (his choice). Buying: like any customer, everyone at the park comes for sure, or only with a park permit (his answer: the permit later). Evenings: the same every evening, busier on some weekdays, or random each evening (his choice).
+
+**Why (product owner's rationale):** _to be filled in by the PO._ On the permit, his words: "for now, just to make testing easier".
+
+**Engineering's calls (proposals):**
+
+- A new **Park** column on the sheet's Elm Park tab. Yes with no House is a visitor; Yes with a House and a From time is a resident who is at the park until they come home. So he can send any resident to the park from the sheet.
+- 13 visitors on the sheet (T041 to T053), 10 at the park each evening, so the crowd changes. Their names, ages, looks and Likelihoods (35% to 65%) are engineering's drafts for him to change.
+- The visitors who leave set off between 5:45 and 6:40, and walk out briskly, so that by 7:00 only the ones who stay are left.
+- A resident at the park sets off 20 game minutes before their From time, so the sheet's From time (and the lines customers say about it) stays true. Their porch light is off until they are home.
+- Visitors always count as some-days customers, never regulars (so the regulars who chase the truck forever are the same people as before); they have no days, and nobody talks about them in schedule or neighbour lines.
+- At the park the usual chasing rules apply: after giving up, or after a sale, they walk back to the park.
+- People standing on the court or the sand are drawn on top of them (before, the court's picture was drawn over anyone standing "behind" its bottom edge).
+- Kids stand on the court or in the sand, adults on the court or on the grass beside it. The spots are measured from the court's and the playground's pictures, so they move with them if he moves them in Tiled.
+
 ## 157 — The cooler's "i" buttons are grey, not blue (2026-11-15)
 
 **Decision (Jira SCREAM-359, under SCREAM-78, PO, November 15, 21:08; a change to SCREAM-355):** "I want to change the "i" button on the available ice cream to be grey and not blue. It sticks out too much at the moment."

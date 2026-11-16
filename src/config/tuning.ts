@@ -736,3 +736,24 @@ export const SPEEDY_SPEED_FACTOR = 1.25;
  * chasing rules only (not Quick play or the uncle's evening).
  */
 export const CHASE_REGULAR_SHARE = 0.7;
+
+// ---- SCREAM-224 (PO, November 15): people at the park in Elm Park (Story only) ----
+// "There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to
+// empty out. so that by 7 there are only 1 or 2 people left." His answers: "A mix" (the three
+// residents who get home late, plus new visitors) and "Random each evening".
+/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 at 5:00). */
+export const PARK_VISITORS_TONIGHT = 10;
+/** How many of tonight's visitors stay at the park all evening: from, to (rolled each evening). */
+export const PARK_STAY_LATE: readonly [number, number] = [1, 2];
+/**
+ * The other visitors each set off at their own time between these (minutes since midnight: 5:45
+ * to 6:40). Engineering's call: they stop at 6:40 because the walk out of the park takes up to
+ * 15 game minutes, so by 7:00 only the ones who stay are left.
+ */
+export const PARK_LEAVE_MINUTES: readonly [number, number] = [17 * 60 + 45, 18 * 60 + 40];
+/** A resident at the park sets off this many game minutes before their From time, to be home by then (engineering's call). */
+export const PARK_HOME_WALK_MINUTES = 20;
+/** How fast someone walks out of the park when it's time to go, px per second: brisker than a stroll (11), slower than a run for the truck (37). */
+export const PARK_LEAVE_SPEED = 22;
+/** People at the park pick a spot at least this far (px) from anyone else's. */
+export const PARK_SPOT_GAP = 12;

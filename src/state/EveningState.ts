@@ -409,6 +409,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.chaseRules = !!this.story && !this.tutorial; // SCREAM-342: Story's chasing rules, not in the uncle's evening
       people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
+      if (this.story && !this.tutorial) people.openPark(); // SCREAM-224: people at the park, Story only, not the uncle's evening
       this.residentsByMap.set(id, people);
     }
     return people;
