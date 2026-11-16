@@ -2,6 +2,22 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 161 — Story's customer likelihood curve: the chance rises, peaks, then fades (2026-11-16)
+
+**Decision (Jira SCREAM-182, under SCREAM-11, PO, November 6, his drawing "Customer Likelihood"; built November 16):** once someone hears the truck, their chance of coming out starts partway up, climbs to a peak at about 6 to 8 seconds, then slopes down to just above nothing by 30 seconds. Before, it was highest in the first second and only fell (decisions 015, 034). "It will change per customer": his answer (November 15) was **"Height and peak time"**: their Likelihood from the sheet sets the height, as before, and each person's peak comes a little earlier or later, so they don't all come out together.
+
+**Options considered:** height only; height and peak time (his choice); height, peak time and how long it lasts.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- The time along the bottom is how long they have heard the truck in a row (as before); the height is the chance each second.
+- The curve's points are in `tuning.ts` (`CUSTOMER_CURVE_POINTS`): 45% of the top at 0 s, 93% at 7 s, 35% at 15 s, 12% at 22 s, 3% at 30 s, read off his drawing.
+- Its size (`CUSTOMER_CURVE_SCALE`) is set so that over the 30 seconds as many people come out as before: decisions 033 and 034 cut the numbers on purpose, so only the timing changes. Say if you want more customers too.
+- Each resident's peak is up to 2 seconds earlier or later (5 to 9 s), the same for them every evening.
+- Story only (the standing rule): Quick play keeps the old falling chance. Regulars keep their steady chance (decision 034). After 30 seconds they have still decided for the evening. Hard-to-find customers are unchanged.
+
 ## 160 — Close the truck for business while driving (2026-11-16)
 
 **Decision (Jira SCREAM-233, under SCREAM-11, PO, November 10; built November 16):** "Allow the truck to shut down for business while driving around." His answers (November 15, about 23:55):
