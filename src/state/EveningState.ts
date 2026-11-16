@@ -1344,6 +1344,15 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.restockingNow;
   }
 
+  /**
+   * SCREAM-368 (PO, November 16: "If the player goes to drive and they haven't restocked the truck,
+   * warn them"; his answer "No stock bought tonight"): Story, not the uncle's evening, before the first
+   * drive, with something in the cooler but nothing bought tonight.
+   */
+  get shouldWarnNotRestocked(): boolean {
+    return !!this.story && !this.tutorial && !this.prepLocked && this.stockLeft > 0 && this.stockSpentCents === 0;
+  }
+
   /** Whether the cooler can be changed now: before the first drive, or restocking at home. */
   get canStock(): boolean {
     return (!this.prepLocked || this.restockingNow) && !this.ended;

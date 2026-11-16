@@ -91,6 +91,8 @@ export class TruckScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.restockWarning = null; // SCREAM-368: the scene is reused between visits
+    this.warnedAlready = false;
     this.evening = getEvening(this);
     const { width, height } = this.scale;
 
@@ -142,6 +144,10 @@ export class TruckScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const keyboard = this.input.keyboard;
+    // SCREAM-368: the not-restocked pop-up's keys (Y drives anyway, C goes to the cooler, B closes it).
+    keyboard?.on('keydown-Y', () => this.restockWarning && this.driveAnyway());
+    keyboard?.on('keydown-C', () => this.restockWarning && this.goToCooler());
+    keyboard?.on('keydown-B', () => this.restockWarning && this.closeRestockWarning());
     keyboard?.on('keydown-LEFT', () => this.move(-1));
     keyboard?.on('keydown-A', () => this.move(-1));
     keyboard?.on('keydown-RIGHT', () => this.move(1));
@@ -187,8 +193,64 @@ export class TruckScene extends Phaser.Scene {
     return !!getStory(this) && !this.evening.tutorial;
   }
 
+  /**
+   * SCREAM-368 (PO, November 16): "If the player goes to drive and they haven't restocked the truck,
+   * warn them." His answers: "No stock bought tonight" and "Pop-up with two buttons". Engineering's
+   * calls: only when first setting off; the wording; Y / C / B for the keys.
+   */
+  restockWarning: Phaser.GameObjects.Container | null = null;
+  /** Set once the player chose DRIVE ANYWAY, so the seat drives off this time. */
+  private warnedAlready = false;
+
+  private openRestockWarning(): void {
+    const { width, height } = this.scale;
+    const box = this.add.container(0, 0).setDepth(50);
+    box.add(this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0, 0).setInteractive());
+    box.add(this.add.rectangle(width / 2, height / 2, 520, 230, 0xfff6e0).setStrokeStyle(4, 0x6b4a2b));
+    box.add(this.add.text(width / 2, height / 2 - 80, "YOU HAVEN'T RESTOCKED", { fontFamily: 'monospace', fontSize: '24px', fontStyle: 'bold', color: '#b3261e' }).setOrigin(0.5));
+    const left = this.evening.stockLeft;
+    box.add(
+      this.add
+        .text(width / 2, height / 2 - 34, `You haven't bought any ice cream tonight.\nThere ${left === 1 ? 'is 1 ice cream' : `are ${left} ice creams`} left in the cooler.`, {
+          fontFamily: 'monospace',
+          fontSize: '16px',
+          color: '#2b1d10',
+          align: 'center',
+        })
+        .setOrigin(0.5),
+    );
+    const button = (x: number, label: string, colour: number, onClick: () => void) => {
+      const rect = this.add.rectangle(x, height / 2 + 50, 220, 48, colour).setStrokeStyle(3, 0x2b1d10).setInteractive({ useHandCursor: true });
+      rect.on('pointerdown', onClick);
+      box.add(rect);
+      box.add(this.add.text(x, height / 2 + 50, label, { fontFamily: 'monospace', fontSize: '16px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5));
+      return rect;
+    };
+    button(width / 2 - 120, 'C  GO TO THE COOLER', 0x2e7d32, () => this.goToCooler());
+    button(width / 2 + 120, 'Y  DRIVE ANYWAY', 0x8a5a2b, () => this.driveAnyway());
+    box.add(this.add.text(width / 2, height / 2 + 94, 'B: Close', { fontFamily: 'monospace', fontSize: '13px', color: '#6b4a2b' }).setOrigin(0.5));
+    this.restockWarning = box;
+  }
+
+  private closeRestockWarning(): void {
+    this.restockWarning?.destroy();
+    this.restockWarning = null;
+  }
+
+  private goToCooler(): void {
+    this.closeRestockWarning();
+    this.scene.start(SceneKeys.Cooler);
+  }
+
+  private driveAnyway(): void {
+    this.closeRestockWarning();
+    this.warnedAlready = true;
+    this.activate('driver');
+  }
+
   /** Moves the highlight left or right, skipping zones that aren't available. */
   private move(direction: -1 | 1): void {
+    if (this.restockWarning) return; // SCREAM-368
     const order = ZONES.map((z) => z.id);
     let index = order.indexOf(this.selected);
     for (let step = 0; step < order.length; step++) {
@@ -203,7 +265,7 @@ export class TruckScene extends Phaser.Scene {
   }
 
   private activate(id: Station): void {
-    if (!this.isAvailable(id)) return;
+    if (!this.isAvailable(id) || this.restockWarning) return;
     if (id === 'menu') {
       if (this.boardIsPowerUps()) this.scene.start(SceneKeys.PowerUps);
       else pauseEvening(this);
@@ -215,6 +277,11 @@ export class TruckScene extends Phaser.Scene {
       // instead (the truck can't set off empty, as the cooler already said, #66).
       if (!this.evening.isPrepLocked && this.evening.stockLeft === 0) {
         this.scene.start(SceneKeys.Cooler, { warnEmpty: true });
+        return;
+      }
+      // SCREAM-368: something left in the cooler but nothing bought tonight: ask first.
+      if (this.evening.shouldWarnNotRestocked && !this.warnedAlready) {
+        this.openRestockWarning();
         return;
       }
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
