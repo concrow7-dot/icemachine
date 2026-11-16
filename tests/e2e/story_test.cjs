@@ -376,6 +376,25 @@ const { chromium } = require('playwright');
     await page.evaluate((was) => { const s = window.__game.scene.getScene('Drive'); s.homeArmed = false; s.truck.setPosition(was.x, was.y); s.evening.residents.hearingOff = false; }, seen.was);
     await wait(300);
   }
+  // ---- SCREAM-233 (PO): close the truck for business while driving ----
+  {
+    const hud = () => sc('Hud', 's.clockText.text');
+    // Where the button is on the screen (the road view is zoomed round its middle and sits under the 44 px top bar).
+    const onScreen = () => sc('Drive', "(() => { const b = s.closeButton.getBounds(), z = s.cameras.main.zoom, cx = s.scale.width / 2, cy = (s.scale.height - 44) / 2; const X = (x) => cx + (x - cx) * z, Y = (y) => 44 + cy + (y - cy) * z; return { left: X(b.left), right: X(b.right), top: Y(b.top), bottom: Y(b.bottom), x: X(b.centerX), y: Y(b.centerY) }; })()");
+    const box = await onScreen();
+    check('SCREAM-233: the evening starts open, with a CLOSE FOR BUSINESS button bottom right', (await ev('e.closedForBusiness + " " + e.canClose + " " + e.acceptingCustomers')) + ' | ' + (await sc('Drive', "s.closeButton.visible + ' ' + s.closeButton.text")) + ' ' + (box.right > 930 && box.right <= 960 && box.bottom > 515 && box.bottom <= 540) + ' | ' + /Closed/.test(await hud()), 'false true true | true C  CLOSE FOR BUSINESS true | false');
+    // Someone on their way and someone waiting at the curb.
+    await ev("(() => { const r = e.residents; r.hearingOff = true; const ok = r.all.filter(p => !p.gone && !p.atPark && p.customer === 'none' && !p.resident.hardToFind && r.homeNow(p.resident)); r.wantIceCream(ok[0]); r.callNow(ok[1]); window.__closeTest = [ok[0], ok[1]]; return true; })()");
+    await page.keyboard.press('c'); await wait(400);
+    check('...C closes it: no new customers, "Closed" in the top bar, the button says OPEN', (await ev('e.closedForBusiness + " " + e.acceptingCustomers')) + ' | ' + / {2}Closed$/.test(await hud()) + ' | ' + (await sc('Drive', 's.closeButton.text')), 'true false | true | C  OPEN FOR BUSINESS');
+    check('...the one on their way and the one at the curb turn back home (they may come again later)', await page.evaluate(() => window.__closeTest.map(p => p.customer + ' ' + p.missedOut).join(', ')), 'none true, none true');
+    check('...the music keeps playing', await sc('Drive', '!s.music.muted'), true);
+    // The button opens it again (a click on screen, as on a phone).
+    const at = await onScreen();
+    await page.mouse.click(at.x, at.y); await wait(400);
+    check('...the button opens it again: customers welcome, "Closed" gone', (await ev('e.closedForBusiness + " " + e.acceptingCustomers')) + ' | ' + /Closed/.test(await hud()) + ' | ' + (await sc('Drive', 's.closeButton.text')), 'false true | false | C  CLOSE FOR BUSINESS');
+    await ev('(e.residents.hearingOff = false, true)');
+  }
   // ---- SCREAM-237 (PO, November 15: "Street instead"): the top bar names the street the truck is on ----
   {
     const onStreet = (name) => page.evaluate(async (name) => { const s = window.__game.scene.getScene('Drive'); const road = s.roads.names.indexOf(name); const seg = s.roads.segments.filter(g => g.road === road).sort((a, b) => Math.hypot(b.bx - b.ax, b.by - b.ay) - Math.hypot(a.bx - a.ax, a.by - a.ay))[0]; const was = { x: s.truck.x, y: s.truck.y }; s.truck.setPosition((seg.ax + seg.bx) / 2, (seg.ay + seg.by) / 2); await new Promise(r => setTimeout(r, 150)); const text = window.__game.scene.getScene('Hud').clockText.text; s.homeArmed = false; s.truck.setPosition(was.x, was.y); return text.replace(/^.*Day \d+\/10\s*/, ''); }, name);
@@ -819,7 +838,8 @@ const { chromium } = require('playwright');
     check('...closing in its first moments does nothing', await page.evaluate(() => { const g = window.__game; const s = g.scene.getScene('HowToDrive'); s.openedAt = g.getTime(); s.close(); return g.scene.isActive('HowToDrive') && !s.closing; }), true);
     await wait(700);
     check('...the road and the clock wait behind it', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Hud'))), 'true true');
-    check('...it lists the driving keys, gas to Esc', await sc('HowToDrive', "s.lines.length + ' ' + s.lines[0] + ' | ' + s.lines[3] + ' | ' + s.lines[7]"), '8 ↑ Or W: Gas | Q: Park Brake (When Stopped) | Esc: Pause');
+    check('...it lists the driving keys, gas to Esc', await sc('HowToDrive', "s.lines.length + ' ' + s.lines[0] + ' | ' + s.lines[3] + ' | ' + s.lines[8]"), '9 ↑ Or W: Gas | Q: Park Brake (When Stopped) | Esc: Pause');
+    check('SCREAM-233: ...with C to close or open for business', await sc('HowToDrive', 's.lines[7]'), 'C: Close Or Open For Business (Story)');
     await page.screenshot({ path: outDir + '/how_to_drive_popup.png' });
     await press('Enter'); await wait(300);
     check('...Enter closes it and the player drives: the road runs again', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await running('Drive')) + ' ' + (await running('Hud')), 'false true true');

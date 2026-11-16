@@ -971,7 +971,26 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * Customers already at the curb keep waiting either way.
    */
   get acceptingCustomers(): boolean {
-    return this.prepLocked && !this.ended && !this.isAfterHours && !this.isSoldOut;
+    return this.prepLocked && !this.ended && !this.isAfterHours && !this.isSoldOut && !this.closedForBusiness;
+  }
+
+  /**
+   * SCREAM-233 (PO, November 10: "Allow the truck to shut down for business while driving around").
+   * His answers (November 15): "Separate Closed sign" (its own key and button; the music keeps
+   * playing), customers on their way "turn back home" (and come out again once it reopens), and
+   * "Top bar only". Story only, not in the uncle's evening; every evening starts open.
+   */
+  closedForBusiness = false;
+  /** SCREAM-233: whether the player can close the truck tonight (Story, not the uncle's evening). */
+  get canClose(): boolean {
+    return !!this.story && !this.tutorial;
+  }
+  /** SCREAM-233: closes or opens the truck. Closing sends everyone on their way, or waiting, home. Returns the new state. */
+  toggleClosed(): boolean {
+    if (!this.canClose) return false;
+    this.closedForBusiness = !this.closedForBusiness;
+    if (this.closedForBusiness) this.residents.sendHomeSoldOut();
+    return this.closedForBusiness;
   }
 
   /** The resident being served at the window (SCREAM-99 shows their name), or null. */

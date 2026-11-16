@@ -24,6 +24,7 @@ export const DRIVING_KEYS: KeyGroup = {
     ['Tab', 'Look Inside The Truck (Slow Or Stopped)'],
     ['M', 'Music On Or Off'],
     ['N', 'Next Song'],
+    ['C', 'Close Or Open For Business (Story)'],
     ['Esc', 'Pause'],
   ],
 };

@@ -443,6 +443,25 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20)
       .setVisible(this.parkBrake);
 
+    // SCREAM-233 (PO): a button to close the truck for business and open it again (C does the same).
+    // The mobile rule (SCREAM-77): every action has a button on screen. Story only, not the uncle's evening.
+    this.closeButton = this.add
+      .text(this.scale.width - 12, this.scale.height - HUD_HEIGHT - 16, '', {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#3c4a5c',
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0.5)
+      .setScrollFactor(0).setData('pin', true)
+      .setDepth(20)
+      .setVisible(this.evening.canClose)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.toggleClosed());
+    this.showClosed();
+
     // SCREAM-334: while the steering is reversed (a Two Ball Lou Ball sale), a countdown says so.
     this.reversedLabel = this.add
       .text(this.scale.width / 2, 64, '', {
@@ -496,6 +515,7 @@ export class DriveScene extends Phaser.Scene {
       if (event.key === 'q' || event.key === 'Q') this.toggleParkBrake();
       if (event.key === 'm' || event.key === 'M') this.showSong(this.music.toggleMute() ? 'Music off (M)' : (this.music.song?.title ?? ''));
       if (event.key === 'n' || event.key === 'N') this.music.skip();
+      if (event.key === 'c' || event.key === 'C') this.toggleClosed();
       if (event.key === 'Tab') this.peekInside();
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir && !this.held.includes(dir)) this.held.push(dir);
@@ -601,7 +621,7 @@ export class DriveScene extends Phaser.Scene {
       y: this.truck.y,
       radius: this.evening.spec.musicRadius,
       open: this.evening.acceptingCustomers,
-      soldOut: this.evening.isSoldOut, // SCREAM-155
+      soldOut: this.evening.isSoldOut || this.evening.closedForBusiness, // SCREAM-155; SCREAM-233: closed, they turn back
     });
     this.drawResidents(time);
     this.drawCustomers();
@@ -1041,6 +1061,22 @@ export class DriveScene extends Phaser.Scene {
    * credit) and moves them away from the middle. This puts each back where it was meant to
    * be on screen, at its normal size. Call once, after the label is placed.
    */
+  /** SCREAM-233: the CLOSE / OPEN button. */
+  closeButton!: Phaser.GameObjects.Text;
+
+  /** SCREAM-233: closes or opens the truck for business (C or the button). */
+  toggleClosed(): void {
+    if (!this.evening.canClose) return;
+    this.evening.toggleClosed();
+    this.showClosed();
+  }
+
+  private showClosed(): void {
+    this.closeButton
+      .setText(this.evening.closedForBusiness ? 'C  OPEN FOR BUSINESS' : 'C  CLOSE FOR BUSINESS')
+      .setBackgroundColor(this.evening.closedForBusiness ? '#2e7d32' : '#3c4a5c');
+  }
+
   private pin<T extends Phaser.GameObjects.Text>(obj: T): T {
     const z = DRIVE_CAMERA_ZOOM;
     const cx = this.scale.width / 2;

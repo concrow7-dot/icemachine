@@ -231,7 +231,13 @@ export class HudScene extends Phaser.Scene {
     this.keepMusicGoing();
     // SCREAM-237 (PO, November 15: "Street instead"): in Story the street the truck is on sits after the day
     // (the neighbourhood's name sat there, SCREAM-145).
-    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${this.evening.street}` : ''));
+    // SCREAM-233 (PO: "Top bar only"): "Closed" at the end while the truck is closed for business.
+    this.clockText.setText(
+      formatClock(this.evening.clockMinutes) +
+        this.dayLabel +
+        (this.dayLabel ? `  ${this.evening.street}` : '') +
+        (this.evening.closedForBusiness ? '  Closed' : ''),
+    );
     this.placeDebugText();
     const sale = this.evening.sale;
     const warn =

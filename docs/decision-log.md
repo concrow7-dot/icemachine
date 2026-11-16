@@ -2,6 +2,24 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 160 — Close the truck for business while driving (2026-11-16)
+
+**Decision (Jira SCREAM-233, under SCREAM-11, PO, November 10; built November 16):** "Allow the truck to shut down for business while driving around." His answers (November 15, about 23:55):
+
+- How: **"Separate Closed sign"**: its own key (C) and a button on screen; the music keeps playing either way, and M stays only the sound.
+- Customers already walking to the truck or waiting at the curb: **"They turn back home"**; they come out again when they next hear the truck once it is open.
+- How the player can tell: **"Top bar only"**: "Closed" at the end of the top bar; the truck looks the same.
+
+**Options considered:** music off = closed (one switch, engineering's recommendation) or a separate sign (his choice); those on their way turn back or still get served; a sign on the truck and the top bar, the top bar only, or the music stopping alone.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- Story only (the standing rule), not in the uncle's evening; every evening starts open, and it stays closed until the player opens it, even after a stop at home.
+- The button sits in the bottom-right corner of the road view ("C  CLOSE FOR BUSINESS", green "C  OPEN FOR BUSINESS" while closed), for the mobile rule.
+- The How To Drive pop-up grew to fit its ninth row (C).
+
 ## 159 — The uncle pays for the whole first tank of gas (2026-11-15)
 
 **Decision (Jira SCREAM-360, under SCREAM-5, PO, November 15, 23:06):** "New high priority ticket: The uncle pays for the whole first tank of gas." Before, he paid up to $20 (decision 040's pump stop, SCREAM-173), and a full tank costs $30, so his money never filled it.

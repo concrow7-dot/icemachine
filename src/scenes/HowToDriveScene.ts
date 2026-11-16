@@ -32,24 +32,27 @@ export class HowToDriveScene extends Phaser.Scene {
     this.openedAt = this.game.getTime();
     const { width, height } = this.scale;
     const rows = DRIVING_KEYS.rows;
-    const top = height / 2 - 150;
+    // SCREAM-233: nine rows with C; the box grew to fit them (and the longest line) inside it.
+    const boxW = 620;
+    const boxH = 380;
+    const top = height / 2 - boxH / 2;
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.45).setOrigin(0.5);
-    this.add.rectangle(width / 2, height / 2, 520, 320, 0x1f2a44).setStrokeStyle(3, 0x8a9bb3);
+    this.add.rectangle(width / 2, height / 2, boxW, boxH, 0x1f2a44).setStrokeStyle(3, 0x8a9bb3);
     this.add.text(width / 2, top + 32, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '28px', color: TITLE }).setOrigin(0.5);
 
     this.lines = [];
     rows.forEach(([keys, does], i) => {
       const y = top + 80 + i * 24;
-      this.add.text(width / 2 - 215, y, keys, { fontFamily: 'monospace', fontSize: '16px', color: HIGHLIGHT });
-      this.add.text(width / 2 - 20, y, does, { fontFamily: 'monospace', fontSize: '16px', color: INK });
+      this.add.text(width / 2 - 280, y, keys, { fontFamily: 'monospace', fontSize: '16px', color: HIGHLIGHT });
+      this.add.text(width / 2 - 80, y, does, { fontFamily: 'monospace', fontSize: '16px', color: INK });
       this.lines.push(`${keys}: ${does}`);
     });
     this.add
       .text(width / 2, top + 80 + rows.length * 24 + 14, 'Every Key Is Listed Under Pause > Key Bindings.', { fontFamily: 'monospace', fontSize: '13px', color: QUIET })
       .setOrigin(0.5);
     this.add
-      .text(width / 2, top + 292, 'Click Or Enter: Start Driving', { fontFamily: 'monospace', fontSize: '17px', color: HIGHLIGHT })
+      .text(width / 2, top + boxH - 30, 'Click Or Enter: Start Driving', { fontFamily: 'monospace', fontSize: '17px', color: HIGHLIGHT })
       .setOrigin(0.5);
 
     // A key still held from before (Enter on the uncle's last line) or a click in the first moments doesn't close it.
