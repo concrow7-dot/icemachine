@@ -376,6 +376,26 @@ const { chromium } = require('playwright');
     await page.evaluate((was) => { const s = window.__game.scene.getScene('Drive'); s.homeArmed = false; s.truck.setPosition(was.x, was.y); s.evening.residents.hearingOff = false; }, seen.was);
     await wait(300);
   }
+  // ---- SCREAM-252 (PO): residents' cars on the street while they're home; Elm Park's old parked cars are gone ----
+  {
+    const want = await ev("e.residents.all.filter(p => e.residents.carWanted(p.resident)).map(p => p.resident.id).sort().join()");
+    check('SCREAM-252: Tuesday: the cars out are exactly the owners home today; none of the old parked cars', (await ev("e.residents.carsNow.map(c => c.id).sort().join()")) === want && want.length > 0, true);
+    check('...each is drawn and is an obstacle', await sc('Drive', "(() => { const now = s.evening.residents.carsNow; return now.every(c => s.residentCars.get(c.id) && s.residentCars.get(c.id).visible) + ' ' + (s.cars.length === now.length); })()"), 'true true');
+    // Driving into one is a car crash, like a parked car (the same bump and cost: DriveScene.crash).
+    const hit = await page.evaluate(async () => {
+      const s = window.__game.scene.getScene('Drive');
+      const c = s.evening.residents.carsNow[0]; const rad = c.angle * Math.PI / 180;
+      s.cameras.main.stopFollow(); s.cameras.main.centerOn(c.x, c.y);
+      await new Promise(r => setTimeout(r, 300));
+      const into = s.obstacleAt(c.x - Math.cos(rad) * 40, c.y - Math.sin(rad) * 40, c.angle);
+      const clear = s.obstacleAt(c.x - Math.cos(rad) * 140, c.y - Math.sin(rad) * 140, c.angle);
+      return into + ' ' + clear;
+    });
+    await page.screenshot({ path: outDir + '/story_resident_car.png' });
+    check('...nose to tail with one, the truck hits a car; further back it is clear', hit, 'car null');
+    await page.evaluate(() => { const s = window.__game.scene.getScene('Drive'); s.cameras.main.startFollow(s.truck, true, 0.15, 0.15); });
+    await wait(300);
+  }
   // ---- SCREAM-237 (PO, November 15: "Street instead"): the top bar names the street the truck is on ----
   {
     const onStreet = (name) => page.evaluate(async (name) => { const s = window.__game.scene.getScene('Drive'); const road = s.roads.names.indexOf(name); const seg = s.roads.segments.filter(g => g.road === road).sort((a, b) => Math.hypot(b.bx - b.ax, b.by - b.ay) - Math.hypot(a.bx - a.ax, a.by - a.ay))[0]; const was = { x: s.truck.x, y: s.truck.y }; s.truck.setPosition((seg.ax + seg.bx) / 2, (seg.ay + seg.by) / 2); await new Promise(r => setTimeout(r, 150)); const text = window.__game.scene.getScene('Hud').clockText.text; s.homeArmed = false; s.truck.setPosition(was.x, was.y); return text.replace(/^.*Day \d+\/10\s*/, ''); }, name);
