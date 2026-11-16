@@ -53,9 +53,9 @@ test('SCREAM-361, "as much variety in the cars as possible": every owner has a d
   for (const m of models) assert.ok(CAR_MODELS.some((c) => c.model === m));
 });
 
-test('SCREAM-361: "30% smaller" than the pack: the pack\'s shortest car (183 px) is 66 px long; "The hitbox should match the car"', () => {
+test('SCREAM-361: "30% smaller" than the pack, then "15% smaller" (PO, November 16, 13:05): the shortest car (183 px) is 56 px long; "The hitbox should match the car"', () => {
   const lengths = CAR_MODELS.map((m) => m.right[0]);
-  assert.equal(Math.min(...lengths), 66);
+  assert.equal(Math.min(...lengths), 56);
   const r = evening(1); r.update(0.1);
   for (const c of r.carsNow) {
     const m = CAR_MODELS.find((x) => x.model === c.model);
@@ -114,4 +114,27 @@ test('someone who gets home later: the car pulls up when they do, but never onto
   minutes = 19 * 60 + 1;
   r.update(0.1, { x: 0, y: 0, radius: 0, open: false });
   assert.equal(r.carsNow.length, 0, 'gone out again after their Until');
+});
+
+test('SCREAM-361 (PO, November 16, 13:01: "next to the curb parked"): every car sits against the curb, its side within 6 px of where the asphalt ends', () => {
+  const mask = MAPS.tutorial.data.roadMask;
+  const onAsphalt = (x, y) => {
+    const runs = mask.rows[Math.floor(y / mask.scale)] || [];
+    const col = Math.floor(x / mask.scale);
+    for (let k = 0; k < runs.length; k += 2) if (runs[k] <= col && col < runs[k + 1]) return true;
+    return false;
+  };
+  for (const res of withCar) {
+    const [x, y, facing, model] = res.car;
+    const m = CAR_MODELS.find((c) => c.model === model);
+    const rad = (facing * Math.PI) / 180;
+    const nx = -Math.sin(rad), ny = Math.cos(rad);
+    // Out from the car's middle, sideways both ways: the nearer curb is just past its side.
+    const gap = Math.min(...[1, -1].map((sgn) => {
+      let d = 0;
+      while (d < 200 && onAsphalt(x + sgn * nx * d, y + sgn * ny * d)) d++;
+      return d - m.right[1] / 2;
+    }));
+    assert.ok(gap >= 0 && gap <= 6, `${res.name}: ${gap} px from the curb`);
+  }
 });
