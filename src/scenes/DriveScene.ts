@@ -3,7 +3,7 @@ import { BUBBLE_INK, drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { formatMoney } from '../util/format';
 import { hitCostCents } from '../state/Damage';
-import { currentMap, versioned, type GameMap } from '../config/maps';
+import { currentMap, fixedParkedCars, versioned, type GameMap } from '../config/maps';
 import { LapCounter, portalStrength, ringOf } from '../state/RingLaps';
 import { RingPortal } from '../ui/ringPortal';
 import { PortalSound } from '../audio/PortalSound';
@@ -315,6 +315,7 @@ export class DriveScene extends Phaser.Scene {
     // SCREAM-251: Story's porch lights (Quick play's houses are unchanged).
     this.porchLights = getStory(this) ? this.evening.residents.all.map((p) => this.makePorchLight(p.resident.door)) : [];
     this.occluders.clear();
+    this.residentCars.clear(); // SCREAM-252: a restart (the other map) made new drawings
     this.objectGrid.clear();
     this.map.objects.forEach((o, i) => {
       const size = this.objectSizes.get(o.key);
@@ -623,6 +624,7 @@ export class DriveScene extends Phaser.Scene {
       open: this.evening.acceptingCustomers,
       soldOut: this.evening.isSoldOut || this.evening.closedForBusiness, // SCREAM-155; SCREAM-233: closed, they turn back
     });
+    this.updateResidentCars(); // SCREAM-252
     this.drawResidents(time);
     this.drawCustomers();
     this.drawMirrorMarkers();
@@ -957,7 +959,7 @@ export class DriveScene extends Phaser.Scene {
       g.fillStyle(0x8d9196, 1).fillPoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
       g.lineStyle(2, 0x6b6f74, 1).strokePoints(turned(pad.x, pad.y, pad.angle, pad.length / 2, pad.depth / 2), true);
     }
-    this.map.parkedCars.forEach(({ x, y, angle }, i) => {
+    fixedParkedCars(this.assets).forEach(({ x, y, angle }, i) => {
       if (x < x0 - 60 || x > x1 + 60 || y < y0 - 60 || y > y1 + 60) return;
       g.fillStyle(0x1b1b1b, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH + 1, CAR_HALF_WIDTH + 1), true);
       g.fillStyle(CAR_COLOURS[i % CAR_COLOURS.length] ?? 0x888888, 1).fillPoints(turned(x, y, angle, CAR_HALF_LENGTH - 1, CAR_HALF_WIDTH - 1), true);
@@ -1215,7 +1217,38 @@ export class DriveScene extends Phaser.Scene {
     // Drawn in the map image (refreshVisibleMap); these are what the truck runs into.
     for (const { x, y } of this.map.potholes) this.potholes.push({ x, y, armed: true });
     // Parked against the curb, along the road (SCREAM-10: at the road's angle).
-    for (const { x, y, angle } of this.map.parkedCars) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+    for (const { x, y, angle } of fixedParkedCars(this.assets)) this.cars.push({ x, y, angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+    this.fixedCars = this.cars.length;
+  }
+
+  /** SCREAM-252: how many of `cars` are the map's own (the rest are residents' cars, refreshed each frame). */
+  private fixedCars = 0;
+  /** SCREAM-252: one drawing per resident's car, by owner. */
+  readonly residentCars = new Map<string, Phaser.GameObjects.Graphics>();
+
+  /**
+   * SCREAM-252 (PO, November 15): residents' cars on the street while their owner is home. They are
+   * obstacles like the parked cars (the same bump and cost), drawn the same way, each owner always
+   * in the same colour.
+   */
+  private updateResidentCars(): void {
+    const now = this.evening.residents.carsNow;
+    this.cars.length = this.fixedCars;
+    const seen = new Set<string>();
+    for (const c of now) {
+      this.cars.push({ x: c.x, y: c.y, angle: c.angle, halfLength: CAR_HALF_LENGTH, halfWidth: CAR_HALF_WIDTH });
+      seen.add(c.id);
+      let g = this.residentCars.get(c.id);
+      if (!g) {
+        g = this.add.graphics().setPosition(c.x, c.y).setAngle(c.angle).setDepth(1);
+        g.fillStyle(0x1b1b1b, 1).fillRect(-CAR_HALF_LENGTH - 1, -CAR_HALF_WIDTH - 1, CAR_HALF_LENGTH * 2 + 2, CAR_HALF_WIDTH * 2 + 2);
+        g.fillStyle(CAR_COLOURS[c.colour % CAR_COLOURS.length] ?? 0x888888, 1).fillRect(-CAR_HALF_LENGTH + 1, -CAR_HALF_WIDTH + 1, CAR_HALF_LENGTH * 2 - 2, CAR_HALF_WIDTH * 2 - 2);
+        g.fillStyle(0xbfe6ff, 0.9).fillRect(-11, -12, 22, 24);
+        this.residentCars.set(c.id, g);
+      }
+      g.setVisible(true);
+    }
+    for (const [id, g] of this.residentCars) if (!seen.has(id)) g.setVisible(false);
   }
 
   /** Hitting a parked car or the road edge: the truck stops, the shake shows it, and it costs money. */

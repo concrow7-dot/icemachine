@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
+
+**Decision (Jira SCREAM-252, under SCREAM-11, PO, November 10 brainstorm; built November 16):** "Maybe days they are home, a car is parked in their driveway and/or in front of the house on the street." Story only. His answers (November 15, about 23:55):
+
+- Who has a car: **"A Car column in the sheet"** (the Residents sheet's Elm Park tab, column X).
+- Where it parks: he typed **"1, lets remove the old parked cars"**: on the street in front of their house, and Elm Park's old parked cars go.
+- Can the truck hit one: **"Yes, like parked cars"**: the same bump and damage cost ("Parked car").
+
+**Options considered:** who: a sheet column, the game picks about half, or everyone. Where: on the street in front, or in the driveway (which would need each driveway marked in Tiled). Obstacle or not.
+
+**Why (product owner's rationale):** _to be filled in by the PO._ From the brainstorm: a tell that someone is home, alongside the porch lights (decision 155).
+
+**Engineering's calls (proposals):**
+
+- The draft Car column ticks 14 adults (every other adult with a house). Kids and park visitors have none. Three of the 14 (Sophie Scoops, Sully Babe, Tomas Thanks) have no ticked days, so their cars never show: change the sheet as you like.
+- A car parks in the curb lane on its owner's street, about 90 px along from their pink square (so the truck can still pull in there), clear of every pink square, other cars, junctions, the pump bays and home's driveway.
+- A car is out on its owner's ticked days, inside their From and Until; it pulls up only when the truck (and anyone waiting) is well clear of its spot, and leaves at their Until. Someone at the park (Kathleen Scoopley) left their car at home.
+- Not in the uncle's evening (so his drive is unchanged); Foley Stadium, and so Quick play, keep their parked cars.
+- Drawn like the old parked cars; each owner always has the same colour.
+
 ## 161 — Story's customer likelihood curve: the chance rises, peaks, then fades (2026-11-16)
 
 **Decision (Jira SCREAM-182, under SCREAM-11, PO, November 6, his drawing "Customer Likelihood"; built November 16):** once someone hears the truck, their chance of coming out starts partway up, climbs to a peak at about 6 to 8 seconds, then slopes down to just above nothing by 30 seconds. Before, it was highest in the first second and only fell (decisions 015, 034). "It will change per customer": his answer (November 15) was **"Height and peak time"**: their Likelihood from the sheet sets the height, as before, and each person's peak comes a little earlier or later, so they don't all come out together.

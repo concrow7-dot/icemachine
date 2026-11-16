@@ -773,3 +773,7 @@ export const CUSTOMER_CURVE_POINTS: readonly (readonly [number, number])[] = [[0
 export const CUSTOMER_CURVE_SCALE = 0.1125;
 /** Each resident's peak comes up to this many seconds earlier or later than the drawing's 7 (the same for them every evening). */
 export const CUSTOMER_CURVE_PEAK_SPREAD = 2;
+
+// ---- SCREAM-252 (PO, November 15): a resident's car on the street while they are home (Story, Elm Park) ----
+/** A car only pulls up when the truck is at least this far away (px, centre to centre), so it never lands on it. */
+export const RESIDENT_CAR_ARRIVE_CLEAR = 160;
