@@ -633,6 +633,7 @@ def place(m, people, index):
 CAR_TRUCK_ROOM = 62   # SCREAM-361: from a pink square to the end of a car (the truck's half length, 52, and a little)
 CAR_CAR_GAP = 12      # between two cars, bumper to bumper
 CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
+CAR_CURB_GAP = 3      # SCREAM-361 (PO, November 16: "closer to the curb"): from a car's side to the curb
 
 
 def car_models():
@@ -668,6 +669,18 @@ def car_spot(m, r, squares, cars, model):
 
     for slide in [d * k for k in range(70, 470, 10) for d in (1, -1)]:  # nearest first, either way along the street
         x, y = sx + tx * slide, sy + ty * slide
+        # Snug against the curb (PO: "they look like they are in the street driving, not next to the
+        # curb parked"): step out from the middle of the street to where the asphalt ends.
+        here = min((sg for sg in segs_all if m['roads'][sg[0]]['name'] == own), key=lambda sg: seg_dist(x, y, *sg[1:])[0])
+        _, (mx, my) = seg_dist(x, y, *here[1:])
+        off = math.dist((x, y), (mx, my))
+        if off < 1:
+            continue
+        ux, uy = (x - mx) / off, (y - my) / off
+        edge = next((d for d in range(int(off), int(off) + 160) if not on_asphalt(mx + ux * (d + 1), my + uy * (d + 1))), None)
+        if edge is None:
+            continue
+        x, y = mx + ux * (edge - hw - CAR_CURB_GAP), my + uy * (edge - hw - CAR_CURB_GAP)
         corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-hw, hw)]
         if not all(on_asphalt(*c) for c in corners):
             continue
@@ -684,7 +697,7 @@ def car_spot(m, r, squares, cars, model):
         if math.dist((x, y), (m['homeStart']['x'], m['homeStart']['y'])) < BAY_CLEAR + hl:
             continue
         # Facing the way traffic goes on its side of the street (cars drive on the right).
-        _, (cx, cy) = seg_dist(x, y, *own_seg[1:])
+        _, (cx, cy) = seg_dist(x, y, *here[1:])
         nx, ny = x - cx, y - cy
         facing = ang if (-ty * nx + tx * ny) > 0 else (ang + 180 if ang <= 0 else ang - 180)
         return [round(x, 1), round(y, 1), round(facing, 1), model['model']]
