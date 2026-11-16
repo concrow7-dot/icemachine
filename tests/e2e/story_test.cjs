@@ -757,7 +757,7 @@ const { chromium } = require('playwright');
   check('...and reach the second column', await fillS('s.focus % 4'), 1);
   await page.screenshot({ path: outDir + '/story_fill_half_doors.png' });
 
-  // ---- SCREAM-268: On My Own, the uncle's $20 for gas waits at the first pump ----
+  // ---- SCREAM-268: On My Own, the uncle's gas waits at the first pump (SCREAM-360: a whole tank) ----
   {
     const flow = (call) => page.evaluate(`(async () => { const f = await import('/src/flow.js'); const s = window.__game.scene.getScenes(true)[0]; ${call}; return true; })()`);
     const pump = async () => { await page.evaluate(() => { const g = window.__game; if (g.scene.isActive('Drive')) g.scene.getScene('Drive').scene.pause(); g.scene.start('Pump'); }); await wait(600); };
@@ -766,16 +766,19 @@ const { chromium } = require('playwright');
     await until(async () => (await scenes()).includes('Cooler')); await wait(300);
     check('SCREAM-268: On My Own: the uncle\'s gas is waiting', await ev('e.uncleLeftGas + " " + e.unclePaysGas'), 'true true');
     await pump();
-    check('...the first pump says he left $20', await sc('Pump', 's.noteText.text'), 'Your uncle left $20 for you to use.');
-    const cash0 = await ev('e.cashCents'); const fuel0 = await ev('e.fuel');
-    await press('ArrowUp', 6);
-    check('...up to $20, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), "2000 | UNCLE PAYS $20.00 | That's the uncle's $20.");
+    check('SCREAM-360: ...the first pump says he is paying for the first tank', await sc('Pump', 's.noteText.text'), 'Your uncle is paying for your first tank.');
+    // A nearly empty tank, so a fill-up costs more than the old $20.
+    await ev('(e.fuelLeft = 0.1, true)');
+    const cash0 = await ev('e.cashCents'); const fillUp = await ev('e.fillUpCents');
+    check('...a fill-up costs $27.00 now, more than he had before', fillUp, 2700);
+    await press('ArrowUp', 12);
+    check('SCREAM-360: ...up to a full tank, and he pays', (await sc('Pump', 's.amount')) + ' | ' + (await sc('Pump', 's.payButton.text')) + ' | ' + (await sc('Pump', 's.addsText.text')) + ' | ' + (await sc('Pump', 's.noteText.text')), '2700 | UNCLE PAYS $27.00 | Fills it up | Your uncle is paying for your first tank.');
     // SCREAM-316 (PO, November 14): in Story, Buy Gas is bottom right and Leave bottom left (right of the gas dial, under the pump).
     check('SCREAM-316: the pay button is in the bottom-right corner', await sc('Pump', '(b => b.right <= s.scale.width && b.right >= s.scale.width - 24 && b.bottom >= s.scale.height - 40 && b.bottom <= s.scale.height)(s.payButton.getBounds())'), true);
     check('...DRIVE OFF in the bottom left, clear of the pump, the gas dial and the key line', await sc('Pump', `(() => { const d = s.driveOffButton.getBounds(), p = s.children.getByName('pump').getBounds(); const hud = s.scene.get('Hud'); const g = hud && hud.fuelGauge && hud.fuelGauge.visible ? hud.fuelGauge.x + 72 : 0; const line = s.children.list.find(o => o.type === 'Text' && /B: Drive Off/.test(o.text)).getBounds(); return d.left < 200 && d.bottom >= s.scale.height - 40 && d.top >= p.bottom && d.left >= g && d.bottom <= line.top && s.payButton.getBounds().bottom <= line.top; })()`), true);
     await page.screenshot({ path: outDir + '/story_pump_buttons.png' });
     await press('Enter'); await wait(400);
-    check('...the tank fills by $20 and the cash is untouched', ((await ev('e.fuel')) - fuel0 > 0.6) + ' ' + ((await ev('e.cashCents')) === cash0), 'true true');
+    check('...the tank is full and the cash is untouched', (await ev('e.fuel')) + ' ' + ((await ev('e.cashCents')) === cash0) + ' ' + (await ev('e.breakdown.gasCents')), '1 true 0');
     check('...used up: the next pump is the player\'s', await ev('e.uncleLeftGas + " " + e.unclePaysGas + " " + e.uncleGasUsed'), 'false false true');
     await flow("f.endEvening(window.__game.scene.getScenes(true)[0])"); await until(async () => (await scenes()).includes('DayEnd')); await wait(300);
     check('SCREAM-276: the end-of-day screen shows the gas dial, bottom left, at tomorrow\'s level', await sc('DayEnd', "(d => !!d && d.container.x < 160 && d.container.y > 450)(s.gasDial)"), true);

@@ -38,7 +38,6 @@ import {
   EVENING_START_HOUR,
   FUEL_FULL_TANK_CENTS,
   FUEL_CENT_STEP,
-  UNCLE_GAS_CENTS,
   UNCLE_LEFT_CENTS,
   FUEL_QUICK_PLAY_START,
   FUEL_TUTORIAL_START,
@@ -886,8 +885,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /**
-   * SCREAM-173 (PO, November 6): at the pump in the guided tutorial, the uncle pays, up to
-   * the $20 he has on him.
+   * SCREAM-173 (PO, November 6): at the pump in the guided tutorial, the uncle pays.
+   * SCREAM-360 (PO, November 15): "The uncle pays for the whole first tank of gas" (was up to $20).
    */
   get unclePaysGas(): boolean {
     return this.tutorial?.step === 'pump' || this.uncleLeftGas;
@@ -895,24 +894,25 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /**
    * SCREAM-268 (PO, November 12): in Story, a player who didn't get the uncle's gas at his pump
-   * (On My Own, or he was skipped first) finds his $20 waiting at their first pump:
-   * "Your uncle left $20 for you to use." It is used up only when gas is bought with it.
+   * (On My Own, or he was skipped first) finds it waiting at their first pump. It is used up only
+   * when gas is bought with it. SCREAM-360 (PO, November 15, "Both"): a whole tank, here too.
    */
   get uncleLeftGas(): boolean {
     return this.uncleGasLeft && (!this.tutorial || this.tutorial.skipped);
   }
 
-  /** SCREAM-268: the uncle's $20 is still to come in this Story run. */
+  /** SCREAM-268: the uncle's tank of gas is still to come in this Story run. */
   private uncleGasLeft: boolean;
-  /** SCREAM-268: the uncle's $20 was used tonight (StoryRun carries it on). */
+  /** SCREAM-268: the uncle's tank of gas was used tonight (StoryRun carries it on). */
   uncleGasUsed = false;
 
   /**
    * The most gas the player can buy now, in cents: up to a full tank (SCREAM-184), and no more
-   * than the wallet holds (or, in the tutorial, the uncle's $20).
+   * than the wallet holds. SCREAM-360: when the uncle pays, always up to a full tank.
    */
   get maxGasCents(): number {
-    const wallet = this.unclePaysGas ? UNCLE_GAS_CENTS : Math.max(0, this.cashCents);
+    if (this.unclePaysGas) return this.fillUpCents;
+    const wallet = Math.max(0, this.cashCents);
     const affordable = Math.floor(wallet / FUEL_CENT_STEP) * FUEL_CENT_STEP;
     return Math.max(0, Math.min(this.fillUpCents, affordable));
   }
