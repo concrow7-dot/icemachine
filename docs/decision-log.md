@@ -2,6 +2,21 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 156 — The Lou Ball's reversed steering counts down only while the truck is moving (2026-11-15)
+
+**Decision (Jira SCREAM-358, under SCREAM-78; a fix to decision 138, SCREAM-334):** the PO, November 15, 20:53: "The key bindings reversing isn't happening on the 2 ball lou ball". Played through in the browser, the sale did start the 10 seconds and swap the steering, but the 10 seconds ran down whenever the road view was open, parked or not. After a sale the truck is parked on the brake, so with a wait for the next customer, or more customers to serve, they were gone before the truck moved.
+
+So the 10 seconds now run down only while the truck is moving. Parked, the countdown waits and the "STEERING REVERSED" label stays up.
+
+**Options considered (engineering):** count only while moving (chosen: it is what "10 seconds of driving" was meant to be), or start the 10 seconds when the truck first moves after the sale.
+
+**Why (product owner's rationale):** his report that it "isn't happening". Engineering's reading of the cause, to confirm with him: no other way to make it fail was found.
+
+**Engineering's calls (proposals):**
+
+- Rolling at roll speed counts as moving.
+- The Drum Cone's drum solo is unchanged: its 30 seconds still count parked or moving, because the solo calls customers while the truck is parked too.
+
 ## 155 — A porch light by the front door of everyone who is in (2026-11-15)
 
 **Decision (Jira SCREAM-251, under SCREAM-11, PO, November 10 and 15):** from the customers brainstorm (November 10): a tell on the house when a resident is home, lights and cars with variety ("some people park, some don't have a car so the lights on, some are both"), Story only. On November 15 he chose: the look, "A porch light at the door"; a house counts as home "Only while they are physically in"; who shows one, "Everyone for now"; and it is "Always right".
