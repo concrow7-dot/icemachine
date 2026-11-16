@@ -25,7 +25,6 @@ So the residents' cars in Elm Park are drawn with LimeZu Modern Exteriors' 26 ca
 - The bigger cars keep room for the truck at every pink square (half the car plus 62 px), so some park further from their owner's house than before (Ruth Butter Ginsburg's is about 440 px along Germain Street).
 - Which owner gets which car is a fixed shuffle, the same every build.
 
-
 **Changed while in review (PO, November 16, 13:01 to 13:05):** "I want to move the parked cars so they look more on the side of the road. Currently they look like they are in the street driving, not next to the curb parked" (with a screenshot: one car a little off the curb, one far from it), and "Make the cars 15% smaller". Each car now sits against the curb (3 px from where the asphalt ends), and every car is 15% smaller (the shortest is 56 px long, was 66). Larry Birdseed's car moved nearer his house along Institute Road.
 
 ## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
