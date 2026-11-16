@@ -777,3 +777,11 @@ export const CUSTOMER_CURVE_PEAK_SPREAD = 2;
 // ---- SCREAM-252 (PO, November 15): a resident's car on the street while they are home (Story, Elm Park) ----
 /** A car only pulls up when the truck is at least this far away (px, centre to centre), so it never lands on it. */
 export const RESIDENT_CAR_ARRIVE_CLEAR = 160;
+
+// ---- SCREAM-361 (PO, November 16): the residents' cars are the art pack's cars ----
+/** Room kept between a pink square and the end of a resident's car, so the truck (half length 52) can pull in (px). */
+export const RESIDENT_CAR_TRUCK_ROOM = 62;
+/** The pack's cars' picture sheet (tools/cars/build_cars.py). */
+export const CARS_KEY = 'pack-cars';
+export const CARS_PNG = 'assets/limezu/cars.png';
+export const CARS_JSON = 'assets/limezu/cars.json';

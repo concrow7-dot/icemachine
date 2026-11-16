@@ -2,6 +2,28 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 164 — Residents' cars are the art pack's cars, 30% smaller than the pack, every owner a different one (2026-11-16)
+
+**Decision (Jira SCREAM-361, under SCREAM-6, PO, November 16, 01:00 to 01:14):** "How much effort would it be to use cars from the art pack to replace those cars." Shown one of the pack's cars at today's size and at the pack's own size: "Lets make the cars 30% smaller, show me an example of that. The hitbox should match the car. Lets only do cars on the elm park map for now." Shown that: "I like that, lets go ahead with that." And: "I would also like to use as much variety in the cars as possible."
+
+So the residents' cars in Elm Park are drawn with LimeZu Modern Exteriors' 26 cars, 30% smaller than the pack (its shortest car is 66 px long on the map; the truck is 104), each owner a different car, and the truck bumps into the car's own size. Foley Stadium's parked cars are unchanged.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):**
+
+- Shrunk with nearest-neighbour, as in the mock-up he approved; longer cars in the pack stay longer (66 to 83 px).
+- Each car uses the pack's view nearest the way it faces (right, down, left, up), turned the last few degrees, and faces the way traffic goes on its side of the street.
+- The bigger cars keep room for the truck at every pink square (half the car plus 62 px), so some park further from their owner's house than before (Ruth Butter Ginsburg's is about 440 px along Germain Street).
+- Which owner gets which car is a fixed shuffle, the same every build.
+
+
+**Decision (Jira SCREAM-362, under SCREAM-11, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Read as the line of keys at the bottom of the road view (to confirm with him): it now ends "N Next Song  C Close" on the evenings C works (Story, not the uncle's evening).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** "C Close" (short, so the line stays clear of the CLOSE FOR BUSINESS button); not shown when C does nothing.
+
 ## 162 — A resident's car on the street while they're home; Elm Park's old parked cars are gone (2026-11-16)
 
 **Decision (Jira SCREAM-252, under SCREAM-11, PO, November 10 brainstorm; built November 16):** "Maybe days they are home, a car is parked in their driveway and/or in front of the house on the street." Story only. His answers (November 15, about 23:55):

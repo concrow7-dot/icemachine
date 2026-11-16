@@ -608,30 +608,57 @@ def place(m, people, index):
             pk = park_of(m, segs, blocks, p)
             out[-1]['park'] = {'spots': pk['spots'], 'exit': pk['exit'], 'curb': pk['curb']}
     # SCREAM-252: each car's spot, once every pink square is known (cars keep clear of all of them).
-    wants = {p['id'] for p in people if p.get('car')}
+    # SCREAM-361 (PO: "as much variety in the cars as possible"): each owner gets a different one of the
+    # pack's cars, in an order seeded so it stays the same from build to build.
+    wants = sorted({p['id'] for p in people if p.get('car')})
+    models = car_models()
+    order = [m_['model'] for m_ in models]
+    random.Random('361').shuffle(order)
+    if len(wants) > len(order):
+        print(f'Warning: {len(wants)} cars but only {len(order)} kinds: some owners share one')
+    model_of = {rid: order[k % len(order)] for k, rid in enumerate(wants)}
     squares = [(o['curb'][2], o['curb'][3]) for o in out] + [(o['park']['curb'][2], o['park']['curb'][3]) for o in out if o.get('park')]
     cars = []
     for o in out:
-        if o['id'] in wants:
-            o['car'] = car_spot(m, o, squares, cars)
-            cars.append(o['car'])
+        if o['id'] in model_of:
+            spot = car_spot(m, o, squares, cars, next(c for c in models if c['model'] == model_of[o['id']]))
+            if spot is None:
+                print(f'No room for {o["id"]} {o["name"]}\'s car on {o["street"]}: they get none')
+                continue
+            o['car'] = spot
+            cars.append(spot + [car_half(next(c for c in models if c['model'] == spot[3]))[0]])
     return out
 
 
-CAR_GAP = 82          # a car's centre from any pink square (the game's PINK_CLEAR_CAR is 80) and from the next car
+CAR_TRUCK_ROOM = 62   # SCREAM-361: from a pink square to the end of a car (the truck's half length, 52, and a little)
+CAR_CAR_GAP = 12      # between two cars, bumper to bumper
 CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
 
 
-def car_spot(m, r, squares, cars):
-    """SCREAM-252: where a resident's car parks: in the curb lane on their own curb spot's street,
-    a little along from their pink square (so the truck can still pull in there), clear of every
-    pink square, other cars, junctions, the pump bays and home's driveway. [x, y, angle]."""
+def car_models():
+    """SCREAM-361: the pack's cars and their sizes, from src/config/carModels.ts (tools/cars/build_cars.py)."""
+    s = open(os.path.join(ROOT, 'src', 'config', 'carModels.ts')).read()
+    return json.loads(s[s.index('= [') + 2:s.rindex(']') + 1])
+
+
+def car_half(model):
+    """Half its length and half its width on the map, parked along the street (its side view)."""
+    return model['right'][0] / 2, model['right'][1] / 2
+
+
+def car_spot(m, r, squares, cars, model):
+    """SCREAM-252, SCREAM-361: where a resident's car parks: in the curb lane on their own curb spot's
+    street, a little along from their pink square (so the truck can still pull in there), clear of
+    every pink square, other cars, junctions, the pump bays and home's driveway, facing the way
+    traffic goes on that side. [x, y, facing angle in degrees, model], or None if there's no room."""
     sx, sy, ang = r['curb'][2], r['curb'][3], r['curb'][4]
     tx, ty = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+    hl, hw = car_half(model)
     segs_all = [(ri, rd['points'][i], rd['points'][i + 1], rd['points'][i + 2], rd['points'][i + 3])
                 for ri, rd in enumerate(m['roads']) for i in range(0, len(rd['points']) - 2, 2)]
     # A street can be in the map as more than one road (Institute Road is two): go by its name.
-    own = m['roads'][min(segs_all, key=lambda sg: seg_dist(sx, sy, *sg[1:])[0])[0]]['name']
+    own_seg = min(segs_all, key=lambda sg: seg_dist(sx, sy, *sg[1:])[0])
+    own = m['roads'][own_seg[0]]['name']
     mask = m['roadMask']
 
     def on_asphalt(px, py):
@@ -639,28 +666,29 @@ def car_spot(m, r, squares, cars):
         col = int(px // mask['scale'])
         return any(runs[k] <= col < runs[k + 1] for k in range(0, len(runs), 2))
 
-    for slide in [d * k for k in range(90, 410, 10) for d in (1, -1)]:  # nearest first, either way along the street
+    for slide in [d * k for k in range(70, 470, 10) for d in (1, -1)]:  # nearest first, either way along the street
         x, y = sx + tx * slide, sy + ty * slide
-        # The whole car on the asphalt (its four corners).
-        hl, hw = 30, 18
         corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-hw, hw)]
         if not all(on_asphalt(*c) for c in corners):
             continue
         if m['roads'][min(segs_all, key=lambda sg: seg_dist(x, y, *sg[1:])[0])[0]]['name'] != own:
             continue
-        # Out of junctions: well clear of every other street's asphalt.
-        if any(m['roads'][ri]['name'] != own and seg_dist(x, y, *sg)[0] < half_of(m["roads"][ri]) + CAR_JUNCTION for ri, *sg in segs_all):
+        if any(m['roads'][ri]['name'] != own and seg_dist(x, y, *sg)[0] < half_of(m['roads'][ri]) + CAR_JUNCTION + hl - 30 for ri, *sg in segs_all):
             continue
-        if any(math.dist((x, y), q) < CAR_GAP for q in squares):
+        if any(math.dist((x, y), q) < hl + CAR_TRUCK_ROOM for q in squares):
             continue
-        if any(math.dist((x, y), (c[0], c[1])) < CAR_GAP for c in cars):
+        if any(math.dist((x, y), (c[0], c[1])) < hl + c[4] + CAR_CAR_GAP for c in cars):
             continue
-        if any(math.dist((x, y), (g['bay']['x'], g['bay']['y'])) < BAY_CLEAR + 20 for g in m.get('gasStations', [])):
+        if any(math.dist((x, y), (g['bay']['x'], g['bay']['y'])) < BAY_CLEAR + hl for g in m.get('gasStations', [])):
             continue
-        if math.dist((x, y), (m['homeStart']['x'], m['homeStart']['y'])) < BAY_CLEAR + 20:
+        if math.dist((x, y), (m['homeStart']['x'], m['homeStart']['y'])) < BAY_CLEAR + hl:
             continue
-        return [round(x, 1), round(y, 1), ang]
-    sys.exit(f'{r["id"]} {r["name"]}: no room for their car on {r["street"]} near their pink square')
+        # Facing the way traffic goes on its side of the street (cars drive on the right).
+        _, (cx, cy) = seg_dist(x, y, *own_seg[1:])
+        nx, ny = x - cx, y - cy
+        facing = ang if (-ty * nx + tx * ny) > 0 else (ang + 180 if ang <= 0 else ang - 180)
+        return [round(x, 1), round(y, 1), round(facing, 1), model['model']]
+    return None
 
 
 def park_of(m, segs, blocks, p):

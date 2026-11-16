@@ -9,7 +9,8 @@ const { Residents, weekdayOf } = await game('state/Residents');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { RESIDENTS } = await game('config/residents');
 const { MAPS, fixedParkedCars } = await game('config/maps');
-const { RESIDENT_CAR_ARRIVE_CLEAR } = await game('config/tuning');
+const { RESIDENT_CAR_ARRIVE_CLEAR, RESIDENT_CAR_TRUCK_ROOM } = await game('config/tuning');
+const { CAR_MODELS } = await game('config/carModels');
 
 const withCar = TUTORIAL_RESIDENTS.filter((r) => r.car);
 const evening = (day, list = TUTORIAL_RESIDENTS, minutes = 17 * 60) => {
@@ -31,15 +32,35 @@ test('"lets remove the old parked cars": Elm Park has no parked cars of its own;
   assert.equal(fixedParkedCars(MAPS.worcester).length, MAPS.worcester.data.parkedCars.length);
 });
 
-test('each car parks on its owner\'s street, near their pink square, clear of every pink square and of the other cars', () => {
+test('each car parks on its owner\'s street, near their pink square, with room for the truck, clear of the other cars', () => {
   const squares = TUTORIAL_RESIDENTS.flatMap((r) => [[r.curb[2], r.curb[3]], ...(r.park ? [[r.park.curb[2], r.park.curb[3]]] : [])]);
+  const half = (r) => CAR_MODELS.find((m) => m.model === r.car[3]).right[0] / 2;
   for (const r of withCar) {
     const [x, y, angle] = r.car;
     const own = Math.hypot(x - r.curb[2], y - r.curb[3]);
-    assert.ok(own >= 80 && own <= 410, `${r.name}: ${own.toFixed(0)} px from their pink square`);
-    assert.equal(angle, r.curb[4], 'along the road');
-    for (const [sx, sy] of squares) assert.ok(Math.hypot(x - sx, y - sy) >= 80, `${r.name}'s car is clear of the pink square at ${sx},${sy}`);
-    for (const o of withCar) if (o !== r) assert.ok(Math.hypot(x - o.car[0], y - o.car[1]) >= 80, `${r.name} and ${o.name}`);
+    assert.ok(own >= 70 && own <= 470, `${r.name}: ${own.toFixed(0)} px from their pink square`);
+    const off = Math.abs(((angle - r.curb[4]) % 360 + 540) % 360 - 180);
+    assert.ok(off < 0.2 || Math.abs(off - 180) < 0.2, `${r.name}: along the road, one way or the other`);
+    for (const [sx, sy] of squares) assert.ok(Math.hypot(x - sx, y - sy) >= half(r) + RESIDENT_CAR_TRUCK_ROOM - 0.5, `${r.name}'s car leaves the truck room at the pink square at ${sx},${sy}`);
+    for (const o of withCar) if (o !== r) assert.ok(Math.hypot(x - o.car[0], y - o.car[1]) >= half(r) + half(o), `${r.name} and ${o.name}`);
+  }
+});
+
+test('SCREAM-361, "as much variety in the cars as possible": every owner has a different one of the pack\'s 26 cars', () => {
+  assert.equal(CAR_MODELS.length, 26);
+  const models = withCar.map((r) => r.car[3]);
+  assert.equal(new Set(models).size, models.length);
+  for (const m of models) assert.ok(CAR_MODELS.some((c) => c.model === m));
+});
+
+test('SCREAM-361: "30% smaller" than the pack: the pack\'s shortest car (183 px) is 66 px long; "The hitbox should match the car"', () => {
+  const lengths = CAR_MODELS.map((m) => m.right[0]);
+  assert.equal(Math.min(...lengths), 66);
+  const r = evening(1); r.update(0.1);
+  for (const c of r.carsNow) {
+    const m = CAR_MODELS.find((x) => x.model === c.model);
+    assert.equal(c.halfLength * 2, m.right[0]);
+    assert.equal(c.halfWidth * 2, m.right[1]);
   }
 });
 
@@ -56,12 +77,12 @@ test('a car is out on the days its owner is home (their ticks), and not on the o
   }
 });
 
-test('each owner always has the same car colour', () => {
+test('each owner always has the same car', () => {
   const a = evening(1); a.update(0.1);
   const b = evening(4); b.update(0.1);
   for (const c of a.carsNow) {
     const d = b.carsNow.find((x) => x.id === c.id);
-    if (d) assert.equal(d.colour, c.colour);
+    if (d) assert.equal(d.model, c.model);
   }
 });
 
