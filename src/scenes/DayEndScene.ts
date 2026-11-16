@@ -1,9 +1,10 @@
 import * as Phaser from 'phaser';
+import { buildFuelDial, drawFuelNeedle, FUEL_DIAL_SPOT, type FuelDialParts } from '../ui/fuelDial';
 import { clearStory, getEvening, getStory, SceneKeys, startStoryEvening } from '../flow';
 import type { DayOutcome } from '../state/StoryRun';
 import { formatMoney } from '../util/format';
 import { largestSaleLine, offerLargestSale } from '../state/Records';
-import { BIKE_PRICE_CENTS } from '../config/tuning';
+import { BIKE_PRICE_CENTS, DAY_END_CLICK_WAIT_MS } from '../config/tuning';
 import { addTruckBackdrop, DUSK_SHADE, loadTruckInterior } from '../ui/truckInterior';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { weekdayName } from '../state/Residents';
@@ -20,6 +21,8 @@ const ROW_GAP = 27;
 
 export class DayEndScene extends Phaser.Scene {
   private outcome: DayOutcome = 'next';
+  /** SCREAM-295: a click and Enter together move on only once. */
+  private leaving = false;
 
   constructor() {
     super(SceneKeys.DayEnd);
@@ -29,6 +32,9 @@ export class DayEndScene extends Phaser.Scene {
     loadTruckInterior(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
+
+  /** SCREAM-276: the gas dial (a test hook); only when there is a tomorrow. */
+  gasDial?: FuelDialParts;
 
   create(): void {
     // SCREAM-123: the sun has set: the inside of the truck under a dusk-blue layer.
@@ -62,24 +68,33 @@ export class DayEndScene extends Phaser.Scene {
       ['Gas', -b.gasCents, '#ff9c9c'],
       ['Damage', -b.damageCents, '#ff9c9c'],
     ];
+    // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
+    if (b.powerUpsCents > 0) rows.push(['Power-ups', -b.powerUpsCents, '#ff9c9c']);
+    // SCREAM-313 and SCREAM-312 (PO, November 14): what SpongePops earned and exploration tips each get
+    // their own row, under Tips, only when there was any.
+    if (b.explorationCents > 0) rows.splice(2, 0, ['Exploration tips', b.explorationCents, '#c8f7c5']);
+    if (b.spongePopCents > 0) rows.splice(2, 0, ['SpongePop tips', b.spongePopCents, '#c8f7c5']);
+    const rowGap = rows.length > 5 ? 23 : ROW_GAP;
+    // Each row past six pushes the line and everything under it down by a row.
+    const below = Math.max(0, rows.length - 6) * rowGap;
     this.add.text(110, 130, 'TONIGHT', { fontFamily: MONO, fontSize: '18px', color: '#8a9bb3' });
     rows.forEach(([label, cents, colour], i) => {
-      const y = 165 + i * ROW_GAP;
+      const y = 165 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });
-    this.add.rectangle(110, 308, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
-    this.add.text(110, 322, "Tonight's profit", { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    this.add.rectangle(110, 308 + below, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 322 + below, "Tonight's profit", { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
     const profit = evening.profitCents;
     this.add
-      .text(420, 354, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .text(420, 354 + below, formatMoney(profit), { fontFamily: MONO, fontSize: '32px', color: profit < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
 
     // SCREAM-93: tonight's largest sale (price plus tip), against Story's record.
     const largest = evening.largestSaleCents;
     const record = offerLargestSale('story', largest);
     this.add
-      .text(110, 410, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
+      .text(110, 410 + below, largestSaleLine(largest, record, formatMoney), { fontFamily: MONO, fontSize: '18px', color: record.isNew ? '#ffe066' : '#8a9bb3' })
       .setName('largest-sale');
 
     // ---- The wallet and the cooler ----
@@ -107,22 +122,46 @@ export class DayEndScene extends Phaser.Scene {
     const gasNote = !evening.endedOutOfGas
       ? ''
       : this.outcome === 'next'
-        ? 'You ran out of gas!\nTomorrow you start with 1/6 of a tank.\n\n'
+        ? 'You ran out of gas!\nTomorrow you start with 1/3 of a tank.\n\n'
         : 'You ran out of gas!\n\n';
     this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
-    const footer =
-      this.outcome === 'next' ? `Enter: Start ${weekdayName(story.day)}` : this.outcome === 'complete' ? 'Enter: Story High Scores' : 'Enter: Back To The Title';
-    this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5);
+    // SCREAM-276 (PO, November 12): the gas dial, the same as on the road, bottom left. It shows what
+    // tomorrow's tank starts with (after a near-empty or empty night, the 1/6 or 1/3 the player is given).
+    if (this.outcome === 'next') {
+      this.gasDial = buildFuelDial(this, FUEL_DIAL_SPOT.x, FUEL_DIAL_SPOT.pumpY);
+      this.gasDial.container.setName('gas-dial');
+      drawFuelNeedle(this.gasDial, story.fuel, story.fuel);
+    }
 
-    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
-      if (event.key !== 'Enter') return;
+    // SCREAM-295 (PO, November 12): a left click moves on, as well as Enter (like 079's "Click Or Enter").
+    const footer =
+      this.outcome === 'next'
+        ? `Click Or Enter: Start ${weekdayName(story.day)}`
+        : this.outcome === 'complete'
+          ? 'Click Or Enter: Story High Scores'
+          : 'Click Or Enter: Back To The Title';
+    this.add.text(width / 2, height - 30, footer, { fontFamily: MONO, fontSize: '20px', color: '#8a9bb3' }).setOrigin(0.5).setName('continue-hint');
+
+    const moveOn = () => {
+      if (this.leaving) return;
+      this.leaving = true;
       if (this.outcome === 'next') startStoryEvening(this);
       else if (this.outcome === 'complete') this.scene.start(SceneKeys.Results, { story: true }); // SCREAM-18
       else {
         clearStory(this);
         this.scene.start(SceneKeys.Title);
       }
+    };
+    this.leaving = false;
+    // A click in the first moments is ignored: the player may still be clicking at the sales
+    // window or the cooler when the evening ends, and that click shouldn't skip this screen.
+    const opened = this.time.now;
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 0 && this.time.now - opened >= DAY_END_CLICK_WAIT_MS) moveOn();
+    });
+    this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter') moveOn();
     });
   }
 

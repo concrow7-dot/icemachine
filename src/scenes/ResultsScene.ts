@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { clearStory, getEvening, getStory, SceneKeys, startEvening } from '../flow';
+import { clearStory, getEvening, getStory, pauseResults, SceneKeys, startEvening } from '../flow';
 import { addHighScore, HIGH_SCORE_COUNT, isHighScore, loadHighScores, type HighScore, type ScoreTable } from '../state/HighScores';
 import { formatMoney } from '../util/format';
 import { largestSaleLine, largestSaleRecord, offerLargestSale } from '../state/Records';
@@ -124,22 +124,31 @@ export class ResultsScene extends Phaser.Scene {
       ['Gas', -t.gasCents, '#ff9c9c'],
       ['Damage', -t.damageCents, '#ff9c9c'],
     ];
+    // SCREAM-296: money spent at the cork board gets its own row, only when there was any.
+    if (t.powerUpsCents > 0) rows.push(['Power-ups', -t.powerUpsCents, '#ff9c9c']);
+    // SCREAM-313 and SCREAM-312 (PO, November 14): what SpongePops earned and exploration tips each get
+    // their own row, under Tips, only when there was any.
+    if (t.explorationCents > 0) rows.splice(2, 0, ['Exploration tips', t.explorationCents, '#c8f7c5']);
+    if (t.spongePopCents > 0) rows.splice(2, 0, ['SpongePop tips', t.spongePopCents, '#c8f7c5']);
+    const rowGap = rows.length > 5 ? 23 : ROW_GAP;
+    // Each row past six pushes the line and everything under it down by a row.
+    const below = Math.max(0, rows.length - 6) * rowGap;
     rows.forEach(([label, cents, colour], i) => {
-      const y = 145 + i * ROW_GAP;
+      const y = 145 + i * rowGap;
       this.add.text(110, y, label, { fontFamily: MONO, fontSize: '22px', color: '#d6deeb' });
       this.add.text(420, y, formatMoney(cents), { fontFamily: MONO, fontSize: '22px', color: colour }).setOrigin(1, 0);
     });
-    this.add.rectangle(110, 288, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
-    this.add.text(110, 302, 'Final cash', { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
+    this.add.rectangle(110, 288 + below, 310, 2, 0x8a9bb3).setOrigin(0, 0.5);
+    this.add.text(110, 302 + below, 'Final cash', { fontFamily: MONO, fontSize: '22px', color: '#ffffff' });
     this.add
-      .text(420, 334, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
+      .text(420, 334 + below, formatMoney(cashCents), { fontFamily: MONO, fontSize: '36px', color: cashCents < 0 ? '#ff9c9c' : '#c8f7c5' })
       .setOrigin(1, 0);
     // SCREAM-93: the run's largest sale. Each day's was offered to Story's record at the end of
     // that day, so the run holds the record if it matches it.
     const record = largestSaleRecord('story');
     const holds = t.largestSaleCents > 0 && t.largestSaleCents >= record;
     this.add
-      .text(110, 436, largestSaleLine(t.largestSaleCents, { before: record, isNew: holds }, formatMoney), {
+      .text(110, 436 + below, largestSaleLine(t.largestSaleCents, { before: record, isNew: holds }, formatMoney), {
         fontFamily: MONO,
         fontSize: '18px',
         color: holds ? '#ffe066' : '#8a9bb3',
@@ -147,10 +156,10 @@ export class ResultsScene extends Phaser.Scene {
       .setName('largest-sale');
     // SCREAM-94 (PO, November 2): "New Bike!!!!" with a victory lap, or "Maybe Next Summer" and an F stamp.
     if (bike) {
-      this.add.text(110, 388, 'New Bike!!!!', { fontFamily: MONO, fontSize: '26px', color: '#ffe066' }).setName('bike-line');
+      this.add.text(110, 388 + below, 'New Bike!!!!', { fontFamily: MONO, fontSize: '26px', color: '#ffe066' }).setName('bike-line');
       this.victoryLap();
     } else {
-      this.add.text(110, 388, 'Maybe Next Summer', { fontFamily: MONO, fontSize: '26px', color: '#8a9bb3' }).setName('bike-line');
+      this.add.text(110, 388 + below, 'Maybe Next Summer', { fontFamily: MONO, fontSize: '26px', color: '#8a9bb3' }).setName('bike-line');
       this.stampF(505, 410);
     }
   }
@@ -211,6 +220,8 @@ export class ResultsScene extends Phaser.Scene {
       return;
     }
     const key = event.key;
+    // SCREAM-181: Esc while asking for initials opens the pause menu (Resume, or quit without saving).
+    if (key === 'Escape') return pauseResults(this);
     if (key === 'ArrowUp') this.changeLetter(1);
     else if (key === 'ArrowDown') this.changeLetter(-1);
     else if (key === 'ArrowLeft') this.cursor = Math.max(0, this.cursor - 1);
@@ -247,7 +258,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     add(
       this.add
-        .text(700, 330, '↑ ↓ Change   ← → Move\nOr Type Letters   Enter: Save', {
+        .text(700, 330, '↑ ↓ Change   ← → Move\nOr Type Letters   Enter: Save\nEsc: Menu', {
           fontFamily: MONO,
           fontSize: '16px',
           color: '#8a9bb3',

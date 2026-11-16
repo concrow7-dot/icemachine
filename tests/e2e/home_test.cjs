@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   // SCREAM-175: these suites play as a player who has finished the tutorial (every mode unlocked).
-  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); } catch {} });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -61,6 +61,8 @@ const { chromium } = require('playwright');
   check('...3 eclairs in the cooler, $3.00 charged, price $2.50', (await stock()) + ' ' + (cash - (await ev('e.moneyCents'))) + ' ' + (await ev('e.slots[0].priceCents')), '3,0,0,0 300 250');
   check('...not restocking any more; the arrow has gone', (await ev('e.isRestocking')) + ' ' + (await drive('s.homeArrow.visible')), 'false false');
   check('...still in the spot, it does not open again', await scenes(), 'Drive,Hud');
+  await drive('(s.speed = 20, s.parkBrake = false, true)'); await wait(80); await drive('(s.speed = 0, s.parkBrake = true, true)'); await wait(300);
+  check('SCREAM-304: Quick play unchanged: moving and stopping in the spot does not open it', await scenes(), 'Drive,Hud');
   await awayFromDriveway(); await wait(300); await intoDriveway(); await wait(400);
   check('Leave the spot and come back: it opens again', await scenes(), 'Cooler,Hud');
   await press('b'); await wait(400);

@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`);
-  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); });
+  await page.evaluate(() => { localStorage.removeItem('icemachine.story.v2'); localStorage.removeItem('icemachine.highscores.tutorial.v1'); localStorage.setItem('icemachine.music.muted.v1', '1'); localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); });
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   const ev = (fn) => page.evaluate(`(() => { const e = window.__game.registry.get('evening'); return ${fn}; })()`);
   const sc = (key, fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('${key}'); return ${fn}; })()`);
@@ -32,7 +32,7 @@ const { chromium } = require('playwright');
   check('Tutorial already played: Story asks whether to bring the uncle', await sc('Title', 's.confirming && s.asking'), 'uncle');
   await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
   check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
-  check('...Day 1 of 5, with $50', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/5 5000');
+  check('...Day 1 of 10, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/10 2500');
   check('...with its own 40 residents (sheet 23)', await ev('e.residents.all.length + " " + e.residents.all.every(p => p.resident.id.startsWith("T"))'), '40 true');
 
   // ---- On the road ----
@@ -50,16 +50,16 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-189: Big Kev always orders 7 (sheet 23's "Order size") ----
   check('Big Kev: an order size of 7 from the sheet', await ev("e.residents.all.find(p => p.resident.id === 'T034').resident.orderSize"), 7);
-  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) { c.quantity = 4; c.priceCents = 200; } }), e.orderPictureChance = 0, true)");
+  await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) { c.quantity = 8; c.priceCents = 200; } }), e.orderPictureChance = 0, true)");
   await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
   await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
-  check('...he orders 7 ice creams', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 7);
+  check('...he orders 8 ice creams: his 7, plus one eclair (SCREAM-315)', await ev('e.sale.order.reduce((n, l) => n + l.count, 0)'), 8);
   await page.screenshot({ path: outDir + '/bigkev_words.png' });
   await press('b'); await wait(600);
-  await ev("(e.orderPictureChance = 1, e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 4; }), true)");
+  await ev("(e.orderPictureChance = 1, e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 8; }), true)");
   await drive("(s.serve(window.__game.registry.get('evening').residents.all.find(p => p.resident.id === 'T034')), true)");
   await page.waitForFunction(() => window.__game.scene.isActive('Sales'), null, { timeout: 5000 }); await wait(1500);
-  check('...in pictures too', (await ev('e.sale.pictures')) + ' ' + (await ev('e.sale.order.reduce((n, l) => n + l.count, 0)')), 'true 7');
+  check('...in pictures too', (await ev('e.sale.pictures')) + ' ' + (await ev('e.sale.order.reduce((n, l) => n + l.count, 0)')), 'true 8');
   await page.screenshot({ path: outDir + '/bigkev_pictures.png' });
   await press('b'); await wait(600);
   await ev("(e.coolerSlots.forEach((c, i) => { if (i < 3) c.quantity = 1; }), e.orderPictureChance = 0.5, true)");
@@ -138,6 +138,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/tutorial_gas.png' });
 
   // ---- A customer at the window ----
+  await ev("(e.coolerSlots[0].quantity = 3, true)"); // SCREAM-155: with an empty cooler (emptied above) a called customer walks straight home
   const idx = await ev("e.residents.all.findIndex(p => p.customer === 'none')");
   await ev(`e.residents.callNow(e.residents.all[${idx}])`); await wait(300);
   check('A customer gets a pink square on a tutorial street', await drive(`(z => !!z && z.visible && s.roads.onRoad(z.x, z.y))(s.pickupZones.get(${idx}))`), true);
@@ -146,9 +147,9 @@ const { chromium } = require('playwright');
   check('...the customer drawn from the tutorial sheet', await page.evaluate(() => (p => p && p.texture.key)(window.__game.scene.getScene('Sales').children.getByName('customer'))), 'customer-smooth-residents-tutorial-' + (await ev('e.customer.resident.look')));
 
   // ---- Restart keeps the map; Quit then Quick play goes back to Worcester ----
-  await press('Escape'); await press('ArrowDown'); await press('Enter'); await press('y'); await wait(500);
-  check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
   await press('Escape'); await press('ArrowDown', 2); await press('Enter'); await press('y'); await wait(500);
+  check('Restart evening: still on the tutorial map', (await scenes()) + ' ' + (await ev('e.mapId')), 'Cooler,Hud tutorial');
+  await press('Escape'); await press('ArrowUp'); await press('Enter'); await press('y'); await wait(500); // ↑ from Resume wraps to the last item
   check('Quit: title screen', await scenes(), 'Title');
   await press('Enter'); await wait(400);
   check('Quick Play: back on Worcester with its 160 residents', (await ev('e.mapId')) + ' ' + (await ev('e.residents.all.length')), 'worcester 160');
@@ -161,7 +162,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-169: the uncle's steps ----
   // Music on for this part, to hear the credits' tune (SCREAM-178).
   // SCREAM-175: a brand-new player (no tutorial finished, no Story, no high scores).
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '0'); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); localStorage.setItem('icemachine.music.muted.v1', '0'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -187,6 +188,11 @@ const { chromium } = require('playwright');
   // SCREAM-236: the scroll sets up the bike instead.
   check('...ending with the $600 bike', /new bike in the shop window the other day for \$600\.00\. Better get to work/.test(await sc('TutorialCrawl', 's.lines.map(t => t.text).join(" ")')), true);
   await page.screenshot({ path: outDir + '/uncle_credits_scroll.png' });
+  // SCREAM-186: M mutes the credits tune too, and M again brings it back.
+  await page.keyboard.press('m'); await wait(150);
+  check('SCREAM-186: M during the credits mutes the tune (and the music)', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").every(t => t.mute) + " " + window.__game.registry.get("music").muted'), 'true true');
+  await page.keyboard.press('m'); await wait(150);
+  check('...M again: the tune is back', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => !t.mute && t.isPlaying) + " " + window.__game.registry.get("music").muted'), 'true false');
   // SCREAM-217 (PO, November 9): X is the one skip key in the uncle's evening (PO changed it from S the same day); Enter and S no longer skip the credits.
   check('The credits say X skips them (SCREAM-217)', await sc('TutorialCrawl', "s.children.list.filter(o => o.type === 'Text').some(t => t.text === 'X: Skip')"), true);
   await press('Enter'); await wait(300);
@@ -229,7 +235,7 @@ const { chromium } = require('playwright');
   const giftBefore = await ev('e.moneyCents');
   check('With the uncle the cash starts empty (SCREAM-191)', giftBefore, 0);
   await page.mouse.click(600, 80); await wait(400);
-  check('Click: Buy Stock, outlined, and the $50 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started. | on 5000');
+  check('Click: Buy Stock, outlined, and the $25 he left (SCREAM-187)', (await uncle()) + ' | ' + (await pointer()) + ' ' + ((await ev('e.moneyCents')) - giftBefore), 'When you are ready, hit "Buy Stock". I left $25 on the truck for you to get started. | on 2500');
   await page.screenshot({ path: outDir + '/uncle_cooler_gift.png' });
   await page.screenshot({ path: outDir + '/uncle_buy.png' });
   await press('+', 4); await press('Enter'); await wait(700);
@@ -314,8 +320,9 @@ const { chromium } = require('playwright');
   }), 'sale {} false');
   await press('b'); await wait(900);
   check('Sale over (here, driven off): back on the road, he drives on to the pump', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')), 'Drive,Hud pump toPump');
-  check('...saying (SCREAM-173)', await uncle(), "Keep an eye on the gauge up top. Run dry and the night's over.");
-  check('...with the gauge up top outlined', await sc('Hud', 's.children.getByName("uncle-pointer").visible'), true);
+  check('...saying (SCREAM-173)', await uncle(), "Keep an eye on the gas gauge. Run dry and the night's over.");
+  check('...with the gauge outlined', await sc('Hud', 's.children.getByName("uncle-pointer").visible'), true);
+  check('...the outline is round the gauge at the bottom left (SCREAM-238)', await sc('Hud', '(() => { const g = s.fuelGauge; return g.x < 200 && g.y > 400; })()'), true);
   const toPumpAt = Date.now();
   await page.screenshot({ path: outDir + '/uncle_gauge.png' });
   await page.waitForFunction(() => window.__game.scene.isActive('Pump'), null, { timeout: 25000 });
@@ -333,7 +340,7 @@ const { chromium } = require('playwright');
   check('...he pays: none of it on your gas bill, $20 of gas in', ((await ev('e.breakdown.gasCents')) === 0) + ' ' + (Math.abs((await ev('e.fuel')) - fuelBefore - 2 / 3) < 0.01), 'true true');
   // ---- SCREAM-185: the uncle drives home ----
   check('Gas bought: he drives home, saying to come home for stock', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await drive('s.uncleLeg')) + ' | ' + (await uncle()), "Drive,Hud home toHome | Return home to fill up on stock when you need.");
-  check('...no more cash from him (the $50 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);
+  check('...no more cash from him (the $25 was at the cooler)', (await ev('e.moneyCents')) - cashBefore, 0);
   check('...no steering, nobody else comes out', (await ev('e.tutorial.uncleDriving')) + ' ' + (await ev('e.residents.hearingOff')), 'true true');
   const homeAt = Date.now();
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro'), null, { timeout: 25000 });
@@ -347,8 +354,15 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/uncle_home.png' });
   await page.mouse.click(600, 300); await wait(300);
   check('Click: his last words', (await sc('UncleIntro', 's.shown')) + ' ' + (await scenes()), 'Good luck, kiddo. UncleIntro,Hud');
+  await page.evaluate(() => { localStorage.removeItem('icemachine.howtodrive.off.v1'); localStorage.removeItem('icemachine.howtodrive.seen.v1'); }); // SCREAM-207: the suites switch the pop-up off; here it is wanted
   await page.mouse.click(600, 300);
-  await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 }); await wait(600);
+  await page.waitForFunction(() => window.__game.scene.isActive('Drive'), null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__game.scene.isActive('HowToDrive'), null, { timeout: 5000 }); await wait(700);
+  check('SCREAM-207: the uncle has handed over the wheel: the "How To Drive" pop-up, the road waits', (await page.evaluate(() => window.__game.scene.isPaused('Drive'))) + ' ' + (await sc('HowToDrive', 's.lines.length')), 'true 8');
+  await page.screenshot({ path: outDir + '/how_to_drive_after_uncle.png' });
+  await page.mouse.click(600, 300); await wait(400);
+  check('...a click closes it and the road runs', (await page.evaluate(() => window.__game.scene.isActive('HowToDrive'))) + ' ' + (await page.evaluate(() => window.__game.scene.isPaused('Drive'))), 'false false');
+  await page.evaluate(() => localStorage.setItem('icemachine.howtodrive.off.v1', '1')); await wait(200);
   check('Click: on the road alone; he is done', (await ev('e.tutorial.step')) + ' ' + (await ev('e.residents.hearingOff')) + ' ' + (await uncle()), 'done false ');
   // SCREAM-190: he steps out of the truck and walks home.
   check('...and he steps out of the truck, map-sized', await drive('(w => !!w && w.active && w.texture.key)(s.children.getByName("uncle-walker"))'), 'uncle-walker');
@@ -368,7 +382,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
   check('Tutorial finished: every mode unlocked', await sc('Title', 's.options.some(o => o.locked) + " " + s.children.getByName("lock-note").text'), 'false ');
-  check('...and Day 2 to continue', /^Quick Play,Continue Story: Tuesday, \$[0-9.]+,New Story$/.test(await sc('Title', 's.options.map(o => o.label).join()')), true);
+  check('...and Day 2 to continue', /^Quick Play,Continue Story: Tuesday Day 2\/10, \$[0-9.]+,New Story$/.test(await sc('Title', 's.options.map(o => o.label).join()')), true);
   await press('ArrowDown', 2); await press('Enter'); await wait(300);
   check('The title screen credits the tune', await sc('Title', 's.children.list.some(o => o.text && o.text.includes("Tune: Travis Morgan"))'), true);
   await press('y'); await wait(300);
@@ -380,7 +394,7 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-200: skipping the uncle ----
   // A brand-new player again; skip him on his very first line, in the truck.
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.music.muted.v1', '1'); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); localStorage.setItem('icemachine.music.muted.v1', '1'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -395,7 +409,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game.scene.isActive('Cooler'), null, { timeout: 5000 }); await wait(500);
   check('X in the truck: straight to the cooler, his part over', (await scenes()) + ' ' + (await ev('e.tutorial.step')) + ' ' + (await ev('e.tutorial.skipped')), 'Cooler,Hud done true');
   check('...he says goodbye in the small box', await uncle(), "Alright, you've got this. Good luck, kiddo.");
-  check('...his $50 handed over anyway', await ev('e.moneyCents'), 5000);
+  check('...his $25 handed over anyway', await ev('e.moneyCents'), 2500);
   check('...and the tutorial counts as finished', await page.evaluate(() => localStorage.getItem('icemachine.tutorial.done.v1')), '1');
   check('...no outline left behind at the cooler', await sc('Cooler', '(g => !g || !g.visible)(s.children.getByName("uncle-pointer"))'), true);
   await page.screenshot({ path: outDir + '/uncle_skipped_cooler.png' });
@@ -403,7 +417,7 @@ const { chromium } = require('playwright');
   check('Buy Stock: the plain truck screen (no uncle walking to the cab)', await scenes(), 'Truck,Hud');
 
   // Skip him while he drives: the truck stops, the player has the wheel.
-  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); });
+  await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k !== 'icemachine.music.muted.v1') localStorage.removeItem(k); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); });
   await page.reload();
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).some(s => s.scene.key === 'Title'));
   await page.click('canvas'); await wait(200);
@@ -415,7 +429,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game.scene.isActive('UncleIntro')); await wait(800);
   await page.mouse.click(700, 200); await wait(200); await page.mouse.click(700, 200); await wait(200);
   await page.mouse.click(150, 450); await wait(600);
-  check('Back with him: the small box shows the skip hint, naming X', await page.evaluate(() => (b => b && b.skipHint.visible && b.skipHint.text)(window.__game.scene.getScene('Hud').uncleBox)), 'X: Skip The Uncle');
+  check('SCREAM-286: Back with him: no skip hint in his small box', await page.evaluate(() => (b => !!b && !b.container.list.some(o => o.list && o.list.some(t => t.text === 'X: Skip The Uncle')))(window.__game.scene.getScene('Hud').uncleBox)), true);
   await press('+'); await wait(300); await page.mouse.click(600, 80); await wait(200); await page.mouse.click(600, 80); await wait(400);
   await press('+', 3); await press('Enter'); await wait(700);
   await press('Enter'); await wait(900);
@@ -424,7 +438,7 @@ const { chromium } = require('playwright');
   await press('x'); await wait(300);
   check('X on the road: he stops, parked, the player has the wheel', (await drive('s.uncleLeg')) + ' ' + (await drive('s.speed')) + ' ' + (await drive('s.parkBrake')) + ' ' + (await ev('e.tutorial.step')), 'null 0 true done');
   check('...everyone can hear the truck again', await ev('e.residents.hearingOff'), false);
-  check('...the hint is gone, his goodbye up', (await page.evaluate(() => (b => b.skipHint.visible)(window.__game.scene.getScene('Hud').uncleBox))) + ' ' + (await uncle()), "false Alright, you've got this. Good luck, kiddo.");
+  check('...his goodbye up', 'false ' + (await uncle()), "false Alright, you've got this. Good luck, kiddo.");
   await page.keyboard.down('ArrowUp'); await wait(700); await page.keyboard.up('ArrowUp');
   check('...and the player drives', await drive('s.speed > 0'), true);
   await page.screenshot({ path: outDir + '/uncle_skipped_road.png' });

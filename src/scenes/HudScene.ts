@@ -1,31 +1,19 @@
 import { currentMap } from '../config/maps';
 import * as Phaser from 'phaser';
-import { FUEL_LOW, MUSIC_RING_RADIUS, PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
+import { PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
 import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { formatClock, formatMoney, formatMoneyChange } from '../util/format';
 import { NeedleWobble } from '../ui/fuelGauge';
+import { buildFuelDial, drawFuelNeedle, FUEL_DIAL, FUEL_DIAL_SPOT, type FuelDialParts } from '../ui/fuelDial';
 import { debugOn } from '../util/debug';
 import { addUnclePointer } from '../ui/unclePointer';
 import { UncleBox } from '../ui/uncleBox';
 import { markTutorialDone, skipUncle } from '../state/Tutorial';
 import { count } from '../state/Counter';
-import { weekdayName } from '../state/Residents';
+import { dayText } from '../state/Residents';
 
-/**
- * SCREAM-121: the old-school dial. The needle's pivot sits just under the top bar, in the
- * middle; the face is a fan from E (left) to F (right), angles in degrees clockwise from
- * pointing right (so 270 is straight up).
- */
-const FUEL_DIAL = { pivotY: 46, radius: 46, from: 200, to: 340 };
-/** SCREAM-219 (PO, November 9): the gauge sits at the top right, just left of the money; the gap between them, in px. */
-const FUEL_DIAL_GAP = 14;
-const DIAL_FACE = 0x4b4440;
-const DIAL_EDGE = 0x241f1c;
-const DIAL_INK = 0xf4ead2;
-const DIAL_INK_CSS = '#f4ead2';
-const DIAL_LOW_CSS = '#ff6b5e';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
@@ -45,9 +33,7 @@ export class HudScene extends Phaser.Scene {
   towText?: Phaser.GameObjects.Text;
   /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
   private fuelGauge!: Phaser.GameObjects.Container;
-  private dialFace!: Phaser.GameObjects.Graphics;
-  private needle!: Phaser.GameObjects.Graphics;
-  private emptyLabel!: Phaser.GameObjects.Text;
+  private dial!: FuelDialParts;
   /** SCREAM-121: where the needle points (0 = E, 1 = F); tests read it. */
   fuelNeedle = 1;
   private readonly wobble = new NeedleWobble();
@@ -63,7 +49,8 @@ export class HudScene extends Phaser.Scene {
     const story = getStory(this);
     // SCREAM-18 (PO, November 2): the bike goal is shown on the end-of-day screen only, not up here.
     // SCREAM-221 / SCREAM-232 (PO, November 10): just the weekday ("leave it at the day of the week"); Story starts on a Monday.
-    this.dayLabel = story ? `   ${weekdayName(story.day)}` : '';
+    // SCREAM-327 (PO, November 14): the count is back beside it: "Tuesday Day 2/10".
+    this.dayLabel = story ? `   ${dayText(story.day, story.days)}` : '';
     const { width } = this.scale;
 
     this.add.rectangle(0, 0, width, 44, 0x000000, 0.45).setOrigin(0, 0);
@@ -107,10 +94,10 @@ export class HudScene extends Phaser.Scene {
     this.refresh();
     this.addDebugKeys();
     this.uncleBox = this.evening.tutorial ? new UncleBox(this, this.evening.tutorial) : undefined;
-    // SCREAM-173 (PO): "Keep an eye on the gauge up top" outlines the fuel gauge.
+    // SCREAM-173 (PO): the uncle's line about the gauge outlines it (SCREAM-238: at the bottom left).
     if (this.evening.tutorial) {
-      const { pivotY, radius } = FUEL_DIAL;
-      addUnclePointer(this, this.evening.tutorial, { gauge: () => new Phaser.Geom.Rectangle(this.fuelGauge.x - radius - 8, 2, radius * 2 + 16, pivotY + 4) });
+      const { radius } = FUEL_DIAL;
+      addUnclePointer(this, this.evening.tutorial, { gauge: () => new Phaser.Geom.Rectangle(this.fuelGauge.x - radius - 4, this.fuelGauge.y - radius - 6, radius * 2 + 8, radius + 16) });
     }
 
     const onMoney = (change: number, _cash: number, label: string, popup: boolean) => {
@@ -156,7 +143,7 @@ export class HudScene extends Phaser.Scene {
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
    * of the clock and day, and since SCREAM-220 only with ?debug in the address. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
-   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247), Shift+8 (...with a line about a neighbour, SCREAM-248) and Shift+4 (serve now) still work for testing, but aren't shown.
+   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247), Shift+8 (...with a line about a neighbour, SCREAM-248), Shift+9 (+$50 cash, not profit, SCREAM-324), Shift+0 (a full gas tank, SCREAM-337) and Shift+4 (serve now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
     // SCREAM-220 (PO, November 9): players don't see the debug hint; add ?debug to the address to show it.
@@ -194,6 +181,8 @@ export class HudScene extends Phaser.Scene {
       if (event.code === 'Digit6') this.evening.forceHint = true; // SCREAM-103: the next tipped sale gives a hint
       if (event.code === 'Digit7') this.evening.forceScheduleLine = true; // SCREAM-247: the next paid sale ends with the customer's schedule line
       if (event.code === 'Digit8') this.evening.forceNeighbourLine = true; // SCREAM-248: the next paid sale ends with a line about a neighbour
+      if (event.code === 'Digit9') this.evening.debugAddCash(5000); // SCREAM-324: +$50 on any evening screen, not counted as profit
+      if (event.code === 'Digit0') this.evening.debugFillGas(); // SCREAM-337: a full tank on any evening screen, free
     });
   }
 
@@ -240,15 +229,16 @@ export class HudScene extends Phaser.Scene {
     this.evening.tick(delta);
     this.keepNeighbourhoodGoing(delta);
     this.keepMusicGoing();
-    // SCREAM-145: in Story the neighbourhood's name sits after the day, since the truck can change map.
-    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${currentMap().name}` : ''));
+    // SCREAM-237 (PO, November 15: "Street instead"): in Story the street the truck is on sits after the day
+    // (the neighbourhood's name sat there, SCREAM-145).
+    this.clockText.setText(formatClock(this.evening.clockMinutes) + this.dayLabel + (this.dayLabel ? `  ${this.evening.street}` : ''));
     this.placeDebugText();
     const sale = this.evening.sale;
     const warn =
       !!sale && sale.phase !== 'over' && sale.patienceLeftSeconds(this.evening.nowMs) <= PATIENCE_WARNING_SECONDS;
-    this.patienceWarning.setVisible(warn).setX(this.leftOfMoneyAndGauge() - 16);
+    this.patienceWarning.setVisible(warn).setX(this.leftOfMoney() - 16);
     this.drawFuel(delta);
-    this.soldOutText.setX(this.leftOfMoneyAndGauge() - 6);
+    this.soldOutText.setX(this.leftOfMoney() - 6);
   }
 
   /**
@@ -269,7 +259,7 @@ export class HudScene extends Phaser.Scene {
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: truck.x,
       y: truck.y,
-      radius: MUSIC_RING_RADIUS,
+      radius: this.evening.spec.musicRadius,
       open: serving && this.evening.acceptingCustomers,
       patience: serving ? SERVING_PATIENCE : 1,
     });
@@ -291,37 +281,10 @@ export class HudScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * SCREAM-121 (PO, November 2): an old car's gas gauge, a dark fan with E, 1/2 and F and a
-   * pale needle (the PO's reference photo). SCREAM-219: at the top right, left of the money.
-   */
+  /** SCREAM-121, SCREAM-238: the gas dial, bottom left (drawn by ui/fuelDial, SCREAM-276). */
   private buildFuelDial(): void {
-    const { radius, from, to } = FUEL_DIAL;
-    const rad = Phaser.Math.DegToRad;
-    const at = (deg: number, r: number) => ({ x: Math.cos(rad(deg)) * r, y: Math.sin(rad(deg)) * r });
-    this.dialFace = this.add.graphics();
-    const face = this.dialFace;
-    face.fillStyle(DIAL_FACE, 1).slice(0, 0, radius, rad(from), rad(to), false).fillPath();
-    // A lighter rim inside the dark edge, like the pressed metal plate.
-    face.lineStyle(2, 0x6e645d, 1).beginPath().arc(0, 0, radius - 3, rad(from + 2), rad(to - 2), false).strokePath();
-    // "E . 1/2 . F" round the top, like the reference photo: dots at a quarter and three quarters.
-    const labelR = radius - 13;
-    face.fillStyle(DIAL_INK, 1);
-    for (const f of [0.25, 0.75]) {
-      const p = at(from + (to - from) * f, labelR);
-      face.fillRect(Math.round(p.x) - 2, Math.round(p.y) - 2, 4, 4);
-    }
-    const label = (deg: number, text: string, size: number, font = 'monospace') => {
-      const p = at(deg, labelR);
-      return this.add
-        .text(p.x, p.y, text, { fontFamily: font, fontSize: `${size}px`, fontStyle: 'bold', color: DIAL_INK_CSS })
-        .setOrigin(0.5);
-    };
-    this.emptyLabel = label(from + 10, 'E', 16);
-    const half = label(270, '½', 15, 'Arial, sans-serif');
-    const full = label(to - 10, 'F', 16);
-    this.needle = this.add.graphics();
-    this.fuelGauge = this.add.container(0, FUEL_DIAL.pivotY, [face, this.emptyLabel, half, full, this.needle]);
+    this.dial = buildFuelDial(this, FUEL_DIAL_SPOT.x, FUEL_DIAL_SPOT.driveY);
+    this.fuelGauge = this.dial.container;
   }
 
   /**
@@ -330,27 +293,19 @@ export class HudScene extends Phaser.Scene {
    * the plate's edge flashes red when empty.
    */
   private drawFuel(delta = 16): void {
-    const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump);
+    // SCREAM-276 (PO, November 12): inside the truck too, in Story: "Same as the roads dial. Except it
+    // doesn't wobble under 1/4 full like on the road. Similar spot in the bottom left corner."
+    const inHub = !!getStory(this) && this.scene.isActive(SceneKeys.Truck);
+    const show = this.scene.isActive(SceneKeys.Drive) || this.scene.isActive(SceneKeys.Pump) || inHub;
     this.fuelGauge.setVisible(show);
     if (!show) return;
+    this.fuelGauge.setY(this.scene.isActive(SceneKeys.Pump) ? FUEL_DIAL_SPOT.pumpY : inHub ? FUEL_DIAL_SPOT.hubY : FUEL_DIAL_SPOT.driveY);
     const fuel = this.evening.fuel;
-    this.fuelNeedle = this.wobble.update(fuel, this.time.now, delta);
-    const { radius, from, to } = FUEL_DIAL;
-    const rad = Phaser.Math.DegToRad;
+    this.fuelNeedle = inHub ? fuel : this.wobble.update(fuel, this.time.now, delta);
     // SCREAM-208: faster and bolder while the tow message shows.
     const flash = fuel <= 0 && Math.floor(this.time.now / (this.towing ? 200 : 300)) % 2 === 0;
     this.gaugeRed = flash;
-    this.emptyLabel.setColor(fuel <= FUEL_LOW ? DIAL_LOW_CSS : DIAL_INK_CSS);
-    const angle = rad(from + (to - from) * this.fuelNeedle);
-    const tipX = Math.cos(angle) * (radius - 6);
-    const tipY = Math.sin(angle) * (radius - 6);
-    const g = this.needle.clear();
-    g.lineStyle(flash && this.towing ? 4 : 2, flash ? 0xff5252 : DIAL_EDGE, 1).beginPath().arc(0, 0, radius, rad(from), rad(to), false);
-    g.lineTo(0, 0).closePath().strokePath();
-    g.lineStyle(5, DIAL_EDGE, 1).lineBetween(0, 0, tipX, tipY);
-    g.lineStyle(3, DIAL_INK, 1).lineBetween(0, 0, tipX, tipY);
-    g.fillStyle(DIAL_EDGE, 1).fillCircle(0, 0, 6);
-    g.fillStyle(DIAL_INK, 1).fillCircle(0, 0, 4);
+    drawFuelNeedle(this.dial, fuel, this.fuelNeedle, flash, this.towing);
   }
 
   private refresh(): void {
@@ -358,17 +313,14 @@ export class HudScene extends Phaser.Scene {
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
-    // SCREAM-219: the gauge follows the money's left edge (the amount's width changes).
-    this.fuelGauge.setX(this.moneyText.x - this.moneyText.width - FUEL_DIAL_GAP - FUEL_DIAL.radius);
     this.soldOutText
       .setVisible(this.evening.isSoldOut)
-      .setX(this.leftOfMoneyAndGauge() - 6);
+      .setX(this.leftOfMoney() - 6);
   }
 
-  /** SCREAM-219: the left edge of the top right's money and gas gauge (the gauge only while it shows). */
-  private leftOfMoneyAndGauge(): number {
-    const moneyLeft = this.moneyText.x - this.moneyText.width;
-    return this.fuelGauge.visible ? this.fuelGauge.x - FUEL_DIAL.radius - 8 : moneyLeft - 14;
+  /** Where SOLD OUT and the "!" line up: just left of the money (SCREAM-238: the gauge no longer sits there). */
+  private leftOfMoney(): number {
+    return this.moneyText.x - this.moneyText.width - 14;
   }
 
   /** SCREAM-208: stops the truck, shows "Needed a tow home." (the gauge flashes meanwhile), then `then`. */

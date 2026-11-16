@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   // SCREAM-175: these suites play as a player who has finished the tutorial (every mode unlocked).
-  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); } catch {} });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -46,15 +46,17 @@ const { chromium } = require('playwright');
   await press('+', 6); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
-  check('On the road: the gauge shows in the top bar', await sc('Hud', 's.fuelGauge.visible'), true);
-  // SCREAM-219 (PO, November 9): top right, just left of the money, clear of it.
-  const gaugeAt = () => sc('Hud', '(() => { const g = s.fuelGauge, m = s.moneyText; const right = g.x + 46, moneyLeft = m.x - m.width; return right < moneyLeft && moneyLeft - right <= 20 && g.x > s.scale.width / 2; })()');
-  check('The gauge sits at the top right, just left of the money (SCREAM-219)', await gaugeAt(), true);
+  check('On the road: the gauge shows', await sc('Hud', 's.fuelGauge.visible'), true);
+  // SCREAM-238 (PO, November 10; replaces SCREAM-219): bigger, at the bottom left, above the controls hint.
+  const gaugeAt = () => sc('Hud', '(() => { const g = s.fuelGauge; return g.x < s.scale.width / 4 && g.y > s.scale.height * 0.8 && g.y <= 506; })()');
+  check('The gauge sits at the bottom left, above the controls hint (SCREAM-238)', await gaugeAt(), true);
+  check('...and it is bigger than the old one (E and F are more than 80 px apart; they were 57)', await sc('Hud', 's.dial.emptyLabel.x < 0 && Math.abs(s.dial.emptyLabel.x) * 2 > 80'), true);
+  check('...the park brake sign starts right of it, not under it', await sc('Drive', 's.parkLabel.x >= s.scene.get("Hud").fuelGauge.x + 68'), true);
   await ev('(e.changeMoney(123400, "test", false), true)'); await wait(150);
-  check('...and moves over when the cash gets wider ($1,000s)', await gaugeAt(), true);
+  check('...and it stays put when the cash gets wider ($1,000s)', await gaugeAt(), true);
   await ev('(e.changeMoney(-123400, "test", false), true)'); await wait(150);
   await ev('(window.__q = e.coolerSlots.map(s => s.quantity), e.coolerSlots.forEach(s => s.quantity = 0), e.emit("cooler-changed"), true)'); await wait(150);
-  check('...SOLD OUT sits left of the gauge, not on it', await sc('Hud', 's.soldOutText.visible && s.soldOutText.x < s.fuelGauge.x - 46'), true);
+  check('...SOLD OUT sits just left of the money', await sc('Hud', '(() => { const m = s.moneyText, left = m.x - m.width; return s.soldOutText.visible && s.soldOutText.x < left && left - s.soldOutText.x <= 30; })()'), true);
   await page.screenshot({ path: outDir + '/fuel_gauge_sold_out.png' });
   await ev('(window.__q.forEach((q, i) => e.coolerSlots[i].quantity = q), e.emit("cooler-changed"), true)'); await wait(150);
   await page.screenshot({ path: outDir + '/fuel_hud.png' });
@@ -116,9 +118,11 @@ const { chromium } = require('playwright');
   check('Stopped in the bay: the pump opens', await until(async () => (await scenes()) === 'Pump,Hud'), true);
   check('The pump screen shows the pump picture (SCREAM-111)', await sc('Pump', "(p => p ? p.texture.key + ':' + p.frame.name : 'none')(s.children.getByName('pump'))"), 'map-atlas:pump');
   await page.screenshot({ path: outDir + '/fuel_pump.png' });
+  check('SCREAM-316: Quick play keeps the pump buttons where they were', await sc('Pump', '[s.payButton.x, s.payButton.y, s.driveOffButton.x, s.driveOffButton.y].join()'), '470,478,760,478');
   const clock0 = await ev('e.clockMinutes'); await wait(800);
   check('The clock keeps running at the pump', (await ev('e.clockMinutes')) > clock0, true);
   check('The gauge shows at the pump too', await sc('Hud', 's.fuelGauge.visible'), true);
+  check('...in the bottom left corner, below the pump (SCREAM-238)', await sc('Hud', '(() => { const g = s.fuelGauge, pump = s.scene.get("Pump").children.getByName("pump").getBounds(); return g.y - 72 >= pump.bottom - 14 && g.y <= s.scale.height && g.x - 72 >= 0; })()'), true);
   check('The pump opens at $0.00 (SCREAM-184)', (await sc('Pump', 's.amount')) + ' ' + (await sc('Pump', 's.payButton.visible')), '0 false');
   await press('ArrowUp', 10);
   check('Empty tank, $44 cash: up to $30, a full tank', await sc('Pump', 's.amount'), 3000);
@@ -223,7 +227,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   // SCREAM-205: a new Story asks about the uncle (O: on my own), then the intro.
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(300); await press('o'); await wait(300); await press('Enter'); await wait(300);
-  check('Story day 1: $50 and a quarter tank (SCREAM-205)', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '5000 0.25');
+  check('Story day 1: $25 and a quarter tank (SCREAM-205)', (await ev('e.moneyCents')) + ' ' + (await ev('e.fuel')), '2500 0.25');
   await press('+', 2); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
@@ -235,16 +239,17 @@ const { chromium } = require('playwright');
   const tank = await ev('e.fuel');
   near('...$20 is 2/3 of a tank: now 11/12', Math.round(tank * 1000) / 1000, 0.916, 0.917);
   await shift(3); await wait(300);
-  check('End of day 1: Gas line on the end-of-day screen', /Gas/.test(await texts('DayEnd')) && /-\$20\.00/.test(await texts('DayEnd')), true);
+  // SCREAM-268: on your own, the first pump is the uncle's $20, so nothing is spent on gas.
+  check('End of day 1: Gas line on the end-of-day screen, $0.00 (the uncle paid, SCREAM-268)', /Gas/.test(await texts('DayEnd')) && !/-\$20\.00/.test(await texts('DayEnd')), true);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('icemachine.story.v2')));
-  check("The save keeps the tank and the run's gas", Math.abs(saved.fuel - tank) < 1e-9 && saved.totals.gasCents === 2000, true);
+  check("The save keeps the tank and the run's gas", Math.abs(saved.fuel - tank) < 1e-9 && saved.totals.gasCents === 0 && saved.uncleGasUsed === true, true);
   await press('Enter'); await wait(300);
   check('Day 2 starts with what was left in the tank', Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
   // Restart this evening (pause menu): back to how tonight started, tank included.
   await ev('(e.burnFuel(32100 * 0.3), true)');
-  await press('Escape'); await wait(200); await press('ArrowDown'); await press('Enter'); await wait(150); await press('y'); await wait(400);
+  await press('Escape'); await wait(200); await press('ArrowDown', 2); await press('Enter'); await wait(150); await press('y'); await wait(400);
   check("Restarting the evening puts back tonight's starting tank", Math.abs((await ev('e.fuel')) - tank) < 1e-9, true);
-  // SCREAM-119 (PO): running out of gas ends the day; the next day starts with 1/6 of a tank.
+  // SCREAM-119 (PO): running out of gas ends the day; SCREAM-204 (PO, November 12): the next day starts with 1/3 of a tank (it was 1/6).
   await press('ArrowRight'); await press('Enter'); await wait(400);
   await ev('(e.residents.hearingOff = true, true)');
   // SCREAM-208: the tank only runs dry on the road, so drive off first.
@@ -253,9 +258,9 @@ const { chromium } = require('playwright');
   check('Story: out of gas shows "Needed a tow home." first too', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text')), 'Drive,Hud Needed a tow home.');
   await until(async () => (await scenes()).startsWith('DayEnd'));
   const dayEnd = await texts('DayEnd');
-  check('Story: out of gas ends the day, and says tomorrow starts with 1/6 of a tank', /ran out of gas/.test(dayEnd) && /1\/6 of a tank/.test(dayEnd), true);
+  check('Story: out of gas ends the day, and says tomorrow starts with 1/3 of a tank (SCREAM-204)', /ran out of gas/.test(dayEnd) && /1\/3 of a tank/.test(dayEnd), true);
   await press('Enter'); await wait(300);
-  check('...and the next day starts with 1/6 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.167);
+  check('...and the next day starts with 1/3 of a tank', Math.round(await ev("e.fuel") * 1000) / 1000, 0.333);
   // A save from before fuel: a quarter tank.
   await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('icemachine.story.v2')); d.day = 2; localStorage.setItem('icemachine.story.v2', JSON.stringify(d)); });
   // ...and from before SCREAM-129: three slots, any flavours (cookies in the third).
@@ -266,7 +271,7 @@ const { chromium } = require('playwright');
   await page.waitForFunction(() => window.__game && window.__game.scene.getScenes(true).length > 0);
   await page.click('canvas'); await press('ArrowDown'); await press('Enter'); await wait(400);
   check('An old save (no fuel in it) continues with a quarter tank', await ev('e.fuel'), 0.25);
-  check('An old 3-slot save (SCREAM-129): stock and prices kept, by flavour', await ev("e.slots.map(s => s.flavour + ':' + s.quantity + ':' + s.priceCents).join(' ')"), 'eclair:3:225 spongepop:0:250 explorer:0:250 cookie:2:325');
+  check('An old 3-slot save (SCREAM-129): stock and prices kept, by flavour', await ev("e.slots.map(s => s.flavour + ':' + s.quantity + ':' + s.priceCents).join(' ')"), 'eclair:3:225 spongepop:0:250 explorer:0:250 cookie:2:325 louball:0:300 drumcone:0:300');
 
   console.log(`fuel: ${pass} passed, ${fail} failed; errors: ${errors.length ? errors.join(' / ') : 'none'}`);
   await browser.close();

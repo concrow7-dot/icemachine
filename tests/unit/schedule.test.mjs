@@ -5,8 +5,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { weekdayOf, weekdayName, kindFor, buysTonight, buyerKind, scheduleFactor } = await game('state/Residents');
-const { SCHEDULE_TICKED_FACTOR, SCHEDULE_UNTICKED_FACTOR } = await game('config/tuning');
+const { weekdayOf, weekdayName, kindFor, buysTonight, buyerKind, scheduleFactor, Residents } = await game('state/Residents');
+const tuning = await game('config/tuning');
+const { SCHEDULE_TICKED_FACTOR, SCHEDULE_UNTICKED_FACTOR } = tuning;
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { RESIDENTS } = await game('config/residents');
 
@@ -18,10 +19,10 @@ const zero = { ...base, likelihood: 0, days: [0] };
 const story = (day) => ({ day, seed: 99 });
 const never = () => { throw new Error('Story with ticks must not roll the dice'); };
 
-test('Story starts on a Monday: Day 1 Monday ... Day 5 Friday, Day 8 Monday again', () => {
+test('Story starts on a Monday: Day 1 Monday ... Day 5 Friday; SCREAM-322: Day 6 Monday again, Day 10 Friday (no weekend)', () => {
   assert.deepEqual([1, 2, 3, 4, 5].map(weekdayName), ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
-  assert.equal(weekdayOf(8), 0);
-  assert.equal(weekdayName(14), 'Sunday');
+  assert.deepEqual([6, 7, 8, 9, 10].map(weekdayName), ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  assert.equal(weekdayOf(6), 0);
 });
 
 test('PO: ticked days a bit likelier, other days much less likely (Mon and Thu ticked)', () => {
@@ -70,4 +71,20 @@ test('Both maps have ticks for everyone, from the Residents sheet', () => {
 test('Each weekday favours a different crowd (decision 057: neighbourhoods differ through the week)', () => {
   const crowd = (d) => TUTORIAL_RESIDENTS.filter((r) => scheduleFactor(r, story(d)) > 1).map((r) => r.id).join();
   assert.equal(new Set([1, 2, 3, 4, 5].map(crowd)).size, 5);
+});
+
+test('SCREAM-329: Speaker with Heavier Bass: the some-days people count 10% likelier; every-day regulars and 0% are unchanged', () => {
+  const { BASS_SOMETIMES_FACTOR } = tuning;
+  assert.equal(BASS_SOMETIMES_FACTOR, 1.1);
+  const people = new Residents([monThu, everyDay, zero], () => 0.99, undefined, story(1));
+  const before = [monThu, everyDay, zero].map((r) => people.likelihoodNow(r));
+  assert.deepEqual(before, [0.3 * SCHEDULE_TICKED_FACTOR, 0.15 * SCHEDULE_TICKED_FACTOR, 0]);
+  people.sometimesFactor = BASS_SOMETIMES_FACTOR;
+  const after = [monThu, everyDay, zero].map((r) => people.likelihoodNow(r));
+  assert.ok(Math.abs(after[0] - before[0] * 1.1) < 1e-12, 'Mon and Thu ticked: a some-days person');
+  assert.deepEqual(after.slice(1), before.slice(1));
+  // Never more than certain.
+  const sure = new Residents([{ ...monThu, likelihood: 0.79 }], () => 0.99, undefined, story(1));
+  sure.sometimesFactor = BASS_SOMETIMES_FACTOR;
+  assert.equal(sure.likelihoodNow({ ...monThu, likelihood: 0.79 }), 1);
 });

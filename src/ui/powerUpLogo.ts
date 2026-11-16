@@ -1,0 +1,752 @@
+import * as Phaser from 'phaser';
+import type { PowerUpLogo } from '../config/powerUps';
+import { FLAVOURS } from '../config/flavours';
+import { FLAVOUR_FRAME_H, FLAVOUR_ICONS_KEY, flavourFrame, MARKER_FONT } from './flavourArt';
+
+// SCREAM-296: the picture on a cork board note. Engineering's placeholders, drawn in code, one
+// per tree (a wheel, a speaker, a coin), until the PO draws a logo for each power-up.
+// SCREAM-122: the Temporary Gas Can has its own: a red can with a black spout, in the hub's
+// cartoon style (flat colours, thick dark outlines). An original design: no brand, no label text.
+
+const INK = 0x2b1d10;
+
+/**
+ * Draws a tree's logo centred on (0, 0) inside `into`, about `size` px across.
+ * `grey` is the not-yet-bought look: no colour, and fainter.
+ */
+export function addPowerUpLogo(
+  scene: Phaser.Scene,
+  into: Phaser.GameObjects.Container,
+  tree: PowerUpLogo,
+  size: number,
+  grey: boolean,
+): void {
+  const g = scene.add.graphics();
+  into.add(g);
+  const r = size / 2;
+  const line = Math.max(2, size / 14);
+  const colour = (c: number) => (grey ? 0x9a9a9a : c);
+  g.setAlpha(grey ? 0.75 : 1);
+  const flavour = FLAVOURS.find((f) => f.id === tree);
+  if (flavour) {
+    // SCREAM-271: an ice cream's own picture (the loading screen's caller loads the sheet).
+    // Whole-number scale, so the pixel art stays sharp.
+    const picture = scene.add.image(0, -size * 0.08, FLAVOUR_ICONS_KEY, flavourFrame(flavour.id)).setScale(Math.max(1, Math.round(size / FLAVOUR_FRAME_H)));
+    if (grey) picture.setTint(0x8f8f8f).setAlpha(0.6);
+    into.add(picture);
+  } else if (tree === 'question') {
+    // SCREAM-271: an ice cream the PO hasn't decided yet.
+    const mark = scene.add
+      .text(0, 0, '?', { fontFamily: MARKER_FONT, fontSize: `${Math.round(size * 1.05)}px`, color: grey ? '#8a8a8a' : '#2b1d10' })
+      .setOrigin(0.5);
+    mark.setAlpha(grey ? 0.75 : 1);
+    into.add(mark);
+  } else if (tree === 'tip-jar') {
+    // SCREAM-303: the PO's sketch (Personal Notes, November 14): a jar with TIPS on it and a plus
+    // at its top right. Drawn like the gas can: flat colour, a thick dark outline.
+    const ink = grey ? 0x6f6f6f : INK;
+    const w = size * 0.56;
+    const h = size * 0.8;
+    const left = -w / 2 - size * 0.08;
+    const top = -h / 2 + size * 0.08;
+    g.fillStyle(grey ? 0xdcdcdc : 0xd8f1ff, 1).fillRoundedRect(left, top, w, h, size * 0.08);
+    g.lineStyle(line, ink, 1).strokeRoundedRect(left, top, w, h, size * 0.08);
+    g.fillStyle(grey ? 0xc4c4c4 : 0xa9dcf7, 1).fillEllipse(left + w / 2, top, w, size * 0.2);
+    g.lineStyle(line, ink, 1).strokeEllipse(left + w / 2, top, w, size * 0.2);
+    const word = scene.add
+      .text(left + w / 2, top + h * 0.55, 'TIPS', { fontFamily: MARKER_FONT, fontSize: `${Math.max(7, Math.round(size * 0.21))}px`, color: grey ? '#6f6f6f' : '#2b1d10' })
+      .setOrigin(0.5);
+    into.add(word);
+    // The plus, top right.
+    const px = left + w + size * 0.12;
+    const py = top - size * 0.02;
+    const arm = size * 0.13;
+    g.lineStyle(Math.max(3, size / 9), grey ? 0x8a8a8a : 0x2e9e44, 1);
+    g.lineBetween(px - arm, py, px + arm, py).lineBetween(px, py - arm, px, py + arm);
+  } else if (tree === 'gas-can') {
+    drawGasCan(g, size, grey);
+  } else if (tree === 'gitty-up') {
+    drawGittyUp(g, size, grey);
+  } else if (tree === 'trot') {
+    drawTrot(g, size, grey);
+  } else if (tree === 'truck') {
+    // A wheel: tyre, hubcap and five spokes.
+    g.fillStyle(colour(0x33302c), 1).fillCircle(0, 0, r);
+    g.fillStyle(grey ? 0xd0d0d0 : 0xcfd6dc, 1).fillCircle(0, 0, r * 0.58);
+    g.lineStyle(line, colour(0x33302c), 1);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 - Math.PI / 2;
+      g.lineBetween(0, 0, Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58);
+    }
+    g.fillStyle(colour(0xd9622b), 1).fillCircle(0, 0, r * 0.18);
+  } else if (tree === 'train-off-tracks') {
+    drawTrainOffTracks(g, size, grey);
+  } else if (tree === 'brake-disc') {
+    drawBrakeDisc(g, size, grey);
+  } else if (tree === 'steam-engine') {
+    drawSteamEngine(g, size, grey);
+  } else if (tree === 'back-it-up') {
+    drawBackItUp(g, size, grey);
+  } else if (tree === 'more-junk') {
+    drawMoreJunk(g, size, grey);
+  } else if (tree === 'mirror') {
+    drawMirror(g, size, grey);
+  } else if (tree === 'sneaker') {
+    drawSneaker(g, size, grey);
+  } else if (tree === 'calculator') {
+    drawCalculator(g, size, grey);
+  } else if (tree === 'speaker') {
+    drawSpeakerHorn(g, size, grey);
+  } else if (tree === 'bass-guitar') {
+    drawBassGuitar(g, size, grey);
+  } else if (tree === 'notepad') {
+    drawNotepad(g, size, grey);
+  } else if (tree === 'tablet') {
+    drawTablet(g, size, grey);
+  } else {
+    // A coin with a dollar sign.
+    g.fillStyle(colour(0xb8860b), 1).fillCircle(0, 0, r);
+    g.fillStyle(grey ? 0xd0d0d0 : 0xffd84a, 1).fillCircle(0, 0, r * 0.82);
+    const dollar = scene.add
+      .text(0, r * 0.06, '$', { fontFamily: MARKER_FONT, fontSize: `${Math.round(size * 0.72)}px`, color: grey ? '#8a8a8a' : '#7a5200' })
+      .setOrigin(0.5);
+    dollar.setAlpha(grey ? 0.75 : 1);
+    into.add(dollar);
+  }
+}
+
+/**
+ * SCREAM-122: the gas can, centred on (0, 0), about `size` px tall. The PO's reference was a
+ * photo of a red plastic can: square body, a handle on top, a black spout up to the left, a
+ * yellow label. Drawn like the truck's inside: flat colour, a thick dark outline, one highlight.
+ */
+export function drawGasCan(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const red = grey ? 0xa9a9a9 : 0xd8332a;
+  const redDark = grey ? 0x8f8f8f : 0xa8231c;
+  const yellow = grey ? 0xcfcfcf : 0xffd84a;
+  const black = grey ? 0x7d7d7d : 0x2a2622;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  // The spout: a black tube up and to the left, with its collar where it meets the can.
+  poly(black, [[30, 34], [14, 6], [24, 1], [42, 30]]);
+  poly(black, [[24, 30], [48, 24], [52, 36], [28, 42]]);
+  // The body, with the handle's block on top at the right.
+  poly(red, [[54, 36], [59, 14], [87, 14], [93, 36]]);
+  poly(red, [[20, 40], [26, 34], [90, 34], [96, 42], [96, 90], [90, 97], [26, 97], [20, 90]]);
+  // The grip under the handle (a darker hollow).
+  g.fillStyle(redDark, 1).fillPoints([P(66, 21), P(81, 21), P(84, 31), P(63, 31)], true);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokePoints([P(66, 21), P(81, 21), P(84, 31), P(63, 31)], true, true);
+  // The shaded right side and a highlight on the left.
+  g.fillStyle(redDark, 1).fillPoints([P(82, 40), P(92, 44), P(92, 88), P(82, 92)], true);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.35).fillRect((26 - 50) * u, (44 - 50) * u, 4 * u, 22 * u);
+  // The label: yellow, with a dark drop on it (no words).
+  poly(yellow, [[34, 54], [66, 54], [66, 88], [34, 88]]);
+  g.fillStyle(ink, 1).fillCircle(0, (76 - 50) * u, 6 * u);
+  g.fillTriangle((44 - 50) * u, (74 - 50) * u, (56 - 50) * u, (74 - 50) * u, 0, (60 - 50) * u);
+}
+
+/**
+ * SCREAM-309: Gitty Up, from the PO's sketch (Personal Notes, November 14): a box truck pulling
+ * away to the left, with a puff of exhaust behind it. Drawn like the gas can, on a 100 x 100 grid.
+ */
+export function drawGittyUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const circle = (colour: number, x: number, y: number, r: number) => {
+    g.fillStyle(colour, 1).fillCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(line, ink, 1).strokeCircle((x - 50) * u, (y - 50) * u, r * u);
+  };
+  // The puff of exhaust behind the truck.
+  const puff = grey ? 0xd6d6d6 : 0xe6e2da;
+  circle(puff, 86, 68, 8);
+  circle(puff, 92, 56, 7);
+  circle(puff, 82, 54, 7);
+  g.lineStyle(line, ink, 1).lineBetween((70 - 50) * u, (70 - 50) * u, (78 - 50) * u, (66 - 50) * u);
+  // The ground.
+  g.lineStyle(line, ink, 1).lineBetween((2 - 50) * u, (88 - 50) * u, (74 - 50) * u, (88 - 50) * u);
+  // The truck: a low cab at the front (left) with a sloping windscreen, then the box. The PO
+  // (November 14, 02:36): leaning back more, "like a big truck will do": the body tilts back on
+  // its rear wheel as it pulls away; the wheels stay on the ground.
+  const tilt = (9 * Math.PI) / 180;
+  const [cx, cy] = [58, 78];
+  const T = (x: number, y: number): [number, number] => [
+    cx + (x - cx) * Math.cos(tilt) - (y - cy) * Math.sin(tilt),
+    cy + (x - cx) * Math.sin(tilt) + (y - cy) * Math.cos(tilt),
+  ];
+  const tilted = (colour: number, pts: [number, number][]) => poly(colour, pts.map(([x, y]) => T(x, y)));
+  tilted(grey ? 0xeeeeee : 0xfff8ec, [[4, 72], [4, 54], [16, 50], [24, 30], [72, 26], [72, 72]]);
+  const stripe = [T(30, 54), T(72, 54), T(72, 61), T(30, 61)].map(([x, y]) => P(x, y));
+  g.fillStyle(grey ? 0xc4c4c4 : 0xf29bbd, 1).fillPoints(stripe, true);
+  const [d0, d1] = [T(30, 30), T(30, 72)];
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween((d0[0] - 50) * u, (d0[1] - 50) * u, (d1[0] - 50) * u, (d1[1] - 50) * u);
+  tilted(grey ? 0xcfcfcf : 0x9fd8f2, [[17, 48], [25, 34], [30, 34], [30, 48]]);
+  // The wheels.
+  const tyre = grey ? 0x7d7d7d : 0x2a2622;
+  const hub = grey ? 0xd0d0d0 : 0xcfd6dc;
+  for (const x of [20, 58]) {
+    circle(tyre, x, 78, 10);
+    g.fillStyle(hub, 1).fillCircle((x - 50) * u, (78 - 50) * u, 4 * u);
+  }
+}
+
+/**
+ * SCREAM-310: Trot. The PO (November 14, 03:13): "I want to change the idea to a horse drawn
+ * carriage." A small carriage (a coach body on a big and a small wheel) pulled to the right by the
+ * horse from his sketches ("Trot horse 2" in Personal Notes). Engineering's own drawing, in the gas
+ * can's style, on a 100 x 100 grid. (Before: someone with their feet up, then a horse alone.)
+ */
+export function drawTrot(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const wheel = (x: number, y: number, r: number) => {
+    g.fillStyle(grey ? 0xe2e2e2 : 0xf3e2b8, 1).fillCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(line, ink, 1).strokeCircle((x - 50) * u, (y - 50) * u, r * u);
+    g.lineStyle(Math.max(1, 2 * u), ink, 1);
+    for (let k = 0; k < 4; k++) {
+      const a = (k / 4) * Math.PI + 0.4;
+      g.lineBetween((x - 50 - Math.cos(a) * r) * u, (y - 50 - Math.sin(a) * r) * u, (x - 50 + Math.cos(a) * r) * u, (y - 50 + Math.sin(a) * r) * u);
+    }
+    g.fillStyle(ink, 1).fillCircle((x - 50) * u, (y - 50) * u, 2.5 * u);
+  };
+  // The shaft from the carriage to the horse, and the reins from the driver's seat.
+  g.lineStyle(line, ink, 1).lineBetween((36 - 50) * u, (68 - 50) * u, (68 - 50) * u, (66 - 50) * u);
+  g.lineStyle(Math.max(1, 2 * u), ink, 1).lineBetween((40 - 50) * u, (44 - 50) * u, (90 - 50) * u, (52 - 50) * u);
+  // The carriage: a coach body with a roof and a window, the driver's seat in front.
+  poly(grey ? 0xb5b5b5 : 0xc23b2e, [[4, 44], [34, 44], [34, 60], [30, 68], [8, 68], [4, 60]]);
+  poly(grey ? 0x8f8f8f : 0x7d2219, [[2, 38], [36, 38], [34, 44], [4, 44]]);
+  poly(grey ? 0xdcdcdc : 0xd8f1ff, [[10, 48], [22, 48], [22, 58], [10, 58]]);
+  poly(grey ? 0x8f8f8f : 0x7d2219, [[34, 50], [42, 50], [42, 56], [34, 56]]);
+  wheel(13, 76, 13);
+  wheel(34, 80, 9);
+  // The horse, smaller, in front.
+  drawHorse(g, size * 0.58, grey, 22 * u, 16 * u, line * 0.75);
+  g.y -= 13 * u; // the picture sits low on its grid: centre it on the note
+}
+
+/**
+ * SCREAM-310: the carriage's horse, centred on (ox, oy), outlined `line` thick. The PO (03:13):
+ * "I dont like the horse so redo that": one smooth shape (body, neck and head together) on four
+ * tapered legs at a trot, facing right, not the jointed horse from before.
+ */
+function drawHorse(g: Phaser.GameObjects.Graphics, size: number, grey: boolean, ox: number, oy: number, line: number): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const P = (x: number, y: number) => new Phaser.Math.Vector2(ox + (x - 50) * u, oy + (y - 50) * u);
+  const shape = (colour: number, v: Phaser.Math.Vector2[]) => {
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  const poly = (colour: number, pts: [number, number][]) => shape(colour, pts.map(([x, y]) => P(x, y)));
+  const coat = grey ? 0xb5b5b5 : 0xb7743f;
+  const coatFar = grey ? 0x9a9a9a : 0x8f5a2f;
+  const hair = grey ? 0x7d7d7d : 0x4a2c17;
+  const hoof = grey ? 0x6f6f6f : 0x2a2622;
+  // A leg: a tapered shape along its joints, 13 wide at the top and 8 at the hoof.
+  const leg = (colour: number, pts: [number, number][]) => {
+    const c = pts.map(([x, y]) => P(x, y));
+    const left: Phaser.Math.Vector2[] = [];
+    const right: Phaser.Math.Vector2[] = [];
+    c.forEach((p, k) => {
+      const a = c[Math.max(0, k - 1)];
+      const b = c[Math.min(c.length - 1, k + 1)];
+      const n = new Phaser.Math.Vector2(-(b.y - a.y), b.x - a.x).normalize();
+      const w = ((13 - (5 * k) / (c.length - 1)) * u) / 2;
+      left.push(new Phaser.Math.Vector2(p.x + n.x * w, p.y + n.y * w));
+      right.push(new Phaser.Math.Vector2(p.x - n.x * w, p.y - n.y * w));
+    });
+    shape(colour, [...left, ...right.reverse()]);
+    const end = c[c.length - 1];
+    g.fillStyle(hoof, 1).fillCircle(end.x, end.y, 3.6 * u);
+  };
+  // The far legs (darker), then the near ones; the body covers their tops.
+  leg(coatFar, [[64, 56], [61, 72], [56, 87]]);
+  leg(coatFar, [[34, 54], [43, 70], [40, 87]]);
+  leg(coat, [[28, 52], [21, 68], [11, 82]]);
+  leg(coat, [[68, 54], [81, 61], [83, 75]]);
+  // The tail, flowing back.
+  poly(hair, [[23, 41], [9, 43], [2, 56], [9, 59], [15, 50], [25, 50]]);
+  // The body, neck and head in one shape.
+  poly(coat, [
+    [70, 12], [72, 4], [77, 11], [88, 20], [94, 28], [90, 34], [80, 29], [76, 31], [75, 44], [75, 55],
+    [64, 62], [40, 61], [25, 58], [20, 48], [24, 40], [40, 37], [56, 38], [63, 26],
+  ]);
+  // The mane and the eye.
+  poly(hair, [[59, 30], [68, 12], [73, 12], [66, 31]]);
+  g.fillStyle(ink, 1).fillCircle(ox + (82 - 50) * u, oy + (19 - 50) * u, 3 * u);
+}
+
+/**
+ * SCREAM-81: Upgrade Speaker. The PO's reference was a photo of a grey horn loudspeaker on a U
+ * bracket. An original drawing in the gas can's style (flat colour, thick dark outline, one
+ * highlight): the driver at the back, the horn flaring to the right, the dark mouth with its
+ * plug, the bracket underneath. No brand, no label.
+ */
+export function drawSpeakerHorn(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xbdbdbd : 0xc9d1d8;
+  const shade = grey ? 0x9e9e9e : 0x98a4ae;
+  const inside = grey ? 0x7d7d7d : 0x4d5761;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, ink, 1).strokePoints(v, true, true);
+  };
+  // The bracket: a U under the horn.
+  poly(shade, [[24, 58], [24, 92], [62, 92], [62, 58], [55, 58], [55, 85], [31, 85], [31, 58]]);
+  // The driver: a short drum at the back.
+  poly(body, [[6, 36], [32, 36], [32, 64], [6, 64]]);
+  g.fillStyle(shade, 1).fillEllipse((6 - 50) * u, 0, 8 * u, 28 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((6 - 50) * u, 0, 8 * u, 28 * u);
+  // The horn, flaring to the right, with a highlight along its top.
+  poly(body, [[30, 34], [76, 8], [76, 92], [30, 66]]);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.45).fillPoints([P(36, 37), P(70, 18), P(70, 24), P(36, 42)], true);
+  g.fillStyle(shade, 1).fillPoints([P(36, 58), P(70, 76), P(70, 84), P(36, 63)], true);
+  // The mouth: a rim, the dark inside and the plug in the middle.
+  g.fillStyle(body, 1).fillEllipse((78 - 50) * u, 0, 18 * u, 86 * u);
+  g.lineStyle(line, ink, 1).strokeEllipse((78 - 50) * u, 0, 18 * u, 86 * u);
+  g.fillStyle(inside, 1).fillEllipse((79 - 50) * u, 0, 10 * u, 66 * u);
+  g.fillStyle(body, 1).fillCircle((81 - 50) * u, 0, 4.5 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle((81 - 50) * u, 0, 4.5 * u);
+}
+
+/**
+ * SCREAM-317: the Calculator. The PO's reference was a photo of a dark desk calculator with a
+ * solar strip and two red keys. An original drawing in the gas can's style: a dark body, a pale
+ * display, a strip above it, a grid of keys with the top-left two red and the right column
+ * lighter. No brand, no writing.
+ */
+export function drawCalculator(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0x8a8a8a : 0x3f4247;
+  const lcd = grey ? 0xdadada : 0xcfe3cf;
+  const solar = grey ? 0xb0b0b0 : 0xe3c08a;
+  const key = grey ? 0xa8a8a8 : 0x5c6066;
+  const red = grey ? 0xbdbdbd : 0xd8332a;
+  const side = grey ? 0xc4c4c4 : 0x8d949b;
+  const line = Math.max(2, 5 * u);
+  const X = (x: number) => (x - 50) * u;
+  g.fillStyle(body, 1).fillRoundedRect(X(18), X(4), 64 * u, 92 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(18), X(4), 64 * u, 92 * u, 8 * u);
+  g.fillStyle(0xffffff, grey ? 0.15 : 0.18).fillRect(X(23), X(10), 3 * u, 80 * u);
+  // The solar strip and the display.
+  g.fillStyle(solar, 1).fillRect(X(52), X(11), 22 * u, 7 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(52), X(11), 22 * u, 7 * u);
+  g.fillStyle(lcd, 1).fillRect(X(27), X(22), 46 * u, 18 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeRect(X(27), X(22), 46 * u, 18 * u);
+  // Four rows of four keys.
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const colour = row === 0 && col < 2 ? red : col === 3 ? side : key;
+      const kx = X(27 + col * 12);
+      const ky = X(47 + row * 11.5);
+      g.fillStyle(colour, 1).fillRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
+      g.lineStyle(Math.max(1, 2 * u), ink, 1).strokeRoundedRect(kx, ky, 9 * u, 8 * u, 2 * u);
+    }
+  }
+}
+
+/**
+ * SCREAM-80: Train Off The Tracks. The PO (November 14): a speedometer, "but the needle should be on
+ * the left side, indicating it is still slow" (the truck is still slow; this note makes it faster).
+ * An original drawing after his web reference: a half dial with ticks, the red needle low on the left.
+ */
+export function drawTrainOffTracks(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const face = grey ? 0xe0e0e0 : 0xfff6dc;
+  const red = grey ? 0x9a9a9a : 0xd8332a;
+  const green = grey ? 0xbdbdbd : 0x5fa874;
+  const line = Math.max(2, 6 * u);
+  const cy = 22 * u; // the dial's centre, low in the picture
+  const r = 44 * u;
+  // The face: a half disc on a flat base, with a coloured band (green low, red high).
+  g.fillStyle(face, 1).slice(0, cy, r, Math.PI, 0, false).fillPath();
+  g.lineStyle(9 * u, green, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI, Math.PI * 1.45, false).strokePath();
+  g.lineStyle(9 * u, red, 1).beginPath().arc(0, cy, r - 9 * u, Math.PI * 1.75, Math.PI * 2, false).strokePath();
+  g.lineStyle(line, ink, 1).beginPath().arc(0, cy, r, Math.PI, 0, false).strokePath();
+  g.lineBetween(-r - 6 * u, cy, r + 6 * u, cy);
+  // Ticks.
+  g.lineStyle(Math.max(1.5, 4 * u), ink, 1);
+  for (let i = 0; i <= 6; i++) {
+    const t = Math.PI + (i / 6) * Math.PI;
+    g.lineBetween(Math.cos(t) * (r - 2 * u), cy + Math.sin(t) * (r - 2 * u), Math.cos(t) * (r - 13 * u), cy + Math.sin(t) * (r - 13 * u));
+  }
+  // The needle, low on the left: still slow.
+  const t = Math.PI * 1.17;
+  g.lineStyle(Math.max(2, 5 * u), ink, 1).lineBetween(0, cy, Math.cos(t) * (r - 10 * u), cy + Math.sin(t) * (r - 10 * u));
+  g.fillStyle(ink, 1).fillCircle(0, cy, 7 * u);
+  g.fillStyle(red, 1).fillCircle(0, cy, 3.5 * u);
+}
+
+/**
+ * SCREAM-325: Brakes Made This Century. After the PO's reference (a dark disc with its wheel studs
+ * and a caliper wrapped round its top right edge): an original drawing in the game's style, with a
+ * red caliper.
+ */
+export function drawBrakeDisc(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const disc = grey ? 0x8a8a8a : 0x4a4f56;
+  const face = grey ? 0xb0b0b0 : 0x8d969f;
+  const red = grey ? 0xbdbdbd : 0xd8332a;
+  const line = Math.max(2, 5 * u);
+  const cx = -4 * u, cy = 4 * u;
+  g.fillStyle(disc, 1).fillCircle(cx, cy, 40 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(cx, cy, 40 * u);
+  g.fillStyle(face, 1).fillCircle(cx, cy, 17 * u);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).strokeCircle(cx, cy, 17 * u);
+  g.fillStyle(ink, 1).fillCircle(cx, cy, 5 * u);
+  for (let i = 0; i < 5; i++) {
+    const t = (i / 5) * Math.PI * 2 - Math.PI / 2;
+    g.fillStyle(ink, 1).fillCircle(cx + Math.cos(t) * 11 * u, cy + Math.sin(t) * 11 * u, 2.2 * u);
+  }
+  g.fillStyle(0xffffff, grey ? 0.15 : 0.25).fillEllipse(cx - 18 * u, cy - 20 * u, 16 * u, 7 * u);
+  // The caliper: a thick curved band round the top right edge, with two bolts.
+  const pts: Phaser.Math.Vector2[] = [];
+  const a0 = -Math.PI * 0.62, a1 = Math.PI * 0.08;
+  for (let i = 0; i <= 12; i++) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 50 * u, cy + Math.sin(t) * 50 * u)); }
+  for (let i = 12; i >= 0; i--) { const t = a0 + ((a1 - a0) * i) / 12; pts.push(new Phaser.Math.Vector2(cx + Math.cos(t) * 33 * u, cy + Math.sin(t) * 33 * u)); }
+  g.fillStyle(red, 1).fillPoints(pts, true);
+  g.lineStyle(line, ink, 1).strokePoints(pts, true, true);
+  for (const t of [-Math.PI * 0.45, -Math.PI * 0.1]) {
+    g.fillStyle(0xffffff, grey ? 0.5 : 0.85).fillCircle(cx + Math.cos(t) * 41.5 * u, cy + Math.sin(t) * 41.5 * u, 3 * u);
+  }
+}
+
+/**
+ * SCREAM-326: Steam Engine. After the PO's reference (a light green engine with a row of small
+ * wheels and puffs of steam): an original drawing in the game's style.
+ */
+export function drawSteamEngine(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const green = grey ? 0xc4c4c4 : 0x9fd3a7;
+  const deep = grey ? 0xa0a0a0 : 0x5fa874;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // Steam: a cloud of puffs above the chimney, and a little one off to the right.
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1);
+  for (const [x, y, r] of [[22, 18, 8], [32, 12, 9], [43, 16, 7], [74, 14, 5]] as const) {
+    g.fillStyle(0xffffff, grey ? 0.6 : 1).fillCircle(X(x), X(y), r * u);
+    g.strokeCircle(X(x), X(y), r * u);
+  }
+  box(dark, 22, 26, 10, 4); // chimney top
+  box(deep, 24, 30, 6, 14); // chimney
+  box(green, 12, 42, 52, 22); // boiler
+  box(deep, 38, 36, 9, 6); // dome
+  box(green, 62, 30, 26, 34); // cab
+  box(deep, 58, 26, 34, 5); // cab roof
+  box(0xffffff, 68, 36, 13, 10); // window
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(12), X(53), X(64), X(53)); // a band round the boiler
+  // Cowcatcher.
+  const cow = [new Phaser.Math.Vector2(X(12), X(58)), new Phaser.Math.Vector2(X(12), X(74)), new Phaser.Math.Vector2(X(1), X(74))];
+  g.fillStyle(deep, 1).fillPoints(cow, true);
+  g.lineStyle(line, ink, 1).strokePoints(cow, true, true);
+  // The rail and a row of five small wheels.
+  g.lineStyle(line, ink, 1).lineBetween(X(2), X(86), X(96), X(86));
+  for (const x of [20, 34, 48, 66, 80]) {
+    g.fillStyle(0xffffff, 1).fillCircle(X(x), X(75), 7 * u);
+    g.lineStyle(line, ink, 1).strokeCircle(X(x), X(75), 7 * u);
+    g.fillStyle(ink, 1).fillCircle(X(x), X(75), 2 * u);
+  }
+}
+
+/**
+ * SCREAM-329: Speaker with Heavier Bass. The PO's sketch (Personal Notes, "Customer power-ups,
+ * third row", November 14): a guitar lying up to the right, two sound strokes and music notes
+ * floating off its head. Drawn like the gas can: flat colour, a thick dark outline, one highlight.
+ */
+export function drawBassGuitar(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xb4b4b4 : 0xc4372c;
+  const guard = grey ? 0xdcdcdc : 0xf4ead2;
+  const neck = grey ? 0x9a9a9a : 0x8a5a2b;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const P = (x: number, y: number) => new Phaser.Math.Vector2(X(x), X(y));
+  // The neck and head, from the body up to the right.
+  const neckPts = [P(40, 58), P(74, 28), P(79, 33), P(46, 64)];
+  g.fillStyle(neck, 1).fillPoints(neckPts, true);
+  g.lineStyle(thin, ink, 1).strokePoints(neckPts, true, true);
+  const head = [P(72, 26), P(84, 16), P(90, 23), P(80, 35)];
+  g.fillStyle(body, 1).fillPoints(head, true);
+  g.lineStyle(thin, ink, 1).strokePoints(head, true, true);
+  // The body: two overlapping rounds, the lower bigger.
+  g.fillStyle(body, 1).fillCircle(X(28), X(74), 21 * u).fillCircle(X(42), X(60), 14 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(28), X(74), 21 * u);
+  g.lineStyle(line, ink, 1).beginPath().arc(X(42), X(60), 14 * u, -2.5, 0.9).strokePath();
+  g.fillStyle(body, 1).fillCircle(X(33), X(69), 13 * u);
+  g.fillStyle(0xffffff, grey ? 0.25 : 0.4).fillEllipse(X(17), X(66), 7 * u, 14 * u);
+  // The pick guard and the strings.
+  g.fillStyle(guard, 1).fillCircle(X(31), X(72), 8 * u);
+  g.lineStyle(thin, ink, 1).strokeCircle(X(31), X(72), 8 * u);
+  g.lineStyle(Math.max(1, 2 * u), ink, 1).lineBetween(X(24), X(76), X(78), X(28)).lineBetween(X(28), X(80), X(81), X(32));
+  // Two sound strokes off the head, as in the sketch.
+  g.lineStyle(thin, ink, 1).lineBetween(X(58), X(22), X(64), X(12)).lineBetween(X(66), X(26), X(72), X(16));
+  // Music notes floating up to the right.
+  const noteInk = grey ? 0x7d7d7d : 0x2b1d10;
+  const note = (x: number, y: number, s: number) => {
+    g.fillStyle(noteInk, 1).fillEllipse(X(x), X(y), 9 * s * u, 7 * s * u);
+    g.lineStyle(Math.max(1.5, 3 * s * u), noteInk, 1).lineBetween(X(x + 4 * s), X(y), X(x + 4 * s), X(y - 16 * s));
+    g.lineBetween(X(x + 4 * s), X(y - 16 * s), X(x + 11 * s), X(y - 12 * s));
+  };
+  note(86, 50, 1);
+  note(70, 8 + 12, 0.8);
+  note(90, 12 + 12, 0.7);
+}
+
+/**
+ * SCREAM-245: the Handy Notebook. The PO's sketch (Personal Notes, "Customer power-ups, third
+ * row", November 14): a spiral notepad leaning to the left, rings along the top, three wavy lines
+ * of writing. Drawn like the gas can: flat colour, a thick dark outline. The truck view draws the
+ * same picture where the notebook hangs (TruckScene).
+ */
+export function drawNotepad(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const paper = grey ? 0xe2e2e2 : 0xfff8d6;
+  const cover = grey ? 0xb0b0b0 : 0x2884d6;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const lean = -0.14; // leaning left, as he drew it
+  const P = (x: number, y: number) => {
+    const dx = x - 50;
+    const dy = y - 50;
+    return new Phaser.Math.Vector2((dx * Math.cos(lean) - dy * Math.sin(lean)) * u, (dx * Math.sin(lean) + dy * Math.cos(lean)) * u);
+  };
+  // The back cover peeking out, then the page.
+  const back = [P(24, 20), P(82, 20), P(82, 94), P(24, 94)];
+  g.fillStyle(cover, 1).fillPoints(back, true);
+  g.lineStyle(line, ink, 1).strokePoints(back, true, true);
+  const page = [P(18, 16), P(76, 16), P(76, 90), P(18, 90)];
+  g.fillStyle(paper, 1).fillPoints(page, true);
+  g.lineStyle(line, ink, 1).strokePoints(page, true, true);
+  // Three wavy lines of writing.
+  g.lineStyle(thin, ink, 1);
+  for (const y of [40, 56, 72]) {
+    g.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const p = P(26 + i * 7, y + (i % 2 === 0 ? -2 : 2));
+      if (i === 0) g.moveTo(p.x, p.y);
+      else g.lineTo(p.x, p.y);
+    }
+    g.strokePath();
+  }
+  // The rings along the top.
+  for (let i = 0; i < 5; i++) {
+    const c = P(26 + i * 10.5, 15);
+    g.lineStyle(thin, ink, 1).strokeEllipse(c.x, c.y, 6 * u, 13 * u);
+  }
+}
+
+/**
+ * SCREAM-330: This Century Register. The PO's sketch (Personal Notes, "Customer power-ups, third
+ * row", November 14): a tablet leaning to the right, a slot at the top, two small squares and a
+ * bigger one on its screen (the ice creams to click). Drawn like the gas can: flat colour, a
+ * thick dark outline. No brand.
+ */
+export function drawTablet(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100; // drawn on a 100 x 100 grid
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0x9a9a9a : 0x3f4247;
+  const screen = grey ? 0xe2e2e2 : 0xeaf3fa;
+  const tiles = grey ? [0xc8c8c8, 0xb8b8b8, 0xd2d2d2] : [0xf7a8c4, 0x8fd0f0, 0xffd66b];
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const lean = 0.12; // leaning right, as he drew it
+  const P = (x: number, y: number) => {
+    const dx = x - 50;
+    const dy = y - 50;
+    return new Phaser.Math.Vector2((dx * Math.cos(lean) - dy * Math.sin(lean)) * u, (dx * Math.sin(lean) + dy * Math.cos(lean)) * u);
+  };
+  const box = (colour: number, x: number, y: number, w: number, h: number, width: number) => {
+    const pts = [P(x, y), P(x + w, y), P(x + w, y + h), P(x, y + h)];
+    g.fillStyle(colour, 1).fillPoints(pts, true);
+    g.lineStyle(width, ink, 1).strokePoints(pts, true, true);
+  };
+  box(body, 20, 4, 60, 92, line);
+  box(screen, 27, 16, 46, 66, thin);
+  // The slot at the top and the button at the bottom.
+  g.lineStyle(thin, grey ? 0xd0d0d0 : 0x9aa3ad, 1).lineBetween(P(43, 10).x, P(43, 10).y, P(57, 10).x, P(57, 10).y);
+  const button = P(50, 89);
+  g.fillStyle(grey ? 0xd0d0d0 : 0x9aa3ad, 1).fillCircle(button.x, button.y, 3 * u);
+  // The ice creams to click: two small tiles, then a bigger one.
+  box(tiles[0], 31, 22, 17, 17, thin);
+  box(tiles[1], 52, 22, 17, 17, thin);
+  box(tiles[2], 31, 45, 24, 28, thin);
+}
+
+/**
+ * SCREAM-340: Back It Up. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): the truck seen from the side, with "<<=" behind it: two arrowheads and two
+ * dashes pointing backwards.
+ */
+export function drawBackItUp(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const body = grey ? 0xdcdcdc : 0x8fd6c4;
+  const glass = grey ? 0xf0f0f0 : 0xd8f1ff;
+  const red = grey ? 0x9a9a9a : 0xd9412b;
+  const dark = grey ? 0x8a8a8a : 0x3d3f44;
+  const line = Math.max(2, 5 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(line, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  // The truck, facing right: a tall box, a window at the front, a bumper line and one big wheel.
+  box(body, 50, 22, 40, 44);
+  box(glass, 68, 30, 16, 14);
+  g.lineStyle(Math.max(1.5, 3 * u), ink, 1).lineBetween(X(76), X(30), X(76), X(44));
+  g.lineStyle(line, ink, 1).lineBetween(X(46), X(66), X(96), X(66));
+  g.fillStyle(dark, 1).fillCircle(X(76), X(68), 10 * u);
+  g.lineStyle(line, ink, 1).strokeCircle(X(76), X(68), 10 * u);
+  g.fillStyle(grey ? 0xe0e0e0 : 0xffffff, 1).fillCircle(X(76), X(68), 3.5 * u);
+  // "<<=" behind it: two arrowheads, then two dashes up against the truck.
+  g.lineStyle(Math.max(3, 7 * u), red, 1);
+  for (const x of [6, 20]) g.lineBetween(X(x + 12), X(40), X(x), X(52)).lineBetween(X(x), X(52), X(x + 12), X(64));
+  g.lineBetween(X(36), X(47), X(46), X(47)).lineBetween(X(36), X(57), X(46), X(57));
+}
+
+/**
+ * SCREAM-25: More Space for Scream. The PO's sketch (Personal Notes, "Pictures for the next
+ * power-ups", November 15): a freezer with its top door swung open to the left: ice creams on
+ * the shelves inside and on the door, and a handle on the closed part below.
+ */
+export function drawMoreJunk(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shell = grey ? 0xdcdcdc : 0xe9f4fb;
+  const inside = grey ? 0x9a9a9a : 0x2b4a6b;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const box = (colour: number, x: number, y: number, w: number, h: number, stroke = line) => {
+    g.fillStyle(colour, 1).fillRect(X(x), X(y), w * u, h * u);
+    g.lineStyle(stroke, ink, 1).strokeRect(X(x), X(y), w * u, h * u);
+  };
+  const pops = grey ? [0xcfcfcf, 0xbdbdbd, 0xd6d6d6, 0xc6c6c6] : [0xf4d35e, 0xf28ca0, 0x8b5a3c, 0x9fd3a7];
+  // The closed part below, with its handle.
+  box(shell, 44, 46, 44, 48);
+  g.fillStyle(grey ? 0xb4b4b4 : 0x8a9096, 1).fillRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  g.lineStyle(thin, ink, 1).strokeRoundedRect(X(74), X(60), 6 * u, 14 * u, 3 * u);
+  // The open top: dark inside, a shelf, and four ice creams.
+  box(inside, 44, 10, 44, 36);
+  g.lineStyle(thin, ink, 1).lineBetween(X(44), X(28), X(88), X(28));
+  box(pops[0] ?? 0, 50, 14, 13, 12, thin);
+  box(pops[1] ?? 0, 69, 14, 13, 12, thin);
+  box(pops[2] ?? 0, 50, 32, 13, 12, thin);
+  box(pops[3] ?? 0, 69, 32, 13, 12, thin);
+  // Its door, swung open to the left, with two more on the door's shelf.
+  g.fillStyle(shell, 1).fillRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(4), X(12), 40 * u, 28 * u, 5 * u);
+  box(pops[1] ?? 0, 11, 19, 11, 14, thin);
+  box(pops[0] ?? 0, 26, 19, 11, 14, thin);
+}
+
+/**
+ * SCREAM-341: Better Mirrors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a tall truck mirror with a rounder one across its middle, an arrow pointing up in
+ * the top glass and one pointing down in the bottom, and three brackets on its right side.
+ */
+export function drawMirror(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shell = grey ? 0xb4b4b4 : 0x8a9096;
+  const glass = grey ? 0xe6e6e6 : 0xcfeaf7;
+  const round = grey ? 0xf2f2f2 : 0xe8f7ff;
+  const arrow = grey ? 0x9a9a9a : 0xff4f9a;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  // The three brackets to the truck's door, on the right.
+  for (const y of [30, 46, 60]) {
+    g.fillStyle(shell, 1).fillRect(X(64), X(y), 16 * u, 6 * u);
+    g.lineStyle(thin, ink, 1).strokeRect(X(64), X(y), 16 * u, 6 * u);
+  }
+  // The tall mirror, then the rounder one across its middle.
+  g.fillStyle(glass, 1).fillRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(24), X(6), 42 * u, 88 * u, 12 * u);
+  g.fillStyle(round, 1).fillRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  g.lineStyle(line, ink, 1).strokeRoundedRect(X(19), X(37), 52 * u, 26 * u, 12 * u);
+  // An arrow up in the top glass, an arrow down in the bottom glass.
+  const block = (tipY: number, dir: 1 | -1) => {
+    const pts = [
+      [45, tipY], [56, tipY + dir * 11], [49.5, tipY + dir * 11], [49.5, tipY + dir * 21], [40.5, tipY + dir * 21], [40.5, tipY + dir * 11], [34, tipY + dir * 11],
+    ].map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+    g.fillStyle(arrow, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+  };
+  block(11, 1);
+  block(89, -1);
+}
+
+/**
+ * SCREAM-342: Speedy Neighbors. The PO's sketch (Personal Notes, "Pictures for the next power-ups",
+ * November 15): a laced-up high-top shoe with a round toe, and a feathered wing rising from each
+ * side of its ankle.
+ */
+export function drawSneaker(g: Phaser.GameObjects.Graphics, size: number, grey: boolean): void {
+  const u = size / 100;
+  const ink = grey ? 0x6f6f6f : INK;
+  const shoe = grey ? 0xd0d0d0 : 0xff7a59;
+  const white = grey ? 0xf0f0f0 : 0xffffff;
+  const line = Math.max(2, 5 * u);
+  const thin = Math.max(1.5, 3 * u);
+  const X = (v: number) => (v - 50) * u;
+  const P = (pts: number[][]) => pts.map(([x, y]) => new Phaser.Math.Vector2(X(x ?? 0), X(y ?? 0)));
+  // The two wings first (the shoe's ankle covers where they join): three feather tips each.
+  const wing = (m: (x: number) => number) => {
+    const pts = P([[m(44), 46], [m(30), 40], [m(12), 30], [m(4), 12], [m(16), 18], [m(16), 4], [m(27), 14], [m(31), 2], [m(40), 16], [m(46), 34]]);
+    g.fillStyle(white, 1).fillPoints(pts, true);
+    g.lineStyle(thin, ink, 1).strokePoints(pts, true, true);
+    g.lineBetween(X(m(18)), X(20), X(m(34)), X(36)).lineBetween(X(m(28)), X(16), X(m(39)), X(32));
+  };
+  wing((x) => x);
+  wing((x) => 100 - x);
+  // The shoe: a tall ankle, the foot out to the right, a round white toe and a white sole.
+  const upper = P([[36, 40], [62, 40], [63, 62], [76, 66], [90, 76], [90, 86], [34, 86]]);
+  g.fillStyle(shoe, 1).fillPoints(upper, true);
+  g.lineStyle(line, ink, 1).strokePoints(upper, true, true);
+  g.fillStyle(white, 1).fillCircle(X(82), X(79), 8 * u);
+  g.lineStyle(thin, ink, 1).strokeCircle(X(82), X(79), 8 * u);
+  g.fillStyle(white, 1).fillRect(X(32), X(84), 60 * u, 8 * u);
+  g.lineStyle(line, ink, 1).strokeRect(X(32), X(84), 60 * u, 8 * u);
+  // The ankle's opening and the laces: two crosses down the front.
+  g.fillStyle(grey ? 0x9a9a9a : 0x7a3b2a, 1).fillEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, ink, 1).strokeEllipse(X(49), X(40), 26 * u, 8 * u);
+  g.lineStyle(thin, white, 1);
+  for (const y of [48, 58]) g.lineBetween(X(50), X(y), X(60), X(y + 8)).lineBetween(X(60), X(y), X(50), X(y + 8));
+}

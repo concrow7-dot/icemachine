@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
-import { getEvening, pauseEvening, SceneKeys, type Station } from '../flow';
+import { getEvening, getStory, pauseEvening, SceneKeys, type Station } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
+import { drawNotepad } from '../ui/powerUpLogo';
 
 // Issue #7: the truck interior hub, like the Backyard Baseball treehouse.
 // SCREAM-57: the PO's coloured drawing of the inside of the truck (from his pen
@@ -10,10 +11,16 @@ import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 // clickable: the freezer opens the cooler, the front of the truck starts
 // driving, the menu board opens the menu, and the serving window opens a sale
 // (only while one is going on). Arrow keys move between them in screen order.
+// SCREAM-267 (PO, November 11): in Story the board on the wall above the cooler is the cork
+// board: it opens the power-ups skill map instead of the menu (Esc still opens the menu).
+// Not in the uncle's evening, and not in Quick play (decision 076).
 
 
 export const HIGHLIGHT = 0xffe066;
 export const OUTLINE = 0x3b2a1a;
+
+/** SCREAM-267: the board's name tag in Story. */
+export const POWER_UPS_TAG = 'POWER-UPS';
 
 type Zone = {
   id: Station;
@@ -50,7 +57,19 @@ export const ZONES: Zone[] = [
     points: [845, 82, 955, 78, 955, 362, 785, 352, 785, 268, 845, 268],
     tag: { x: 880, y: 200 },
   },
+  // SCREAM-245 (PO, November 14: "Notebook should be a new clickable item in the truck view"): the
+  // Handy Notebook, once it is owned. PO, November 14, on the first build (it hung on the side door):
+  // "Lets have notebook hang under the tip jar": under the green cup on the shelf by the window.
+  {
+    id: 'notebook',
+    name: 'NOTEBOOK',
+    points: [866, 364, 928, 364, 928, 438, 866, 438],
+    tag: { x: 880, y: 456 },
+  },
 ];
+
+/** SCREAM-245: where the Handy Notebook hangs (the middle of its picture) and how big it is drawn. */
+export const NOTEBOOK_AT = { x: 897, y: 402, size: 58 };
 
 export class TruckScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -77,7 +96,16 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
 
+    // SCREAM-245: the notebook itself, on a nail under the tip jar's shelf (only once it is owned).
+    if (this.evening.hasNotebook) {
+      const pad = this.add.graphics().setPosition(NOTEBOOK_AT.x, NOTEBOOK_AT.y);
+      pad.lineStyle(2, OUTLINE, 1).lineBetween(-12, -24, 0, -38).lineBetween(12, -24, 0, -38);
+      pad.fillStyle(OUTLINE, 1).fillCircle(0, -38, 3);
+      drawNotepad(pad, NOTEBOOK_AT.size, false);
+    }
+
     for (const zone of ZONES) {
+      if (!this.isAvailable(zone.id) && zone.id === 'notebook') continue; // nothing to click until it is owned
       // A screen-sized invisible zone whose clickable area is just the traced outline.
       const shape = this.add
         .zone(0, 0, width, height)
@@ -106,7 +134,7 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.rectangle(0, height - 34, width, 34, 0x000000, 0.45).setOrigin(0, 0);
     this.add
-      .text(width / 2, height - 17, '← → Choose    Enter: Go    Or Use The Mouse', {
+      .text(width / 2, height - 17, this.evening.isPeeking ? '← → Choose    Enter: Go    Tab Or B: Back To The Road' : this.onTheRoad() ? '← → Choose    Enter: Go    B: Back To The Road' : '← → Choose    Enter: Go    Or Use The Mouse', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#ffffff',
@@ -120,6 +148,13 @@ export class TruckScene extends Phaser.Scene {
     keyboard?.on('keydown-D', () => this.move(1));
     keyboard?.on('keydown-ENTER', () => this.activate(this.selected));
     keyboard?.on('keydown-SPACE', () => this.activate(this.selected));
+    // SCREAM-319: stopped at home after setting off, B goes back on the road, like DRIVE.
+    // SCREAM-321: looking inside with Tab, B or Tab goes back on the road.
+    if (this.onTheRoad()) {
+      keyboard?.on('keydown-B', () => this.activate('driver'));
+      keyboard?.addCapture('TAB');
+      keyboard?.on('keydown-TAB', () => this.activate('driver'));
+    }
 
     const onCustomer = () => {
       // If the customer leaves while the window is highlighted, move to the
@@ -138,7 +173,18 @@ export class TruckScene extends Phaser.Scene {
 
   /** The window can only be used while a customer is waiting (PO decision on #7). */
   private isAvailable(id: Station): boolean {
+    if (id === 'notebook') return this.evening.hasNotebook; // SCREAM-245
     return id !== 'window' || this.evening.customerWaiting;
+  }
+
+  /** SCREAM-319: the truck has been out tonight and stopped in here (at home): B drives off again. */
+  private onTheRoad(): boolean {
+    return this.evening.isPrepLocked && (this.evening.isRestocking || this.evening.isPeeking);
+  }
+
+  /** SCREAM-267: Story's cork board (after the uncle's evening) opens the power-ups. */
+  boardIsPowerUps(): boolean {
+    return !!getStory(this) && !this.evening.tutorial;
   }
 
   /** Moves the highlight left or right, skipping zones that aren't available. */
@@ -158,11 +204,25 @@ export class TruckScene extends Phaser.Scene {
 
   private activate(id: Station): void {
     if (!this.isAvailable(id)) return;
-    if (id === 'menu') pauseEvening(this);
+    if (id === 'menu') {
+      if (this.boardIsPowerUps()) this.scene.start(SceneKeys.PowerUps);
+      else pauseEvening(this);
+    }
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
+    if (id === 'notebook') this.scene.start(SceneKeys.Notebook); // SCREAM-245: reading only
     if (id === 'driver') {
+      // SCREAM-307: from the hub with nothing stocked yet, the cooler opens with its warning
+      // instead (the truck can't set off empty, as the cooler already said, #66).
+      if (!this.evening.isPrepLocked && this.evening.stockLeft === 0) {
+        this.scene.start(SceneKeys.Cooler, { warnEmpty: true });
+        return;
+      }
       // Heading for the road ends prep: stock and prices are set for the evening (#8, #23).
-      this.evening.lockPrep();
+      this.evening.startClock(); // SCREAM-307: from the hub the clock may still be waiting
+      // SCREAM-319: leaving a home stop ends the restock (stock and prices lock again).
+      if (this.evening.isRestocking) this.evening.endRestock();
+      this.evening.endPeek(); // SCREAM-321
+      if (!this.evening.isPrepLocked) this.evening.lockPrep();
       this.scene.start(SceneKeys.Drive);
     }
     if (id === 'window' && this.evening.sale) this.scene.start(SceneKeys.Sales);
@@ -180,6 +240,6 @@ export class TruckScene extends Phaser.Scene {
     for (let i = 0; i < pts.length; i += 2) path.push(new Phaser.Math.Vector2(pts[i], pts[i + 1]));
     this.outline.lineStyle(9, OUTLINE, 0.9).strokePoints(path, true, true);
     this.outline.lineStyle(5, HIGHLIGHT, 1).strokePoints(path, true, true);
-    this.tag.setText(zone.name).setPosition(zone.tag.x, zone.tag.y).setVisible(true);
+    this.tag.setText(zone.id === 'menu' && this.boardIsPowerUps() ? POWER_UPS_TAG : zone.name).setPosition(zone.tag.x, zone.tag.y).setVisible(true);
   }
 }

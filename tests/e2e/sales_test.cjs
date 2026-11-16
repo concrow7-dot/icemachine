@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   // SCREAM-175: these suites play as a player who has finished the tutorial (every mode unlocked).
-  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); } catch {} });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -31,7 +31,7 @@ const { chromium } = require('playwright');
     const m = await import('/src/state/Sale.js');
     const counts = [0, 0, 0, 0, 0, 0];
     for (let i = 0; i < 20000; i++) counts[m.pickOrderSize(Math.random()) - 1]++;
-    const tips = [0, 9.9, 10, 19.9, 20, 29.9, 30, 39.9, 40, 55].map(m.tipPercentAt);
+    const tips = [0, 9.9, 10, 19.9, 20, 29.9, 30, 39.9, 40, 55].map((sec) => m.tipPercentAt(sec));
     const slots = [
       { flavour: 'eclair', quantity: 2, priceCents: 200 },
       { flavour: 'spongepop', quantity: 1, priceCents: 250 },
@@ -77,6 +77,7 @@ const { chromium } = require('playwright');
   await tick(5100);
   check('After 5 s the order is hidden', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.bubbleText.text')), 'deciding …');
   check('Tip countdown starts: 20%', (await sc('Sales', 's.tipBar.container.visible')) + ' ' + (await sc('Sales', 's.tipBar.label.text')), 'true 20%');
+  check('SCREAM-284: ...on a full green bar as tall as the jar', await sc('Sales', '(f => (f.displayHeight > 62 && f.displayHeight <= 70) + " " + (f.fillColor === 0x2e7d32))(s.tipBar.fill)'), 'true true');
   await press('Enter'); await wait(300);
   check('Enter goes to the cooler (fill mode)', await scenes(), 'Fill,Hud');
   check('Tip bar still showing at the cooler', await sc('Fill', 's.tipBar.container.visible'), true);
@@ -142,6 +143,8 @@ const { chromium } = require('playwright');
   await setOrder([{ slot: 2, flavour: 'explorer', count: 1 }]);
   await tick(5100); await tick(12000);
   check('12 s into the countdown: 15%', await sc('Sales', 's.tipBar.label.text'), '15%');
+  check('SCREAM-284: at the window the bar has shrunk to about 70% of the jar\'s height and turned lighter green', await sc('Sales', '(f => (f.displayHeight > 44 && f.displayHeight < 52) + " " + (f.fillColor === 0x7cb342))(s.tipBar.fill)'), 'true true');
+  await page.screenshot({ path: outDir + '/sale_tip_bar.png' });
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter');
   check('Wrong items, first time: the customer says the right order', (await ev('e.sale.line')).includes('I wanted 1 Lil Explorer Pop'), true);
@@ -162,7 +165,61 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300);
   check('C during the order: straight to the cooler, order hidden', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
   check('...tip countdown starts then (20%)', await sc('Fill', 's.tipBar.label.text'), '20%');
-  await press('b'); await wait(300); await press('b'); await wait(300);
+  // ---- SCREAM-281 (PO, November 12): a tall green bar above the cup that shrinks with the tip ----
+  check('SCREAM-281: at the cooler the cup has a tall bar marked 20%, 15%, 10%, 5%; the window has the same bar at the jar\'s height, without side labels (SCREAM-284)', (await sc('Fill', 's.tipBar.fullHeight + " " + s.tipBar.zoneLabels.map(l => l.text).join()')) + ' / ' + (await sc('Sales', 's.tipBar.fullHeight + " " + s.tipBar.zoneLabels.length')), '190 20%,15%,10%,5% / 70 0');
+  check('...nearly full and green at the start', await sc('Fill', '(f => f.displayHeight > 170 && f.fillColor === 0x2e7d32)(s.tipBar.fill)'), true);
+  check('...it stays left of the counter and under the clock strip', await sc('Fill', '(b => b.right < 245 && b.top > 45)(s.tipBar.container.getBounds())'), true);
+  await tick(12000);
+  check('...12 s on: about 70% of its height, a lighter green, and 15%', await sc('Fill', '(f => (f.displayHeight > 120 && f.displayHeight < 140) + " " + (f.fillColor === 0x7cb342))(s.tipBar.fill) + " " + s.tipBar.label.text'), 'true true 15%');
+  await page.screenshot({ path: outDir + '/fill_tip_bar.png' });
+  check('SCREAM-273, SCREAM-282: FORGOT ORDER on the left under the tip jar, SERVE in the middle', await sc('Fill', 's.windowButton.visible + " " + s.windowButton.text + " " + s.windowButton.x + " " + s.serveButton.x + " " + (s.windowButton.getBounds().right < s.serveButton.getBounds().left)'), 'true FORGOT ORDER 124 600 true');
+  check('...under the tip jar, not over it or the counter with the bag', await sc('Fill', '(b => b.top > 386 && b.left >= 0 && b.right < 245)(s.windowButton.getBounds())'), true);
+  check('...and SERVE is clear of a full row of 10 in the bag', await sc('Fill', '(b => b.top > 410 + 24)(s.serveButton.getBounds())'), true);
+  await page.screenshot({ path: outDir + '/fill_window_button.png' });
+  await page.mouse.click(124, 470); await wait(300);
+  check('SCREAM-282: clicking it goes to the window with the customer saying the order again, and the tip is gone', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')) + ' ' + (await ev('e.sale.tipPercent(e.nowMs)')), 'Sales,Hud ordering true 0');
+  check('SCREAM-287: no tip, so the countdown bar is gone at the window: just the cup and "No tip" right above it', await sc('Sales', '(t => t.fill.visible + " " + t.barParts.some(p => p.visible) + " " + t.label.text + " " + (t.label.y > -100))(s.tipBar)'), 'false false No tip true');
+  await page.screenshot({ path: outDir + '/sale_no_tip.png' });
+  await tick(5100); await press('c'); await wait(300);
+  check('SCREAM-287: ...and gone at the cooler too, side labels and all', await sc('Fill', '(t => t.fill.visible + " " + t.barParts.some(p => p.visible) + " " + t.label.text + " " + (t.label.y > -100))(s.tipBar)'), 'false false No tip true');
+  await page.screenshot({ path: outDir + '/fill_no_tip.png' });
+  check('...the Fill screen\'s keys say B: Forgot Order', /B: Forgot Order/.test(await page.evaluate(() => window.__game.scene.getScene('Fill').children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | '))), true);
+  await press('b'); await wait(300);
+  check('...B does the same, a second time too', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud ordering');
+  check('SCREAM-288: that was the second and last time for this customer', (await ev('e.sale.asksLeft')) + ' ' + (await ev('e.sale.askAgain(e.nowMs)')), '0 false');
+  await press('b'); await wait(300);
+
+  check('SCREAM-313: Quick play: a kid with a SpongePop tips as before', await ev("e.saleTipSteps([{ slot: 0, flavour: 'spongepop', count: 1 }], e.residents.all.find(p => p.resident.kid)).join()"), '20,15,10,5');
+  // ---- SCREAM-313 (PO, November 14): more than one tip line: each scrolls up behind the price for the next ----
+  await serveNow(); await wait(200);
+  const flashTexts = () => sc('Sales', "s.children.list.filter(o => o.name === 'sale-flash' && o.alpha > 0.5).sort((a, b) => a.y - b.y).map(o => o.text + '@' + Math.round(o.y)).join(' / ')");
+  await sc('Sales', '(s.flashLines(300, [{ text: "+$0.60 TIP", colour: "#1d5c8c", size: 44 }, { text: "+$0.30 SPONGEPOP TIP", colour: "#c2185b", size: 30 }, { text: "+$1.60 EXPLORATION TIP", colour: "#6a3d9a", size: 30 }]), true)');
+  await wait(1600);
+  check('SCREAM-313: first the price, then the first tip line under it', await flashTexts(), '+$3.00@300 / +$0.60 TIP@360');
+  await page.screenshot({ path: outDir + '/sale_tips_1.png' });
+  await wait(700);
+  await page.screenshot({ path: outDir + '/sale_tips_2.png' });
+  await wait(600);
+  check('...the first two have scrolled up behind the price; the last stays under it', await flashTexts(), '+$3.00@300 / +$1.60 EXPLORATION TIP@360');
+  check('...the price is drawn over the tip lines', await sc('Sales', "(f => f.find(o => o.text === '+$3.00').depth > f.find(o => o.text.endsWith('TIP')).depth)(s.children.list.filter(o => o.name === 'sale-flash'))"), true);
+  await page.screenshot({ path: outDir + '/sale_tips_3.png' });
+  await ev('(e.driveOffFromSale(), true)'); await sc('Sales', '(s.leave(), true)'); await wait(400);
+
+
+  // ---- SCREAM-303: with Service With A Smile the tip starts at 25% and the bar has five steps ----
+  await ev("(e.powerUpsOwned.push('service-with-a-smile'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
+  check('SCREAM-303: with the power-up the tip countdown starts at 25%, on a full green bar', (await sc('Sales', 's.tipBar.label.text')) + ' ' + (await sc('Sales', 's.tipBar.fill.fillColor === 0x2e7d32')), '25% true');
+  await press('c'); await wait(300);
+  check('...the cooler\'s tall bar is marked 25%, 20%, 15%, 10%, 5%', await sc('Fill', 's.tipBar.zoneLabels.map(l => l.text).join()'), '25%,20%,15%,10%,5%');
+  await page.screenshot({ path: outDir + '/sale_tip_bar_smile.png' });
+  await tick(42000);
+  check('...42 s in there is still a tip: 5%, on a fifth of the bar or less', (await ev('e.sale.tipPercent(e.nowMs)')) + ' ' + (await sc('Fill', 's.tipBar.fill.displayHeight < 190 / 5 + 1')), '5 true');
+  await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  const smilePrice = await ev('e.sale.totalCents ?? 0');
+  await ev('(e.powerUpsOwned.pop(), true)');
+  await ev('(e.driveOffFromSale(), true)'); await sc('Sales', '(s.leave(), true)'); await wait(400);
+  check('...(left that sale; back on the road)', await scenes(), 'Drive,Hud');
 
   // ---- Sale 3: overcharge twice -> they leave with it for free ----
   await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
@@ -191,12 +248,56 @@ const { chromium } = require('playwright');
   check('Overcharge, then a fair price: paid, with no tip (SCREAM-120)', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.tipCents')) + ' ' + ((await cash()) - c3b), 'paid 0 100');
   await press('Enter'); await wait(300);
   
+  // ---- SCREAM-283 (PO, November 12): RETURN TO COOLER at "How much?" ----
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]); await tick(5100);
+  const stock283 = await stock();
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-283: at "How much?" a RETURN TO COOLER button in the bottom left, under the counter', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', '(b => s.returnButton.visible + " " + s.returnButton.text + " " + (b.left >= 0 && b.right < 240 && b.top > 455 && b.bottom < 505))(s.returnButton.getBounds())')), 'pricing true RETURN TO COOLER true');
+  check('...and the keys along the bottom fit on the screen and name C', await sc('Sales', '(b => b.left > 0 && b.right < 960)(s.hint.getBounds()) + " " + /C: Return To Cooler/.test(s.hint.text)'), 'true true');
+  await page.screenshot({ path: outDir + '/sale_return_to_cooler.png' });
+  await page.keyboard.type('9');
+  await page.mouse.click(118, 478); await wait(300);
+  check('...clicking it: back at the cooler, the sale still on, the bag as it was', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.bagContents.map(b => b.flavour).join()')), 'Fill,Hud deciding spongepop');
+  await ev('(e.putBack(0), true)'); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('...swap it and SERVE: "How much?" again, the typed price cleared', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.bagMatchesOrder')) + ' ' + JSON.stringify(await sc('Sales', 's.typed')), 'pricing true ""');
+  await press('c'); await wait(300);
+  check('...C does the same as the button', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Fill,Hud deciding');
+  await press('Enter'); await wait(300);
+  check('...not shown before "How much?" or once the sale is over', await (async () => { const a = await sc('Sales', 's.returnButton.visible'); await press('b'); await wait(300); return a + ' ' + (await sc('Sales', 's.returnButton.visible')); })(), 'true false');
+  await press('Enter'); await wait(300);
+  check('...driving off puts the bag back in the cooler', await stock(), stock283);
+
+  // ---- SCREAM-285 (PO, November 12): ASK AGAIN at the window, after the cooler too ----
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 1 }]);
+  const stock285 = await stock();
+  check('SCREAM-285: no ASK AGAIN while the order is showing', await sc('Sales', 's.askButton.visible'), false);
+  await tick(5100);
+  check('...order hidden: ASK AGAIN (NO TIP) at the right end of the strip under the counter', await sc('Sales', '(b => s.askButton.visible + " " + s.askButton.text + " " + (b.left > 720 && b.right <= 955 && b.top > 455 && b.bottom < 505))(s.askButton.getBounds())'), 'true ASK AGAIN (NO TIP) true');
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('...after the cooler, at "How much?": still there, clear of the keys along the bottom, which fit', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.askButton.visible + " " + (s.askButton.getBounds().bottom < s.hint.getBounds().top) + " " + (h => h.left > 0 && h.right < 960)(s.hint.getBounds())')), 'pricing true true true');
+  await page.screenshot({ path: outDir + '/sale_ask_again.png' });
+  await page.keyboard.type('4');
+  await page.mouse.click(836, 478); await wait(300);
+  check('...clicking it: the customer says the order again, the calculator is away, the tip is gone', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.orderVisible')) + ' ' + (await sc('Sales', 's.calculator.container.visible')) + ' ' + (await ev('e.sale.tipPercent(e.nowMs)')), 'ordering true false 0');
+  await tick(5100);
+  check('...then "How much?" again, the bag still served, the typed price cleared, the button now plain ASK AGAIN', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.line')) + ' ' + (await ev('e.sale.bagCount')) + ' ' + JSON.stringify(await sc('Sales', 's.typed')) + ' ' + (await sc('Sales', 's.askButton.text')), 'pricing How much? 1 "" ASK AGAIN');
+  await press('r'); await wait(200);
+  check('...R does the same; and going to the cooler while they repeat it works', await (async () => { const p = await ev('e.sale.phase'); await press('c'); await wait(300); return p + ' ' + (await scenes()) + ' ' + (await ev('e.sale.phase')); })(), 'ordering Fill,Hud deciding');
+  check('SCREAM-288: asked twice, so FORGOT ORDER is gone at the cooler, B is off the keys line and does nothing', await (async () => { const v = await sc('Fill', 's.windowButton.visible + " " + /Forgot Order/.test(s.keysLine.text)'); await press('b'); await wait(300); return v + ' ' + (await scenes()) + ' ' + (await ev('e.sale.timesAsked')); })(), 'false false Fill,Hud 2');
+  await press('Enter'); await wait(300);
+  check('...SERVE again: "How much?"', (await scenes()) + ' ' + (await ev('e.sale.phase')), 'Sales,Hud pricing');
+  check('SCREAM-288: ...and ASK AGAIN is gone at the window; R does nothing and is off the keys line', await (async () => { const v = await sc('Sales', 's.askButton.visible + " " + /Ask Again/.test(s.hint.text)'); await press('r'); await wait(200); return v + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.timesAsked')); })(), 'false false pricing 2');
+  await page.screenshot({ path: outDir + '/sale_asked_twice.png' });
+  await press('b'); await wait(300); await press('Enter'); await wait(300);
+  check('...(driving off puts the bag back)', await stock(), stock285);
+
   // ---- Sale 4: ask again (R), then wrong -> no retry, given away ----
   await serveNow(); await setOrder([{ slot: 1, flavour: 'spongepop', count: 2 }]); await tick(5100);
   await press('r');
   check('R: the order is shown again', (await ev('e.sale.phase')) + ' ' + (await ev('e.sale.askedAgain')), 'ordering true');
   await tick(5100);
-  check('R a second time does nothing', await ev('e.sale.askAgain(e.nowMs)'), false);
+  check('SCREAM-282: R can be asked again (nothing more to lose)', (await ev('e.sale.askAgain(e.nowMs)')) + ' ' + (await ev('e.sale.phase')), 'true ordering');
+  await tick(5100);
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("spongepop")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('5'); await press('Enter');
   check('After R, a wrong order fails: "That\'s not what I asked for."', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.line')), "wrong-order That's not what I asked for.");
@@ -220,6 +321,40 @@ const { chromium } = require('playwright');
   await serveNow(); await tick(5100); const c6 = await cash();
   await press('b'); await wait(300);
   check('B: drive off, a lost sale, back on the road', (await scenes()) + ' ' + ((await cash()) - c6), 'Drive,Hud 0');
+
+  // ---- SCREAM-241: someone else is waiting at the truck: NEXT CUSTOMER, and B to drive off ----
+  await serveNow(); await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('SCREAM-241: nobody else waiting: the button says BACK ON THE ROAD', (await sc('Sales', 's.roadButton.visible')) + ' ' + (await sc('Sales', 's.roadButton.text')), 'true BACK ON THE ROAD');
+  const callNext = (n) => ev(`(() => { const p = e.residents.all.filter(q => q.customer === 'none' && q !== e.customer)[${n}]; e.residents.callNow(p); window.__next = p; e.nextAtTruck = () => (window.__next.customer === 'waiting' ? window.__next : undefined); return p.resident.name; })()`);
+  const firstNext = await callNext(0); await wait(200);
+  check('...someone walks up while the finished sale is on screen: it changes to NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  check('...and the hint offers both keys', await sc('Sales', 's.hint.text'), 'Enter: Next Customer    B: Drive Off');
+  await press('Enter'); await wait(400);
+  check('Enter: the next customer is at the window, without going back to the road', (await scenes()) + ' ' + (await ev('e.sale.phase')) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ordering ' + firstNext);
+  check('...they are the one being served now', await ev('window.__next.customer'), 'window');
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('...and with nobody behind them the button is BACK ON THE ROAD again', await sc('Sales', 's.roadButton.text') + ' | ' + await sc('Sales', 's.hint.text'), 'BACK ON THE ROAD | Enter: Back On The Road');
+  await callNext(1); await wait(200);
+  check('Someone waiting again: NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  await press('b'); await wait(400);
+  check('B: drive off instead, back on the road; they are left waiting', (await scenes()) + ' ' + (await ev('window.__next.customer')) + ' ' + (await ev('e.windowShutUntilMoved')), 'Drive,Hud waiting true');
+  // The road's side: two people standing at the parked truck.
+  const pair = await ev(`(() => { const s = window.__game.scene.getScene('Drive'); s.speed = 0; const two = e.residents.all.filter(q => q.customer === 'none').slice(0, 2);
+    two.forEach((p, i) => { e.residents.callNow(p); p.pickup = [s.truck.x + i, s.truck.y, s.heading]; }); window.__two = two; return two.map(p => p.resident.name).join('|'); })()`);
+  await wait(500);
+  check('...parked beside them, nobody is served until the truck has moved', await scenes(), 'Drive,Hud');
+  await ev('(e.windowShutUntilMoved = false, true)'); await wait(500);
+  check('Once it has moved (flag cleared), the first of them is served', (await scenes()) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ' + pair.split('|')[0]);
+  check('...and the road has told the window who is next at the truck', await ev('e.nextAtTruck().resident.name'), pair.split('|')[1]);
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  check('...so the button says NEXT CUSTOMER', await sc('Sales', 's.roadButton.text'), 'NEXT CUSTOMER');
+  await page.screenshot({ path: outDir + '/sales_next_customer.png' });
+  await page.mouse.click(480, 478); await wait(400);
+  check('Clicking it brings the second one to the window', (await scenes()) + ' ' + (await ev('e.customer.resident.name')), 'Sales,Hud ' + pair.split('|')[1]);
+  await ev('(e.driveOffFromSale(), true)'); await wait(200);
+  await ev('(window.__next.customer = "done", e.nextAtTruck = null, true)');
+  await press('Enter'); await wait(400);
+  check('...then Enter goes back on the road', await scenes(), 'Drive,Hud');
 
   // ---- Too expensive ----
   await ev('(e.coolerSlots.forEach(s => s.priceCents = 450), true)');
@@ -276,6 +411,67 @@ const { chromium } = require('playwright');
   check('R: the repeat is in pictures too', (await sc('Sales', 's.orderPictures.list.length')) > 0, true);
   await press('b'); await wait(300);
   await ev('(e.orderPictureChance = 0, true)');
+
+  // ---- SCREAM-317: the Calculator power-up: + − × ÷ and = on the window's pad (only bought in Story; set here) ----
+  await ev("(e.powerUpsOwned.push('calculator'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }]); await tick(5100);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-317: with the Calculator, "How much?" shows a pad with + − × ÷ and =', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', '!!s.sum + " " + ["+", "-", "*", "/", "="].every(k => s.calculator.keys.has(k))')), 'pricing true true');
+  await page.keyboard.type('2+1.5'); await wait(150);
+  check('...typing 2 + 1.5: the display shows 1.5 with the + waiting', await sc('Sales', 's.calculator.display.text + " " + s.calculator.opMark.text'), '1.5 +');
+  const eq = await sc('Sales', '(r => [s.calculator.container.x + r.x, s.calculator.container.y + r.y])(s.calculator.keys.get("="))');
+  await page.mouse.click(eq[0], eq[1]); await wait(150);
+  check('...clicking = works it out: 3.50', await sc('Sales', 's.calculator.display.text + "|" + s.calculator.opMark.text'), '3.50|');
+  await press('Delete');
+  const each = await ev('e.slots[0].priceCents');
+  await page.keyboard.type(`${each / 100}*2`); await wait(150);
+  await page.mouse.move(5, 300); await page.screenshot({ path: outDir + '/sale_calculator.png' });
+  const cCalc = await cash();
+  await press('Enter'); await wait(200);
+  check('...Delete clears it; price x 2 then Enter works it out and charges it', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.priceCents')), 'paid ' + each * 2);
+  check('...the money is in the till', (await cash()) - cCalc >= each * 2, true);
+  await press('Enter'); await wait(300);
+  await ev("(e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('calculator'), 1), true)");
+  await serveNow(); await tick(5100);
+  check('...without it, the pad is the plain one again', await sc('Sales', 's.sum === null && !s.calculator.keys.has("+")'), true);
+  check('SCREAM-330: ...and without the register there is no tablet at "How much?"', await sc('Sales', 's.register === null'), true);
+  await press('b'); await wait(300);
+
+  // ---- SCREAM-330: This Century Register: click the ice creams and the price adds up (only bought in Story; set here) ----
+  // PO, November 14, testing: "The tablet should replace the calculator".
+  // The suite is nearly a whole evening long by now: wind the clock back so the checks after this one still have their evening.
+  await ev('(e.elapsedMs = Math.min(e.elapsedMs, 120000), true)');
+  await ev("(e.powerUpsOwned.push('calculator', 'this-century-register'), true)");
+  await serveNow(); await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }]); await tick(5100);
+  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
+  check('SCREAM-330: with the register, "How much?" shows a tablet in the calculator\'s place: the pad is gone, and so is the mini price menu (PO)', (await ev('e.sale.phase')) + ' ' + (await sc('Sales', 's.register.container.visible + " " + s.calculator.container.visible + " " + s.priceCard.visible + " " + (s.register.container.x === s.calculator.container.x)')), 'pricing true false false true');
+  check('...a tile per ice cream on the menu, and CLEAR and CHARGE', await sc('Sales', '[...s.register.tiles.keys()].join() + " " + [...s.register.keys.keys()].join()'), (await ev('e.slots.filter(s => s.quantity > 0 || e.sale.order.some(l => l.flavour === s.flavour)).map(s => s.flavour).join()')) + ' C,CHARGE');
+  const at = (what) => sc('Sales', `(r => [s.register.container.x + r.x, s.register.container.y + r.y])(s.register.${what})`);
+  const tile = await at('tiles.get("eclair")');
+  const eachR = await ev('e.slots[0].priceCents');
+  await page.mouse.click(tile[0], tile[1]); await wait(150);
+  check('...a click on an ice cream puts its price on the tablet', await sc('Sales', 's.register.display.text + " " + s.register.counts.get("eclair")'), (eachR / 100).toFixed(2) + ' 1');
+  await page.mouse.click(tile[0], tile[1]); await wait(150);
+  check('...a second click adds another: the total, and a 2 on the tile', await sc('Sales', 's.register.display.text + " " + s.register.counts.get("eclair")'), (eachR * 2 / 100).toFixed(2) + ' 2');
+  await page.mouse.move(5, 300); await page.screenshot({ path: outDir + '/sale_register.png' });
+  const clear = await at('keys.get("C")');
+  await page.mouse.click(clear[0], clear[1]); await wait(150);
+  check('...CLEAR empties the total and the counts', await sc('Sales', 's.register.display.text + " " + s.register.counts.size'), '0 0');
+  await page.mouse.click(tile[0], tile[1]); await wait(100);
+  await page.keyboard.type('7'); await wait(100);
+  check('...there is no pad to type on: a number key changes nothing', await sc('Sales', 's.register.display.text'), (eachR / 100).toFixed(2));
+  await press('Delete'); await wait(100);
+  check('...Delete clears too', await sc('Sales', 's.register.display.text'), '0');
+  await press('Enter'); await wait(150);
+  check('...nothing rung up: CHARGE does nothing', await ev('e.sale.phase'), 'pricing');
+  await page.mouse.click(tile[0], tile[1]); await wait(100); await page.mouse.click(tile[0], tile[1]); await wait(100);
+  const cReg = await cash();
+  const chargeKey = await at('keys.get("CHARGE")');
+  await page.mouse.click(chargeKey[0], chargeKey[1]); await wait(200);
+  check('...CHARGE charges what the register added up', (await ev('e.sale.outcome.kind')) + ' ' + (await ev('e.sale.outcome.priceCents')), 'paid ' + eachR * 2);
+  check('...the money is in the till', (await cash()) - cReg >= eachR * 2, true);
+  await press('Enter'); await wait(300);
+  await ev("(e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('calculator'), 2), true)");
 
   // ---- Debug keys moved to Shift ----
   const c7 = await cash();

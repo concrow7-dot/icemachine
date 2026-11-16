@@ -2,11 +2,1403 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 155 — A porch light by the front door of everyone who is in (2026-11-15)
+
+**Decision (Jira SCREAM-251, under SCREAM-11, PO, November 10 and 15):** from the customers brainstorm (November 10): a tell on the house when a resident is home, lights and cars with variety ("some people park, some don't have a car so the lights on, some are both"), Story only. On November 15 he chose: the look, "A porch light at the door"; a house counts as home "Only while they are physically in"; who shows one, "Everyone for now"; and it is "Always right".
+
+So, in Story, a small lit lamp shows beside each resident's front door while they are indoors. It goes off when they step out into the yard or set off for the truck, and comes back on when they go in.
+
+**Options considered:** the look: a porch light (chosen), lit windows (the game doesn't know where each house picture's windows are), or both. Home means: their day is ticked and inside their hours (engineering's proposal), or only while physically in (chosen). Who: the game picks about half (engineering's proposal), everyone for now (chosen), or a sheet column. Always right (chosen), or a few leave it on.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Someone who is not home yet, or any more, by their From and Until hours is dark, though the game keeps them indoors then.
+- Someone being served at the truck's window is out: dark.
+- People who never buy light up too when they are in: the light says "home", not "will buy".
+- Story only, on both maps and in the uncle's evening; Quick play's houses are unchanged.
+- The lamp is drawn by the game (a dark cap, a bright glass, a soft glow, a slight flicker), up and to the right of the door's point.
+- The evening does not get darker in the game yet, so the lamp shows in daylight; darker evenings would make it read better (not in this ticket).
+
+## 154 — On the cooler screen, click a flavour to read its cork board note (2026-11-15)
+
+**Decision (Jira SCREAM-355, under SCREAM-78, PO, November 15, 17:42, with a screenshot of the cooler screen):** "From this screen, I want to be able to click on flavors and see the power". His answers: where you click, "Both" (a flavour's Today's Menu card, and a small "i" button on each clipboard row); what shows, "The cork board's note"; "Build now".
+
+So, on Story's cooler screen, a click on an ice cream's menu card (not its - or +) or on the "i" beside its price on the clipboard opens that ice cream's note from the cork board over the cooler: picture, name, its power, the most a customer pays, what it costs to stock. It is for reading: no price and no BUY button. A click anywhere or any key closes it.
+
+**Options considered:** where: the menu card, an "i" button on the clipboard (the row itself still buys one), or both (chosen). What shows: the cork board's note (chosen), or a small bubble with just the power line.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076): Quick play's ice creams have no notes.
+- It works whenever the cooler screen is open in Story: before DRIVE, at a home stop, looking inside from the road and during a sale. The clock is not stopped by it.
+- While the note is open nothing under it reacts: the click or key that closes it does only that (Esc does not also pause).
+- Both ways in are buttons on screen (the mobile rule, SCREAM-77).
+
+## 153 — Chocolate Eclair: the extra ice cream can be any ice cream, and one eclair in the cooler is enough (2026-11-15)
+
+**Decision (Jira SCREAM-354, under SCREAM-78, PO, November 15, 17:39; changes decision 118):** "For the chocolate eclair. I want to make sure that customers are buying an extra ice cream, even if they aren't buying an eclair. If the eclair is in the cooler, they buy an extra ice cream." Told that the extra one was always an eclair (his November 14 choice), he chose: the extra is "Any ice cream they'd buy"; and when every eclair in the cooler is already in the customer's order, "Yes, any eclair counts".
+
+So, in Story: when the cooler holds at least one Chocolate Eclair as a customer steps up, their order gets one more ice cream, of any kind they would pay for that has one left beyond their order.
+
+**Options considered:** the extra: any ice cream they'd buy (chosen), one more of what they ordered, or keep it an eclair. With no spare eclair: any eclair counts (chosen), or a spare eclair is needed (as it was).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Each kind of ice cream that qualifies is as likely as the next to be the extra one.
+- If nothing qualifies (everything left is already in the order, or priced over its limit), the order is as it was.
+- The eclair's own price no longer matters: it only has to be in the cooler.
+- Unchanged from decision 118: everyone, set order sizes included (Big Kev's 7 becomes 8); nothing extra is shown; the uncle's evening too; Story only.
+
+## 152 — Big Kev's street is Haviland Street; the sheet's Street column is what the game uses (2026-11-15)
+
+**Decision (Jira SCREAM-353, under SCREAM-11, PO, November 15, 17:23):** "I want to move where the character big Kev lives. I just want to change the street name to haviland st. Since that is where I find him all the time."
+
+So Big Kev (T034, house 82, Elm Park) is on Haviland Street in the Residents sheet and in the game: in customers' hints about him, in schedule lines and in who his neighbours are. His house, door, yard and curb spot are where they were.
+
+**Why (product owner's rationale):** "Since that is where I find him all the time." (His curb spot is on Haviland Street; his house is near the corner of Institute Road, and the game named his street from the top edge of the house.)
+
+**Options considered (engineering):** change Big Kev alone (chosen: he asked for only that), or work everyone's street out from their curb spot, which would also change 4 more people in Elm Park and 27 in Foley Stadium (offered to him; not done).
+
+**Engineering's calls (proposals):**
+
+- The sheet's Street column is now what the game uses, so he can change anyone's street by editing the sheet and saying "sync residents" (it was "for reading only" and the build ignored it). A blank Street still means the street nearest the top of the house. The build stops with a message if a Street is not a street on that map (a roundabout is not one).
+- Both tabs already matched what the game worked out, so nobody else changes.
+
+## 151 — A shining red pixel-art bike on the New Bike screen (2026-11-15)
+
+**Decision (Jira SCREAM-242, under SCREAM-6, PO, November 10 and 15):** on November 10 he asked to "add a pixel-art bike image to the page, and make it shine so it looks like a cartoonishly good prize to win". On November 15 he sent a web picture as "the inspiration for the bikes shape" (a chunky bike seen from the front left: a triangle frame, raised handlebars, a black saddle, silver spoked wheels) and chose its colour, "Red", and its shine, "Glint and twinkles".
+
+So the New Bike screen shows a red bike under the title; a band of light slides across it every few seconds and five stars twinkle around it.
+
+**Options considered:** colour: blue like the picture, red (chosen), gold. Shine: a glint and twinkles (chosen), a turning sunburst behind it, or both.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Engineering drew the bike (a script, `tools/bike/draw_bike.py`): an original drawing in the picture's shape, with no brand or lettering. The web picture is a reference, not his note, so it is not in Personal Notes.
+- The bike is on the New Bike screen only for now (not the intro scroll or the end of Story).
+- To make room, the title moved up and is a little smaller, and the story text is a little smaller and lower. The wording is unchanged (still the placeholder of SCREAM-76).
+
+## 150 — Story's top bar names the street the truck is on, instead of the neighbourhood (2026-11-15)
+
+**Decision (Jira SCREAM-237, under SCREAM-10, PO, November 10 and 15):** on November 10 he asked that players know which street they are on: show the street name with the neighbourhood name, or replace it. On November 15 he chose: "Street instead" (the top bar shows the street only; the neighbourhood name goes) and "Top bar only" (no bigger name popping up on the road when the street changes).
+
+So Story's top bar reads, for example, "7:12 PM   Tuesday Day 2/10  Westland Street".
+
+**Options considered:** the street with the neighbourhood ("Elm Park · Westland Street", engineering's proposal) or the street instead (chosen). A bigger name on the road view for about 2 seconds at each new street (engineering's proposal) or the top bar only (chosen).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076), which covers both maps and the uncle's evening. Quick play's top bar had no place name and still has none.
+- At a crossing or on a roundabout the name is the nearest road's (the rotary shows as "Elm Park Rotary").
+- Off the road, and on the inside screens (cooler, window, pump, truck), the last street stays. Before the first drive of an evening it is the street nearest to home's driveway.
+- Customers' hints and order lines are not changed here.
+
+## 149 — 70% of regulars chase the truck forever and the rest wait at their own curb; no tell (2026-11-15)
+
+**Decision (Jira SCREAM-168, under SCREAM-11, PO, November 15):** told that "Should regulars chase further?" had never been answered, he wrote: "Yes regulars should chase forever". Then: "Let's have 70% of regulars chase. Add the tell. And build". Asked four questions, he chose: the other 30% of regulars "Wait at their own curb"; the tell is "A waving hand"; "The game picks" which 70%; and fast kids show the tell too ("Yes"). Shown a close-up of the hand once it was built (16:32), he wrote: "I want to remove the wave actually". The hand was taken out before the pull request opened: there is no tell.
+
+So, in Story: seven in ten regulars follow the truck for as long as it takes; the other regulars walk to their own curb and wait there, and never follow. Nothing on screen shows who chases. Everyone else keeps decision 147's rules (adults 30 seconds, slower kids 20).
+
+**Options considered:** the other 30%: keep decision 147's rules (engineering's proposal), or wait at their own curb (chosen). The tell: a waving hand (chosen, then removed once he saw it), a "!!" bubble, or both; in the end none. Who picks the 70%: the game (chosen), or a Chase column in the Residents sheet. Fast kids: show the tell, or regulars only (no longer applies).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- A regular is tonight's meaning in Story: someone ticked on all seven days (the people with Likelihood 50% or more, unless he changes the ticks).
+- The game's pick: each map's regulars are put in the order of a number made from their ID, and the first 70% (to the nearest whole person) chase. It is the same people every evening and on both maps, with no sheet work.
+- A regular who waits at their own curb waits the usual 30 seconds there, then goes home.
+- Like decision 147: Story only, not the uncle's evening or Quick play.
+
+## 148 — Two notes come out of Brakes Made This Century and two out of the Handy Notebook (2026-11-15)
+
+**Decision (PO, November 15, 03:28, testing #255 to #258; built on SCREAM-342's pull request):** "From brakes made this century and handy notebook, two powerups should come out. It should be both of the powerups just added". On the Truck tree, Back It Up (left) and More Space for Scream (right) both hang from Brakes Made This Century, side by side in the fourth row. On the Customer tree, Better Mirrors (left) and Speedy Neighbors (right) both hang from the Handy Notebook. This replaces the places engineering proposed in decisions 144 to 147 (one note under the other).
+
+**Options considered:** engineering's first layout: Back It Up under Brakes with More Space for Scream under it; Better Mirrors under the Notebook with Speedy Neighbors under it.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Left and right follow the order of his sketch (Reverse speed then Cooler size; Better Mirrors then Customer speed).
+- Each note needs only its tree's middle third-row note now: More Space for Scream no longer needs Back It Up, and Speedy Neighbors no longer needs Better Mirrors.
+- Prices are unchanged ($40 and $50; $50 and $60), though all four are fourth-row notes now.
+- The last dummy of each tree (Truck 9, Customer 9) hangs in the middle of the fifth row, from either note above it, like the sandwich on the Ice Cream tree.
+
+## 147 — Customers chase the truck by age, and Speedy Neighbors makes most of them faster, $60 (2026-11-15)
+
+**Decision (Jira SCREAM-342, under SCREAM-78, PO, November 15 notepad sketches and answers):** under "Customer" he wrote "Customer speed: most customers run after you faster", and named it: "Customers chasing - Speedy Neighbors". Asked who "most" is, he wrote his own answer: "I think it should be adults will follow the truck for only so long and then they will go home. Some kids will be fast and follow the truck anywhere. Others are slower and will give up after 20 seconds". He then chose: the rules apply to everyone in Story **"From the start"** (the note only adds speed); an adult follows for **"30 seconds"**; and the fast kids are a new Fast column in the Residents sheet (**"I pick a first set"**: engineering ticks a first set, he changes it). Story only (decision 076).
+
+So, in Story: an adult follows the truck for 30 seconds and then goes home; a fast kid is quicker and follows it anywhere; the other kids give up after 20 seconds. With Speedy Neighbors, everyone but the slower kids goes after the truck faster.
+
+**Options considered:** who runs faster: all but the oldest; kids and teens only; everyone (he wrote his own answer instead). The rules from the start (chosen) or only with the note. Adults: 30 seconds (chosen), 20, 45. Fast kids: engineering ticks a first set (chosen), by age, or wait for his ticks.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The first four fast kids in Elm Park: Tiger Prince, Rocky Road Ron, Maximus Mintimus and Darrel Strawberry (4 of the 11 kids; picked by their names). Foley Stadium has no Fast column yet, so its kids are all the slower kind.
+- A fast kid goes 1.5 times as fast as everyone else (37 px/s to 55.5). The note: x 1.25 for adults and fast kids; not shown (decision 132).
+- The seconds count only while the customer is walking after the truck. Once they have reached the curb beside it they wait as before (30 seconds); if the truck drives off again the count starts again.
+- Someone who gives up walks home and is done for the evening, like a customer who waited too long at the curb.
+- The uncle's evening and Quick play keep the old behaviour (everyone the same speed, nobody gives up while following).
+- Place: the Customer 8 dummy's spot (fifth row, left, under Better Mirrors). Price: $60. The note's words: "Most customers run after the truck faster."
+- The picture: engineering's own at first (a running shoe with speed lines); then he sent his sketch (02:58) and it was redrawn from it: a laced-up high-top shoe with a wing on each side of its ankle.
+- This overlaps SCREAM-257 (customers walk at a speed that fits their age): look at whether it is still needed.
+
+## 146 — Better Mirrors: markers at the screen's edge for customers on their way, $50 (2026-11-15)
+
+**Decision (Jira SCREAM-341, under SCREAM-78, PO, November 15 notepad sketches):** under "Customer" he wrote "Better Mirrors: indicator for customers, show exact customer"; the name stays "Better Mirrors". Asked what the player should see, he chose **edge markers**: a small marker at the edge of the screen points at each customer who is coming but is off screen, showing that person's face. Story only (decision 076).
+
+**Options considered:** edge markers (chosen); a wing-mirror picture on the driving screen showing the customers behind the truck; marking the people who will buy tonight on their house before they hear the music.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- This is a bought exception to decision 015 (customers are found from the music ring, with no arrow): without the note nothing changes.
+- A marker is only for a customer already on their way (the ones with a "!"), walking or waiting at the curb, never for someone who hasn't heard the music.
+- The marker is a round badge with the customer's head and a pink pointer toward them. It keeps clear of the gas dial, the key hints and the song's name, and goes when the customer is on screen, served or gone home.
+- Place: the Customer 7 dummy's spot (fourth row, under the Handy Notebook); Customer 8 and 9 hang from it. Price: $50.
+- The note's words: "A marker at the edge of the screen points at each customer on their way to you."
+- The picture: engineering's own at first (a wing mirror with a customer and a "!" in the glass); then he sent his sketch (02:58) and it was redrawn from it: a tall truck mirror with a rounder one across its middle, an arrow up and an arrow down, and three brackets on its side.
+
+## 145 — More Space for Scream: a bottom row opens in each cooler crate, 18 to 24, $50 (2026-11-15)
+
+**Decision (Jira SCREAM-25, under SCREAM-78, PO, November 15 notepad sketches):** under "Truck upgrade:" he wrote "Cooler size", and named it: "Cooler Size - 'More Junk'". Asked how much it should open up, he wrote his own answer: "The two slots in a row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot". After seeing it built (02:40) he renamed it: "Change "more Junk" to "More Space for Scream"". Once bought, each of Story's three crates has a fourth row of two open squares: 18 ice creams become 24. Story only (decision 076). This is the old "bigger cooler" ticket, rewritten.
+
+**Options considered:** engineering offered: uncover the rest of one crate; uncover all three; add a fourth crate. He chose none of them and described the bottom row instead. (Engineering's question wrongly said the cooler held 24; it holds 18.)
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The name sits on two lines on the opened note (MORE SPACE / FOR SCREAM), like the other long names. The code's id stays `more-junk`.
+- Place: the Truck 8 dummy's spot (fifth row, left, under Back It Up). Price: $50.
+- Bought at home or before DRIVE, the new squares can be filled straight away.
+- The right half of every crate stays covered, for later notes.
+- The note's words: "More room in the cooler: a new bottom row opens in every crate."
+- The picture: engineering's own at first (a crate of ice creams with a green plus); then he sent his sketch (02:58) and it was redrawn from it: a freezer with its top door swung open, ice creams on the shelves and the door.
+
+## 144 — Back It Up: the truck reverses faster, $40 (2026-11-15)
+
+**Decision (Jira SCREAM-340, under SCREAM-78, PO, November 15 notepad sketches "Next power-ups, truck and customer" and "Names for the next power-ups"):** under "Truck upgrade:" he wrote "Reverse speed", and named it: "Reverse Speed - 'Back it up'". A new note on the Truck tree; once bought, the truck's top speed in reverse is higher. Story only (decision 076).
+
+**Options considered:** none offered. Asked for names and places, he sent the names; the page gives no places.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Place: the Truck 7 dummy's spot (fourth row, under Brakes Made This Century). Truck 8 and 9 now hang from it.
+- Price: $40 (the third row is $30).
+- Strength: top reverse speed x 1.5 (Story's about 46 px/s to about 68). How quickly it picks up is unchanged. Not shown on the note (decision 132).
+- The note's words: "Increase the speed of the truck in reverse."
+- The picture: engineering's own at first (the back of a truck with a red arrow); then he sent his sketch (02:58) and it was redrawn from it: the truck from the side with "<<=" behind it.
+
+## 143 — Ice cream notes show what the ice cream costs to stock, with a space between paragraphs (2026-11-15)
+
+**Decision (Jira SCREAM-352, under SCREAM-78, PO, November 15, 02:14, with a screenshot of the SpongePop note):** "I want to add the cost of buying each ice cream to the powerup card." and "I want to add a space between each paragraph". An opened ice cream note now reads, each as its own paragraph with an empty line between: what the ice cream does; the most a customer pays; "Costs you $1.50 each to stock."
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Wording of the new line: "Costs you $1.50 each to stock." Order: what it does, the most a customer pays, the cost.
+- The text starts under the name, the price and BUY follow it, and the paper grows a little to hold them (the eclair's note, with four paragraphs, is the tallest).
+- Only the ice cream notes have more than one paragraph today; any note given paragraphs later is spaced the same way.
+- The one-line preview under the board is unchanged.
+
+## 142 — The Two Ball Lou Ball and the Drum Cone cost $1.00 to stock (2026-11-15)
+
+**Decision (Jira SCREAM-351, under SCREAM-78, PO, November 15, 02:14):** "I want to make the two ball and the drum $1 to buy". Engineering read "to buy" as what the player pays to stock one, not the $30 note; he answered (02:19) "Agreed". Both cost $1.00 to stock, down from $2.00, and customers still pay up to $3.00.
+
+**Options considered:** engineering proposed that both start at $2.00 on Today's Menu (the usual cost plus $1.00). He answered: "I want these two ice creams to be more profitable. So they should cost $1 but be able to be sold at $3."
+
+**Why (product owner's rationale):** "I want these two ice creams to be more profitable."
+
+**Engineering's calls (proposals):**
+
+- Both keep starting at $3.00 on Today's Menu, as before, so the player earns the $2.00 each without having to raise the price first; the cost plus $1.00 rule is skipped for these two (`startPriceCents`).
+- A saved Story keeps whatever price the player had set.
+- Nothing else about them changes (double tip and reversed steering; the drum solo).
+
+## 141 — Today's Menu prices stop at the price on the ice cream's cork board note (2026-11-15)
+
+**Decision (Jira SCREAM-343, under SCREAM-78, PO, November 15, 01:50):** "At the cooler, when seeing today's menu, the player should not be able to raise the price above the one stated on the cork board (powerup board)". In Story, a price on Today's Menu stops at the "won't pay more than" price on that ice cream's note (the eclair $2.50; SpongePop, the Lil Explorer Pop, the Two Ball Lou Ball and the Drum Cone $3.00). Before, it went up to $10.00 and customers simply left a dearer ice cream out of their order.
+
+**Options considered:** none offered; engineering proposed four details and he answered (02:03) "I agree with all of these. The only one to make a note on is the cookie ice cream, I will decide the benefits on that later."
+
+**Why (product owner's rationale):** _to ask_.
+
+**Agreed details (engineering's proposals, accepted by the PO):**
+
+- At the top price the + button is greyed out, so the player sees why it stopped.
+- An old save with a higher price is brought down the next time the cooler opens.
+- The Cookie Ice Cream Sandwich has no price on its note, so it stops at the general limit customers already have ($4.00), until the PO decides its benefits.
+- Quick play is unchanged (up to $10.00).
+
+**Engineering's calls (proposals):**
+
+- The uncle's evening is unchanged too.
+- This answers an older open question (decision 132): the "won't pay more than" line stays on the ice cream notes, because the menu now points at it.
+
+## 140 — Debug key: Shift+0 fills the gas tank (2026-11-15)
+
+**Decision (Jira SCREAM-337, under SCREAM-202, PO, November 15):** "In this set of builds, I want to add another testing helper. Fill gas. Should be Shift + something, let me know your suggestion". Engineering suggested Shift+0; he answered "Lets go with that." On any evening screen, in both modes, Shift+0 fills the tank to 100%, for free.
+
+**Options considered:** Shift+0 was the only free Shift + number key (Shift+1 to 9 are taken), and it sits next to Shift+9 (+$50).
+
+**Why (product owner's rationale):** a testing helper (his words above).
+
+**Engineering's calls (proposals):**
+
+- It fills the main tank only; the Temporary Gas Can stays as it is (full or used).
+- It costs nothing and counts as no purchase: cash, profit and the gas spent don't change.
+- After the evening has ended it does nothing.
+- Like the other debug keys it is not on the Key Bindings page, and it works on the public site until debug keys are gated.
+
+## 139 — The Drum Cone: a drum solo replaces the music and reaches further for 30 seconds, $30 (2026-11-15)
+
+**Decision (Jira SCREAM-335, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under the Lil Explorer Pop: "2 Drumstick. Music is replaced by drum solo. Music Radius increases by 10% for 30 seconds. In game description: 'Drum solo reaches more of the neighborhoo...'" (cut off in the photo; asked whether it ends "neighborhood.", he answered "Yes"). Asked, he chose: the effect happens on **"Each sale with one"**; the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: "Drumstick" is a real ice cream brand; he chose **"drum cone"**. The picture is his own sketch (November 15): a waffle cone with crosshatch marks and a coated scoop with a bite out of it.
+
+**Later the same night (01:18):** "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
+
+**Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Note price: $30 (chosen), $40, or $25. Name: keep "Drumstick", or a name of our own (chosen, his).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- For the 30 seconds the truck's tune is swapped for a drum solo and the music ring is 10% bigger (drawn bigger, and customers inside it hear the truck); then both go back, and the tune carries on where it stopped.
+- The 10% is on top of Upgrade Speaker when it is owned.
+- The 30 seconds run in the driving view only, with a DRUM SOLO countdown at the top of the road view; the song label says "Drum Solo". A second Drum Cone sale starts the 30 seconds again; it doesn't add up.
+- The drum solo is an original two-bar pattern made with the browser's own sound, like the tunes (kick, snare, hi-hat, two toms; no recording). M mutes it.
+- Story only (`storyOnly`), like the Two Ball Lou Ball. With six ice creams the cooler screen uses the closer rows and smaller cards built for SCREAM-334.
+
+## 138 — The Two Ball Lou Ball: double the tip, then the steering is reversed for 10 seconds, $30 (2026-11-15)
+
+**Decision (Jira SCREAM-334, under SCREAM-78, PO, November 14 notepad sketch "Ice cream tree, third row" and November 15 answers):** a new ice cream on the Ice Cream tree's third row, under SpongePop: "1 Two Ball Screwball. Tip is Double. Controls are reversed for 10 seconds. In game description: 'High upside, crazy downside.'" Asked, he chose: the effect happens on **"Each sale with one"**; **"Steering only"** is reversed (left and right swap; gas and brake stay); the note costs $30 and one costs $2.00 to stock, and "customers should be willing to pay $3.75". The name: told that "Two Ball Screwball" is close to a real product's name, he asked "are the two brands something we shouldn't use?" and then chose **"two ball lou ball"**. The picture is his own sketch; he sent a second one ("Let's switch to this design"): a slanted cone cup, a lid that says "Lou" and "II", two gumballs in the point.
+
+**Later the same night (01:14 to 01:18):** with a photo of a real cup of ice, "It should look more like this" and "Make sure to include the two balls at the bottom of the cone": the picture was redrawn as a clear plastic cone cup of cherry ice with a rimmed lid (still "Lou" and "II", our own lettering) and bigger gumballs in the point. And "The two ball and the drum can be sold for $3": customers pay up to **$3.00** for one, not $3.75.
+
+**At 01:58,** with a close-up sketch of the cup's rim: "I want the edges to meet" and "Remove lou and I": the lid is plain, with no lettering, and the cup's sides run straight from the two ends of the lid's oval. At 02:00, with a sketch of a long flat oval: "Still too circular": the lid is drawn as a long flat oval, tilted up to the right.
+
+**Options considered:** when: each sale with one (chosen), once an evening, or whenever one is stocked. Reversed: steering only (chosen), everything, or gas and brake only. Note price: $30 (chosen), $40, or $25 like the Explorer Pop. Name: keep "Two Ball Screwball", or a parody name (chosen, his own).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The double is on the whole sale's tip, once, however many are in the order; the flash after the sale says DOUBLE TIP. No tip earned, nothing to double.
+- The 10 seconds run in the driving view only (not at the window, the truck screen, the pump or the pause menu), and a countdown at the top of the road view says STEERING REVERSED. A second Lou Ball sale starts the 10 seconds again; it doesn't add up.
+- Story only: the ice cream is marked `storyOnly`, so Quick play's clipboard never offers it.
+- With a fifth ice cream the cooler screen had no room: the clipboard's rows sit closer together when more than four ice creams are unlocked, and Today's Menu draws its cards smaller when more than four are stocked.
+- A new test suite, `icecreams`, covers this and the Drum Cone.
+
+## 137 — The Ice Cream tree: SpongePop and the Lil Explorer Pop side by side, the sandwich on a fourth row (2026-11-15)
+
+**Decision (Jira SCREAM-333, under SCREAM-78, PO, November 14, notepad sketch "Ice cream tree, third row (notepad, November 14)" in Personal Notes):** "Note: Change Sponge + Explorer to be next to each other." His drawing: one note at the top, two under it side by side, and one more under each of those. So the tree is now: the Chocolate Eclair at the top; SpongePop (left) and the Lil Explorer Pop (right) under it, each on its own string; a third-row note under each (dummies until SCREAM-334 and SCREAM-335 are built); the Cookie Ice Cream Sandwich in the middle of a fourth row. Asked where the sandwich and the two "?" notes go (the sketch has no spot for them), he chose **"A fourth row"**: the sandwich in the middle of row 4, unlocked by either third-row note; the two old "?" notes removed.
+
+**Options considered:** the sandwich on a fourth row with the "?" notes removed (chosen); removing all three; the sandwich on row 4 and the "?" notes on row 5.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Lil Explorer Pop is unlocked by the eclair alone (it no longer needs SpongePop), because the sketch hangs both from the top note.
+- Prices don't change (SpongePop $20, Explorer $25, the sandwich $15).
+- The two third-row spots reuse the old "?" notes' ids (`icecream-5`, `icecream-6`) until their ice creams are built, so a save that bought a "?" note still owns the note in that spot (it did nothing, and still does nothing).
+- A saved run keeps everything it owns; a run that owns the sandwich but no third-row note keeps the sandwich.
+
+## 136 — Trot and Steam Engine raise the roll speed much more: 25.2 and 50.4 px/s (2026-11-15)
+
+**Decision (Jira SCREAM-336, under SCREAM-78, PO, November 15, testing):** first: "The roll speed (no gas being pressed. Should be increase with the powerups a bit more. Lets go with 5% more on both." Built as 18.6 px/s with Trot and 25.2 with Steam Engine too (from 18 and 24). He tried it: "What does roll mean to you? It doesn't seem to be much faster", and then: **"Lets increase it. trot should be where trot and steam are. and trot and steam should be another 2x increase."** So Trot alone now gives 25.2 px/s (Story's 12 x 2.1), and Steam Engine doubles that: 50.4.
+
+**Options considered:** the 5% step (built, too small to see); the bigger numbers above (chosen). Engineering had offered 21 and 30 as an example.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "Another 2x increase" is read as twice the roll speed Trot gives (50.4), not twice Trot's step (38.4).
+- Steam Engine now multiplies (x 2) instead of adding Trot's step again, which replaces decision 129's "the same effect as Trot, on top of it".
+- The roll down from top speed still takes 4 seconds and ends at the new roll speed. Tab (look inside) and the park brake work at the roll speed or slower, so both work at higher speeds with these notes.
+- The notes' wording, the prices and Quick play are unchanged.
+
+## 135 — This Century Register: click the ice creams and the price adds up, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-330, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes), note 3, under the calculator: "3 This century register - Click the icons of the Ice Cream to calculate price." "Player clicks on which item and they add up automatically." He had crossed out "Register should be a tablet with the "Today Menu" shown." Price: "$40". Asked where the icons should be, he first chose a tablet beside the pad (the calculator pad staying). Seeing that built (the tablet sat in the mini Today's Menu's place), he changed it: **"The tablet should replace the calculator"**. So with the register the pad is gone and the tablet sits where it was. Then, seeing that: **"One the tablet powerup is bought, lets remove the price menu."** So the mini Today's Menu is not taped to the glass while the register is owned: the tablet's tiles show each price.
+
+**Options considered:** a tablet beside the pad (first choice, built, then dropped); a tablet that replaces the number pad (chosen after seeing the first); no tablet, with Today's Menu itself clickable. Price $40 (chosen) or $45.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The tablet shows the total at the top, a tile per ice cream on the menu (picture, name, price), then CLEAR and CHARGE.
+- A click adds one of that ice cream (click twice for two); a small orange number on the tile counts the clicks. CLEAR (or Delete or Backspace) empties the total and the counts. Enter still charges.
+- With no number keys, the price is always the sum of what was clicked: no typing a different price while the register is owned.
+- The player still has to remember the order: the register only adds up.
+- A three-word name over 20 letters sits on two lines on the opened note (THIS CENTURY / REGISTER), like the four-word ones.
+- The picture is his sketch: a tablet with ice cream tiles. No brand.
+- Story only (decision 076).
+
+## 134 — Handy Notebook: hints given by customers are written down, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-245, under SCREAM-78, PO):** first raised in the November 10 customers brainstorm: without the notebook, remembering what customers tell you is the point; the notebook is the power-up that takes that work away. On November 14 his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes) made it note 2, in the middle, joined to both the speaker and the calculator: "2 Handy NoteBook - Hints given by customers are written down." "Notebook should be a new clickable item in the truck view." Asked which lines go in, he chose all three kinds (hints about big regulars, what customers say about their own week, what they say about neighbours) and added: "all of the hints that customers say at the window are added to the notebook." Asked the price and how it unlocks: "$40, need either".
+
+**Options considered:** which lines: all three kinds (chosen), big-regular hints only, or hints and own week without neighbours. Unlock: after the speaker or the calculator (chosen), or only with both. Price $40 (chosen) or $45.
+
+**Why (product owner's rationale):** _to ask_ (November 10's is above: remembering is the work the notebook takes away).
+
+**Engineering's calls (proposals):**
+
+- Only hints heard after buying it are written down. Each entry has the day ("Tuesday Day 2"), who said it and their words without the "Thanks!". The same words from the same person are not written twice. The regular's line about the rotary is written down too.
+- It hangs under the tip jar in the truck view (the green cup on the shelf by the window), and only once it is owned. The PO chose the spot while testing: "Lets have notebook hang under the tip jar." (the first build hung it on the side door). How it looks is engineering's placeholder until he draws it.
+- Opened, it is a full-screen pad: newest first, four to a page, ← → to turn the page, B to go back. Reading only, so it also opens while looking inside from the road (Tab).
+- It lasts for the whole Story run and is saved with it at the end of each day, like the power-ups (Restart Evening gives back the notebook the evening started with). A new Story starts with an empty one.
+- SCREAM-245 (the November 10 ticket) was rewritten for it rather than making a duplicate.
+- Story only (decision 076).
+
+## 133 — Speaker with Heavier Bass: the some-days people come out more often, $40 (2026-11-14)
+
+**Decision (Jira SCREAM-329, under SCREAM-78, PO, November 14):** from his notepad sketch of the Customer tree's third row ("Customer power-ups, third row (notepad, November 14)" in Personal Notes): "1 Speaker with Heavier Bass - more likely to get customers in their home", drawn under the speaker with a guitar and music notes as the picture. Asked which chance goes up, he chose the **some-days people**; asked the price, "$40".
+
+**Options considered:** the some-days people (chosen); second chances (people who didn't come out the first time); both. Prices offered: $40 or $45.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "Some-days people" in Story are everyone who isn't ticked all seven days and isn't 0% (the buyer kind `sometimes`). With the note, their Likelihood counts 1.1 times as much each time they roll to come out (`BASS_SOMETIMES_FACTOR`), on top of today's tick. Every-day regulars, 0% people and hard-to-find customers are unchanged. The number isn't on the note (decision 132).
+- It works from the moment it is bought, on both maps. (The ticket first said "from the next evening"; in Story nobody's evening is decided ahead, so there is nothing to wait for.)
+- The Customer tree's lower rows now mirror the Truck tree: three notes on the third row (this one and two dummies until SCREAM-245 and SCREAM-330), one dummy under the middle, two at the bottom. The dummies are Customer 5 to 9.
+- The picture is his sketch: a guitar lying up to the right with sound strokes and music notes.
+- Still to check with him: "in their home" could also mean people who are indoors (they are half as likely to come out as people in their yard). Built as he answered.
+- Story only (decision 076).
+
+## 132 — Power-up notes don't give exact numbers (2026-11-14)
+
+**Decision (Jira SCREAM-328, PO, November 14):** "I want to remove all the hints on the powerups that give the exact information on the powerups. For example, 10% or 5%". The notes say what a power-up does, not by how much.
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):** the new wording: Gitty Up "Increase acceleration. The truck still is heavy, so don't expect much."; Train Off The Tracks "Max velocity increased."; Brakes Made This Century "Brakes are better."; Upgrade Speaker "Increase the reach of the speaker."; Service With A Smile "Tips start higher, and you get more time to earn one."; SpongePop "Kids who order one tip more."; Temporary Gas Can "... a splash to get you going. ...". The ice creams' price line ("won't pay more than $3.00") stays: it is a price to set, not a strength. The effects don't change.
+
+## 131 — The HUD and Continue Story show the weekday and the day count (2026-11-14)
+
+**Decision (Jira SCREAM-327, PO, November 14):** "I want to add it so that on the saved game and at the top of the screen on the hud, the count of days and day of the week appear. So: Tuesday Day 2/10 is an example". On November 10 (SCREAM-221 / 232) the HUD had been cut to the weekday alone; the count is back now that Story is 10 days.
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- One function, `dayText(day, days)` in `state/Residents.ts`, writes it for both places.
+- The end-of-day screen keeps its own wording ("END OF TUESDAY").
+
+## 130 — Story is 10 days: Monday to Friday twice (2026-11-14)
+
+**Decision (Jira SCREAM-322, PO, November 14):** "making the story 10 days long. Monday through friday for day 1-5 and 6-10". Asked: the bike **stays $600**; after Friday (day 5) **skip straight to Monday** (day 6); customers' schedules are **the same both weeks**. Before, 5 days (decision 046).
+
+**Options considered:** a $1,200 bike; a "the weekend passes" card; a second week with different ticks.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- `STORY_DAYS` 10; `weekdayOf` counts Monday to Friday only (`STORY_WEEK_DAYS` 5), so Day 6 is Monday.
+- Schedule lines count played days: Friday's "see you Monday" is the next day; someone ticked only Saturday or Sunday never gets a "[Next]" line (`daysUntilHome` returns null).
+- An old 5-day save carries on as a 10-day run.
+
+## 129 — Steam Engine: the roll +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-326, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "3. Steam Engine. Increase the speed of the truck as it rolls.", under Trot. Asked, he set the price at **$30** (like the second Customer row). Asked how much: **+10%**, on top of Trot: Story's roll 12 → 13.2 px/s, or 18 → 19.8 with Trot. **While testing (22:50):** "For steam engine, it should be the same effect as trot, just on top of it." So it adds Trot's step again: 18 → 24 px/s (`STEAM_CREEP_FACTOR` = Trot's; engineering read "the same effect" as the same +6 px/s, not another x 1.5).
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's right third-row note (was Truck 6).
+- Picture: an original little green steam engine with a puff of steam (`drawSteamEngine`), from his sketch.
+- Tab (SCREAM-321) works up to the new roll speed.
+
+## 128 — Brakes Made This Century: brakes +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-325, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "2. Brakes made this Century. Brakes are better. 5% increase.", under both Gitty Up and Trot. Asked, he set the price at **$30** (like the second Customer row). Owned, braking time is divided by 1.1 (`BRAKES_FACTOR`). **While testing (22:57):** "I want to make the brakes only be 5% better as well": now divided by 1.05.
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's middle third-row note (was Truck 5), under Gitty Up or Trot; Truck 7 now hangs from it.
+- "10% better" read as braking time / 1.1 (like Gitty Up's acceleration).
+- Picture: an original brake disc with a red caliper (`drawBrakeDisc`), from his sketch.
+- SCREAM-87 (steering, brakes and turning) keeps steering and turning.
+
+## 127 — Train Off The Tracks: top speed +10%, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-80, PO, November 14, notepad sketch "Truck: next upgrades"; Personal Notes, "Truck upgrades, third row (notepad, November 14)"):** "1. Train off the tracks. Max Velocity increased by 10%", under Gitty Up. Asked, he set the price at **$30** (like the second Customer row). Owned, the truck's top speed is x 1.1 (`TRAIN_TOP_SPEED_FACTOR`). **While testing (22:50):** "Lets increase the max velocity by 5 on train off the tracks": then "by 5 ... not 10": **5%** (x 1.05), and the note says 5%.
+
+**Options considered:** $25 or $40 each.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Truck tree's left third-row note (was Truck 4). Note text "Max velocity increased by 10%."
+- The roll down from top speed still takes STORY_TRUCK_ROLL_SECONDS (`coastKeep` follows the new top speed).
+- Picture (the PO, November 14, after two tries): a speedometer, "but the needle should be on the left side, indicating it is still slow" (`drawTrainOffTracks`, after his web reference; original drawing).
+- SCREAM-80 (the old "faster truck" upgrade, November 1) was rewritten for it.
+
+## 126 — Debug key: Shift+9 adds $50 (2026-11-14)
+
+**Decision (Jira SCREAM-324, PO, November 14):** "For testing. I want to add the ability for me to add money to my wallet on any screen. Lets say +$50. Unless you have a reason against it, lets have the key be \"Shift + 5\"". Shift+5 already shows the loading screen (SCREAM-75), so he chose **Shift+9**. The $50 **only changes cash**: tonight's profit and the end-of-day rows don't count it.
+
+**Options considered:** Shift+5 with the loading-screen preview moved to Shift+9; counting the $50 as income (like Shift+1).
+
+**Why (product owner's rationale):** for testing (his words); the rest _to ask_ if wanted.
+
+**Engineering's calls (proposals):**
+
+- In the HUD with the other debug keys, so it works on every evening screen in both modes (not the title, end-of-day or results screens). Not shown on screen or on the Key Bindings page, like the other debug keys.
+- `EveningState.debugAddCash` raises the evening's starting cash with the cash. A "+$50.00 Debug" pop-up shows.
+
+## 125 — Story: Tab looks inside the truck, slow or stopped (2026-11-14)
+
+**Decision (Jira SCREAM-321, PO, November 14):** "I want to make it so a player can see inside the truck at any time. If the player is at very low speed, they can hit "Tab" and they will go to the inside truck view. They can see inventory at this time, but not purchase it. They can see powerups but not purchase them." Asked: very low speed means **creeping or stopped** (roll speed or slower; the truck stops when you go in); the clock **keeps running**; the cooler is **look only** (no buying, no price changes).
+
+**Options considered:** fully stopped only; the clock pausing inside; prices changeable on the road. He chose the first option each time.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076), once the truck has set off. Faster than roll speed (`spec.creepSpeed` + 1 px/s), Tab does nothing, with no message.
+- From the truck screen, DRIVE, Tab or B goes back on the road where the truck stopped. The window still works if a customer is waiting.
+- The cooler's line says "Just looking: stock is bought and prices are set at home."; the board's says "Buy it at home".
+- Customers keep walking and the music keeps playing while inside (as on any stop off the road, SCREAM-114 / 118).
+- `EveningState.startPeek` / `isPeeking`; the Drive scene ends the look when it starts. Tab is captured so the browser doesn't move its focus.
+- **SCREAM-323 (PO, November 14, while testing):** "While in the cooler, we need a button to return to the truck view." A RETURN TO TRUCK button, bottom left in Story's cooler, does what B does. Engineering's calls: styled like the window's RETURN TO COOLER; Story only.
+
+## 124 — Story: power-ups can be bought at home at any time (2026-11-14)
+
+**Decision (Jira SCREAM-320, PO, November 14):** "I want the player to be able to purchase powerups while at home at any time." The cork board sells before setting off and on every later stop at home (SCREAM-319 opens the truck screen there). Before, only before setting off (decision 073).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Away from home (the Tab view, SCREAM-321) the notes can be seen, not bought; the line says "Buy it at home" (was "Buy at home, before you set off").
+- A truck power-up bought on a home stop works from the moment the truck drives off again.
+- `EveningState.atHome` is true before setting off and while `isRestocking`.
+
+## 123 — Story: a home stop opens the truck screen (2026-11-14)
+
+**Decision (Jira SCREAM-319, PO, November 14):** "When the player pulls into home, or the player hits tab, it should be on the truck screen, not the cooler screen." Stopping in home's driveway spot (SCREAM-54) opens the truck screen: the cooler (restock, as before), the cork board and DRIVE. The Tab half is SCREAM-321 (decision 125).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076); the uncle's evening and Quick play keep the cooler.
+- The clock keeps running at home (decision 029).
+- Leaving the cooler at home goes back to the truck screen with DRIVE highlighted, not straight to the road. DRIVE, or B on the truck screen ("B: Back To The Road"), ends the stop.
+- `EveningState.homeOpensTruck`; the stop is still `isRestocking` until DRIVE.
+
+## 122 — Story: the clock starts at DRIVE (2026-11-14)
+
+**Decision (Jira SCREAM-318, PO, November 14):** "At the beginning of the night, I want to make it so the clock doesn't start until the player hits "Drive"". In Story, stocking the cooler, the truck screen and the cork board before setting off no longer move the clock; DRIVE on the truck screen starts it. Before, leaving the cooler started it (#66; decisions 005, 029).
+
+**Options considered:** none offered; the PO's call.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Story only (decision 076); the uncle's guided evening keeps the old rule (its own steps start the drive). Quick play unchanged.
+- `EveningState.clockWaitsForDrive`; `returnToTruck` doesn't start the clock when it is set. The cooler's note reads "The clock starts when you press DRIVE."
+- Once the truck has set off, the clock runs everywhere, as before.
+
+## 121 — Calculator: the window's price pad gets + − × ÷ and =, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-317, under SCREAM-78, PO, November 14):** "The right one should be “Calculator”. “Get a calculator to use at the sales window.” It should cost $30." The window already had a pad that only types the price; asked what buying the Calculator does, he chose: **the pad gets + − × ÷ and =**, like the desk calculator in his photo, so an order can be added up there (2.50 + 2.50 + 3 =) and then charged.
+
+**Options considered:** + − × ÷ and = (chosen); only + and =; the total worked out for you (no maths at all).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The note is the Customer tree's right note under Service With A Smile (it was the dummy Customer 3); the middle note under both now hangs from Upgrade Speaker or Calculator.
+- The sum keys are a new column on the pad's right (÷ × − +), with = above a one-row CHARGE; the digits, C and ← stay where they were. (The ticket first said the left; there's no room left of the pad, beside Today's Menu.) The pad now reaches a little over the customer.
+- Worked left to right like a cheap calculator: 2 + 3 × 2 is 10. × and ÷ take the second number as a plain number (3 × 2.50 = 7.50). ÷ 0 leaves the number alone.
+- The waiting sign shows small beside the $ on the display. A result shows with cents (8.00).
+- Keyboard: + − * / and =; Enter (CHARGE) works a sum out first, then charges. A sum below $0.01 charges nothing.
+- The picture is an original dark desk calculator with two red keys, drawn like the gas can; not a copy of the photo.
+- Story only (decision 076): only Story can own it. The keys line at the window is unchanged; the Key Bindings page has a new row.
+
+## 120 — Upgrade Speaker: the music ring reaches 10% further, $30 (2026-11-14)
+
+**Decision (Jira SCREAM-81, under SCREAM-78, PO, November 14):** "I want to add the next two power ups under customer. The left one should be “Upgrade Speaker” which will “Increase the reach of the speaker by 10%.” It should cost $30." Asked what 10% means, he chose **10% of today's ring**: Story's ring goes from 165 px to about 182 px (165 x 1.1). He sent a photo of a grey horn loudspeaker for the picture.
+
+**Options considered:** 10% of today's ring (chosen) or a tenth of Quick play's 300 px (165 to 195).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The note is the Customer tree's left note under Service With A Smile (it was the dummy Customer 2); the middle note under both now hangs from Upgrade Speaker or Customer 3.
+- The picture is an original horn speaker on a U bracket, drawn like the gas can; not a copy of the photo.
+- SCREAM-81 (the old "music reaches further" upgrade from November 1) was rewritten for it rather than making a duplicate ticket.
+- Bought at home, the ring is bigger as soon as the truck drives.
+- Story only (decision 076).
+
+## 119 — The gas station: Buy Gas bottom right, Leave bottom left (2026-11-14)
+
+**Decision (Jira SCREAM-316, under SCREAM-7, PO, November 14):** "Move the buy gas button to the bottom left. Move the leave button to the bottom left of the screen." Asked which goes where, he answered: "Buy gas bottom right." So the pay button (PAY $x, or UNCLE PAYS $x) is in the bottom-right corner and DRIVE OFF in the bottom-left. Priority High (his answer).
+
+**Options considered:** Buy Gas bottom left and Leave bottom right; Leave bottom left and Buy Gas bottom right (chosen); both side by side in the bottom left.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The gas dial (SCREAM-238) already fills the very corner, so DRIVE OFF sits just right of it, under the pump picture.
+- The key line under the buttons ("Enter: Pay And Drive Off ...") moves down 6 px to make room; its words are unchanged.
+- Story only (decision 076); Quick play keeps the old places. The keys (Enter, B, arrows) are unchanged.
+
+## 118 — Chocolate Eclair: with one in the cooler, every customer orders one extra eclair (2026-11-14)
+
+**Decision (Jira SCREAM-315, under SCREAM-78, PO, November 14):** "I want to add a powerup to chocolate eclair: If at least one of these are in the cooler, the customer will buy one more ice cream than they would have". His answers: the extra one is **a Chocolate Eclair**; it works **from day 1** (the eclair is owned from the start); **everyone**, set order sizes included (Big Kev's 7 becomes 8); **nothing extra shown** (the order is just one bigger). The note's line is his: "If you have these stocked in your cooler, every customer will buy an extra ice cream."
+
+**Options considered:** an extra eclair (chosen) or one more of any ice cream; from day 1 (chosen) or after buying an upgrade note; everyone (chosen) or not customers with a set order size; nothing shown (chosen) or a line at the window and a row at the end of the day.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Only with an eclair left beyond those the customer already ordered, and priced at what they'd pay ($2.50 or less); otherwise the order is as before.
+- A customer who'd have ordered nothing (everything else too dear) orders just the one eclair.
+- In the uncle's evening too, since it's Story's day 1 (Big Kev's order there is 8).
+- Story only (decision 076).
+
+## 117 — The Lil Explorer Pop's exploration tip (2026-11-14)
+
+**Decision (Jira SCREAM-312, under SCREAM-78, PO, November 14):** "Explorer pop. when sold, gives you money for the distance from home you are. Almost like a tip. except the further away the more the \"tip\". Call it the exploration tip." His answers: measured in a **straight line**; in Elm Park from **$0 at home to $1.00 at the roundabout**, in **$0.10 steps**; in Foley Stadium from **$1.50 at Newton Square** up to **$5.00 at the farthest customer** ("I'd be willing to have the far corner ... be $5", then moved to the farthest customer so it can be earned), growing with no cap; **paid even with no normal tip**; **one per Explorer Pop** ("You get three of the tips"); **its own row** on the end-of-day screen ("I like having it be its own row").
+
+**Options considered:** straight line (chosen) or distance by road; tip percentage points, or cash up to $1 or $2 (he chose cash, his own amounts); in Foley Stadium growing (chosen), capped, or Elm Park only; $5 at the far corner or at the farthest customer (chosen); one per sale or one per Explorer Pop (chosen).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Measured at the customer's pickup square (where the truck stops). Rounded down to the $0.10 step, so the next 10 cents is earned by going a little further. Foley Stadium in $0.10 steps too.
+- Paid only on a paid sale (not after a refusal, a wrong order or an overcharge).
+- At the window it flashes after the tip: "+$1.60 EXPLORATION TIP" in purple, a little smaller.
+- The end-of-day and run-stats screens show "Exploration tips" under Tips, only when there were any; with seven rows the line and everything under it move down a row. It counts towards the night's largest sale.
+- The note's line was engineering's "Sell one far from home for an exploration tip: the further, the bigger."; while testing the PO set it: "For the Explorer pop I want the description to be: 'The further from home, the bigger the tip.'" Its note also costs $25, customers won't pay more than $3.00 for one, and it no longer starts "Stock it and customers order it." (see 116). With the SpongePop's line, tip lines take turns under the price (see 116).
+- Story only (decision 076). Old saves start the run's exploration total at $0.
+
+## 116 — SpongePop: a kid whose order includes one tips 10 points more (2026-11-14)
+
+**Decision (Jira SCREAM-313, under SCREAM-78, PO, November 14):** "I want the spongepop to increase tips by children by 10%". Asked what that means, he chose **10 percentage points more** (not 1.1 times), and **only when the kid's order includes a SpongePop**. So a quick tip goes 30%, 25%, 20%, 15% instead of 20%, 15%, 10%, 5%. The first ice cream with an effect of its own (SCREAM-135).
+
+**Options considered:** 10 points more (chosen) or 1.1 times the tip; when the kid's order includes a SpongePop (chosen), for every kid once the note is owned, or for every kid while SpongePop is stocked tonight.
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- A kid is a resident marked Kid in the Residents sheet's Age column (both maps).
+- One SpongePop anywhere in the order is enough; more SpongePops don't add more.
+- With Service With A Smile the two add up: 35%, 30%, 25%, 20%, 15%. A hard-to-find kid's 4x multiplies the raised tip.
+- The tip bar shows the raised steps; no new line or pop-up.
+- The SpongePop note says "Kids who order one tip 10% more." (engineering's wording).
+
+**Changed while testing (PO, November 14, 16:00):** "I want to change the purchase price for \"powerup\" spongepop to be $20 and the explorer pop to $25. I want the price people are willing to pay to be both be $3. Lets remove the line \"Stock it and customers order it.\"" So SpongePop's note costs $20 and the Lil Explorer Pop's $25 (the sandwich keeps $15); customers won't pay more than $3.00 for either (the sandwich keeps $4.00); and no ice cream note starts with "Stock it and customers order it." any more (engineering's call: the sandwich's too, as it's the same line).
+
+**Also while testing (PO, November 14, 16:07 and 16:11):** "On the spongpop, similar to on the explorer, I want to include how much was earned because of the pop." And: "If there are too many different tip types on the successful sale screen, the tips should scroll behind the overall price after they have appear to reveal the bottom tips." So the SpongePop's part of the tip (the 10 points) is its own line at the window ("+$0.30 SPONGEPOP TIP", after the tip, which now shows only the rest) and its own "SpongePop tips" row under Tips on the end-of-day and run-stats screens (only when there was any; each row past six moves the line and what's under it down a row). With more than one tip line, each appears under the price, then scrolls up behind it as the next comes in; the last one stays. Engineering's calls: the SpongePop's part is the tip minus what it would have been without the 10 points; its pink colour.
+- Story only (decision 076).
+
+## 115 — Home and the pump: go in again without driving out of the spot first (2026-11-14)
+
+**Decision (Jira SCREAM-304, under SCREAM-7, PO, November 14):** after visiting home or the gas station, "the only way to go in again is to drive out of the entry rectangle and back in. That is a pointless detour." A truck that stays in the spot is offered the way back in.
+
+**Options considered:** move a little and stop again inside the spot to go back in (chosen, engineering's proposal); a new key and on-screen prompt while the truck sits in the spot; going back in straight away when stopped (rejected: the truck comes out stopped in the spot, so it would reopen at once).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- Going in works the way it always has, by stopping in the spot: no new key, prompt or wording. After a visit, once the truck has moved and then stopped again inside the spot, it goes in. This answers the ticket's two questions: nothing shows straight away, and there is no new wording.
+- Works every time; driving out and back in still works; rolling through doesn't count (the truck must stop).
+- Story only, per decision 076; Quick play unchanged. The PO can ask for both modes.
+- No key changes, so `keyBindings.ts` is unchanged.
+
+## 114 — The power-up card says "Owned" instead of "Yours" (2026-11-14)
+
+**Decision (Jira SCREAM-308, under SCREAM-78, PO, November 14):** on the power-up detail screen (a cork board note opened bigger), "change the word \"Yours\" to \"Owned\"", and "Yours" no longer appears anywhere on that screen.
+
+**Options considered:** "Owned" (chosen); keeping "Yours".
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- The Chocolate Eclair's description also said "Yours from the start."; since the ticket says no "Yours" on that screen, it now reads "Owned from the start." The PO can ask for other wording.
+- Story only (the screen only exists in Story).
+
+## 113 — Trot: a power-up that makes the truck creep at 18 px/s instead of 12 with no key held (2026-11-14)
+
+**Decision (Jira SCREAM-310, under SCREAM-78, PO, November 14):** the second of the two Truck power-ups, on the right side: "called "Trot" "Increase the speed of the truck as it rolls without any gas pedal pushed."" "The roll should be the creep speed", "So when the player isn't hitting gas, the speed is slightly increase[d]". It replaces the dummy note under the Temporary Gas Can on the right (TRUCK 3), $20 ("Lets go with $20"). With it, Story's creep goes from 12 to 18 px/s (engineering suggested 18, Story's creep before the November 12 cut; he agreed). Its picture was first his sketch of someone leaning back in a lounge chair with their feet up ("Feet up for trot"; "Trot icon (notepad, November 14)" in Personal Notes); testing, he changed it: "For trot I want to change it to a more cartoonish version of" a trotting horse outline icon on Flaticon. So it is a cartoon horse at a trot, redrawn from his own sketches of one ("Here's a slight horse idea change", then "Here is the horse I'm looking for"; "Trot horse" and "Trot horse 2 (notepad, November 14)" in Personal Notes). After a few rounds on the horse alone (thinner lines to match Gitty Up's truck; legs with "more motion"), he changed the idea: "I want to change the idea to a horse drawn carriage", and "I dont like the horse so redo that". So the picture is a small red coach on a big and a small wheel, pulled to the right by a newly drawn horse (one smooth shape on four tapered legs).
+
+**Options considered:** 18 px/s, 50% faster (chosen); 15 px/s (25%); about 13 px/s (10%, like Gitty Up).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- What is measured from the creep follows the new one: the park brake (Q) still works at a creep; turns get twice as wide only above the new creep (SCREAM-280); the roll down from top speed still takes about 4 seconds, ending at 18.
+- Reverse is unchanged. Gitty Up and Trot together each do their own part.
+- Kept for the Story run, like the other power-ups. Story only. A save that bought the old TRUCK 3 dummy gets nothing.
+- The note's text is his description as written. The carriage and horse are engineering's own drawing in the gas can's style, not a copy of the Flaticon icon, which would need a credit to its author. The coach's colours (red body, dark red roof, cream wheels) are engineering's.
+
+## 112 — Gitty Up: a power-up that makes the truck speed up 10% faster (2026-11-14)
+
+**Decision (Jira SCREAM-309, under SCREAM-78, PO, November 14):** the next power-ups are in the Truck tree; on the left side, "called "Gitty Up" "Increase acceleration by 10%. The truck still is heavy, so don't expect much."" It replaces the dummy note under the Temporary Gas Can on the left (TRUCK 2), $20 ("Lets go with $20"). Its picture is his sketch: a box truck pulling away with a puff of exhaust ("Truck for acceleration"; "Gitty Up icon (notepad, November 14)" in Personal Notes). With it, Story's truck takes about 9.1 seconds from a stop to top speed instead of 10.
+
+**Options considered:** acceleration times 1.1 (chosen: 10 s becomes 9.1 s); 10% fewer seconds to top speed (9.0 s).
+
+**Why (product owner's rationale):** _to ask_.
+
+**Engineering's calls (proposals):**
+
+- "10% more acceleration" is read as speeding up 1.1 times as fast. Only the gas: reverse, braking and top speed are unchanged.
+- The first power-up that changes the truck: `evening.spec` is now built from the mode and the power-ups owned tonight, and rebuilt when one is bought, so it works the same evening it is bought (at home, before setting off) and every evening after.
+- Kept for the Story run, like the other power-ups. Story only (the board is Story's). A save that bought the old TRUCK 2 dummy gets nothing.
+- The note's text is his description as written. The picture is engineering's drawing of his sketch, in the gas can's style. Testing, he asked for the truck to lean back more, "like a big truck will do": its body tilts back 9 degrees on the rear wheel, both wheels on the ground.
+
+## 111 — From the second night, a Story evening opens at the truck screen, not the cooler (2026-11-14)
+
+**Decision (Jira SCREAM-307, under SCREAM-78, PO, November 14):** "From now on, on the second night. The player should start not at the cooler, but at the truck screen. That way they can decide to go to the powerups or the cooler screen first." So from Day 2 on (Continue and Restart Evening included), a Story evening opens at the truck screen with the cooler highlighted. Day 1 (the uncle's evening, or On My Own) and Quick play still open at the cooler (#66).
+
+**Options considered:** the truck screen from Day 2 (chosen); the cooler, as before; the cork board first.
+
+**Why (product owner's rationale):** so the player can decide whether to go to the power-ups or the cooler first (his message, above).
+
+**Engineering's calls (proposals):**
+
+- The clock still waits until the player leaves the cooler or drives off (005, 029, #66): looking at the cork board first doesn't start it.
+- With nothing in the cooler before setting off, B at the cooler goes back to the truck screen (the clock still waiting), so the player can visit the board first.
+- The driver's seat with nothing in the cooler before setting off opens the cooler with its usual warning ("Add at least one ice cream before you leave the cooler."), as the truck could never set off empty (#66).
+
+## 110 — Service With A Smile: a power-up that starts tips at 25% and gives 10 more seconds to earn one (2026-11-14)
+
+**Decision (Jira SCREAM-303, under SCREAM-78, PO, November 14):** "The next powerup I want to add is increased tips under customer. Lets go with a 5% increase. So 25% is the first tip number. It also extends the time you can get a tip. It should still countdown to 5%, then 0." So the second real power-up is the top item of the cork board's Customer tree: **Service With A Smile** (his name), $15, bought once. With it the tip counts down 25%, 20%, 15%, 10%, 5%, then nothing: one more 10-second step at the top, 50 seconds in all (he confirmed that reading). Its picture is his sketch: a jar with TIPS on it and a plus at its top right ("Tip jar plus, the increased tips power-up (sketch, November 14)" in Personal Notes).
+
+**Options considered:** one extra 10-second step at 25% (chosen); every step 5% higher over the same 40 seconds; a longer countdown with the same four steps.
+
+**Why (product owner's rationale):** "Early in the game a player will want to increase their revenue. Tips is a good way to do that."
+
+**Engineering's calls (proposals):**
+
+- Kept for the Story run and bought at home before setting off, like the other power-ups. Story only (the board is Story's).
+- A hard-to-find customer's 4 times tip (067) multiplies the new, higher tip.
+- The tip bar at the window and at the cooler shows the five steps; the cooler's side labels read 25% to 5%. The bar is dark green on the first step, light green in the middle and amber on the last, as before.
+- Asking again, a mistake or an overcharge still loses the whole tip.
+- The note reads "Tips start at 25%, not 20%, and you get 10 more seconds to earn one." The picture is engineering's drawing of his sketch, in the gas can's style, until he draws his own.
+- It is the Customer tree's only top note, in the middle (the PO, testing, November 14: "Lets make it so service with a smile is the only first option under the customer tree."). The two dummies under it both hang from it; the old second top note was removed, so the tree has 8 notes and the dummies are renumbered CUSTOMER 2 to 8.
+
+## 109 — The ice creams are power-ups: Story starts with only the Chocolate Eclair, and an eclair over $2.50 isn't ordered (2026-11-13)
+
+**Decision (Jira SCREAM-271, under SCREAM-78, PO, November 12 and 13):** "Lock all ice creams, except chocolate eclair. Need to be purchased to be unlocked." On November 13: "I'm going to have the ice creams be powerups. So they will be unlocked by paying a one time fee, just like the other powers. So lets not completely remove the ice creams, just have them in the power ups menu." So in Story the cooler's clipboard offers only the Chocolate Eclair. The other ice creams are notes on the cork board, in a tree of their own (ICE CREAM), bought once for $15 each, top down: Chocolate Eclair (yours from the start), SpongePop, Lil Explorer Pop, Cookie Ice Cream Sandwich, then a split into two ice creams not decided yet (his sketch, "Power-up trees (notepad, November 13)" in Personal Notes; "Those are tbd, just make them ? for now, like the others"). He also asked for a note that "the average person won't accept the ice cream over $2.50", and for that to be built now: in Story, customers leave a Chocolate Eclair priced over $2.50 out of their order, and its note says so.
+
+The PO's answers (November 13): Story only; its own tree; "Prices will be different. To start lets say $15."; the uncle's evening sells only Chocolate Eclairs; "For now they only show up in the powerups menu, greyed out, like the other powerups."
+
+**Options considered:** ice creams as notes on the board, one fee each (chosen); a separate shop for ice creams; locked ice creams shown greyed out in the cooler and on Today's Menu (the ticket's first draft; the PO chose the board only, for now).
+
+**Why (product owner's rationale):** "After a friend of mine played the game he suggested the ice creams have different effects, like they open new customers or better tips, or better price acceptance. I really liked the idea, so I think this is how I want to implement it."
+
+**Engineering's calls (proposals):**
+
+- The board's trees are now TRUCK, ICE CREAM and CUSTOMER (the PO, after seeing the first build: "I reworked the skill map so its only the three, truck, ice cream and customer"). The Speaker tree's dummy notes are removed (Speaker is a line in his Truck column) and the Sales tree's dummies are renamed Customer; the notes in Truck and Customer are still dummies, not yet the lists on his sketch. A saved run that bought a Speaker or Sales dummy loses nothing that did anything.
+- The sketch's last two shapes (a circle, then a box, under the two "?" notes) are left off: the board has room for 5 rows. They come back when the board is laid out again or the ice creams are named.
+- The $2.50 limit is the Chocolate Eclair's, for every customer ("average person": nobody pays more yet). The other three keep the old $4.00 limit until SCREAM-272 sets theirs; each note states its ice cream's limit. Quick play keeps $4.00 for all four.
+- An unlock lasts for the Story run, like the other power-ups, and is bought at home before setting off.
+- Customers only ever order what is in the cooler, so set orders (042) use what is unlocked without a new rule.
+- A saved run that already has other ice creams in its cooler keeps them and can sell them; it can't restock them until they are bought.
+- The eclair's opened note shows no price (the PO, testing, November 14: "Lets remove the $0.00. It makes it seem like you paid for it already, or that the ice cream should cost that much money."); it says only "Yours".
+- The two "?" notes are dummies at $15 that do nothing, like the other dummy notes.
+- The sandwich keeps its name in the game (Cookie Ice Cream Sandwich; the sketch says "Choc. Chip Sandwich").
+- The effects in the PO's reason (new customers, better tips, better price acceptance) are not built here: SCREAM-272 and SCREAM-135.
+
+## 108 — When the truck sells out, customers coming or waiting walk home, and buy later if it comes back with stock (2026-11-13)
+
+**Decision (Jira SCREAM-155, under SCREAM-11, PO, November 13):** a customer could reach the window right after the last ice cream was sold. The PO: "Those players should start walking home. If the player goes home, gets ice cream and then returns to that player, they should be willing to buy". So when the cooler empties on the road, everyone on their way to the truck or waiting at a pink square gives up the square and walks home; if the truck restocks and comes back within earshot, they come out for it again.
+
+**Options considered:** walk home, and willing to buy again after a restock (chosen); keep waiting in case the truck restocks nearby; walk home and not come back (engineering's first proposal on the ticket).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- "Willing to buy" is read as certain: they come straight out the next time they hear the truck with stock, whatever their Likelihood (they already wanted one tonight). Their hours (From, Until) still apply, and so does the 8 PM close.
+- Selling out with someone waiting costs nothing (the PO was asked and did not say).
+- They leave as soon as the sale that emptied the cooler is over. No "sold out" speech bubble (the HUD's SOLD OUT says it).
+- Both maps and both modes: it fixes a bug the PO reported (076's "Story only" is for new features).
+- The "Sorry, I'm sold out." sale (SCREAM-218) stays for the rare case someone still reaches the window.
+
+## 107 — The rotary hint comes from the third regular served twice (2026-11-13)
+
+**Decision (Jira SCREAM-299, under SCREAM-11, PO, November 13):** the hint about the roundabout (050) is given later. The PO: "When the player successfully completes an order with a regular it should count as the first interaction with a regular. The player should then successfully complete 2 transactions with 3 regulars." So: a paid sale to a regular counts as one; once three different regulars have each been served twice in the Story run, the third of them tells the trick. Before, the second regular served twice told it.
+
+**Options considered:** the third regular served twice (chosen); the second (050, as it was).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- It replaces the old trigger (the PO said "build" on that reading). Story only, as the hint always was; still once per run, still not counting the uncle's guided sale.
+- The count is over the whole run, read from the saved visits, so a regular served once on Monday and once on Tuesday counts. (Before, the "second regular" was counted within one evening only: a small bug, fixed here.)
+- A saved run where two regulars have already been served twice, and the hint already given, keeps it.
+- The number is one setting, `ROTARY_HINT_REGULARS`.
+
+## 106 — Creeping past a parked car, the truck is no longer shoved sideways (2026-11-13)
+
+**Decision (Jira SCREAM-194, under SCREAM-7; from playtest round 2, Andrew P, doc 19; PO, November 13: "go ahead"):** at a creep, a parked car no longer pushes the truck sideways. The truck slips round the car's corner no faster sideways than it is moving, or stops against the car if it is too far in.
+
+**Options considered:** limit the sideways ease to how far the truck moved that frame (chosen); stop dead on any touch at a creep (the truck would stick on every corner); leave it.
+
+**Why (product owner's rationale):** not given beyond approving the ticket from the playtest. *(Placeholder: engineering will ask.)*
+
+**What was wrong (engineering):** when the truck touches something, the game lets it ease up to 3 px sideways in one frame to get by (made for the curb's 2 px steps, and for passing a car at speed, SCREAM-115). At speed the truck moves 5 px or more a frame, so 3 px sideways is a glance. At a creep it moves a fraction of a pixel a frame (Story's roll is 12 px a second, a fifth of a pixel), so the same 3 px was a jump 15 times faster than the truck was going. Reproduced on the test track with two cars 50 px apart.
+
+**Engineering's calls (proposals):**
+
+- Only parked cars change. The curb keeps its 3 px ease, so the truck doesn't stick on the curb's steps at low speed.
+- At 3 px a frame or more (180 px a second, about a third of top speed) nothing changes.
+- Both maps and both modes: it is a driving bug, not a feature (076's "Story only" is for new features).
+
+## 105 — "How To Drive" is a pop-up the first time the player has the wheel (2026-11-13)
+
+**Decision (Jira SCREAM-207, under SCREAM-5, PO, November 13: "go ahead"):** when the uncle finishes driving and hands over the wheel, a "How To Drive" pop-up shows the driving keys; the player closes it to start driving. The title screen's HOW TO DRIVE box was already removed (087), and the full list of keys is the pause menu's Key Bindings page (104).
+
+**Options considered:** a pop-up the player closes (chosen, as the ticket says); a line on the drive screen only (it is there already, small, along the bottom).
+
+**Why (product owner's rationale):** not given yet beyond the ticket's wording. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The ticket's open question ("if the player skips the uncle, should the pop-up still appear when they first take the wheel?") is answered yes for now: the pop-up shows on Story's Day 1 the first time the player has the wheel, whichever way they got there (after the uncle's drive home, after skipping him, even mid-drive, or On My Own). Once an evening, Day 1 only, Story only (076). Say if skippers and On My Own players should not get it.
+- With the uncle it comes after his last words ("Good luck, kiddo."), when the truck is back on the road at home: that is when the player first steers. His own drives earlier in the evening show nothing.
+- It stops the game like a pause (the clock too) and opens 0.6 s after the road appears. Enter, Space or a left click closes it; these are ignored for its first half second, so a key still held from the uncle's last line doesn't close it unread.
+- It lists the same seven driving keys as the Key Bindings page (one list, `DRIVING_KEYS`), and one line pointing to Pause > Key Bindings.
+- SCREAM-207 asked to ship in the same PR as SCREAM-206 so the controls never vanished from the title before the page existed. The title's box went on November 12 (087), so they are two PRs, stacked: merge 206 first.
+
+**The PO's change while testing PR #214 (November 13):** "Only show the driving instructions the first time playing." The pop-up now shows once per player: the game remembers in the browser that it has been shown, and a later New Story does not show it again. (Before, every new Story's Monday showed it.) His reason: not given yet. *(Placeholder: engineering will ask.)* Engineering's call: "the first time playing" is per browser, like the saved Story and the high scores; clearing the browser's data shows it once more. Someone who played before this change sees it once, on their next new Story's Monday.
+
+## 104 — Pause menu: a Key Bindings page listing every key (2026-11-13)
+
+**Decision (Jira SCREAM-206, under SCREAM-5, PO, November 13: "go ahead"):** the pause menu gets a Key Bindings option. It opens a page that lists every key a player can press, grouped by screen. This is the one place a player can always look up the controls now that the title screen's HOW TO DRIVE box is gone (087).
+
+**Options considered:** a page of its own opened from the pause menu (chosen, as the ticket says); a longer hint line on every screen (the PO removed most of those in 087).
+
+**Why (product owner's rationale):** not given yet beyond the ticket's wording. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The list is built from the scenes' key handlers and kept in one file, `src/config/keyBindings.ts`; the page and the "How To Drive" pop-up (SCREAM-207) both read it. Twelve groups: driving, in the truck, the cooler, the sales window, filling an order, the gas pump, the cork board, the end of the day, the title screen, the uncle, the pause menu, the high scores. Debug keys (Shift + a number) are left out, as the ticket says.
+- The groups are packed onto pages of at most 17 lines (6 pages today), turned with the arrow keys, W A S D, the mouse wheel or the Previous and Next buttons. Esc, B, Backspace or the Back button returns to the pause menu. Nothing scrolls, so no screen is cut off.
+- "Key Bindings" is on the pause menu of every evening (the uncle's too), but not on the one the high score screen opens while it asks for initials: the evening is over there, and the warning line sits where a third option would go.
+
+**The PO's changes while testing PR #213 (November 13, with a screenshot of the menu):** "Vertically center the menu items. Quit to Title should be the last item. Change Quit to Title to Save and Quit. After save and Quit: Warning that it only saves at night." So the menu reads Resume, End Evening, Restart Evening, Key Bindings, Save And Quit, in the middle of the box between PAUSED and the hint line, and Save And Quit asks "Save and quit? The game only saves at night." before leaving. His reason: not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls on those changes (proposals):**
+
+- "Save And Quit" is Story's wording. Quick play and the high score screen keep "Quit To Title": nothing is saved there, and the high score screen's warning says the score is lost.
+- "At night" is read as: the game saves when a day ends. The question's last line says what that means now: "Continue starts this evening again.", or on Monday, before any save exists, "Nothing is saved yet: tonight will be lost."
+- The warning is the question asked after choosing Save And Quit (Yes / No), not a notice on the title screen afterwards.
+- Text follows doc 15's style (Title Case, "Or" between two keys).
+
+## 103 — Starting Story: pictures are loaded ahead and screens fade, so the loading screen no longer flashes (2026-11-13)
+
+**Decision (Jira SCREAM-243, under SCREAM-6, PO, November 12):** the split-second flash between Play Story and the game was the loading screen, up for 0.15 to 0.4 s while the next screen fetched its pictures. Offered three options, the PO chose the first ("Thats good with me"): load the next screen's pictures earlier, while the title or New Bike screen is up, so nothing shows in between, plus a short fade between screens.
+
+**Options considered:** load ahead plus a short fade (chosen); keep the loading screen up for a minimum time (about 0.6 s) so it looks intentional; only a fade over the in-between.
+
+**Why (product owner's rationale):** not given yet beyond agreeing to engineering's suggestion. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- While the title is up, the game fetches the cooler, the ice cream pictures and their font, and the inside of the truck. A new player (whose Story always starts with the uncle) also gets his credits' map and tune and his picture; a returning player gets those when the title asks "Bring your uncle along again?".
+- The fade is 0.2 s to black and 0.2 s back in, on these steps only: title to the New Bike screen, title to the uncle's credits, the New Bike screen to the cooler, and Continue to the cooler.
+- If someone starts in the page's very first moments, before those pictures have arrived, the game waits for them under the black; the loading screen comes up only if that takes more than 0.6 s (a slow connection).
+- Quick play gets no fade (076). In those same first moments it too waits for the pictures already on their way, so no picture is fetched twice.
+- The first drive of an evening still shows the loading screen while the map loads: that is a longer, real wait and was not the flash in this ticket.
+
+## 102 — The end-of-day screen moves on with a click as well as Enter (2026-11-13)
+
+**Decision (Jira SCREAM-295, under SCREAM-7, PO, November 12):** on the end-of-day screen, clicking the mouse works as well as pressing Enter. Enter keeps working. Like 079 (click or Enter to begin).
+
+**Options considered:** a click anywhere on the screen (chosen, as on the opening screen); a button to click.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The end-of-day screen is only ever shown in Story (Quick play goes straight to its results), so there was no both-modes question to answer.
+- The hint at the bottom reads "Click Or Enter: Start Tuesday" (or "Story High Scores", or "Back To The Title"), in the opening screen's wording.
+- Only the left button counts, and a click in the screen's first half second is ignored, so a click meant for the sales window as the evening ends doesn't skip the screen.
+- The screens after it are unchanged: the high score screen still takes the keyboard (it asks for initials).
+
+## 101 — Story burns gas 5% faster (2026-11-13)
+
+**Decision (Jira SCREAM-298, under SCREAM-7, PO, November 13):** "increase the rate that gas burns by 5%".
+
+**Options considered:** the burn rate times 1.05 (chosen: engineering's reading of "by 5%"); 5 points more of the tank per evening.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask: why 5%, and what he saw in play.)*
+
+**Engineering's calls (proposals):**
+
+- Story's truck already burned gas 1.3 times as fast as Quick play's (074); it is now 1.3 x 1.05 = 1.365 times. A full tank goes about 23,500 px in Story (it was about 24,700).
+- Story only (076), the uncle's evening included, since it uses Story's truck. Quick play is unchanged.
+- The Temporary Gas Can (099) still pours in a fifth of a tank, which now goes 5% less far too.
+
+## 100 — Story starts with $25, not $50 (2026-11-13)
+
+**Decision (Jira SCREAM-294, under SCREAM-78, PO, November 12):** Story's starting money (the uncle's $50, decision 046) becomes $25. The $600 bike stays as it is. Story only (076); Quick play keeps its $50.
+
+**Options considered:** $25 (chosen, the PO's); leave it at $50.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The uncle leaves what Story starts with, so his line at the cooler now reads "I left $25 on the truck for you to get started." (his words with the number changed; the PO to confirm the wording).
+- His $20 for gas (088) is separate and unchanged, so a new player still has $25 for stock plus $20 of gas.
+- The opening screen already reads the amount from the setting ("You've got $25.00 and an ice cream truck.").
+- A run saved before this change keeps the cash it has.
+- Worth knowing: with $25, buying the Temporary Gas Can ($15, 099) on the first evening leaves $10 for stock.
+
+## 099 — The first power-up: the Temporary Gas Can ($15, bought once, full again every day) (2026-11-13)
+
+**Decision (Jira SCREAM-122, under SCREAM-78, PO, November 13):** "The first powerup I want to add is under truck. It should be called temporary gas can. It will fill up your tank 1/5 of the way. If the player runs out of gas it automatically puts the gas in the tank. The game should pause and the temporary gas tank should pop onto the screen pulse a few times and then go away. I want to make the logo for the powerup to be similar to the image provided. I want it to look like the art style of the trucks inside." (The image: a photo of a red plastic gas can with a black spout.) His answers to engineering's questions: the price: "Lets say $15"; which note: "Top on under the truck"; how many: "Just the one"; an unused can: "Every day the can should start full", which he confirmed means **buy once, refills daily** (pay $15 once; every evening after that starts with a full can, good for one rescue that evening, for the rest of the Story run); the picture, drawn by engineering in code in the hub's cartoon style as an original design with no brand label: "Sounds great."
+
+**This changes the November 11 plan** (SCREAM-122's comment, 073): the can was going to be bought again each time it was used up. It is now bought once.
+
+**Options considered:** how the can lasts: buy once and it refills daily (chosen); buy again after each use, an unused can carrying over; buy fresh every day. Price: $15 (chosen, the PO's); $5, the dummy price (engineering's proposal). Used by itself when the tank runs dry (chosen, the PO's); used by hand.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The can sets the tank to a fifth (the tank is empty when it pours). Running empty a second time the same evening ends the evening as before (025, SCREAM-119).
+- The pop-up: the game stops like a pause, the clock too, for 1.5 seconds; the can pops into the middle of the screen, pulses three times and pops out. No words on it. The numbers are in `tuning.ts`.
+- Bought at home and full straight away, so it works the same evening.
+- The note's id changed from `truck-1` to `temp-gas-can`, so a dummy TRUCK 1 bought while testing 098 does not become a gas can.
+- The other Truck notes are still dummies and hang from the can.
+- Nothing on the road shows whether today's can is still full (the board says "Yours" either way). A small can beside the gas dial would do it: not built, to ask.
+
+## 098 — Cork board notes open bigger and can be bought: grey until bought, unlocked by the note above, at home only (2026-11-12)
+
+**Decision (Jira SCREAM-296, under SCREAM-78, PO, November 12):** "I think the next item to work on is having the ability of the player to click on the skill, and have it magnify. The "?" on the current screen (post it notes) would be a fun image. If the player clicks on the post it, the note should open to be bigger. The note should have the logo and a description. With the price listed, and the ability to purchase the skill. No button if already purchased." On how notes look: "Lets have the notes that aren't purchased, greyed out. The the items purchased will look as they do now. The user can still look at the greyed out notes." He agreed to engineering's proposals ("Agreed on the last 3", then "I agree with all"): a note you can't afford shows its price in red with the button greyed out; Enter opens the marked note and Enter again buys it, with no "are you sure" step; Restart Evening gives back anything bought that evening; buying is real in this ticket (the cash leaves and the note is saved as owned) although the notes are still dummies; the strings lock notes (a note can be bought once you own a note it hangs from; the top notes are open); placeholder pictures by engineering, one per tree; buying only while parked at home, the board readable anywhere; a locked note is greyed like any unbought note and says what to buy first in place of the button. Builds on 073 and 097.
+
+**Options considered:** how an owned note looks: unbought notes grey and bought ones in colour (chosen, the PO's); a "SOLD" stamp on bought notes (engineering's first proposal). Buying: real now, with dummy notes (chosen); wait for the first real power-up. Strings: lock the notes below (chosen); decoration only. Pictures: engineering's placeholders (chosen); wait for the PO's drawings. Where: at home only (chosen); anywhere the board opens. Confirming a purchase: none (chosen); an "are you sure" step.
+
+**Why (product owner's rationale):** PO, November 13: "I wanted to promote the player needing to plan their build out. So they couldn't just get anything whenever you wanted."
+
+**Engineering's calls (proposals):**
+
+- "At home" means before first setting off for the evening. A stop at home to restock opens only the cooler and goes straight back to the road, so there is no way to the board then; 073's "on any stop at home to restock" needs its own change (a way from the restock cooler to the board).
+- A note hanging from two notes needs only one of them ("Buy TRUCK 2 or TRUCK 3 first").
+- Dummy prices: $5.00 for the top row, $5.00 more each row down ($25.00 at the bottom). Dummy description: "A dummy power-up. It does nothing yet."
+- The pictures: a wheel (Truck), a loudspeaker (Speaker), a coin (Sales), drawn in code.
+- The opened note closes with B, Backspace or a click on the dimmed board. After buying, it stays open and says "Yours".
+- Money spent at the board is a "Power-ups" row on the end-of-day screen and the end-of-run screen, shown only when something was bought, so the rows still add up to the profit.
+- What is owned is kept in the Story run and its save (`powerUps`); older saves read as owning nothing.
+
+## 097 — The cork board opens a power-ups skill map: three trees (Truck, Speaker, Sales), a dummy to look at first (2026-11-12)
+
+**Decision (Jira SCREAM-267, under SCREAM-78, PO, November 12):** "IM ready to start working on powerups. My thinking is to start by letting the player to click into the cork board (above the cooler. They should see something similar to the pasted photo. For now lets just add a dummy skill map. As we add more powerups, the actual skill trees will take shape." The photo was another game's skill map: three framed trees side by side, squares joined by lines. Asked three questions, the PO answered: the trees are called **"Truck, Speaker, Sales"** (his own names, in place of engineering's proposal of Window, Truck, Neighbourhood); the squares are **look only** for now (nothing can be bought; buying comes with the first real power-up); and the screen is a **cork board with pinned notes** joined by string, not a dark panel like the photo. Builds on 073 (power-ups are bought with money, at the cork board).
+
+**Options considered:** tree names: Truck, Speaker, Sales (chosen, the PO's); Window, Truck, Neighbourhood; placeholder names; one tree. Dummy behaviour: look only (chosen); notes that can be bought and do nothing. Look: cork board with pinned notes (chosen); a dark panel like the photo.
+
+**Why (product owner's rationale):** PO, November 13, on the trees and their names: "I'm still toying with exactly what the columns should be. Those are just first ideas." So Truck, Speaker and Sales are first ideas, open to change. *(Why a skill map with trees rather than a plain list: not given yet.)*
+
+**Engineering's calls (proposals):**
+
+- In Story the board on the wall above the cooler was the MENU (it opened the pause menu). It now opens the skill map and is tagged POWER-UPS; Esc still opens the menu everywhere. Quick play keeps MENU (076), and so does the uncle's evening (like End Evening, 091: nothing new while he is teaching).
+- 25 dummy notes (9, 7 and 9), each a "?" with a name like "TRUCK 3", "Not for sale yet" and one line of text. The shapes of the trees mean nothing yet. The data is `src/config/powerUps.ts`: each power-up ticket replaces a dummy note with a real one.
+- Arrow keys (or W A S D) move to the nearest note that way, across trees; pointing with the mouse marks a note; B, Backspace or the BACK button returns to the hub. Enter does nothing yet.
+- The board can be looked at wherever the hub can be opened, and the clock keeps running, as at the cooler (029). 073's "bought at home" rule belongs to buying, so it comes with the first real power-up.
+- Placeholder art drawn in code by engineering (cork, paper notes, pins, string), until the PO draws the board in his own style.
+
+## 096 — Francine Fudge gets a new outfit (Look 11851), so she has no "big mouth" at the window (2026-11-12)
+
+**Decision (Jira SCREAM-289, under SCREAM-11, PO, November 12):** "Some players get what looks like an extra large mouth when they are made for the sales window." The cause is in the art: the chin line with bare skin under it. The PO chose "Change those customers' outfits in the Residents sheet", then "lets just fix Francine only", and picked option 5 of five (Look 11851): "Lets go with this one".
+
+**Options considered:** a new outfit for Francine only (chosen); new outfits for everyone with the pattern (about 13 on Elm Park, 41 on Foley Stadium); shading the chin line at the window in code.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The five options kept her body (skin), hair and age and changed the outfit and eyes; Look 11851 gives a patterned top up to the chin.
+- The Residents sheet's Elm Park tab now says 11851 (engineering changed the cell for the PO). The build puts looks in number order, so in residents-tutorial.png she moves to the end and the others move up one place; every other picture is unchanged.
+
+## 095 — Title screen: the title and the menu together, centred (2026-11-12)
+
+**Decision (Jira SCREAM-292, under SCREAM-6, PO, November 12):** "Lets Move the Title and Menu options together and Vertically center the text." Follows 087, which took the HOW TO DRIVE box off the title screen and left a gap.
+
+**Options considered:** the title, the options and the lock note as one group in the middle of the screen (chosen); the menu moved up under the title where it was.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- 36 px between the title and the first option (a little under the title's height). The group is centred on the whole screen, with 2, 3 or 4 options and the lock note when it shows.
+- The title truck's two lanes (top and bottom) are unchanged; the group sits between them.
+
+## 094 — Story's crates are three rows tall: no grey strip where the bottom row was (2026-11-12)
+
+**Decision (Jira SCREAM-293, a subtask of SCREAM-291, PO, November 12, testing PR #199 with a marked screenshot):** "completely remove the row highlighted in red." Changes how 092 draws the missing row.
+
+**Options considered:** the crates drawn a row shorter (chosen); a grey strip over the bottom row (092 as built).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The crates keep their tops and end a row sooner, at the cooler and the Fill screen. The pictures have four rows drawn in, so the bottom one is painted over in the freezer's dark blue and the crate gets a new cardboard edge.
+- The doors (the open half's lid at the Fill screen and the plain right half) and the yellow outline round the chosen crate are a row shorter to match. Quick play is unchanged.
+
+**Then (PO, November 12, testing #201, with a marked screenshot):** "I want to move the cooler down so it is vertically aligned", and: "I do want to eventually reveal the other sections of the cooler, so don't completely remove what is already built." Engineering: the crates are centred top to bottom in the freezer. Nothing is removed: the pictures keep all four rows and both halves, and Quick play uses them. The open part of each crate is one setting (`STORY_COOLER_COLUMNS` 2, `STORY_COOLER_ROWS` 3 in `tuning.ts`; `spec.coolerColumns` / `coolerRows`), and the squares, the crates' height and place, the grey panel, the doors, the outline and the arrow keys all follow it, so an upgrade (SCREAM-25) only has to change those numbers.
+
+## 093 — M mutes the credits tune too (2026-11-12)
+
+**Decision (Jira SCREAM-186, under SCREAM-6, PO, November 6):** the music can be muted and unmuted on every screen that plays music, not only while driving, with one setting for the whole game.
+
+**What engineering found:** every evening screen already took M (the top bar handles it off the road, SCREAM-118), and the title, pause, end-of-day, results and high score screens play no music. The one gap was the uncle's credits tune: it didn't start if the music was muted, and M did nothing to it.
+
+**Options considered:** the credits tune follows the music's mute (chosen); a separate sound setting.
+
+**Why (product owner's rationale):** not given yet (the ticket gives the problem, not a reason). *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- The tune always starts, muted if the music is, and M mutes or unmutes it while it plays (into the uncle's first lines, where it fades out).
+- No on-screen mute button: no screen has one today (the driving view shows "Music off (M)").
+
+## 092 — Story's cooler: the bottom row is gone, 18 ice creams to start (2026-11-12)
+
+**Decision (Jira SCREAM-291, under SCREAM-78, PO, November 12):** "I want to completely remove the bottom row of the cooler. So there should be 18 total slots. 6 per cooler now." Changes 075 (24).
+
+**Options considered:** the bottom row gone, 18 (chosen, the PO's own answer); 12 with one column open; 16 or 8 with whole crates covered (engineering's offers).
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- Story only (076); Quick play keeps 48. In each crate, the left two columns of the top three rows are open.
+- Drawn as a plain strip over the bottom row of each crate's open half, the same grey as the covered half, at the cooler and the Fill screen. The keyboard at the Fill screen skips the bottom row.
+- A Story save with more than 18 in the cooler leaves the extras behind (as 075 did for 24). The uncle's evening uses the same cooler; his steps still work.
+
+## 091 — End Evening on the pause menu (2026-11-12)
+
+**Decision (Jira SCREAM-290, under SCREAM-9, PO, November 12):** "A player to be able to end the night as it stands." "This is just like the shift + 3 command is all." Where: the pause menu with a Yes / No check, in Story and Quick play (the PO picked engineering's recommendation).
+
+**Options considered:** an End Evening item on the Esc menu (chosen); a key of its own; a button on the truck screens.
+
+**Why (product owner's rationale):** "If its 7:30 and I am out of stock. I may just want to end the evening." (the ticket)
+
+**Engineering's calls (proposals):**
+
+- The menu reads Resume, End Evening, Restart Evening, Quit To Title. Yes / No starts on No, like the others.
+- It does what Shift+3 does: the clock runs out now. A sale under way finishes first (as at 8 PM), and the question says so ("It ends once this sale is done.").
+- Story says "You keep what you made."; Quick play says "It still counts for high scores."
+- Not on the menu while the uncle is running his evening; once he is skipped or done, it's there.
+- Not on the high score screen's menu (the evening is already over).
+
+## 090 — Story: the gas dial inside the truck and on the end-of-day screen (2026-11-12)
+
+**Decision (Jira SCREAM-276, under SCREAM-7, PO, November 12):** "Add gas level to end of day screen and inside truck screen (not cooler)". How it looks: "Same as the roads dial. Except it doesn't wobble under 1/4 full like on the road. Similar spot in the bottom left corner."
+
+**Options considered:** the road's dial, steady, bottom left (chosen); a line of text ("Gas: 1/4 tank"); a smaller dial.
+
+**Why (product owner's rationale):** "so player can know to get gas soon or buy a temporary gas tank." (the ticket)
+
+**Engineering's calls (proposals):**
+
+- Story only (076), in both places. Quick play's hub has no dial yet; it is one line if wanted.
+- The same size as on the road, at the pump's spot (pivot 80, 530), so in the hub it sits over the cooler's bottom-left corner.
+- E turns red below 15%, as on the road; no wobble in the truck or on the end-of-day screen.
+- The end-of-day screen shows tomorrow's tank (after a near-empty night the 1/6, after running out the 1/3), and only when there is a tomorrow (not on GAME OVER or STORY COMPLETE).
+- The dial's drawing moved from HudScene into `src/ui/fuelDial.ts`, shared by both screens.
+
+## 089 — Schedule and neighbour lines: only about special customers, at most one a night (2026-11-12)
+
+**Decision (Jira SCREAM-275, under SCREAM-11, PO, November 12):** "I want to remove the lines about customers' schedule. Unless it's a customer that has special levels of tip or order number. It should surface less." Who is special: "People like Pizza Joe and Big Kev who will give you better business." How often: at most one a night ("Yes"). Changes 064 and 065.
+
+**Options considered:** only special customers, one a night (chosen); as before (30% / 60% of paid sales, 4 a night, anyone); removing the lines altogether.
+
+**Why (product owner's rationale):** not given yet. *(Placeholder: engineering will ask.)*
+
+**Engineering's calls (proposals):**
+
+- Special = a set order size (042) or hard to find (067): today Pizza Joe, Zombie A Poplicks, Ruth Butter Ginsburg (10 ice creams, tip x4) and Big Kev (7), all on Elm Park. Foley Stadium has none, so no lines there for now.
+- Both kinds: a special customer can say something about their own week (064); anyone can say something about a special neighbour on their street (065), never an ordinary one. Hours lines are schedule lines, so the same rule.
+- The chances (30% / 60%, and the neighbour shares) are unchanged; the limit drops from 4 to 1 a night. Hard-to-find neighbours are still passed over most of the time (067), so lines about them stay rare.
+- The draft lines for ordinary customers stay in the Residents sheet's tabs and the code; they just aren't said. Hints about a big regular (048) are untouched.
+
+## 088 — Story: the uncle's $20 for gas waits at the first pump for a player who goes without him (2026-11-12)
+
+**Decision (Jira SCREAM-268, under SCREAM-5, PO, November 12):** "Player should get uncle benefits even if they decide not to use him (gas)". How: "When the player goes to the gas station for the first time, lets have the station say 'Your uncle left $20 for you to use.'" The $20 is "Just at the gas station", not added to the cash.
+
+**Before:** only the uncle's evening had his $20 at the pump (SCREAM-173). On My Own, or skipping him before the pump, the player paid for their first gas.
+
+**Options considered:** the $20 at the first pump (chosen); $20 added to the cash; a fuller tank at the start.
+
+**Why (product owner's rationale):** "Player should get uncle benefits even if they decide not to use him (gas)" (the ticket).
+
+**Engineering's calls (proposals):**
+
+- Once per Story run, at the first pump where gas is bought: the pump says "Your uncle left $20 for you to use.", the button reads UNCLE PAYS, up to $20 (more than $20 is not allowed at that visit, as at his pump). Any of the $20 not used that visit is lost.
+- Driving off without buying doesn't use it up: it waits for the next pump.
+- Used at the uncle's own pump on his evening, so a With Uncle run that reaches his pump gets no second $20. Skipped before his pump, it waits like On My Own.
+- Kept in the Story save. Saves from before this have it unused, so a run already under way gets the $20 at its next pump.
+- Story only (076). Gas bought with it doesn't count as gas spent on the end-of-day screen.
+
+## 087 — Fewer hint lines: the PO's Keep / Remove marks on every screen (2026-11-12)
+
+**Decision (Jira SCREAM-286, PO, November 12):** every screen's hint lines went into a sheet ("SCREAM-286 - Hint lines (Keep or Remove)", Product Management Decisions) with a screenshot each; the PO marked them: "If nothing Keep. If remove, remove." Removed: the title's line of keys, the title's HOW TO DRIVE box, the line under the answers to "Bring your uncle along again?" and "Start a new story?", "X: Skip The Uncle" in the uncle's box, all of the cooler's line but Enter ("Leave Enter: Done"), "People in your ring may want ice cream (!)" on the drive line, and "Backspace: Undo" at "How much?". Everything else stays.
+
+**Options considered:** the PO's marks, line by line (chosen); removing every hint line (the ticket's first wording).
+
+**Why (product owner's rationale, November 12):** "Some of the tips weren't that helpful. Others felt in the way."
+
+**Engineering's calls (proposals):**
+
+- Row 7's note "Leave Enter: Done" (on the uncle's-box row, whose screenshot also outlined the cooler's line) is read with row 9 (the cooler's line, Remove): the cooler's line keeps only "Enter: Done" or "Enter: Buy Stock".
+- Removing "X: Skip The Uncle" from his box also removes clicking it to skip him. X still skips him, and the truck's line along the bottom still says "X: Skip The Uncle".
+- The cooler's locked line ("B Or Backspace: Back To The Truck") wasn't in the sheet and stays.
+- The title's menu stays where it was, so there is a gap where the HOW TO DRIVE box was.
+- Both modes: these are shared screens, and a hint missing in one mode only would be odd, so 076 is not stretched far.
+
+## 086 — Asking for the order again: at most twice per customer (2026-11-12)
+
+**Decision (Jira SCREAM-288, under SCREAM-154, PO, November 12):** "Only let the user click 'Ask Again' twice". This replaces "as often as the player likes" in 081 and 084, which was engineering's call and was on a branch for under an hour.
+
+**Options considered:** twice per customer (chosen); as often as the player likes (081, 084); once only (the rule before 081).
+
+**Why (product owner's rationale, November 12):** "I wanted it to be somewhat realistic. You can't keep asking a customer before they get annoyed."
+
+**Engineering's calls (proposals):**
+
+- The two are counted per customer and shared between the window (ASK AGAIN, R) and the cooler (FORGOT ORDER, B): they are the same action.
+- After the second, ASK AGAIN and FORGOT ORDER go away, R and B do nothing, and both are dropped from the keys along the bottom. At the cooler the player then has to SERVE what they have.
+- The customer correcting a wrong order ("That's not what I asked for. I wanted...") is not counted: the player didn't ask.
+- Nothing on screen counts them down; the window's button reads ASK AGAIN (NO TIP), then ASK AGAIN, then is gone.
+- The number is `ASK_AGAIN_LIMIT` in `tuning.ts`, so a power-up could raise it (the whiteboard's "Another order reminder").
+
+## 085 — Tip bar: once there is no tip, the countdown goes away and the cup just says "No tip" (2026-11-12)
+
+**Decision (Jira SCREAM-287, under SCREAM-154, PO, November 12):** "when user gets no tip. The countdown over the tip can end. Just show no tip." Follows 080 and 083, where the bar turned grey and kept shrinking.
+
+**Options considered:** no bar once the tip is gone, only the words (chosen); a grey bar that carries on shrinking (080, 083).
+
+**Why (product owner's rationale, November 12):** "I want the player to realize why they got no tip, so just some more context for them." Keeping "Took too long" when time runs out: confirmed (the same reason).
+
+**Engineering's calls (proposals):**
+
+- The whole bar goes: the green, its outline and lines, and the side labels at the cooler. "No tip" sits just above the cup.
+- The same on the Fill screen and at the window.
+- When the 40 seconds simply run out the bar has already shrunk to nothing; the words there are still "Took too long", which says why.
+
+## 084 — Window: asking for the order again is a button, and works after the cooler too (2026-11-12)
+
+**Decision (Jira SCREAM-285, under SCREAM-154, PO, November 12):** "user should be able to ask for the order again at the sales window, after the cooler."
+
+**Before:** R asked again at the window, once, and only before the bag was served; it was named only in the line of keys along the bottom. After SERVE, at "How much?", there was no way to hear the order again.
+
+**Options considered:** an ASK AGAIN button at the window, before and after the cooler (chosen, engineering's reading); the "..." bubble with dialog options (SCREAM-239, not built); leaving it to the R key alone.
+
+**Why (product owner's rationale, November 12):** "I think this will be possibly replaced by the '...'. For now I went with this and will rethink it." So SCREAM-239 (the "..." bubble) stays open and may replace this button later.
+
+**Engineering's calls (proposals):**
+
+- The button sits at the right end of the strip under the counter, opposite RETURN TO COOLER (082), in the same blue. It reads ASK AGAIN (NO TIP) until the tip has been given up, then ASK AGAIN. R does the same.
+- It shows once the order is hidden and at "How much?"; not while the order is still on screen, and not once the sale is over.
+- At "How much?" the customer says the order for the usual five seconds and then asks the price again; the bag stays served. To change the bag, RETURN TO COOLER (or GO TO THE COOLER while they are saying it).
+- It costs the tip, the same rule as before (Q9) and as FORGOT ORDER (081). It can be asked as often as the player likes.
+- The uncle's tip about asking again now outlines the button.
+- The keys along the bottom at "How much?" gained "R: Ask Again" and were shortened to fit ("Type The Price").
+- SCREAM-239 (the "..." bubble, first option: repeat the order) overlaps with this: the PO to say whether it is still wanted.
+
+## 083 — Window: the tip cup has the same countdown bar as the cooler, at the jar's size (2026-11-12)
+
+**Decision (Jira SCREAM-284, under SCREAM-154, PO, November 12):** "The tip should continue the same countdown at the sales window, just smaller, the size of the tip jar". Follows 080 (the tall bar at the cooler).
+
+**Options considered:** the same bar, as tall as the jar (chosen); the short stub of bills, as before; the cooler's full-height bar at the window too.
+
+**Why (product owner's rationale, November 12):** "Want it to fit and I think it was a helpful mechanic."
+
+**Engineering's calls (proposals):**
+
+- "The size of the tip jar" is read as a bar as tall as the cup (70 px), standing above it; the cooler's is 190 px.
+- Same colours as the cooler's bar (green, lighter green, amber, grey with no tip) and the same lines where the tip steps down. The small 20% / 15% / 10% / 5% labels down the side are left off: there is no room at that size. The tip on offer is still written above the bar.
+- While the order is still showing, before the countdown starts, the bar is full and green.
+
+## 082 — Window: a RETURN TO COOLER button at "How much?" (2026-11-12)
+
+**Decision (Jira SCREAM-283, under SCREAM-154, PO, November 12, with two screenshots):** "on this screen, add a 'Return to Cooler' button in the bottom left." Where: "Under the tip jar bottom left (of the whole screen) not that section where the paper bag is", then circled on a screenshot: the left end of the strip under the counter.
+
+**Options considered:** a button on the strip under the counter, bottom left (chosen, the PO's mark); on the counter beside the paper bag, under Today's Menu (engineering's first suggestion; the PO said no); no way back once the bag is served, as before.
+
+**Why (product owner's rationale, November 12):** "I want to build this to be mouse friendly and eventually phone friendly so having all the buttons should be helpful."
+
+**Agreed with the PO ("I agree with all the other suggestions"):** the sale stays on and the ice creams served are back in the bag to change; C does the same as the button; the tip keeps counting down; a price already typed is cleared.
+
+**Engineering's calls (proposals):**
+
+- The same blue as the Fill screen's button, with 18 px letters.
+- The keys along the bottom gained "C: Return To Cooler" and lost "or click the keys" so the line still fits the screen.
+- Both modes and the uncle's evening (one shared screen).
+
+## 081 — Fill screen: BACK TO THE WINDOW becomes FORGOT ORDER, and the customer says the order again (2026-11-12)
+
+**Decision (Jira SCREAM-282, under SCREAM-154, PO, November 12):** "changing the text on the 'Back to the window' button to 'Forgot Order' and it brings you straight to the customer redoing the order". One step where there were two (back to the window, then R to ask again).
+
+**Options considered:** the button asks again in one step and says so (chosen); going back to the window and asking there with R, as before.
+
+**Why (product owner's rationale, November 12):** "Back to the window was long and made it almost seem like you were serving the ice cream to them. Changed the name to clarify."
+
+**Engineering's calls (proposals):**
+
+- It costs the tip, like asking again at the window (Q9): engineering asked the PO and built the existing rule while waiting. Confirmed by the PO, November 12: "Yes", it costs the tip.
+- Asking again is no longer once only. The first time still loses the tip and the second chance after a wrong order; after that (and after a corrected mistake) the player can ask as often as they like, since there is nothing more to lose. Otherwise FORGOT ORDER would sometimes do nothing.
+- B does the same as the button, and the keys along the bottom read "B: Forgot Order". There is no longer a way back to the window without asking again.
+- What is in the bag stays in the bag.
+- Both modes and the uncle's evening (one shared screen).
+
+## 080 — Fill screen: a tall green tip bar above the cup that shrinks as the tip counts down (2026-11-12)
+
+**Decision (Jira SCREAM-281, under SCREAM-154, PO, November 12):** "Lets also add the tip countdown on the left side of that screen. [...] On the left side where the tip cup is. Lets extend the green bar to show the tip amount at 20%. As the time ticks away, show the tip decrease."
+
+**Options considered:** a tall bar above the cup on the left, full at 20% and shrinking (chosen); the short stub of bills sticking out of the cup, as before (SCREAM-125, SCREAM-134).
+
+**Why (product owner's rationale, November 12):** "Currently there isn't much indication that the players tip is ticking down."
+
+**Engineering's calls (proposals):**
+
+- "Tip amount" is shown as the percentage. The dollar amount isn't known on this screen: the player hasn't typed the price yet.
+- The bar is 190 px tall when full, with a line and a small label where the tip steps down (20%, 15%, 10%, 5%), and the tip on offer in bigger letters above it.
+- It changes colour as the tip drops (green, lighter green, amber) and goes grey when there is no tip.
+- Only the Fill screen changes. The cup at the window keeps its short stub: there the customer's patience and the order are what the player is watching.
+- Both modes: the Fill screen is shared.
+
+## 079 — New Story: a left click or Enter begins, on every screen before the first evening (2026-11-12)
+
+**Decision (Jira SCREAM-270, under SCREAM-9, PO, November 12):** "On new story mode. Be able to click left mouse (and enter) to be begin."
+
+**Options considered:** a left click and Enter both work on every screen between choosing New Story and the first evening (chosen, engineering's reading of the PO's line); only on the New Bike screen; leaving the two questions on their letter keys.
+
+**Why (product owner's rationale):** no separate reason given. The PO confirmed engineering's two calls below (With Uncle marked first; No marked first on "Start a new story?") on November 12: "Yes".
+
+**Engineering's calls (proposals):**
+
+- The New Bike screen (shown when starting On My Own) began on Enter only: a left click anywhere now begins too, and its hint reads "Click Or Enter: Start Monday".
+- The two questions ("Bring your uncle along again?" and "Start a new story? Your saved story will be lost.") could already be clicked, but Enter did nothing. Now one answer is marked like the title menu's choices (> ... <), ← and → move the mark, Enter picks it, and a line under the answers says so. The letter keys (U, O, Y, N) and Esc still work.
+- "Bring your uncle along again?" starts with With Uncle marked (the first answer). "Start a new story?" starts with No marked, so pressing Enter twice can't wipe a saved story by accident.
+- Only the left mouse button counts on these screens, and a key held down from the screen before doesn't.
+- With Uncle still has no New Bike screen (062), so there is nothing to click there: his evening starts straight away.
+
+## 078 — Cooler: the button says DONE, with no price, when nothing new is picked (2026-11-12)
+
+**Decision (Jira SCREAM-277, under SCREAM-154, PO, November 12):** "When in cooler and no new inventory is selected, change button from 'buy stock' to 'Done' (no price)." As soon as something is picked it reads BUY STOCK with its price again.
+
+**Options considered:** DONE with no price when there is nothing to buy (chosen); BUY STOCK $0.00 as before.
+
+**Why (product owner's rationale, November 12):** "Buy Stock, with zero stock didn't really make sense. Just cleaning that up a bit."
+
+**Engineering's calls (proposals):**
+
+- Written DONE, in capitals like the screen's other buttons; same place, same green, same key (Enter). The line of keys along the bottom says "Enter: Done" or "Enter: Buy Stock" to match.
+- Everywhere the cooler is used for stocking: before setting off, restock stops at home, the uncle's evening, and both modes (one shared screen; the button's wording is not a balance change, so 076 is not stretched far).
+- DONE charges nothing and leaves the cooler. A price changed on Today's Menu is still kept, as it was with BUY STOCK $0.00.
+- An empty cooler still can't be left with DONE: the "Add at least one ice cream" line shows, as before.
+- The uncle still says 'hit "Buy Stock"': by then the player has to pick something, so the button reads BUY STOCK.
+
+## 077 — Fill screen: BACK TO THE WINDOW moves left under the tip jar, SERVE to the middle (2026-11-12)
+
+**Decision (Jira SCREAM-273, under SCREAM-154, PO, November 12, with a screenshot):** "Move 'Back to the window' to the left side under tips. Move Serve to where back to window is now." This changes where 071 (SCREAM-240) put the two buttons.
+
+**Options considered:** BACK TO THE WINDOW on the left under the tip jar and SERVE in the middle of the counter (chosen); as 071 left them (BACK TO THE WINDOW in the middle, SERVE at the bottom right).
+
+**Why (product owner's rationale, November 12):** "It's what felt more natural. The SERVE button is associated with the ice cream. Back to window is with the tip jar."
+
+**Engineering's calls (proposals):**
+
+- BACK TO THE WINDOW is centred under the tip jar on SERVE's row, with its letters a little smaller (18 px, was 20) so it fits between the edge of the screen and the counter.
+- Keys are unchanged (B, Enter), and so is the line of keys along the bottom.
+- Both modes: the Fill screen is shared, and a button in a different place in each mode would be a trap.
+
+## 076 — From now on, changes apply to Story only unless the PO says otherwise (2026-11-12)
+
+**Decision (PO, November 12):** "from now on, all changes to the game will be on story mode unless explicitly stated otherwise." Quick play stays as it is.
+
+**Options considered:** Story only by default (chosen); asking for each change whether Quick play gets it too, as before.
+
+**Why (product owner's rationale, November 12):** "Quickplay is more arcade mode. Story mode is you start \"bad\" and build up."
+
+**Engineering's calls (proposals):** bug fixes still go to both modes. A change to something the two modes share (a screen's text, a key) is checked against Quick play in its tests, and the ticket says which mode it is for.
+
+## 075 — Story's cooler: half of every crate is covered, 24 ice creams to start (2026-11-12)
+
+**Decision (Jira SCREAM-269, under SCREAM-78, PO, November 12, with a sketch):** "Here is how I want the cooler to be. 24 to start." In Story the cooler keeps its three crates, but half of each is covered: 3 crates x 8 squares = 24 ice creams. Each crate has two half doors with a handle each; the open one swings up when filling an order, and the covered one is a plain panel with no words on it. This replaces the first version from 074 (two whole crates and a third marked LOCKED, 32 ice creams), which was on main for a few hours.
+
+**Options considered:** half of every crate covered, 24 (chosen, the PO's sketch); two whole crates and a locked third, 32 (engineering's first guess in 074); one whole crate, 16.
+
+**Why (product owner's rationale, November 12):** "The biggest reason is for players to plan inventory. They are more likely to need to restock. They will be more likely to run out of stock in one area and need to remember that."
+
+**Engineering's calls (proposals):**
+
+- The covered half is the right two columns of each crate; the left two are open.
+- When filling an order one door is open at a time, as crates were before (the PO confirmed). Today each crate has only one door that opens; when a bigger-cooler power-up (SCREAM-25) uncovers a second half, its door will open separately.
+- Keys 1, 2 and 3 still choose a crate. The arrow keys stay in the two open columns.
+- On the prep screen the covered halves are the same plain panels, without handles (the crates there are shown open).
+- Quick play is unchanged: whole lids, 48 squares (076).
+- A Story save holding more than 24 ice creams loses the extras when it is next opened; anything that sat under a covered half moves to the first open square.
+
+## 074 — Story starts with a weaker truck, so power-ups feel earned (2026-11-12)
+
+**Decision (Jira SCREAM-204, under SCREAM-78, PO, November 8, 11 and 12):** in Story the player starts out worse at four things, and power-ups (073) will win them back. Quick play keeps the truck as it was.
+
+- **Driving:** the truck is slower, slower to speed up, slower to stop, rolls more slowly, and turns a little wider at speed. The PO's numbers (November 12): "the brake is way too good. If the person holds break it should take 400x longer to break. Acceleration should be worse by double. And roll speed should be reduced by 75%." So braking takes 4 times as long (0.15 s to 0.6 s), reaching top speed twice as long (2.5 s to 5 s), and the roll is a quarter of the speed. A second round the same night (02:17): "Reverse speed should be maxed out at 1/3 of current. Reverse acceleration should be reduced. Should be half of current. Brake speed should be reduced by 2x. Music radius reduced more, the same amount. Acceleration should be reduced by 2x." and "Roll speed should be reduced by 1/3". So now: braking 8 times as long as Quick play (1.2 s), reaching top speed 4 times as long (10 s), the roll a sixth of the speed (12 px/s), reverse a third as fast (about 46 px/s) and twice as long to get there (1 s), music 70% (210). A third round (02:36): "Braking reduced again. 2x worse" and "At any speed above roll: turning should be 2x worse". So braking takes 16 times as long as Quick play (2.4 s from top speed), and whenever the truck is going faster than its roll the wheel turns it half as fast, so every turn is twice as wide; at roll speed or slower it turns as tightly as before. Also "reduce the music radius. another 85% of max": read as another 15 points of Quick play's radius, so 55% (165); the PO confirmed 55% afterwards. And (02:49): "I get the roll and creep language. I think the creep will be at a good spot. I think the roll for 10 seconds is too long, lets go to 4 seconds": after the gas is let go, Story's truck rolls down from top speed to its creep in 4 seconds (Quick play about 10).
+- **Music:** it reaches less far: 85% of Quick play's radius (300 to 255), then 70% (210) in the second round. PO, November 12: "Let's reduce radius by 85%" (read as "to 85%", one of the two sizes engineering offered; a cut of 85% would leave a ring smaller than the truck).
+- **Cooler:** it is smaller. First 2 crates (32 ice creams) instead of 3 (48), with the third marked LOCKED; replaced the same day by 075 (half of every crate covered, 24).
+- **Gas:** it burns faster. After an evening that ends out of gas, the next day starts with 1/3 of a tank (it was 1/6): "when player runs out, then should start with 1/3 tank now" (PO).
+
+**Options considered:** Story starts weaker (chosen); everything stays at full strength and power-ups only add on top.
+
+**Why (product owner's rationale, November 11):** "I think there are two areas of the game we should make the player worse at, at the beginning of the game, so that the powers up feel like they are earned: 1. Driving - truck 2. Music - radius the music reaches". Then: "Cooler size needs to be reduced as well" and "Also Fuel - it needs to go down faster". November 12: "Making things worse is the main priority".
+
+**Engineering's calls (proposals; every number is a starting guess in `tuning.ts`, easy to change):**
+
+- Top speed 80% (547 to 438) and turning at speed 90% (the tightest slow turn is unchanged, so a U-turn still fits the road) are engineering's guesses; gas burns 1.3 times as fast (also engineering's).
+- The PO's three driving numbers were read like this: "400x longer" as 400%, so 4 times as long (400 times would be a full minute to stop); "roll speed" as the creep, the speed the truck rolls at with no key held (72 to 18 px/s). How far the truck coasts after letting go of the gas (SCREAM-114's momentum) was not changed in the first two rounds; the third sets it to 4 seconds, with the words agreed with the PO: the roll is the coasting after the gas is let go, the creep is the slow speed it settles at. In the second round: "reduced by 2x" as twice as long again; "half of current" reverse acceleration as twice as long to reach full reverse speed; music "the same amount" as another 15 points of Quick play's radius; roll "reduced by 1/3" as two thirds of the round-one creep.
+- Quick play is unchanged, so its high scores still compare with older ones.
+- The uncle's evening uses the weaker truck too: it is Day 1 of Story, and this way nothing is taken away on Day 2.
+- A day that ends low on gas without running out still starts the next with at least 1/6 of a tank, as before; only running right out gives 1/3.
+- A Story save from before this change holding more than the cooler now holds loses the extras when it is next opened.
+- Scenes now read the truck's abilities from `evening.spec` (`src/state/TruckSpec.ts`), which is where power-ups will change them.
+
+## 073 — Power-ups are bought with money (2026-11-11)
+
+**Decision (Jira SCREAM-79, under SCREAM-78, PO, November 11):** players get power-ups and upgrades by spending the money they earn. The details the PO agreed the same evening:
+
+- **Where:** at home, in the hub. The cork board above the cooler is the power-ups area: "The user can click into that and see the powerups menu." (PO)
+- **When:** before setting off, and on any stop at home to restock.
+- **Two kinds:** cheap ones that last one evening, and dearer ones that last the rest of the Story run (better brakes, for example). Some are bought again and again: "an emergency supply of gas is something I want to make a ticket for" (PO; that is SCREAM-122, the spare can of gas).
+- **Story only** for now. Quick play is one evening with no savings.
+- **One pot of money:** power-ups are paid for from the same money that is saving for the $600 bike.
+
+**Options considered:** buy them with money (chosen); roguelike, where the player is offered a choice of power-ups as a run goes on; find them on the map while driving.
+
+**Why (product owner's rationale, November 11):** "I think it's a more fun experience. I was kicking around the idea of making the game a rogue-like, but I think the real fun comes from weighing money vs the help you will get from the powerups. The saying 'Gotta spend money to make money.'"
+
+**Engineering's calls (proposals):**
+
+- Where and when to buy, the two kinds, Story only and the one pot of money were engineering's proposals; the PO agreed to each, and the cork board is his own idea.
+- With one pot of money, prices need tuning so that buying nothing is not always the best way to reach the bike. To be worked out with SCREAM-204 and the first power-ups.
+- The power-ups menu itself is a new ticket (SCREAM-267), to be built before any single power-up.
+
+## 072 — Esc on the high score screen opens the pause menu, with a warning (2026-11-11)
+
+**Decision (Jira SCREAM-181, under SCREAM-8, PO, November 6):** while the high score screen is asking for initials, Esc opens the pause menu with the line "Quitting won't save your high score." Resume goes back to the screen as it was, with any letters already typed. Quit To Title asks "Are you sure?" and, on Yes, leaves without saving the score.
+
+**Options considered:** the pause menu with a warning (chosen, the PO's design in the ticket); Esc going straight to the title; Esc doing nothing, as before.
+
+**Why (from the ticket, November 6):** Esc did nothing on this screen, and the PO presses it there wanting to go back and change game mode.
+
+**Engineering's calls (proposals):**
+
+- The menu opened from here has no Restart Evening: the evening is over, and in Story restarting would replay the last day of a finished run. It shows Resume and Quit To Title.
+- Only while initials are being asked for. Once the table is showing there is nothing to lose, so Esc goes to the title as before.
+- The hint under the initials gains a third line, "Esc: Menu", so the way out is on screen.
+- The Tutorial table in the ticket's checks can't be reached any more (decision 045), so it isn't tested.
+
+## 071 — Filling an order: a BACK TO THE WINDOW button (2026-11-11)
+
+**Decision (Jira SCREAM-240, under SCREAM-154, PO, November 10):** the cooler screen where an order is filled gets a button that goes back to the sales window, the same as the B key. The PO's note: "Moved the center of the serving area."
+
+**Options considered:** a button (chosen); the B key alone, as before.
+
+**Why (product owner's rationale, November 11):** "If I forget a customer's order, I want an easy way to go back. The user might not know the button to use."
+
+**Engineering's calls (proposals):** the PO was asked where the button should sit and didn't answer, so the placement is engineering's reading of his note: the middle of the serving area (the "In the bag" panel), on the same row as SERVE, below the ice creams in the bag so a full bag of 10 doesn't touch it. It is blue like BACK ON THE ROAD, so SERVE stays the one green button.
+
+## 070 — At the window, "Next Customer" when someone is waiting; driving off instead is a key (2026-11-11)
+
+**Decision (Jira SCREAM-241, under SCREAM-154, PO, November 10 and 11):** when a sale is over and another customer is waiting at the truck, the button under the window says NEXT CUSTOMER instead of BACK ON THE ROAD and brings that customer straight to the window. The player can still drive off instead, with a key: "Have drive off be a keyboard button" (PO, November 11).
+
+**Options considered (for driving off with people waiting):** a key (chosen, the PO's own answer); a second, smaller Drive Off button beside Next Customer; no way to drive off until everyone is served.
+
+**Why (product owner's rationale, November 11):** "I don't think Drive Off will be used much, the customer is there, so you'll want the business."
+
+**Engineering's calls (proposals):**
+
+- The key is **B**, the same key that drives off during a sale. The hint line reads "Enter: Next Customer    B: Drive Off".
+- "Waiting" means standing at the parked truck right now (their pink square under it). The button changes back if they give up while the finished sale is still on screen, and changes to NEXT CUSTOMER if someone walks up.
+- After B, the people left behind keep waiting, and nobody is served until the truck has moved (otherwise the road would open the window for them at once).
+- Not during the uncle's evening: his steps expect the road between sales.
+
+## 069 — The gas gauge is bigger and sits at the bottom left (2026-11-11)
+
+**Decision (Jira SCREAM-238, under SCREAM-7, PO, November 10):** the gas gauge is bigger and moves from the top right (055) to the bottom left of the screen, while driving and at the pump. This replaces 055.
+
+**Options considered:** bottom left, bigger (chosen); leave it by the money (055).
+
+**Why (product owner's rationale, November 11):** "I was finding it difficult to notice when I was getting low on gas."
+
+**Engineering's calls (proposals):**
+
+- About one and a half times the size (the dial's radius goes from 46 to 72 px).
+- On the road it sits just above the controls hint; the park brake sign and the short yellow notices start to its right instead of under it.
+- At the pump it sits in the corner itself, below the pump's picture.
+- SOLD OUT and the customer's 5-second "!" go back to sitting just left of the money.
+- The uncle's line said "the gauge up top", which is no longer true. It now reads "Keep an eye on the gas gauge. Run dry and the night's over." This wording is engineering's draft for the PO to change.
+
 ## 068 — The public site is published from a release branch, not from every merge to main (2026-11-10)
 
 **Decision (Jira SCREAM-266, under SCREAM-202, PO, November 10):** the public site is built only from a branch called `release`. Work still merges to main, but that no longer changes what players see. To publish, engineering opens a pull request from main into `release` and the PO merges it.
 
-**Why (product owner's rationale):** "I do want to keep making edits to the game, without changing the game that testers see." Playtest round 3 was about to start. _Why the release branch over the other options: to ask._
+**Why (product owner's rationale):** "I do want to keep making edits to the game, without changing the game that testers see." Playtest round 3 was about to start. On choosing a release branch over the other options (PO, November 10): "It was engineering teams suggestion, I've used different branches in the past so I think it makes sense to do this in general, just a matter of how best to do it within GitHub."
 
 **Options considered (engineering laid them out and proposed the first; the PO: "Yes go ahead"):**
 
@@ -208,6 +1600,8 @@ The tickets: High, schedules and where people are: SCREAM-246 (the sheet's trait
 **Engineering's calls (proposals):** on the credits, X skips the credits only (then the uncle, who can be skipped with X again); a click still skips them; Enter and Space no longer do, so the Enter that starts Day 1 on the Story intro can't skip the credits by accident. A held X (the keyboard repeating it) counts once, so holding X on the credits doesn't skip the uncle too.
 
 ## 055 — The gas gauge sits at the top right, left of the money (2026-11-09)
+
+*Replaced by 069 (the gauge is bigger, at the bottom left).*
 
 **Decision (Jira SCREAM-219, under SCREAM-7, PO, November 9):** the gas gauge moves from the middle of the top bar to the top right, just left of the money ("Cash $..."), while driving and at the pump.
 

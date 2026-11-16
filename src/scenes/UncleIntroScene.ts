@@ -29,6 +29,11 @@ const BUBBLE = { x: 40, y: 92, w: 400, h: 170 };
 const CAB_X = 422;
 const CAB_FEET = 385;
 
+/** Queues the uncle's picture if it isn't loaded yet (its own preload, and SCREAM-243's loading ahead). */
+export function loadUncleArt(scene: Phaser.Scene): void {
+  if (!scene.textures.exists(UNCLE_KEY)) scene.load.image(UNCLE_KEY, UNCLE_URL);
+}
+
 export class UncleIntroScene extends Phaser.Scene {
   private run!: TutorialRun;
   private lineText!: Phaser.GameObjects.Text;
@@ -54,7 +59,7 @@ export class UncleIntroScene extends Phaser.Scene {
 
   preload(): void {
     loadTruckInterior(this);
-    if (!this.textures.exists(UNCLE_KEY)) this.load.image(UNCLE_KEY, UNCLE_URL);
+    loadUncleArt(this);
     showLoadingWhileLoading(this);
   }
 

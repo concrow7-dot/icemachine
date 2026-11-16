@@ -3,10 +3,10 @@ import {
   ORDER_SHOW_SECONDS,
   ORDER_SIZE_WEIGHTS,
   REFUSE_ABOVE_CENTS,
-  TIP_COUNTDOWN_SECONDS,
   TIP_PERCENT_STEPS,
   TIP_STEP_SECONDS,
   WINDOW_PATIENCE_SECONDS,
+  ASK_AGAIN_LIMIT,
 } from '../config/tuning';
 import type { CoolerSlot } from './EveningState';
 
@@ -32,7 +32,7 @@ export type SaleOutcome =
   | { kind: 'overcharged' } // price too high: they leave with the ice cream for free
   | { kind: 'wrong-order' } // wrong items with no retry left: they leave with them for free
   | { kind: 'timed-out' } // waited the full minute: "Sorry, I have to go"
-  | { kind: 'too-expensive' } // every flavour over $4.00: no order
+  | { kind: 'too-expensive' } // every flavour priced over what they'd pay ($4.00; Story: SCREAM-271): no order
   | { kind: 'sold-out' } // SCREAM-218: nothing left in the cooler; the player says sorry
   | { kind: 'drove-off' }; // the player left without serving: a lost sale
 
@@ -58,8 +58,10 @@ export function generateOrder(
   random: () => number = Math.random,
   /** SCREAM-189: this customer always orders this many (the sheet's "Order size"). */
   fixedSize?: number,
+  /** SCREAM-271: the most they pay for one of a flavour (Story has its own per ice cream). */
+  refuseAbove: (flavour: FlavourId) => number = () => REFUSE_ABOVE_CENTS,
 ): OrderLine[] {
-  const left = slots.map((s) => (s.priceCents <= REFUSE_ABOVE_CENTS ? s.quantity : 0));
+  const left = slots.map((s) => (s.priceCents <= refuseAbove(s.flavour) ? s.quantity : 0));
   const available = left.reduce((a, b) => a + b, 0);
   if (available === 0) return [];
 
@@ -76,6 +78,33 @@ export function generateOrder(
   });
 }
 
+/**
+ * SCREAM-315 (PO, November 14): "If at least one of these are in the cooler, the customer will
+ * buy one more ice cream than they would have". SCREAM-354 (PO, November 15): "customers are
+ * buying an extra ice cream, even if they aren't buying an eclair. If the eclair is in the cooler,
+ * they buy an extra ice cream": the extra one is "Any ice cream they'd buy", and one eclair in the
+ * cooler is enough, even one the customer is already buying ("any eclair counts").
+ *
+ * So: with at least one Chocolate Eclair in the cooler, the order gets one more ice cream, of any
+ * kind that has one left beyond the order at a price they would pay (each kind as likely as the
+ * next). Nothing like that left: the order is unchanged. An empty order becomes just the extra one.
+ */
+export function withExtraIceCream(
+  order: readonly OrderLine[],
+  slots: readonly Readonly<CoolerSlot>[],
+  random: () => number = Math.random,
+  refuseAbove: (flavour: FlavourId) => number = () => REFUSE_ABOVE_CENTS,
+): OrderLine[] {
+  if (!slots.some((s) => s.flavour === 'eclair' && s.quantity > 0)) return [...order];
+  const ordered = (slot: number) => order.filter((line) => line.slot === slot).reduce((n, line) => n + line.count, 0);
+  const choices = slots.map((s, i) => (s.quantity > ordered(i) && s.priceCents <= refuseAbove(s.flavour) ? i : -1)).filter((i) => i >= 0);
+  if (choices.length === 0) return [...order];
+  const slot = choices[Math.floor(random() * choices.length)] ?? choices[0]!;
+  const line = order.find((l) => l.slot === slot);
+  if (line) return order.map((l) => (l === line ? { ...l, count: l.count + 1 } : l));
+  return [...order, { slot, flavour: slots[slot]!.flavour, count: 1 }].sort((a, b) => a.slot - b.slot);
+}
+
 /** "2 Chocolate Eclair, 1 SpongePop" */
 export function describeOrder(order: readonly OrderLine[]): string {
   return order.map((line) => `${line.count} ${getFlavour(line.flavour).name}`).join(', ');
@@ -87,10 +116,15 @@ export function orderTotalCents(order: readonly OrderLine[], slots: readonly Rea
 }
 
 /** Tip percentage after this many seconds of the countdown: 20, 15, 10, 5, then 0 (PO, doc 12 Q29). */
-export function tipPercentAt(seconds: number): number {
-  if (seconds >= TIP_COUNTDOWN_SECONDS) return 0;
+export function tipPercentAt(seconds: number, steps: readonly number[] = TIP_PERCENT_STEPS): number {
+  if (seconds >= tipCountdownSeconds(steps)) return 0;
   const step = Math.floor(Math.max(0, seconds) / TIP_STEP_SECONDS);
-  return TIP_PERCENT_STEPS[step] ?? 0;
+  return steps[step] ?? 0;
+}
+
+/** SCREAM-303: how long the tip countdown runs for these steps (10 seconds each: 40, or 50 with the power-up). */
+export function tipCountdownSeconds(steps: readonly number[] = TIP_PERCENT_STEPS): number {
+  return steps.length * TIP_STEP_SECONDS;
 }
 
 /**
@@ -99,11 +133,15 @@ export function tipPercentAt(seconds: number): number {
  */
 export class Sale {
   phase: SalePhase = 'ordering';
+  /** SCREAM-303: the tip on offer for each 10-second step (the Service With A Smile power-up has one more, at 25%). */
+  tipSteps: readonly number[] = TIP_PERCENT_STEPS;
   outcome: SaleOutcome | null = null;
   /** Ice creams picked at the cooler, per slot, not yet handed over. */
   readonly bag: number[];
-  /** True once the player has pressed R (ask again): no tip, no retry (PO, Q9 and Q28). */
+  /** True once the player has asked for the order again (R, or FORGOT ORDER): no tip, no retry (PO, Q9 and Q28). */
   askedAgain = false;
+  /** SCREAM-288: how many times the order has been asked for again. */
+  timesAsked = 0;
   /** True once a wrong order has been corrected (one retry only, Q27). */
   retryUsed = false;
   /** SCREAM-120: the player overcharged once and is trying the price again (no tip after that). */
@@ -123,6 +161,9 @@ export class Sale {
   readonly pictures: boolean;
   /** While the current line shows the order: any words before it ('' for the order alone); otherwise null. */
   private orderPrefix: string | null = null;
+
+  /** SCREAM-285: the order is being repeated at "How much?"; when it hides, the price is asked again. */
+  private backToPricing = false;
 
   private startedMs: number;
   private orderHiddenMs: number | null = null;
@@ -172,11 +213,19 @@ export class Sale {
    * showing, without waiting out the 5 seconds. Hides the order now.
    */
   skipToCooler(nowMs: number): boolean {
+    this.backToPricing = false; // SCREAM-285: going to the cooler instead of hearing "How much?" again
     if (this.phase === 'ordering') this.hideOrder(nowMs);
     return this.phase === 'deciding';
   }
 
   private hideOrder(nowMs: number): void {
+    if (this.backToPricing) {
+      // SCREAM-285: the order was asked for again at "How much?": back to the price.
+      this.backToPricing = false;
+      this.phase = 'pricing';
+      this.say('How much?');
+      return;
+    }
     this.phase = 'deciding';
     this.say('…');
     // The tip countdown starts the first time the order is hidden (Q23).
@@ -197,7 +246,7 @@ export class Sale {
   tipPercent(nowMs: number): number {
     const seconds = this.countdownSeconds(nowMs);
     if (seconds === null || this.askedAgain || this.retryUsed || this.repriceUsed) return 0;
-    return tipPercentAt(seconds);
+    return tipPercentAt(seconds, this.tipSteps);
   }
 
   /** True while the order is showing in the bubble. */
@@ -205,12 +254,33 @@ export class Sale {
     return this.phase === 'ordering';
   }
 
-  /** R: the customer repeats the order. Once only, cancels the tip, and uses up the retry (Q9, Q28). */
+  /**
+   * R at the window, FORGOT ORDER at the cooler: the customer repeats the order. The first time
+   * cancels the tip and uses up the retry (Q9, Q28). SCREAM-282: it can be asked again after
+   * that, and after a corrected mistake; SCREAM-288: twice in all.
+   */
   askAgain(nowMs: number): boolean {
-    if (this.phase !== 'deciding' || this.askedAgain || this.retryUsed) return false;
+    // SCREAM-285 (PO, November 12): also after the bag is served, at "How much?". The customer
+    // says the order, then asks the price again (unless the player heads for the cooler).
+    if (!this.canAskAgain) return false;
+    this.backToPricing = this.phase === 'pricing';
     this.askedAgain = true;
+    this.timesAsked++;
     this.showOrder(nowMs, describeOrder(this.order), '');
     return true;
+  }
+
+  /**
+   * SCREAM-288 (PO, November 12): each customer can be asked at most twice (`ASK_AGAIN_LIMIT`),
+   * counting the window (ASK AGAIN, R) and the cooler (FORGOT ORDER, B) together.
+   */
+  get canAskAgain(): boolean {
+    return (this.phase === 'deciding' || this.phase === 'pricing') && this.timesAsked < ASK_AGAIN_LIMIT;
+  }
+
+  /** How many times this customer can still be asked for the order again. */
+  get asksLeft(): number {
+    return Math.max(0, ASK_AGAIN_LIMIT - this.timesAsked);
   }
 
   /** The player comes back from the cooler and hands the items over: the customer asks the price. */
@@ -218,6 +288,17 @@ export class Sale {
     if (this.phase !== 'deciding' || this.bagCount === 0) return false;
     this.phase = 'pricing';
     this.say('How much?');
+    return true;
+  }
+
+  /**
+   * SCREAM-283 (PO, November 12): RETURN TO COOLER at "How much?". The player takes the bag
+   * back to the cooler to change it; the sale and its clocks carry on.
+   */
+  backToCooler(): boolean {
+    if (this.phase !== 'pricing') return false;
+    this.phase = 'deciding';
+    this.say('…');
     return true;
   }
 
@@ -265,6 +346,11 @@ export class Sale {
     // An undercharge is simply accepted (Q18); the tip is a share of what was charged (Q29).
     const tipPercent = this.tipPercent(nowMs);
     const tipCents = Math.round(((priceCents * tipPercent) / 100) * this.tipFactor);
+    // SCREAM-313: what the tip would have been without the SpongePop's extra points.
+    if (tipPercent > 0 && this.spongePopPoints > 0) {
+      const without = Math.round(((priceCents * (tipPercent - this.spongePopPoints)) / 100) * this.tipFactor);
+      this.spongePopTipCents = Math.max(0, tipCents - without);
+    }
     this.finish({ kind: 'paid', priceCents, tipCents, tipPercent }, 'Thanks!');
     return 'over';
   }
@@ -316,6 +402,16 @@ export class Sale {
 
   /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
   tipFactor = 1;
+  /** SCREAM-334: this order includes a Two Ball Lou Ball (Story): the tip is doubled and the steering is reversed afterwards. */
+  louBall = false;
+  /** SCREAM-335: this order includes a Drum Cone (Story): paying for it starts the drum solo. */
+  drumCone = false;
+  /** SCREAM-312: the exploration tip paid with this sale, in cents (Lil Explorer Pops, Story only). */
+  explorationTipCents = 0;
+  /** SCREAM-313: the extra tip points a SpongePop brings to this sale (10 for a kid who ordered one). */
+  spongePopPoints = 0;
+  /** SCREAM-313: the part of the tip the SpongePop earned, in cents (set when paid). */
+  spongePopTipCents = 0;
 
   /** SCREAM-248: the neighbour this customer told the player about (resident id), or null. */
   neighbourAbout: string | null = null;

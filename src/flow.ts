@@ -22,6 +22,11 @@ export const SceneKeys = {
   Loading: 'Loading',
   UncleIntro: 'UncleIntro',
   TutorialCrawl: 'TutorialCrawl',
+  PowerUps: 'PowerUps',
+  Notebook: 'Notebook',
+  GasCan: 'GasCan',
+  KeyBindings: 'KeyBindings',
+  HowToDrive: 'HowToDrive',
 } as const;
 
 /** Scenes that make up a running evening. New phases get added here. */
@@ -30,6 +35,8 @@ export const EVENING_SCENES: string[] = [
   SceneKeys.UncleIntro,
   SceneKeys.Truck,
   SceneKeys.Cooler,
+  SceneKeys.PowerUps,
+  SceneKeys.Notebook,
   SceneKeys.Sales,
   SceneKeys.Fill,
   SceneKeys.Drive,
@@ -100,7 +107,9 @@ function beginEvening(from: Phaser.Scene, evening: EveningState): void {
   if (evening.tutorial) count('tutorial-started', 'tutorial'); // SCREAM-201
   // #66 (PO): the evening opens straight at the cooler, with the clock waiting.
   // SCREAM-169, 176: with the uncle, it opens with the credits, then him in the truck (the clock still waiting).
-  from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);
+  // SCREAM-307: in Story from the second night it opens at the truck screen instead (cooler highlighted).
+  if (evening.opensAtHub) from.scene.start(SceneKeys.Truck, { station: 'cooler' });
+  else from.scene.start(evening.tutorial ? SceneKeys.TutorialCrawl : SceneKeys.Cooler);
   from.scene.launch(SceneKeys.Hud);
 }
 
@@ -124,6 +133,70 @@ export function pauseEvening(from: Phaser.Scene): void {
   from.scene.bringToTop(SceneKeys.Pause);
 }
 
+/**
+ * SCREAM-122 (PO, November 13): the Temporary Gas Can has just poured itself in. The game
+ * stops like a pause (the clock too) while the can pops onto the screen, pulses and goes away.
+ */
+export function showGasCan(from: Phaser.Scene): void {
+  if (from.scene.isActive(SceneKeys.GasCan)) return;
+  const paused = EVENING_SCENES.filter((key) => from.scene.isActive(key));
+  for (const key of paused) from.scene.pause(key);
+  from.scene.launch(SceneKeys.GasCan, { paused });
+  from.scene.bringToTop(SceneKeys.GasCan);
+}
+
+/** SCREAM-207: a switch for the test suites (set to '1' in browser storage): no "How To Drive" pop-up, so a test that drives isn't frozen by it. Players never set it. */
+export const HOW_TO_DRIVE_OFF_KEY = 'icemachine.howtodrive.off.v1';
+
+/** PO, November 13 (testing PR #214): "Only show the driving instructions the first time playing." Kept in the browser once the pop-up has been shown. */
+export const HOW_TO_DRIVE_SEEN_KEY = 'icemachine.howtodrive.seen.v1';
+
+export function howToDriveSeen(): boolean {
+  try {
+    return localStorage.getItem(HOW_TO_DRIVE_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function howToDriveOff(): boolean {
+  try {
+    return localStorage.getItem(HOW_TO_DRIVE_OFF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * SCREAM-207: the player has the wheel for the first time (Day 1, after the uncle's drive, after
+ * skipping him, or On My Own). The game stops like a pause (the clock too) while the "How To
+ * Drive" pop-up shows the keys; closing it starts the player's driving.
+ */
+export function showHowToDrive(from: Phaser.Scene): void {
+  if (howToDriveOff() || howToDriveSeen()) return;
+  try {
+    localStorage.setItem(HOW_TO_DRIVE_SEEN_KEY, '1');
+  } catch {
+    // No browser storage: it shows again next game.
+  }
+  if (from.scene.isActive(SceneKeys.HowToDrive)) return;
+  const paused = EVENING_SCENES.filter((key) => from.scene.isActive(key));
+  for (const key of paused) from.scene.pause(key);
+  from.scene.launch(SceneKeys.HowToDrive, { paused });
+  from.scene.bringToTop(SceneKeys.HowToDrive);
+}
+
+/**
+ * SCREAM-181: Esc on the high score screen while it asks for initials. The screen freezes as it
+ * is (letters typed so far stay) and the pause menu opens with a warning and no Restart.
+ */
+export function pauseResults(from: Phaser.Scene): void {
+  if (from.scene.isActive(SceneKeys.Pause)) return;
+  from.scene.pause(SceneKeys.Results);
+  from.scene.launch(SceneKeys.Pause, { paused: [SceneKeys.Results], fromResults: true });
+  from.scene.bringToTop(SceneKeys.Pause);
+}
+
 /** The current evening. Only valid between startEvening and the next title screen. */
 export function getEvening(scene: Phaser.Scene): EveningState {
   const state = scene.registry.get(STATE_KEY) as EveningState | undefined;
@@ -132,12 +205,14 @@ export function getEvening(scene: Phaser.Scene): EveningState {
 }
 
 /** Stations inside the truck (issue #7). */
-export type Station = 'menu' | 'cooler' | 'driver' | 'window';
+export type Station = 'menu' | 'cooler' | 'driver' | 'notebook' | 'window';
 
-/** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66). */
-export function returnToTruck(from: Phaser.Scene, station: Station): void {
+/** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66), except in Story (SCREAM-318: DRIVE does). */
+export function returnToTruck(from: Phaser.Scene, station: Station, startClock = true): void {
   const evening = getEvening(from);
-  evening.startClock();
+  // SCREAM-307: coming back from the cork board, or from an empty cooler before setting off, leaves it waiting.
+  // SCREAM-318: in Story it waits for DRIVE whatever the station.
+  if (startClock && !evening.clockWaitsForDrive) evening.startClock();
   // SCREAM-171: in the guided tutorial, after Buy Stock the uncle has a word in the truck, then
   // walks to the cab and drives (UncleIntroScene, then the drive scene).
   if (evening.tutorial?.legToDrive === 'toRegular' && !evening.isPrepLocked) {

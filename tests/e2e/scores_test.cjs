@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 960, height: 540 } });
   // SCREAM-175: these suites play as a player who has finished the tutorial (every mode unlocked).
-  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); } catch {} });
+  await page.addInitScript(() => { try { localStorage.setItem('icemachine.tutorial.done.v1', '1'); localStorage.setItem('icemachine.howtodrive.off.v1', '1'); } catch {} });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -38,7 +38,7 @@ const { chromium } = require('playwright');
   check('Evening over: results screen', await scenes(), 'Results');
   check('Results sit over the truck interior picture (SCREAM-123)', await page.evaluate(() => window.__game.scene.getScene('Results').children.list.some(o => o.texture && o.texture.key === 'truck-interior')), true);
   check('Breakdown: sales $2.00, tips $0.40, stock $2.00, damage $5.00',
-    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, stockCents: 200, gasCents: 0, damageCents: 500 }));
+    JSON.stringify(await ev('e.breakdown')), JSON.stringify({ salesCents: 200, tipsCents: 40, spongePopCents: 0, explorationCents: 0, stockCents: 200, gasCents: 0, damageCents: 500, powerUpsCents: 0 }));
   check("Tonight's profit = sales + tips - stock - damage (-$4.60)", await ev('e.profitCents'), -460);
   // SCREAM-93: the largest sale, price plus tip, against Quick play's record (none yet)
   check('Largest sale: $2.40 (price + tip), a new record', await res('s.children.getByName("largest-sale").text'), 'Largest sale: $2.40  NEW RECORD!');
@@ -92,8 +92,41 @@ const { chromium } = require('playwright');
   const key = await page.evaluate(() => Object.keys(localStorage).find(k => k.startsWith('icemachine.highscores')));
   check('Stored under one key for every build (scores survive updates)', key, 'icemachine.highscores.v1');
 
+  // ---- SCREAM-181: Esc while it asks for initials opens the pause menu, with a warning ----
+  const pz = (fn) => page.evaluate(`(() => { const s = window.__game.scene.getScene('Pause'); return ${fn}; })()`);
+  const status = (key) => page.evaluate((k) => { const s = window.__game.scene.getScene(k); return s.sys.isPaused() ? 'paused' : s.sys.isActive() ? 'running' : 'off'; }, key);
+  await page.click('canvas'); await press('Enter'); await wait(200);
+  await eveningWithProfit(2500);
+  check('$25.00 makes the table: asks for initials', await res('s.entering'), true);
+  await page.keyboard.type('ab', { delay: 60 }); await wait(100);
+  await press('Escape'); await wait(300);
+  check('Esc while entering initials: pause menu opens, the screen behind is frozen', (await status('Pause')) + ' ' + (await status('Results')), 'running paused');
+  check('...with the warning', await pz("s.children.getByName('high-score-warning').text + ' ' + s.children.getByName('high-score-warning').visible"), "Quitting won't save your high score. true");
+  check('...Resume and Quit To Title only (the evening is over: no Restart)', await pz("s.items.map(t => t.text.replace(/[<> ]/g, '')).join(',')"), 'Resume,QuitToTitle');
+  await page.screenshot({ path: outDir + '/scores_pause_warning.png' });
+  await press('Escape'); await wait(300);
+  check('Esc again (Resume): back on the high score screen', (await status('Pause')) + ' ' + (await status('Results')), 'off running');
+  check('...the letters typed so far are still there', (await res('s.initialsText')) + ' ' + (await res('s.cursor')), 'ABA 2');
+  await page.keyboard.type('c', { delay: 60 }); await press('Enter'); await wait(150);
+  check('...and entering the name still saves the score', await table(), 'EAA:3000 ABC:2500 CAA:2000 AZA:1500 TIE:1500');
+  await press('Enter'); await wait(300);
+  await eveningWithProfit(2600);
+  check('$26.00 makes the table too', await res('s.entering'), true);
+  await press('Escape'); await wait(300);
+  await press('ArrowDown'); await press('Enter'); await wait(150);
+  check('Quit asks first, and says the score will be lost', await pz("s.prompt.text.replace(/\\n/g, ' ') + ' ' + s.children.getByName('high-score-warning').visible"), "Quit to the title screen? Your high score won't be saved. false");
+  check('...the question fits inside the pause box', await pz('s.prompt.width <= 410'), true);
+  await press('n'); await wait(150);
+  check('No: back to the menu, nothing lost', (await status('Pause')) + ' ' + (await status('Results')) + ' ' + (await pz('s.confirming')), 'running paused null');
+  await press('Enter'); await press('y'); await wait(400); // Quit To Title is still highlighted
+  check('Yes: title screen', await scenes(), 'Title');
+  check('...and the score is not in the top 5', await table(), 'EAA:3000 ABC:2500 CAA:2000 AZA:1500 TIE:1500');
+
   // ---- Esc goes to the title ----
   await page.click('canvas'); await press('Enter'); await wait(200);
+  await press('Escape'); await wait(300);
+  check('Pause menu during an evening: no warning, and Restart is there (SCREAM-181)', (await pz("!s.children.getByName('high-score-warning')")) + ' ' + (await pz('s.items.length')), 'true 5'); // SCREAM-290: End Evening too; SCREAM-206: Key Bindings
+  await press('Escape'); await wait(300);
   await eveningWithProfit(-5000);
   await press('Escape'); await wait(200);
   check('Esc on the results screen: title', await scenes(), 'Title');

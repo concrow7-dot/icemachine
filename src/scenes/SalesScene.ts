@@ -1,11 +1,15 @@
 import * as Phaser from 'phaser';
 import { drawBubble } from '../ui/speechBubble';
 import { showLoadingWhileLoading } from './LoadingScene';
-import { getFlavour } from '../config/flavours';
+import { getFlavour, type FlavourId } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
+import type { ResidentNow } from '../state/Residents';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { pressPriceKey, priceEntryCents } from '../state/PriceEntry';
-import { Calculator, type CalculatorKey } from '../ui/Calculator';
+import { Calculator, CALCULATOR_HEIGHT, CALCULATOR_SUMS_WIDTH, type CalculatorKey } from '../ui/Calculator';
+import { CalcSum, type CalcOp } from '../state/CalcSum';
+import { CALCULATOR_ID, REGISTER_ID } from '../config/powerUps';
+import { RegisterTablet } from '../ui/RegisterTablet';
 import { TipBar } from '../ui/TipBar';
 import { formatMoney } from '../util/format';
 import { loadResidentSheet } from '../ui/residentLook';
@@ -22,6 +26,12 @@ const INK = '#2b1d10';
 /** The window's buttons sit centred below the counter, above the key hints (ICE-14). */
 const BUTTON_X = 480;
 const BUTTON_Y = 478;
+/** SCREAM-284: the window's tip bar is as tall as the tip jar. */
+const WINDOW_TIP_BAR_H = 70;
+/** SCREAM-285: ASK AGAIN sits at the right end of the strip under the counter. */
+const ASK_BUTTON_X = 836;
+/** SCREAM-283: RETURN TO COOLER sits at the left end of the strip under the counter. */
+const RETURN_BUTTON_X = 118;
 /** The calculator sits in the middle of the window during pricing, beside YOUR PRICES (SCREAM-12). */
 const CALC_X = 390;
 const CALC_Y = 278;
@@ -37,6 +47,10 @@ const BUBBLE_PAD = 14;
 const FLASH_IN_MS = 375;
 const FLASH_HOLD_MS = 1350;
 const TIP_FLASH_DELAY_MS = 1050;
+/** Where the price and the tip lines flash, and how long a tip line takes to scroll up behind the price (SCREAM-313). */
+const PRICE_FLASH_Y = 300;
+const TIP_FLASH_Y = 360;
+const TIP_SCROLL_MS = 350;
 /** SCREAM-106: the customer in the right half of the window, their map sprite blown up 13x (SCREAM-110: smoothed). */
 const CUSTOMER_X = 756;
 const CUSTOMER_SCALE = 13;
@@ -77,9 +91,19 @@ export class SalesScene extends Phaser.Scene {
   /** SCREAM-172: redraws the uncle's outline round "R: Ask Again" when the hint line changes. */
   private redrawPointer?: () => void;
   private roadButton!: Phaser.GameObjects.Text;
+  /** SCREAM-241: true while the finished sale's button reads NEXT CUSTOMER (someone is waiting at the truck). */
+  offeringNext = false;
   private coolerButton!: Phaser.GameObjects.Text;
+  /** SCREAM-283: RETURN TO COOLER, at "How much?" (test hook). */
+  returnButton!: Phaser.GameObjects.Text;
+  /** SCREAM-285: ASK AGAIN, the same as R (test hook). */
+  askButton!: Phaser.GameObjects.Text;
   /** The price as typed on the calculator, left to right (SCREAM-12): '7.25', '7' ($7.00). */
   private typed = '';
+  /** SCREAM-317: with the Calculator power-up, the pad adds up (+ − × ÷ =); null without it (test hook). */
+  sum: CalcSum | null = null;
+  /** SCREAM-330: with This Century Register, a tablet of ice creams to click in place of the calculator pad (PO); null without it (test hook). */
+  register: RegisterTablet | null = null;
 
   constructor() {
     super(SceneKeys.Sales);
@@ -156,10 +180,20 @@ export class SalesScene extends Phaser.Scene {
     this.orderPictures = this.add.container(330, 212);
 
     // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
-    this.tipBar = new TipBar(this, 892, 412, true);
+    // SCREAM-284 (PO, November 12): the same countdown bar as at the cooler, at the jar's size.
+    this.tipBar = new TipBar(this, 892, 412, true, true, WINDOW_TIP_BAR_H, this.evening.sale?.tipSteps ?? this.evening.tipSteps); // SCREAM-313: this sale's own steps
 
     this.priceCard = this.add.container(MENU_CARD.x, MENU_CARD.y);
-    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key)).setVisible(false);
+    // SCREAM-317: with the Calculator power-up the pad is a column wider, on the right; the digits stay put.
+    // SCREAM-330 (PO, November 14: "The tablet should replace the calculator"): with This Century Register the
+    // pad is never shown; the tablet sits in its place and adds up with the same sum.
+    const hasCalculator = this.evening.powerUps.includes(CALCULATOR_ID);
+    const hasRegister = this.evening.powerUps.includes(REGISTER_ID);
+    this.sum = hasCalculator || hasRegister ? new CalcSum() : null;
+    this.calculator = new Calculator(this, CALC_X, CALC_Y, (key) => this.pressKey(key), hasCalculator).setVisible(false);
+    this.register = hasRegister
+      ? new RegisterTablet(this, CALC_X, CALC_Y, CALCULATOR_SUMS_WIDTH, CALCULATOR_HEIGHT, (flavour) => this.ringUp(flavour), (key) => this.pressKey(key)).setVisible(false)
+      : null;
 
     // Below the window, centred, where GO TO THE COOLER sits (ICE-14, ICE-15). Shows once the
     // sale is over, paid or not; the hint still says sorry when the ice cream ends up free.
@@ -174,7 +208,7 @@ export class SalesScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
-    this.roadButton.on('pointerdown', () => this.leave());
+    this.roadButton.on('pointerdown', () => this.nextOrLeave());
 
     this.coolerButton = this.add
       .text(BUTTON_X, BUTTON_Y, 'GO TO THE COOLER', {
@@ -188,6 +222,36 @@ export class SalesScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .setVisible(false);
     this.coolerButton.on('pointerdown', () => this.goToCooler());
+
+    // SCREAM-283 (PO, November 12, on a screenshot): in the bottom left of the whole screen, on
+    // the strip under the counter (not on the counter, where the paper bag is).
+    this.returnButton = this.add
+      .text(RETURN_BUTTON_X, BUTTON_Y, 'RETURN TO COOLER', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 12, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+    this.returnButton.on('pointerdown', () => this.returnToCooler());
+
+    // SCREAM-285 (PO, November 12): asking for the order again is a button, at the right end of
+    // the strip under the counter, before and after the cooler ("How much?" included).
+    this.askButton = this.add
+      .text(ASK_BUTTON_X, BUTTON_Y, 'ASK AGAIN', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 12, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
+    this.askButton.on('pointerdown', () => this.askAgain());
 
     this.hint = this.add
       .text(width / 2, height - 18, '', { fontFamily: 'monospace', fontSize: '15px', color: INK })
@@ -209,6 +273,8 @@ export class SalesScene extends Phaser.Scene {
 
   update(): void {
     this.tipBar.update(this.evening);
+    // SCREAM-241: someone can walk up, or give up, while the finished sale is still on screen.
+    if (this.evening.sale?.phase === 'over' && !!this.nextCustomer() !== this.offeringNext) this.refresh();
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -217,7 +283,12 @@ export class SalesScene extends Phaser.Scene {
     const key = event.key;
 
     if (sale.phase === 'over') {
-      if (key === 'Enter' || key === ' ') this.leave();
+      if (key === 'Enter' || key === ' ') this.nextOrLeave();
+      // SCREAM-241 (PO, November 11): with someone waiting, driving off instead is a key.
+      else if ((key === 'b' || key === 'B') && this.nextCustomer()) {
+        this.evening.windowShutUntilMoved = true;
+        this.leave();
+      }
       return;
     }
 
@@ -229,19 +300,20 @@ export class SalesScene extends Phaser.Scene {
 
     if (sale.phase === 'ordering' || sale.phase === 'deciding') {
       if (key === 'Enter' || key === 'c' || key === 'C') this.goToCooler();
-      else if ((key === 'r' || key === 'R') && sale.askAgain(this.evening.nowMs)) {
-        this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
-        this.refresh();
-      }
+      else if (key === 'r' || key === 'R') this.askAgain();
       return;
     }
 
     if (sale.phase === 'pricing') {
       // Typed like a calculator (SCREAM-12); the number pad's keys arrive as the same characters.
-      if (key === 'Backspace') this.pressKey('BACK');
+      if (key === 'c' || key === 'C') this.returnToCooler();
+      else if (key === 'r' || key === 'R') this.askAgain(); // SCREAM-285
+      else if (this.register && (key === 'Backspace' || key === 'Delete')) this.pressKey('C'); // SCREAM-330: no pad to type on: both clear
+      else if (key === 'Backspace') this.pressKey('BACK');
       else if (key === 'Delete') this.pressKey('C');
       else if (key === 'Enter') this.pressKey('CHARGE');
       else if (/^[0-9]$/.test(key) || key === '.') this.pressKey(key as CalculatorKey);
+      else if (this.sum && ['+', '-', '*', '/', '='].includes(key)) this.pressKey(key as CalculatorKey); // SCREAM-317
       return;
     }
   }
@@ -253,12 +325,47 @@ export class SalesScene extends Phaser.Scene {
     this.scene.start(SceneKeys.Fill);
   }
 
+  /** R or ASK AGAIN: the customer says the order again (no tip after that). */
+  private askAgain(): void {
+    if (!this.evening.sale?.askAgain(this.evening.nowMs)) return;
+    this.evening.tutorial?.release(); // SCREAM-172: he asked her to repeat it, as the uncle said
+    this.typed = '';
+    this.clearSum();
+    this.refresh();
+  }
+
+  /** SCREAM-317, SCREAM-330: empties the pad's sum and the register's counts. */
+  private clearSum(): void {
+    this.sum?.clear();
+    this.register?.clearCounts();
+  }
+
+  /** SCREAM-330: a click on an ice cream on the register adds one of it to the total (test hook). */
+  ringUp(flavour: FlavourId): void {
+    if (this.evening.sale?.phase !== 'pricing' || !this.sum || !this.register) return;
+    const slot = this.evening.slots.find((s) => s.flavour === flavour);
+    if (!slot) return;
+    this.sum.addItem(slot.priceCents);
+    this.register.count(flavour);
+    this.refresh();
+  }
+
+  /** SCREAM-283: from "How much?" back to the cooler with the bag, to change what's in it. */
+  private returnToCooler(): void {
+    if (!this.evening.sale?.backToCooler()) return;
+    this.typed = ''; // a price already typed is cleared (PO)
+    this.clearSum();
+    this.scene.start(SceneKeys.Fill);
+  }
+
   /** Where "R: Ask Again (No Tip)" is in the hint line (it's monospace, so by its letters). */
   private repeatHintRect(): Phaser.Geom.Rectangle | null {
+    // SCREAM-285: the uncle's tip about asking again outlines the ASK AGAIN button when it's showing.
+    if (this.askButton?.visible) return Phaser.Geom.Rectangle.Inflate(this.askButton.getBounds(), 6, 6);
     const text = this.hint?.text ?? '';
     const at = text.indexOf('R: Ask Again');
     if (at < 0 || !this.hint.visible) return null;
-    const label = 'R: Ask Again (No Tip)';
+    const label = text.includes('R: Ask Again (No Tip)') ? 'R: Ask Again (No Tip)' : 'R: Ask Again';
     const b = this.hint.getBounds();
     const letter = b.width / text.length;
     return new Phaser.Geom.Rectangle(b.x + at * letter - 8, b.y - 5, label.length * letter + 16, b.height + 10);
@@ -271,49 +378,113 @@ export class SalesScene extends Phaser.Scene {
       this.charge();
       return;
     }
-    if (key === 'C') this.typed = '';
+    if (this.register) {
+      // SCREAM-330: the register has no number keys: only CLEAR (and CHARGE, above).
+      if (key === 'C') this.clearSum();
+    } else if (this.sum) {
+      // SCREAM-317: the Calculator power-up's pad.
+      if (key === 'C') this.clearSum();
+      else if (key === 'BACK') this.sum.back();
+      else if (key === '=') this.sum.equals();
+      else if (key === '+' || key === '-' || key === '*' || key === '/') this.sum.operator(key as CalcOp);
+      else this.sum.digit(key);
+    } else if (key === 'C') this.typed = '';
     else if (key === 'BACK') this.typed = this.typed.slice(0, -1);
-    else this.typed = pressPriceKey(this.typed, key);
+    else if (/^[0-9]$|^00$|^\.$/.test(key)) this.typed = pressPriceKey(this.typed, key);
     this.refresh();
   }
 
   private charge(): void {
-    const cents = priceEntryCents(this.typed);
-    if (cents === null) return;
+    // SCREAM-317: CHARGE in the middle of a sum works it out first.
+    const cents = this.sum ? this.sum.chargeCents() : priceEntryCents(this.typed);
+    if (cents === null) {
+      this.refresh();
+      return;
+    }
     this.typed = '';
+    this.clearSum();
     this.evening.chargeForSale(cents);
     const outcome = this.evening.sale?.outcome;
-    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents);
+    if (outcome?.kind === 'paid') this.celebrate(outcome.priceCents, outcome.tipCents, this.evening.sale?.spongePopTipCents ?? 0, this.evening.sale?.explorationTipCents ?? 0, this.evening.sale?.louBall ?? false);
   }
 
-  /** PO, doc 08 Q16: the payment flashes on screen, then the tip. */
-  private celebrate(priceCents: number, tipCents: number): void {
-    const flash = (text: string, y: number, colour: string, delay: number) => {
-      const t = this.add
-        .text(330, y, text, { fontFamily: 'monospace', fontSize: '44px', color: colour, fontStyle: 'bold' })
+  /**
+   * PO, doc 08 Q16: the payment flashes on screen, then the tip. SCREAM-313 (PO, November 14):
+   * the part of the tip a SpongePop earned has its own line. With more than one tip line, they
+   * take turns under the price: each appears, then scrolls up behind the price to make room for
+   * the next ("the tips should scroll behind the overall price after they have appeared").
+   */
+  private celebrate(priceCents: number, tipCents: number, spongePopCents = 0, explorationCents = 0, doubled = false): void {
+    const plainTip = tipCents - spongePopCents;
+    const lines: { text: string; colour: string; size: number }[] = [
+      // SCREAM-334: a Two Ball Lou Ball's doubled tip says so.
+      { text: plainTip > 0 ? `+${formatMoney(plainTip)} ${doubled ? 'DOUBLE TIP' : 'TIP'}` : 'No tip', colour: plainTip > 0 ? '#1d5c8c' : '#8a6a4a', size: 44 },
+    ];
+    if (spongePopCents > 0) lines.push({ text: `+${formatMoney(spongePopCents)} SPONGEPOP TIP`, colour: '#c2185b', size: 30 });
+    // SCREAM-312 (PO, November 14): the exploration tip is its own line, after the tip.
+    if (explorationCents > 0) lines.push({ text: `+${formatMoney(explorationCents)} EXPLORATION TIP`, colour: '#6a3d9a', size: 30 });
+    this.flashLines(priceCents, lines);
+  }
+
+  /** The price at the top, then each tip line in turn below it (see celebrate). */
+  private flashLines(priceCents: number, lines: { text: string; colour: string; size: number }[]): void {
+    const make = (text: string, y: number, colour: string, size: number, depth: number) =>
+      this.add
+        .text(330, y, text, { fontFamily: 'monospace', fontSize: `${size}px`, color: colour, fontStyle: 'bold' })
         .setOrigin(0.5)
         .setStroke('#ffffff', 6)
         .setAlpha(0)
-        .setScale(0.6);
-      // One flash each, held 1.5x longer than before (PO, October 30: it used to flash twice).
+        .setScale(0.6)
+        .setDepth(depth)
+        .setName('sale-flash');
+    // The price stays up until the last tip line has had its time (one flash, PO, October 30).
+    const price = make(`+${formatMoney(priceCents)}`, PRICE_FLASH_Y, '#2e7d32', 44, 21);
+    this.tweens.add({ targets: price, alpha: 1, scale: 1.15, duration: FLASH_IN_MS, yoyo: true, hold: FLASH_HOLD_MS + (lines.length - 1) * TIP_FLASH_DELAY_MS, onComplete: () => price.destroy() });
+    lines.forEach((line, n) => {
+      const t = make(line.text, TIP_FLASH_Y, line.colour, line.size, 20);
+      const last = n === lines.length - 1;
       this.tweens.add({
         targets: t,
         alpha: 1,
         scale: 1.15,
         duration: FLASH_IN_MS,
-        delay,
-        yoyo: true,
-        hold: FLASH_HOLD_MS,
-        onComplete: () => t.destroy(),
+        delay: TIP_FLASH_DELAY_MS * (n + 1),
+        yoyo: last,
+        hold: last ? FLASH_HOLD_MS : 0,
+        onComplete: () => {
+          if (last) {
+            t.destroy();
+            return;
+          }
+          // Not the last: scroll up behind the price as the next line comes in.
+          this.tweens.add({ targets: t, y: PRICE_FLASH_Y, alpha: 0, scale: 0.8, delay: TIP_FLASH_DELAY_MS - FLASH_IN_MS - TIP_SCROLL_MS / 2, duration: TIP_SCROLL_MS, onComplete: () => t.destroy() });
+        },
       });
-    };
-    flash(`+${formatMoney(priceCents)}`, 300, '#2e7d32', 0);
-    flash(tipCents > 0 ? `+${formatMoney(tipCents)} TIP` : 'No tip', 360, tipCents > 0 ? '#1d5c8c' : '#8a6a4a', TIP_FLASH_DELAY_MS);
+    });
   }
 
   private driveOff(): void {
     this.evening.driveOffFromSale();
     this.leave();
+  }
+
+  /**
+   * SCREAM-241 (PO, November 10): who is waiting at the truck behind this customer, if anyone.
+   * Not during the uncle's evening (his steps expect the road between sales).
+   */
+  private nextCustomer(): ResidentNow | undefined {
+    if (this.evening.tutorial) return undefined;
+    return this.evening.nextAtTruck?.();
+  }
+
+  /** The button under the window once a sale is over: the next customer if one is waiting, else the road. */
+  private nextOrLeave(): void {
+    const next = this.nextCustomer();
+    if (!next) return this.leave();
+    this.evening.closeSale();
+    if (this.evening.isOver) return; // the HUD is taking us to the results screen
+    this.evening.startSale(next);
+    this.scene.restart();
   }
 
   /** Back on the road; the next customer appears (or the evening ends if it's past 8 PM). */
@@ -323,6 +494,11 @@ export class SalesScene extends Phaser.Scene {
     this.scene.start(SceneKeys.Drive);
   }
 
+  /** The ice creams on the mini Today's Menu (and on the register): each flavour in the cooler, or in this order. */
+  private menuRows(sale: NonNullable<EveningState['sale']>) {
+    return this.evening.slots.filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour));
+  }
+
   /**
    * SCREAM-125: the prices, as a mini Today's Menu taped to the glass: each flavour in the
    * cooler (or in this order) with its picture and its price in marker, like the cooler's board.
@@ -330,7 +506,7 @@ export class SalesScene extends Phaser.Scene {
   private drawMenuCard(): void {
     const sale = this.evening.sale;
     if (!sale) return;
-    const rows = this.evening.slots.filter((s) => s.quantity > 0 || sale.order.some((l) => l.flavour === s.flavour));
+    const rows = this.menuRows(sale);
     const rowH = 26;
     const h = 34 + rows.length * rowH + 6;
     const { w } = MENU_CARD;
@@ -428,25 +604,41 @@ export class SalesScene extends Phaser.Scene {
     this.showLine(sale);
 
     const pricing = sale.phase === 'pricing';
-    if (pricing) this.drawMenuCard();
-    this.priceCard.setVisible(pricing);
-    this.calculator.show(this.typed);
-    this.calculator.setVisible(pricing);
+    // SCREAM-330 (PO, November 15: "One the tablet powerup is bought, lets remove the price menu"): the
+    // tablet's tiles already show each price, so the mini Today's Menu is not taped up with the register.
+    if (pricing && !this.register) this.drawMenuCard();
+    this.priceCard.setVisible(pricing && !this.register);
+    this.calculator.show(this.sum ? this.sum.display() : this.typed, this.sum?.op ?? null);
+    // SCREAM-330 (PO): the register's tablet replaces the calculator pad.
+    if (pricing && this.register) this.register.show(this.menuRows(sale).map((s) => ({ flavour: s.flavour, priceCents: s.priceCents })), this.sum?.display() ?? '0');
+    this.register?.setVisible(pricing);
+    this.calculator.setVisible(pricing && !this.register);
 
     const freebie = sale.outcome?.kind === 'overcharged' || sale.outcome?.kind === 'wrong-order';
-    this.roadButton.setVisible(sale.phase === 'over');
+    this.offeringNext = sale.phase === 'over' && !!this.nextCustomer();
+    this.roadButton.setText(this.offeringNext ? 'NEXT CUSTOMER' : 'BACK ON THE ROAD').setVisible(sale.phase === 'over');
     this.coolerButton.setVisible(sale.phase === 'ordering' || sale.phase === 'deciding');
+    this.returnButton.setVisible(pricing);
+    // "(NO TIP)" until the tip has been given up (asked already, or a mistake).
+    const tipGone = sale.askedAgain || sale.retryUsed || sale.repriceUsed;
+    // SCREAM-288: gone once this customer has been asked twice.
+    this.askButton.setText(tipGone ? 'ASK AGAIN' : 'ASK AGAIN (NO TIP)').setVisible(sale.canAskAgain);
 
     let hint = '';
     if (sale.phase === 'ordering') hint = 'Remember the order!    C Or Enter: Go To The Cooler Now    B: Drive Off';
     if (sale.phase === 'deciding') {
-      const canAsk = !sale.askedAgain && !sale.retryUsed;
-      hint = `C Or Enter: Go To The Cooler    ${canAsk ? 'R: Ask Again (No Tip)    ' : ''}B: Drive Off`;
+      // SCREAM-282: asking again is always there; "(No Tip)" only while there is a tip to lose.
+      const tipLeft = !(sale.askedAgain || sale.retryUsed || sale.repriceUsed);
+      hint = `C Or Enter: Go To The Cooler    ${sale.canAskAgain ? `R: Ask Again${tipLeft ? ' (No Tip)' : ''}    ` : ''}B: Drive Off`;
     }
     if (pricing) {
-      hint = 'Type the price (7.25) or click the keys.    Enter: Charge    Backspace: Undo    B: Drive Off';
+      // Shortened to make room for C (the line was as wide as the screen).
+      hint = `${this.register ? 'Click The Ice Creams' : 'Type The Price'}   Enter: Charge   C: Return To Cooler   ${sale.canAskAgain ? 'R: Ask Again   ' : ''}B: Drive Off`;
     }
-    if (sale.phase === 'over') hint = freebie ? "Enter: Say Sorry, It's On The House" : 'Enter: Back On The Road';
+    if (sale.phase === 'over') {
+      hint = freebie ? "Enter: Say Sorry, It's On The House" : this.offeringNext ? 'Enter: Next Customer' : 'Enter: Back On The Road';
+      if (this.offeringNext) hint += '    B: Drive Off';
+    }
     this.hint.setText(hint);
     this.redrawPointer?.();
   }

@@ -3,7 +3,7 @@
     python3 tools/flavours/draw_icons.py public/assets/flavours/icons.png
 
 One row of frames, FRAME_W x FRAME_H art pixels each, transparent background, in the
-order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie.
+order of FLAVOURS in src/config/flavours.ts: eclair, spongepop, explorer, cookie, louball, drumcone.
 The game scales them up with nearest-neighbour filtering. Original designs (no real
 products or characters). Fixed random seed, so it redraws the same.
 """
@@ -13,7 +13,7 @@ import sys
 from PIL import Image, ImageDraw
 
 FRAME_W, FRAME_H = 28, 36
-ORDER = ["eclair", "spongepop", "explorer", "cookie"]
+ORDER = ["eclair", "spongepop", "explorer", "cookie", "louball", "drumcone"]
 rnd = random.Random(129)
 
 sheet = Image.new("RGBA", (FRAME_W * len(ORDER), FRAME_H), (0, 0, 0, 0))
@@ -112,6 +112,83 @@ def cookie():
     return img
 
 
-for i, fn in enumerate([eclair, spongepop, explorer, cookie]):
+def louball():
+    """SCREAM-334. The PO's sketches and words, November 15: a cone cup on a slant with two
+    gumballs in the point; "It should look more like this" (a photo of a cup of ice); "Make sure
+    to include the two balls at the bottom of the cone"; with a close-up sketch of the rim, "I
+    want the edges to meet" (the cup's sides run straight from the two ends of the lid's oval)
+    and "Remove lou and I" (a plain lid); then "Still too circular", with a sketch of a long
+    flat oval tilted up to the right: the lid is seen nearly edge-on."""
+    import math
+    img, d, R = frame(4)
+    ink = (60, 34, 30, 255)
+    plastic = (236, 226, 230, 255)
+
+    def oval(cx, cy, rx, ry, degrees):
+        t = math.radians(degrees)
+        return [(cx + rx * math.cos(a) * math.cos(t) - ry * math.sin(a) * math.sin(t),
+                 cy + rx * math.cos(a) * math.sin(t) + ry * math.sin(a) * math.cos(t))
+                for a in [k * math.pi / 18 for k in range(36)]]
+
+    # The lid: a long flat oval, tilted up to the right. Its two ends are where the cup's sides start.
+    cx, cy, rx, ry, tilt = 16, 6, 11, 3.6, -13
+    t = math.radians(tilt)
+    left_end = (round(cx - rx * math.cos(t)), round(cy - rx * math.sin(t)))
+    right_end = (round(cx + rx * math.cos(t)), round(cy + rx * math.sin(t)))
+    # The cup: straight sides from the oval's ends down to a rounded point, bottom left.
+    d.polygon([left_end, right_end, (9, 35), (4, 35), (1, 32), (1, 28)], fill=ink)
+    # Clear plastic wall, then the cherry ice inside it, with a shine down one side.
+    d.polygon([(left_end[0] + 1, left_end[1] + 1), (right_end[0] - 2, right_end[1] + 1), (8, 34), (5, 34), (2, 32), (2, 28)], fill=plastic)
+    d.polygon([(8, 10), (23, 6), (11, 30), (6, 27)], fill=(226, 60, 88, 255))
+    d.polygon([(9, 12), (12, 11), (8, 25), (7, 24)], fill=(246, 122, 140, 255))
+    d.polygon([(20, 10), (22, 8), (12, 29), (11, 29)], fill=(190, 40, 70, 255))
+    # The two balls at the bottom of the cone, side by side.
+    d.ellipse([2, 27, 8, 33], fill=ink)
+    d.ellipse([3, 28, 7, 32], fill=(70, 150, 240, 255))
+    d.ellipse([7, 24, 13, 30], fill=ink)
+    d.ellipse([8, 25, 12, 29], fill=(250, 214, 70, 255))
+    R(4, 29, 1, 1, (210, 232, 255, 255))
+    R(9, 26, 1, 1, (255, 248, 200, 255))
+    # The lid, drawn over the top of the cup so the edges meet: a dark edge, a rim, a plain white top.
+    d.polygon(oval(cx, cy, rx, ry, tilt), fill=ink)
+    d.polygon(oval(cx, cy, rx - 1, ry - 1, tilt), fill=(214, 216, 226, 255))
+    d.polygon(oval(cx, cy - 0.3, rx - 2.2, ry - 1.7, tilt), fill=(252, 250, 244, 255))
+    return img
+
+
+def drumcone():
+    """SCREAM-335 (the PO's sketch, November 15): an upright waffle cone with crosshatch marks,
+    a rounded scoop on top with a bumpy chocolate coating and bits on it, and a bite out of
+    the top left of the scoop (vanilla showing)."""
+    img, d, R = frame(5)
+    ink = (60, 34, 20, 255)
+    cx = 14
+    # The scoop: a bumpy dome of chocolate coating over the cone's top.
+    d.ellipse([cx - 11, 1, cx + 11, 19], fill=ink)
+    d.ellipse([cx - 10, 2, cx + 10, 18], fill=(110, 62, 34, 255))
+    for bx, by in [(-9, 11), (-4, 12), (1, 12), (6, 12), (9, 11)]:
+        d.ellipse([cx + bx - 3, by, cx + bx + 3, by + 5], fill=ink)
+        d.ellipse([cx + bx - 2, by, cx + bx + 2, by + 4], fill=(110, 62, 34, 255))
+    R(cx - 8, 11, 17, 3, (110, 62, 34, 255))
+    # Bits on the coating.
+    for bx, by in [(2, 5), (6, 8), (-1, 9), (4, 12), (-5, 12), (8, 12), (0, 14), (-8, 10)]:
+        R(cx + bx, by, 2, 1, (240, 214, 160, 255))
+    R(cx + 3, 3, 3, 1, (150, 96, 60, 255))  # a shine
+    # The bite, top left: vanilla inside, a dark edge.
+    d.ellipse([cx - 13, -2, cx - 2, 9], fill=(0, 0, 0, 0))
+    d.ellipse([cx - 6, 4, cx - 1, 10], fill=(252, 244, 222, 255))
+    d.ellipse([cx - 9, 6, cx - 4, 11], fill=(252, 244, 222, 255))
+    # The cone: a long triangle, waffle brown, with a crosshatch.
+    d.polygon([(cx - 8, 16), (cx + 8, 16), (cx, 35)], fill=ink)
+    d.polygon([(cx - 6, 17), (cx + 6, 17), (cx, 33)], fill=(222, 170, 96, 255))
+    for k in range(-12, 13, 4):
+        for y in range(17, 33):
+            for x in (cx + k + (y - 17), cx + k - (y - 17)):
+                if abs(x - cx) <= (33 - y) * 6 / 17 - 0.5:
+                    R(int(x), y, 1, 1, (170, 112, 52, 255))
+    return img
+
+
+for i, fn in enumerate([eclair, spongepop, explorer, cookie, louball, drumcone]):
     sheet.paste(fn(), (i * FRAME_W, 0))
 sheet.save(sys.argv[1] if len(sys.argv) > 1 else "icons.png")

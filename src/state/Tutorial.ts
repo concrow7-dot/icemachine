@@ -70,7 +70,8 @@ export const TUTORIAL_STEPS: readonly Step[] = [
       { text: 'Once you\'ve added a new flavor, you can set the price in "Today\'s Menu".', point: 'menu' },
       { text: "Be careful: too expensive, and most people won't want to buy.", point: 'menu' },
       // SCREAM-187 (PO, November 6): the $50 comes with this line (it was on the drive home).
-      { text: 'When you are ready, hit "Buy Stock". I left $50 on the truck for you to get started.', point: 'buy', gift: true },
+      // SCREAM-294 (PO, November 12): Story starts with $25, so that is what he left.
+      { text: 'When you are ready, hit "Buy Stock". I left $25 on the truck for you to get started.', point: 'buy', gift: true },
     ],
     doneWhen: 'stockBought',
   },
@@ -113,7 +114,7 @@ export const TUTORIAL_STEPS: readonly Step[] = [
     id: 'pump',
     // SCREAM-173 (PO, November 6): on the way, the gauge (outlined); at the pump, he pays.
     lines: [
-      { text: "Keep an eye on the gauge up top. Run dry and the night's over.", until: 'atPump', point: 'gauge' },
+      { text: "Keep an eye on the gas gauge. Run dry and the night's over.", until: 'atPump', point: 'gauge' },
       "I have twenty bucks on me, add that and I'll pay this time.",
     ],
     doneWhen: 'gasBought',

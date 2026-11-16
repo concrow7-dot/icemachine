@@ -11,22 +11,13 @@ import type { WorcesterMap } from '../config/mapTypes';
 import { boxesOverlap, distanceToSegment, LANE_WIDTH, RoadNetwork, type TurnedBox } from '../state/RoadGeometry';
 import {
   HIT_MIN_SPEED_FRACTION,
-  MUSIC_RING_RADIUS,
   PARKED_CAR_DAMAGE_CENTS,
   POTHOLE_DAMAGE_CENTS,
   POTHOLE_SPIN_SECONDS,
   ROAD_EDGE_DAMAGE_CENTS,
-  TRUCK_ACCELERATION_SECONDS,
-  TRUCK_BRAKING_SECONDS,
   TRUCK_COAST_SECONDS,
-  TRUCK_CREEP_SPEED,
-  TRUCK_MAX_TURN_DEGREES_PER_SECOND,
   TRUCK_MIN_TURN_RADIUS,
-  TRUCK_REVERSE_ACCELERATION_SECONDS,
   TRUCK_REVERSE_DELAY_SECONDS,
-  TRUCK_REVERSE_SPEED,
-  TRUCK_SPEED,
-  TRUCK_COAST_KEEP,
   TRUCK_COAST_KEEP_SECONDS,
   TRUCK_LENGTH,
   TRUCK_WIDTH,
@@ -39,18 +30,21 @@ import {
   TURN_SLOWDOWN_ABOVE_FRACTION,
   TURN_SPEED_LOSS_PER_SECOND,
   RING_LAPS,
+  HOW_TO_DRIVE_DELAY_MS,
 } from '../config/tuning';
-import { getEvening, SceneKeys } from '../flow';
+import { getEvening, getStory, SceneKeys, showGasCan, showHowToDrive } from '../flow';
 import { EveningState, type Facing } from '../state/EveningState';
 import { loadResidentSheet, residentFrame, residentsKey } from '../ui/residentLook';
 import { UNCLE_URL } from '../ui/smoothPixels';
 
 import type { ResidentNow } from '../state/Residents';
+import { edgeMarker } from '../state/EdgeMarker';
+import { MIRROR_MARKER_BOTTOM_EXTRA, MIRROR_MARKER_DIAL, MIRROR_MARKER_MARGIN, MIRROR_MARKER_RADIUS, MIRROR_MARKER_TOP_EXTRA } from '../config/tuning';
 import { musicFor, type Music } from '../audio/Music';
 import { loadTruckViews, truckView, TRUCK_VIEWS_KEY, TRUCK_VIEW_ORIGIN_Y } from '../ui/truckViews';
 import { gasStations } from '../config/gasStation';
 import type { AutoRoute } from '../state/AutoRoute';
-import type { UncleLeg } from '../state/Tutorial';
+import { TutorialEvents, type UncleLeg } from '../state/Tutorial';
 import { UncleDrive, UNCLE_WALKER_KEY } from './uncleDrive';
 
 // Issue #9: driving the truck around the neighbourhood, seen from above.
@@ -75,6 +69,8 @@ const CAR_COLOURS = [0xc0392b, 0x2e86c1, 0x7d3c98, 0x27ae60, 0xd68910, 0x566573]
 const POTHOLE_REACH = 22;
 
 const HUD_HEIGHT = 44;
+/** SCREAM-238: the park brake label and short notices start right of the gas gauge (bottom left; its right edge is at about x 148). */
+const BOTTOM_NOTE_X = 160;
 /** The truck collides as a 32 x 32 square whichever way it faces, so it can always turn at a junction. */
 /**
  * The truck's collision shape: a rectangle the size of the drawn truck (46 x 28),
@@ -126,12 +122,26 @@ const MAP_SQUARE = 512;
 const RESIDENT_DEPTH = 5;
 /** Depth added per px down the map, so lower on screen means in front: the map is under 10,000 px tall. */
 const DEPTH_PER_PX = 10000;
+/** SCREAM-251: where a porch light sits from the front door's point (px), and its glow's colour. */
+const PORCH_LIGHT_DX = 9;
+const PORCH_LIGHT_DY = -24;
+const PORCH_GLOW = 0xffd36b;
 /** The size of the squares houses and trees are filed under, to find the ones near a resident quickly. */
 const OCCLUDER_CELL = 128;
 const MAP_PAINT_MARGIN = 32;
 const MAP_TEXTURE_WIDTH = MAP_SQUARE + 960 + 2 * MAP_PAINT_MARGIN + 64;
 const MAP_TEXTURE_HEIGHT = MAP_SQUARE + 496 + 2 * MAP_PAINT_MARGIN + 16;
 const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
+
+/** SCREAM-334: the countdown shown while the steering is reversed (doc 15). */
+export function steeringReversedText(seconds: number): string {
+  return `STEERING REVERSED  ${seconds}`;
+}
+
+/** SCREAM-335: the countdown shown while the drum solo plays (doc 15). */
+export function drumSoloText(seconds: number): string {
+  return `DRUM SOLO  ${seconds}`;
+}
 
 export class DriveScene extends Phaser.Scene {
   private evening!: EveningState;
@@ -147,6 +157,8 @@ export class DriveScene extends Phaser.Scene {
   private held: Facing[] = [];
   /** One sprite per resident, in the same order as evening.residents.all. */
   private residentSprites: Phaser.GameObjects.Sprite[] = [];
+  /** SCREAM-251: each resident's porch light, by resident index (Story only; empty in Quick play). */
+  porchLights: Phaser.GameObjects.Graphics[] = [];
   /** Houses and trees by 128 px square, as indexes into this.map.objects, for finding what stands in front of a resident. */
   private objectGrid = new Map<string, number[]>();
   /** Copies of houses and trees drawn over a resident who is behind them (SCREAM-104), by object index. */
@@ -157,6 +169,8 @@ export class DriveScene extends Phaser.Scene {
   private pickupZones = new Map<number, Phaser.GameObjects.Rectangle>();
   /** The "!" thought bubble over each customer running to (or waiting at) the curb, by resident index. */
   private bubbles = new Map<number, Phaser.GameObjects.Container>();
+  /** SCREAM-341: Better Mirrors' markers, one per customer on their way (by their place in the residents' list). Test hook. */
+  mirrorMarkers = new Map<number, Phaser.GameObjects.Container>();
   private music!: Music;
   private songLabel!: Phaser.GameObjects.Text;
   private songLabelTween?: Phaser.Tweens.Tween;
@@ -183,6 +197,8 @@ export class DriveScene extends Phaser.Scene {
   private pumpBays: Phaser.GameObjects.Rectangle[] = [];
   /** False after coming back from the pump, until the truck has left every bay (so the pump doesn't open again straight away). */
   private pumpArmed = true;
+  /** SCREAM-304: the truck has moved since it came back out of the pump, still in the bay. */
+  private pumpMovedInBay = false;
   /** SCREAM-171, 185, 190: the uncle driving the truck and walking home, in the guided tutorial (scenes/uncleDrive.ts). */
   private uncle?: UncleDrive;
   /** The leg he's driving now, if any (tests read these). */
@@ -203,6 +219,8 @@ export class DriveScene extends Phaser.Scene {
   /** SCREAM-54: Home's driveway spot, where the truck stops to restock; re-armed once the truck has left it. */
   private homeBay!: Phaser.GameObjects.Rectangle;
   private homeArmed = false;
+  /** SCREAM-304: the truck has moved since it came back out of home, still in the driveway spot. */
+  private homeMovedInBay = false;
   /** SCREAM-145: counts the truck's laps of this map's roundabout (null if it has none). */
   private laps: LapCounter | null = null;
   /** SCREAM-145: the lap count. PO (November 9): never shown, it would give the secret away; tests read it. */
@@ -228,6 +246,10 @@ export class DriveScene extends Phaser.Scene {
   /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
   private rolling = 1;
   private parkLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-334: "STEERING REVERSED 7" while a Two Ball Lou Ball's 10 seconds run (test hook). */
+  reversedLabel!: Phaser.GameObjects.Text;
+  /** SCREAM-335: "DRUM SOLO 23" while a Drum Cone's 30 seconds run (test hook). */
+  drumLabel!: Phaser.GameObjects.Text;
   private notice?: Phaser.GameObjects.Text;
   /** How long the brake has been held at a standstill (it reverses after a moment). */
   private brakeHeldStill = 0;
@@ -263,6 +285,7 @@ export class DriveScene extends Phaser.Scene {
 
   create(): void {
     this.evening = getEvening(this);
+    this.evening.endPeek(); // SCREAM-321: back on the road (DRIVE, Tab, B or a sale), the look inside is over
     this.speed = 0;
     this.hitCooldownUntil = 0;
     this.scraping = false;
@@ -281,11 +304,14 @@ export class DriveScene extends Phaser.Scene {
     this.placeObstacles();
     this.pickupZones.clear();
     this.bubbles.clear();
-    this.ring = this.add.circle(0, 0, MUSIC_RING_RADIUS).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
+    this.mirrorMarkers.clear();
+    this.ring = this.add.circle(0, 0, this.evening.spec.musicRadius).setStrokeStyle(2, 0xffffff, 0.35).setFillStyle(0xffffff, 0.04).setDepth(4);
     this.tweens.add({ targets: this.ring, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.residentSprites = this.evening.residents.all.map(() =>
       this.add.sprite(0, 0, residentsKey(), 0).setOrigin(0.5, 1).setDepth(RESIDENT_DEPTH).setVisible(false),
     );
+    // SCREAM-251: Story's porch lights (Quick play's houses are unchanged).
+    this.porchLights = getStory(this) ? this.evening.residents.all.map((p) => this.makePorchLight(p.resident.door)) : [];
     this.occluders.clear();
     this.objectGrid.clear();
     this.map.objects.forEach((o, i) => {
@@ -319,6 +345,7 @@ export class DriveScene extends Phaser.Scene {
         .setDepth(4),
     );
     this.pumpArmed = this.pumpBays.every((b) => this.pickupOverlap(b) === 0);
+    this.pumpMovedInBay = false;
     // SCREAM-54 (PO, November 2): Home's driveway, a marked spot on the road outside home
     // (where each evening starts). Stopping in it like a customer pickup opens the cooler to restock.
     // SCREAM-145: away from home (Story, in Foley Stadium) there's no driveway: home is back through the roundabout.
@@ -330,6 +357,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(4)
       .setVisible(!this.evening.awayFromHome);
     this.homeArmed = this.pickupOverlap(this.homeBay) === 0;
+    this.homeMovedInBay = false;
     const ring = ringOf(this.map.roads);
     this.laps = ring && this.evening.mapsJoined ? new LapCounter(ring, RING_LAPS) : null;
     this.switchingMap = false;
@@ -375,7 +403,7 @@ export class DriveScene extends Phaser.Scene {
     camera.setZoom(DRIVE_CAMERA_ZOOM);
 
     this.add
-      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song   People in your ring may want ice cream (!)', {
+      .text(this.scale.width / 2, this.scale.height - HUD_HEIGHT - 16, '↑ Gas  ↓ Brake  ← → Steer  Q Park  M Mute  N Next Song', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -400,7 +428,7 @@ export class DriveScene extends Phaser.Scene {
       .setDepth(20);
 
     this.parkLabel = this.add
-      .text(16, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas Or Q To Release', {
+      .text(BOTTOM_NOTE_X, this.scale.height - HUD_HEIGHT - 66, 'P  PARK BRAKE   Gas Or Q To Release', {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#ffffff',
@@ -410,6 +438,36 @@ export class DriveScene extends Phaser.Scene {
       .setScrollFactor(0).setData('pin', true)
       .setDepth(20)
       .setVisible(this.parkBrake);
+
+    // SCREAM-334: while the steering is reversed (a Two Ball Lou Ball sale), a countdown says so.
+    this.reversedLabel = this.add
+      .text(this.scale.width / 2, 64, '', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#e07a1c',
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0).setData('pin', true)
+      .setDepth(20)
+      .setVisible(false);
+
+    // SCREAM-335: while a Drum Cone's drum solo plays, a countdown under it.
+    this.drumLabel = this.add
+      .text(this.scale.width / 2, 96, '', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        backgroundColor: '#16969c',
+        padding: { x: 10, y: 5 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0).setData('pin', true)
+      .setDepth(20)
+      .setVisible(false);
 
     // SCREAM-24: the music, with the song's name shown for a moment when it starts.
     this.songLabel = this.add
@@ -434,9 +492,11 @@ export class DriveScene extends Phaser.Scene {
       if (event.key === 'q' || event.key === 'Q') this.toggleParkBrake();
       if (event.key === 'm' || event.key === 'M') this.showSong(this.music.toggleMute() ? 'Music off (M)' : (this.music.song?.title ?? ''));
       if (event.key === 'n' || event.key === 'N') this.music.skip();
+      if (event.key === 'Tab') this.peekInside();
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir && !this.held.includes(dir)) this.held.push(dir);
     });
+    keyboard?.addCapture('TAB'); // SCREAM-321: Tab looks inside, it doesn't move the browser's focus
     keyboard?.on('keyup', (event: KeyboardEvent) => {
       const dir = KEY_TO_FACING[event.key.length === 1 ? event.key.toLowerCase() : event.key];
       if (dir) this.held = this.held.filter((d) => d !== dir);
@@ -470,6 +530,48 @@ export class DriveScene extends Phaser.Scene {
       this.portal?.close();
     }
 
+    // SCREAM-207: the player's first time at the wheel gets the "How To Drive" pop-up. Skipping the
+    // uncle while he drives hands over the wheel in this very scene, so that is watched for too.
+    this.showHowToDriveWhenTheirs();
+    const uncle = this.evening.tutorial;
+    if (uncle && !uncle.skipped) {
+      const onChanged = () => {
+        if (uncle.skipped) this.showHowToDriveWhenTheirs();
+      };
+      uncle.on(TutorialEvents.Changed, onChanged);
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => uncle.off(TutorialEvents.Changed, onChanged));
+    }
+  }
+
+  /**
+   * SCREAM-207 (decision 105): Story's Day 1, when the player (not the uncle) has the wheel: a short
+   * pop-up with the keys. Only the first time playing (PO, November 13): showHowToDrive remembers it in the browser. It stops the game until it is closed, and starts the player's driving.
+   */
+  private showHowToDriveWhenTheirs(): void {
+    const evening = this.evening;
+    const story = getStory(this);
+    if (!story || story.day !== 1 || evening.howToDriveShown) return;
+    const uncle = evening.tutorial;
+    if (uncle && !uncle.skipped && uncle.step !== 'done') return; // he still has the wheel (or his evening isn't over)
+    evening.howToDriveShown = true;
+    this.time.delayedCall(HOW_TO_DRIVE_DELAY_MS, () => {
+      if (this.leaving || !this.scene.isActive()) return;
+      showHowToDrive(this);
+    });
+  }
+
+  /**
+   * SCREAM-321 (PO, November 14): Tab at roll speed or slower opens the truck screen to look at the
+   * cooler and the power-ups (nothing bought). The truck stops; the clock keeps running. Faster, or
+   * in the middle of something else, Tab does nothing.
+   */
+  peekInside(): void {
+    if (this.leaving || this.uncleLeg || this.arrivingHome || !this.scene.isActive()) return;
+    if (Math.abs(this.speed) > this.evening.spec.creepSpeed + 1) return;
+    if (!this.evening.startPeek()) return;
+    this.speed = 0;
+    this.leaving = true;
+    this.scene.start(SceneKeys.Truck, { station: 'cooler' });
   }
 
   /** SCREAM-208: out of gas: the truck stops where it is while the HUD says it needed a tow. */
@@ -484,15 +586,22 @@ export class DriveScene extends Phaser.Scene {
     if (this.leaving) return;
     this.music.tick();
     this.ring.setPosition(this.truck.x, this.truck.y);
+    // SCREAM-237: the top bar names the street the truck is on (off the road, the last one stays).
+    const street = this.roads.streetAt(this.truck.x, this.truck.y);
+    if (street) this.evening.streetNow = street;
+    // SCREAM-81: a speaker bought at home makes the ring bigger without a scene restart.
+    if (this.ring.radius !== this.evening.spec.musicRadius) this.ring.setRadius(this.evening.spec.musicRadius);
     this.uncle?.update(Math.min(deltaMs, 100) / 1000, time);
     this.evening.residents.update(Math.min(deltaMs, 100) / 1000, {
       x: this.truck.x,
       y: this.truck.y,
-      radius: MUSIC_RING_RADIUS,
+      radius: this.evening.spec.musicRadius,
       open: this.evening.acceptingCustomers,
+      soldOut: this.evening.isSoldOut, // SCREAM-155
     });
     this.drawResidents(time);
     this.drawCustomers();
+    this.drawMirrorMarkers();
     this.updateTruckLook();
     if (this.spinning) return;
     // Cap long frames (e.g. after switching tabs) so the truck never jumps.
@@ -507,13 +616,22 @@ export class DriveScene extends Phaser.Scene {
       this.parkLabel.setVisible(true);
     } else {
       this.driveHard(dt);
+      this.evening.driveTick(dt * 1000); // SCREAM-334: timers that count only while the player drives
     }
+    // SCREAM-335: a Drum Cone's drum solo plays in place of the tune while its 30 seconds run.
+    this.music.setDrumSolo(this.evening.drumSolo);
+    const soloFor = Math.ceil(this.evening.drumSoloMs / 1000);
+    this.drumLabel.setVisible(soloFor > 0);
+    if (soloFor > 0) this.drumLabel.setText(drumSoloText(soloFor));
+    const reversedFor = Math.ceil(this.evening.steeringReversedMs / 1000);
+    this.reversedLabel.setVisible(reversedFor > 0);
+    if (reversedFor > 0) this.reversedLabel.setText(steeringReversedText(reversedFor));
 
     if (this.speed !== 0 && !this.uncleLeg) {
       const rad = Phaser.Math.DegToRad(this.heading);
       const moved = this.moveTruck(Math.cos(rad) * this.speed * dt, Math.sin(rad) * this.speed * dt);
       if (!moved) this.speed = 0; // up against something: stopped (a creep just presses gently against it)
-      else this.evening.burnFuel(Math.abs(this.speed) * dt); // SCREAM-22: driving uses gas
+      else if (this.evening.burnFuel(Math.abs(this.speed) * dt)) showGasCan(this); // SCREAM-22: driving uses gas; SCREAM-122: the can pours itself in
     }
 
     this.checkPotholes();
@@ -606,43 +724,46 @@ export class DriveScene extends Phaser.Scene {
   private driveHard(dt: number): void {
     const gas = this.held.includes('up');
     const brake = this.held.includes('down');
-    const steer = (this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0);
+    // SCREAM-334: after a Two Ball Lou Ball sale the steering is swapped for 10 seconds of driving.
+    const steer = ((this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0)) * (this.evening.steeringReversed ? -1 : 1);
 
     // Car-style driving (#32, PO testing PR #58). Gas speeds up. Let go of
     // everything and the truck rolls at a creep, the way it was last going;
     // the brake stops it, and holding the brake at a stop reverses after a
     // moment. To stay still once stopped, put the park brake on (Q).
     // SCREAM-119: an empty tank ends the evening (the old quarter-speed crawl is gone).
-    const top = TRUCK_SPEED;
-    if (this.speed > top) this.speed = Math.max(top, this.speed - (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS);
+    // SCREAM-204: tonight's truck (Story's is weaker than Quick play's).
+    const spec = this.evening.spec;
+    const top = spec.topSpeed;
+    if (this.speed > top) this.speed = Math.max(top, this.speed - (top * dt) / TRUCK_COAST_SECONDS);
     if (gas && !brake) {
       this.parkBrake = false;
       this.brakeHeldStill = 0;
       this.speed =
         this.speed < 0
-          ? Math.min(0, this.speed + (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS)
-          : Math.min(top, this.speed + (TRUCK_SPEED * dt) / TRUCK_ACCELERATION_SECONDS);
+          ? Math.min(0, this.speed + (top * dt) / spec.brakingSeconds)
+          : Math.min(top, this.speed + (top * dt) / spec.accelerationSeconds);
     } else if (brake && !gas) {
       if (this.speed > 0) {
-        this.speed = Math.max(0, this.speed - (TRUCK_SPEED * dt) / TRUCK_BRAKING_SECONDS);
+        this.speed = Math.max(0, this.speed - (top * dt) / spec.brakingSeconds);
         this.brakeHeldStill = 0;
       } else if (this.speed === 0 && this.brakeHeldStill < TRUCK_REVERSE_DELAY_SECONDS) {
         this.brakeHeldStill += dt;
       } else {
         this.parkBrake = false;
-        this.speed = Math.max(-TRUCK_REVERSE_SPEED, this.speed - (TRUCK_REVERSE_SPEED * dt) / TRUCK_REVERSE_ACCELERATION_SECONDS);
+        this.speed = Math.max(-spec.reverseSpeed, this.speed - (spec.reverseSpeed * dt) / spec.reverseAccelerationSeconds);
       }
     } else if (this.parkBrake) {
       this.brakeHeldStill = 0;
       this.speed = 0;
     } else {
       this.brakeHeldStill = 0;
-      const roll = (TRUCK_SPEED * dt) / TRUCK_COAST_SECONDS;
-      const creep = this.rolling * TRUCK_CREEP_SPEED;
+      const roll = (top * dt) / TRUCK_COAST_SECONDS;
+      const creep = this.rolling * this.evening.spec.creepSpeed;
       // Faster than a creep: momentum (SCREAM-114): keep most of the speed, slowing only gently
       // toward a creep. Slower (just set off, or after a stop): ease up to a creep.
-      if (Math.abs(this.speed) > TRUCK_CREEP_SPEED)
-        this.speed = Math.sign(this.speed) * Math.max(TRUCK_CREEP_SPEED, Math.abs(this.speed) * TRUCK_COAST_KEEP ** (dt / TRUCK_COAST_KEEP_SECONDS));
+      if (Math.abs(this.speed) > this.evening.spec.creepSpeed)
+        this.speed = Math.sign(this.speed) * Math.max(this.evening.spec.creepSpeed, Math.abs(this.speed) * spec.coastKeep ** (dt / TRUCK_COAST_KEEP_SECONDS));
       else this.speed = creep > this.speed ? Math.min(creep, this.speed + roll / 4) : Math.max(creep, this.speed - roll / 4);
     }
     if (this.speed !== 0) this.rolling = Math.sign(this.speed);
@@ -651,12 +772,14 @@ export class DriveScene extends Phaser.Scene {
     // Steering turns the truck only while it's moving, like a car: tight turns
     // when slow, wider at speed. In reverse the wheel works the other way round.
     if (steer !== 0 && this.speed !== 0) {
-      const turnRate = Math.min(TRUCK_MAX_TURN_DEGREES_PER_SECOND, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
+      // SCREAM-280 (PO, November 12): in Story, above the roll speed every turn is twice as wide.
+      const aboveRoll = Math.abs(this.speed) > spec.creepSpeed + 1 ? spec.turnAboveRoll : 1;
+      const turnRate = aboveRoll * Math.min(spec.maxTurnDegrees, Phaser.Math.RadToDeg(Math.abs(this.speed) / TRUCK_MIN_TURN_RADIUS));
       const turnedTo = this.heading + steer * Math.sign(this.speed) * turnRate * dt;
       // Don't swing the truck's nose or tail into a wall or a parked car.
       if (!this.obstacleAt(this.truck.x, this.truck.y, turnedTo)) this.setHeading(turnedTo);
-      const fast = TRUCK_SPEED * TURN_SLOWDOWN_ABOVE_FRACTION;
-      if (this.speed > fast) this.speed = Math.max(fast, this.speed - TRUCK_SPEED * TURN_SPEED_LOSS_PER_SECOND * dt);
+      const fast = top * TURN_SLOWDOWN_ABOVE_FRACTION;
+      if (this.speed > fast) this.speed = Math.max(fast, this.speed - top * TURN_SPEED_LOSS_PER_SECOND * dt);
     }
 
   }
@@ -873,14 +996,14 @@ export class DriveScene extends Phaser.Scene {
 
   /** Top speed: hits are priced against it. */
   private get topSpeed(): number {
-    return TRUCK_SPEED;
+    return this.evening.spec.topSpeed;
   }
 
   /** Q: the park brake goes on only once the truck has stopped; Q again (or the gas) takes it off. */
   private toggleParkBrake(): void {
     if (this.parkBrake) {
       this.parkBrake = false;
-    } else if (this.speed <= TRUCK_CREEP_SPEED + 1) {
+    } else if (this.speed <= this.evening.spec.creepSpeed + 1) {
       // #64: works at a stop, while creeping, and in reverse (always slow), not
       // only at a dead stop, which the creeping truck almost never reaches.
       this.speed = 0;
@@ -895,7 +1018,7 @@ export class DriveScene extends Phaser.Scene {
   private flashNotice(message: string): void {
     this.notice?.destroy();
     const notice = this.add
-      .text(16, this.scale.height - HUD_HEIGHT - 66, message, {
+      .text(BOTTOM_NOTE_X, this.scale.height - HUD_HEIGHT - 66, message, {
         fontFamily: 'monospace',
         fontSize: '15px',
         color: '#1b1b1b',
@@ -988,11 +1111,20 @@ export class DriveScene extends Phaser.Scene {
       const acrossX = -ty * across;
       const acrossY = tx * across;
       if (Math.abs(along) > 0.01) {
+        // SCREAM-194 (playtest round 2): past a parked car, the sideways ease is never more than
+        // the truck moved this frame. At a creep (a fraction of a pixel a frame) a 2 or 3 px ease
+        // was a shove sideways, many times faster than the truck was going.
+        const easeLimit = hit === 'car' ? Math.min(3, distance) : 3;
         for (const ease of [0, 1, 2, 3, -1, -2, -3]) {
           const sx = tx * along + acrossX * ease;
           const sy = ty * along + acrossY * ease;
           if (!this.obstacleAt(x + sx, y + sy)) {
-            slide = [sx, sy];
+            if (Math.abs(ease) <= easeLimit) slide = [sx, sy];
+            else {
+              // Too far to ease in one frame: slip sideways as far as it moved, and go on next frame.
+              const side = Math.sign(ease) * easeLimit;
+              if (!this.obstacleAt(x + acrossX * side, y + acrossY * side)) slide = [acrossX * side, acrossY * side];
+            }
             break;
           }
         }
@@ -1101,6 +1233,22 @@ export class DriveScene extends Phaser.Scene {
   // ---- Residents (SCREAM-59, SCREAM-73) ----
 
   /**
+   * SCREAM-251 (PO, November 15): "A porch light at the door": a small lamp beside and above the
+   * front door, with a soft warm glow round it. Drawn once per resident and shown by drawResidents.
+   */
+  private makePorchLight(door: readonly [number, number]): Phaser.GameObjects.Graphics {
+    const g = this.add.graphics().setPosition(Math.round(door[0]) + PORCH_LIGHT_DX, Math.round(door[1]) + PORCH_LIGHT_DY);
+    g.fillStyle(PORCH_GLOW, 0.16).fillCircle(0, 1, 22);
+    g.fillStyle(PORCH_GLOW, 0.24).fillCircle(0, 1, 14);
+    g.fillStyle(PORCH_GLOW, 0.42).fillCircle(0, 1, 7);
+    // The lamp: a dark cap and bracket, a bright glass.
+    g.fillStyle(0x3b2a1a, 1).fillRect(-4, -5, 8, 2).fillRect(-1, -8, 2, 3);
+    g.fillStyle(0xfff6c8, 1).fillRect(-3, -3, 6, 7);
+    g.fillStyle(0xffd24a, 1).fillRect(-3, 3, 6, 1);
+    return g.setDepth(RESIDENT_DEPTH + door[1] / DEPTH_PER_PX).setVisible(false);
+  }
+
+  /**
    * Draws the residents who are outside and near the view. Frames are picked by
    * hand rather than with Phaser animations (160 people x 8 animations would be a lot):
    * each look is two rows in residents.png, idle then walk, with six frames each
@@ -1110,6 +1258,15 @@ export class DriveScene extends Phaser.Scene {
     const view = this.cameras.main.worldView;
     const inFront = new Set<number>();
     this.evening.residents.all.forEach((p, i) => {
+      // SCREAM-251 (PO): the porch light by their front door is on while they are in.
+      const light = this.porchLights[i];
+      if (light) {
+        const [dx, dy] = p.resident.door;
+        const lit = this.evening.residents.porchLit(p) && dx > view.x - 30 && dx < view.right + 30 && dy > view.y - 30 && dy < view.bottom + 40;
+        light.setVisible(lit);
+        // A slow, slight flicker, each lamp in its own time.
+        if (lit) light.setAlpha(0.88 + 0.12 * Math.sin(timeMs / 420 + i * 1.7));
+      }
       const sprite = this.residentSprites[i];
       const near =
         p.outside && p.x > view.x - 40 && p.x < view.right + 40 && p.y > view.y - 10 && p.y < view.bottom + 50;
@@ -1219,6 +1376,53 @@ export class DriveScene extends Phaser.Scene {
   }
 
   /**
+   * SCREAM-341 (PO, November 15: "Better Mirrors: indicator for customers, show exact customer"):
+   * with the note owned, every customer on their way to the truck (walking to it or waiting at the
+   * curb) who is outside the view gets a round marker at the screen's edge, in their direction, with
+   * their own face on it. It goes when they come on screen, are served, or give up.
+   */
+  private drawMirrorMarkers(): void {
+    const on = this.evening.hasBetterMirrors;
+    const whole = this.cameras.main.worldView;
+    // The labels along the top and bottom of the road view, and the gas dial's corner, stay clear.
+    const view = { x: whole.x, y: whole.y + MIRROR_MARKER_TOP_EXTRA, right: whole.right, bottom: whole.bottom - MIRROR_MARKER_BOTTOM_EXTRA };
+    const dialTop = whole.bottom - MIRROR_MARKER_DIAL.h;
+    this.evening.residents.all.forEach((p, i) => {
+      const coming = on && p.outside && (p.customer === 'running' || p.customer === 'waiting');
+      // Someone on screen needs no marker (the whole view counts, not the smaller box the markers sit in).
+      const seen = p.x >= whole.x && p.x <= whole.right && p.y - 16 >= whole.y && p.y - 16 <= whole.bottom;
+      const at = coming && !seen ? edgeMarker(view, p.x, p.y - 16, MIRROR_MARKER_MARGIN) : null;
+      if (at && at.x < whole.x + MIRROR_MARKER_DIAL.w && at.y > dialTop) {
+        at.y = dialTop;
+        at.angle = Math.atan2(p.y - 16 - at.y, p.x - at.x);
+      }
+      let marker = this.mirrorMarkers.get(i);
+      if (at && !marker) {
+        marker = this.makeMirrorMarker(p.resident.look);
+        this.mirrorMarkers.set(i, marker);
+      }
+      if (!marker) return;
+      marker.setVisible(!!at);
+      if (!at) return;
+      marker.setPosition(Math.round(at.x), Math.round(at.y));
+      (marker.getByName('pointer') as Phaser.GameObjects.Graphics).setRotation(at.angle);
+    });
+  }
+
+  /** SCREAM-341: one marker: a pointer (turned toward the customer), a round badge, and the customer's head. */
+  private makeMirrorMarker(look: number): Phaser.GameObjects.Container {
+    const r = MIRROR_MARKER_RADIUS;
+    // The pointer is drawn pointing right, its base hidden under the badge.
+    const pointer = this.add.graphics().setName('pointer');
+    pointer.fillStyle(0xff4f9a, 1).fillTriangle(0, -r * 0.62, 0, r * 0.62, r * 1.85, 0);
+    pointer.lineStyle(1.5, 0x2b1d10, 1).strokeTriangle(0, -r * 0.62, 0, r * 0.62, r * 1.85, 0);
+    const badge = this.add.circle(0, 0, r, 0xfffdf2).setStrokeStyle(2.5, 0xff4f9a);
+    // The head: rows 8 to 25 of the standing, front-facing frame (frames are 16 x 32).
+    const head = this.add.sprite(0, 0, residentsKey(), residentFrame(look, false, 'down', 0)).setCrop(0, 8, 16, 17).setOrigin(0.5, 16.5 / 32).setScale(1.25).setName('head');
+    return this.add.container(0, 0, [pointer, badge, head]).setDepth(40).setVisible(false);
+  }
+
+  /**
    * A small "!" speech bubble (PO, November 2). SCREAM-126: the game's shared pixel bubble
    * style, kept small and in plain ink so it's subtler than the old pink one. The
    * container's (0, 0) is the tip of the tail.
@@ -1247,15 +1451,33 @@ export class DriveScene extends Phaser.Scene {
   private checkPump(): void {
     const overlap = Math.max(0, ...this.pumpBays.map((b) => this.pickupOverlap(b)));
     if (!this.pumpArmed) {
-      if (overlap === 0) this.pumpArmed = true;
-      return;
+      if (overlap === 0 || this.movedThenStopped('pump')) this.pumpArmed = true;
+      else return;
     }
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     this.leaving = true;
     this.scene.start(SceneKeys.Pump);
   }
 
-  /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock. */
+  /**
+   * SCREAM-304 (PO, November 14): just back out of home or the pump and still in its spot,
+   * the player shouldn't have to drive out and back in to go in again. In Story, once the
+   * truck has moved and then stopped again inside the spot, it counts as pulling in. Driving
+   * out still re-arms it as before. Quick play is unchanged (decision 076).
+   */
+  private movedThenStopped(place: 'home' | 'pump'): boolean {
+    if (!getStory(this)) return false;
+    const key = place === 'home' ? 'homeMovedInBay' : 'pumpMovedInBay';
+    if (this.speed !== 0) {
+      this[key] = true;
+      return false;
+    }
+    if (!this[key]) return false;
+    this[key] = false;
+    return true;
+  }
+
+  /** SCREAM-54: stopped in Home's driveway spot (the customer rule), the cooler opens to restock (Story: the truck screen, SCREAM-319). */
   private checkHome(): void {
     // SCREAM-185: not while the uncle drives home, or as the truck screen fades in.
     if (this.uncleLeg || this.arrivingHome) return;
@@ -1267,13 +1489,15 @@ export class DriveScene extends Phaser.Scene {
     }
     const overlap = this.pickupOverlap(this.homeBay);
     if (!this.homeArmed) {
-      if (overlap === 0) this.homeArmed = true;
-      return;
+      if (overlap === 0 || this.movedThenStopped('home')) this.homeArmed = true;
+      else return;
     }
     if (this.speed !== 0 || overlap < PICKUP_MIN_OVERLAP || this.evening.isOver) return;
     if (!this.evening.startRestock()) return;
     this.leaving = true;
-    this.scene.start(SceneKeys.Cooler);
+    // SCREAM-319: in Story the truck screen opens (cooler, cork board, DRIVE), not the cooler.
+    if (this.evening.homeOpensTruck) this.scene.start(SceneKeys.Truck, { station: 'cooler' });
+    else this.scene.start(SceneKeys.Cooler);
   }
 
   /**
@@ -1303,7 +1527,12 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private checkCustomer(): void {
-    if (this.speed !== 0) return;
+    // SCREAM-241: after B (drive off) with people still waiting, nobody is served until the truck has moved.
+    if (this.speed !== 0) {
+      this.evening.windowShutUntilMoved = false;
+      return;
+    }
+    if (this.evening.windowShutUntilMoved) return;
     // SCREAM-172: the window opens once the uncle's line as he pulls up has been read.
     if (this.evening.tutorial?.holdsWindow) return;
     const people = this.evening.residents.all;
@@ -1318,6 +1547,17 @@ export class DriveScene extends Phaser.Scene {
 
   private serve(customer: ResidentNow): void {
     this.leaving = true;
+    // SCREAM-241: the window can ask who else is standing at the truck (it stays parked right here).
+    const truck = { x: this.truck.x, y: this.truck.y, heading: this.heading };
+    const roads = this.roads;
+    const evening = this.evening;
+    evening.nextAtTruck = () =>
+      evening.residents.all.find(
+        (p) =>
+          p.customer === 'waiting' &&
+          !roads.onRoad(p.x, p.y) &&
+          squareOverlap(truck, { x: p.pickup[0], y: p.pickup[1], width: PICKUP_ZONE_LENGTH, height: PICKUP_ZONE_WIDTH, rotation: Phaser.Math.DegToRad(p.pickup[2]) }) >= PICKUP_MIN_OVERLAP,
+      );
     this.evening.startSale(customer);
     this.scene.start(SceneKeys.Sales);
   }
@@ -1325,7 +1565,17 @@ export class DriveScene extends Phaser.Scene {
   /** How much of the truck's hitbox (0 to 1) is inside a pickup square, sampled on a grid. */
   pickupOverlap(zone: Phaser.GameObjects.Rectangle | undefined = this.pickupZone): number {
     if (!zone) return 0;
-    const rad = Phaser.Math.DegToRad(this.heading);
+    return squareOverlap({ x: this.truck.x, y: this.truck.y, heading: this.heading }, zone);
+  }
+}
+
+/** A pickup square: its middle, its real size along and across the road, and its turn in radians. */
+type PickupSquare = { x: number; y: number; width: number; height: number; rotation: number };
+
+/** How much of the truck's hitbox (0 to 1) is inside a pickup square, sampled on a grid. No scene needed (SCREAM-241). */
+function squareOverlap(truck: { x: number; y: number; heading: number }, zone: PickupSquare): number {
+  {
+    const rad = Phaser.Math.DegToRad(truck.heading);
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     // Its real size along and across the road (not the pulse).
@@ -1341,8 +1591,8 @@ export class DriveScene extends Phaser.Scene {
       for (let j = 0; j <= steps; j++) {
         const lx = (i / steps - 0.5) * 2 * TRUCK_HALF_LENGTH;
         const ly = (j / steps - 0.5) * 2 * TRUCK_HALF_WIDTH;
-        const x = this.truck.x + lx * cos - ly * sin;
-        const y = this.truck.y + lx * sin + ly * cos;
+        const x = truck.x + lx * cos - ly * sin;
+        const y = truck.y + lx * sin + ly * cos;
         total++;
         // In the pickup square's own frame (it's turned to the road).
         const ox = x - zone.x;

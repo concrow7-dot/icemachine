@@ -23,7 +23,11 @@ import {
   CUSTOMER_INDOORS_FACTOR,
   CUSTOMER_FOLLOW_AGAIN,
   CUSTOMER_QUEUE_GAP,
+  CHASE_ADULT_SECONDS,
+  CHASE_REGULAR_SHARE,
+  CHASE_SLOW_KID_SECONDS,
   CUSTOMER_RUN_SPEED,
+  FAST_KID_SPEED_FACTOR,
   CUSTOMER_SIDE_BY_SIDE,
   CUSTOMER_SPOT_REACH,
   CUSTOMER_SPOT_MAX,
@@ -61,6 +65,8 @@ export interface Resident {
   curb: [number, number, number, number, number];
   /** SCREAM-189 (PO): the sheet's "Order size": always this many ice creams (as many as there are, if fewer). */
   orderSize?: number;
+  /** SCREAM-342 (PO): the sheet's "Fast": a kid who is fast and follows the truck anywhere. */
+  fast?: boolean;
   /** SCREAM-103 (PO): the sheet's "Hinted": other customers sometimes point the player to this big regular. */
   hinted?: boolean;
   /**
@@ -93,9 +99,20 @@ export function homeAt(resident: Pick<Resident, 'hours'>, minutes: number): bool
 /** SCREAM-221: the days of the week, Monday first (Story's Day 1 is a Monday). */
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
-/** SCREAM-221: which day of the week a Story day is (0 = Monday): Day 1 is Monday, Day 8 Monday again. */
+/** Story's days are Monday to Friday; the weekend is skipped (SCREAM-322). */
+export const STORY_WEEK_DAYS = 5;
+
+/**
+ * SCREAM-221: which day of the week a Story day is (0 = Monday): Day 1 is Monday. SCREAM-322 (PO,
+ * November 14): "Monday through friday for day 1-5 and 6-10": after Friday comes Monday (Day 6).
+ */
 export function weekdayOf(day: number): number {
-  return (((day - 1) % 7) + 7) % 7;
+  return (((day - 1) % STORY_WEEK_DAYS) + STORY_WEEK_DAYS) % STORY_WEEK_DAYS;
+}
+
+/** SCREAM-327 (PO, November 14): "Tuesday Day 2/10", on the HUD and on Continue Story. */
+export function dayText(day: number, days: number): string {
+  return `${weekdayName(day)} Day ${day}/${days}`;
 }
 
 /** SCREAM-221: a Story day's name, e.g. "Monday" for Day 1. */
@@ -206,6 +223,8 @@ export interface Ring {
   radius: number;
   /** False when nobody new should come out: sold out, after 8 PM, or the evening is over. */
   open: boolean;
+  /** SCREAM-155: the truck is on the road with an empty cooler: customers coming or waiting walk home. */
+  soldOut?: boolean;
   /**
    * SCREAM-118: how many times longer waiting customers are willing to wait right now
    * (2 while you serve someone at the window). Leave out for normal waiting.
@@ -235,8 +254,16 @@ interface Running extends ResidentNow {
   spotStand?: [number, number];
   /** SCREAM-152: heard the truck CUSTOMER_DECIDE_SECONDS without coming out: not tonight. */
   decided?: boolean;
+  /** SCREAM-342: seconds spent walking after the truck since they set off (or last stood at the curb). */
+  chased?: number;
   /** SCREAM-142: true for customers who follow the truck (not the test hook's, who stay at their curb). */
   follows?: boolean;
+  /**
+   * SCREAM-155 (PO, November 13): sent home because the truck sold out. "If the player goes home,
+   * gets ice cream and then returns to that player, they should be willing to buy": they come
+   * straight out again when they next hear the truck with stock.
+   */
+  missedOut?: boolean;
 }
 
 const between = (rnd: () => number, [low, high]: readonly [number, number]) => low + rnd() * (high - low);
@@ -289,6 +316,18 @@ export class Residents {
     return kindFor(resident, this.story);
   }
 
+  /**
+   * SCREAM-329: Speaker with Heavier Bass. Multiplies the Likelihood of the some-days people
+   * (kind `sometimes`) when they roll to come out. 1 without the note (EveningState sets it).
+   */
+  sometimesFactor = 1;
+
+  /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232), times the bass (SCREAM-329). */
+  likelihoodNow(resident: Resident): number {
+    const bass = this.kindOf(resident) === 'sometimes' ? this.sometimesFactor : 1;
+    return Math.min(1, resident.likelihood * scheduleFactor(resident, this.story) * bass);
+  }
+
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
   hearingOff = false;
   /** SCREAM-249: the evening's clock, in minutes since midnight (EveningState sets it; without it everyone is always home). */
@@ -297,12 +336,77 @@ export class Residents {
   hardToFindOn = true;
 
   /**
+   * SCREAM-342 (PO, November 15): Story's chasing rules (EveningState turns them on; not in Quick
+   * play or the uncle's evening). Adults follow the truck for CHASE_ADULT_SECONDS and then go home;
+   * fast kids (the sheet's Fast column) are quicker and follow it anywhere; the other kids give up
+   * after CHASE_SLOW_KID_SECONDS.
+   */
+  chaseRules = false;
+  /** SCREAM-342: Speedy Neighbors: how much faster everyone but the slower kids goes after the truck (1 without the note). */
+  speedyFactor = 1;
+  /** SCREAM-342: how many customers have given up following the truck tonight (test hook). */
+  chaseGiveUps = 0;
+
+  /** SCREAM-342: how fast this customer goes after the truck and to the curb, px per second. */
+  runSpeedOf(resident: Resident): number {
+    if (!this.chaseRules) return CUSTOMER_RUN_SPEED;
+    const fastKid = resident.kid && !!resident.fast;
+    const slowKid = resident.kid && !resident.fast;
+    return CUSTOMER_RUN_SPEED * (fastKid ? FAST_KID_SPEED_FACTOR : 1) * (slowKid ? 1 : this.speedyFactor);
+  }
+
+  /** SCREAM-342: how many seconds this customer follows the truck before going home (Infinity: never gives up). */
+  chaseSecondsOf(resident: Resident): number {
+    if (!this.chaseRules) return Infinity;
+    if (this.chasesForever(resident)) return Infinity;
+    return resident.kid ? CHASE_SLOW_KID_SECONDS : CHASE_ADULT_SECONDS;
+  }
+
+  /**
+   * SCREAM-168 (PO, November 15): "Let's have 70% of regulars chase": the regulars who follow the
+   * truck forever. The game picks them (his choice): tonight's regulars in the order of a number
+   * made from each ID, the first CHASE_REGULAR_SHARE of them, so it is the same people every evening.
+   */
+  private readonly chasers = new Set<string>();
+  private pickChasers(list: readonly Resident[]): void {
+    const regulars = list.filter((r) => this.kindOf(r) === 'regular');
+    const mark = (id: string): number => {
+      let h = 2166136261;
+      for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+      return h >>> 0;
+    };
+    regulars.sort((a, b) => mark(a.id) - mark(b.id) || (a.id < b.id ? -1 : 1));
+    for (const r of regulars.slice(0, Math.round(regulars.length * CHASE_REGULAR_SHARE))) this.chasers.add(r.id);
+  }
+  /** SCREAM-168: a regular picked to chase the truck forever (whether or not the chasing rules are on tonight). */
+  isChaser(resident: Resident): boolean {
+    return this.chasers.has(resident.id);
+  }
+  /** SCREAM-168: never gives up following the truck (Story's chasing rules): a fast kid or a chasing regular. */
+  chasesForever(resident: Resident): boolean {
+    return this.chaseRules && ((resident.kid && !!resident.fast) || this.chasers.has(resident.id));
+  }
+  /** SCREAM-168 (PO): the other regulars "Wait at their own curb": they never follow the truck. */
+  staysAtCurb(resident: Resident): boolean {
+    return this.chaseRules && this.kindOf(resident) === 'regular' && !this.chasesForever(resident);
+  }
+
+  /**
    * SCREAM-249 (PO): in Story, people with hours are only home inside them. Quick play ignores hours.
    * SCREAM-250: a hard-to-find customer is always home; their hours are the window when they answer.
    */
   homeNow(resident: Resident): boolean {
     if (!this.story || !this.nowMinutes || !resident.hours || resident.hardToFind) return true;
     return homeAt(resident, this.nowMinutes());
+  }
+  /**
+   * SCREAM-251 (PO, November 15: a porch light, on "Only while they are physically in", "Always
+   * right"): whether this person's porch light is on. On while they are indoors at home; off while
+   * they are out in the yard, on their way to the truck or at its window, and off outside their
+   * From and Until hours (the game keeps them indoors then, but they are not home).
+   */
+  porchLit(p: ResidentNow): boolean {
+    return !p.outside && p.customer !== 'window' && this.homeNow(p.resident);
   }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
   private readonly curbs?: CurbFinder;
@@ -327,6 +431,7 @@ export class Residents {
     this.rnd = rnd;
     this.curbs = curbs;
     this.story = story;
+    this.pickChasers(list);
     this.people = list.map((resident) => {
       const times = routineFor(resident, story);
       // SCREAM-249: in Story, someone who only gets home later in the evening starts indoors.
@@ -376,6 +481,7 @@ export class Residents {
   update(dt: number, ring?: Ring): void {
     this.now += dt;
     if (ring) this.truck = [ring.x, ring.y];
+    if (ring?.soldOut) this.sendHomeSoldOut();
     this.sinceRoll += dt;
     while (this.sinceRoll >= 1) {
       this.sinceRoll -= 1;
@@ -430,6 +536,28 @@ export class Residents {
     p.plan = { kind: 'idle', until: Infinity };
   }
 
+  /**
+   * SCREAM-155 (PO, November 13): the truck has sold out. "Those players should start walking home":
+   * everyone on their way to the truck or waiting at a pink square gives up their square and walks
+   * home. They aren't done for the night: see `missedOut`. Returns how many were sent.
+   */
+  sendHomeSoldOut(): number {
+    let sent = 0;
+    for (const p of this.people) {
+      if (p.customer !== 'running' && p.customer !== 'waiting') continue;
+      p.customer = 'none';
+      p.missedOut = true;
+      p.heard = 0;
+      p.waitLeft = 0;
+      p.waitAt = undefined;
+      p.spotStand = undefined;
+      p.follows = false;
+      this.walkHome(p);
+      sent += 1;
+    }
+    return sent;
+  }
+
   private rollChances(ring?: Ring): void {
     for (const p of this.people) {
       if (p.customer !== 'none') continue;
@@ -446,6 +574,11 @@ export class Residents {
       // SCREAM-250 (PO, November 10): a hard-to-find customer comes out for certain ("100% in the
       // window") when the music reaches them inside their window on a ticked day. At any other
       // time they're "nearly impossible": the usual roll with their tiny Likelihood from the sheet.
+      // SCREAM-155: someone the truck sold out on comes out again as soon as they hear it with stock.
+      if (p.missedOut) {
+        if (inRing && ring?.open && !this.hearingOff) this.wantIceCream(p);
+        continue;
+      }
       if (this.story && p.resident.hardToFind) {
         if (!this.hardToFindOn) continue; // the uncle's evening
         const today = p.resident.days?.includes(weekdayOf(this.story.day)) ?? false;
@@ -463,7 +596,7 @@ export class Residents {
       }
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
       const regular = this.kindOf(p.resident) === 'regular';
-      const likelihood = Math.min(1, p.resident.likelihood * scheduleFactor(p.resident, this.story));
+      const likelihood = this.likelihoodNow(p.resident);
       if (this.rnd() < customerChance(p.heard, likelihood, indoors, regular)) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
@@ -497,6 +630,8 @@ export class Residents {
 
   private wantIceCream(p: Running): void {
     p.customer = 'running';
+    p.missedOut = false;
+    p.chased = 0;
     p.patience = CUSTOMER_WAIT_SECONDS;
     p.waitAt = undefined;
     const fromDoor = !p.outside;
@@ -505,15 +640,16 @@ export class Residents {
       p.x = p.resident.door[0];
       p.y = p.resident.door[1];
     }
-    p.follows = !!this.curbs;
-    if (this.curbs) {
+    // SCREAM-168: a regular who doesn't chase waits at their own curb and never follows the truck.
+    p.follows = !!this.curbs && !this.staysAtCurb(p.resident);
+    if (p.follows) {
       p.walking = true;
       p.plan = { kind: 'follow' };
       return;
     }
     const stand: [number, number] = [p.resident.curb[0], p.resident.curb[1]];
     // Yard spots are chosen so the walk to the door never crosses the house; the run to the curb starts there.
-    this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], CUSTOMER_RUN_SPEED, 'curb');
+    this.walkTo(p, fromDoor ? [stand] : [p.resident.door, stand], this.runSpeedOf(p.resident), 'curb');
   }
 
   /**
@@ -575,7 +711,7 @@ export class Residents {
       if (join) {
         p.waitAt = join.square;
         p.spotStand = join.base;
-        this.walkTo(p, [join.stand], CUSTOMER_RUN_SPEED, 'curb');
+        this.walkTo(p, [join.stand], this.runSpeedOf(p.resident), 'curb');
         return;
       }
       const taken: [number, number][] = [];
@@ -588,7 +724,7 @@ export class Residents {
       if (spot) {
         p.waitAt = spot.square;
         p.spotStand = spot.stand;
-        this.walkTo(p, [spot.stand], CUSTOMER_RUN_SPEED, 'curb');
+        this.walkTo(p, [spot.stand], this.runSpeedOf(p.resident), 'curb');
         return;
       }
       // SCREAM-150: no room for a pink square anywhere near the truck. Rather than stand in
@@ -597,11 +733,19 @@ export class Residents {
       p.waitAt = [p.resident.curb[2], p.resident.curb[3], p.resident.curb[4]];
       p.spotStand = [p.resident.curb[0], p.resident.curb[1]];
       p.follows = false;
-      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], CUSTOMER_RUN_SPEED, 'curb');
+      this.walkTo(p, [[p.resident.curb[0], p.resident.curb[1]]], this.runSpeedOf(p.resident), 'curb');
       return;
     }
     // Toward the truck, but not into it; SCREAM-161: round any building in the way.
-    const step = Math.min(CUSTOMER_RUN_SPEED * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
+    // SCREAM-342: only so long after the truck, then home (adults and the slower kids, in Story).
+    p.chased = (p.chased ?? 0) + dt;
+    if (p.chased >= this.chaseSecondsOf(p.resident)) {
+      p.customer = 'done';
+      this.chaseGiveUps++;
+      this.walkHome(p);
+      return;
+    }
+    const step = Math.min(this.runSpeedOf(p.resident) * dt, Math.max(0, dist - CUSTOMER_STOP_GAP / 2));
     p.walking = step > 0;
     if (step <= 0) return;
     const [vx, vy] = detour(this.walls, p.x, p.y, tx, ty);
@@ -633,6 +777,7 @@ export class Residents {
         p.patience = p.waitLeft;
         p.spotStand = undefined;
         p.customer = 'running';
+        p.chased = 0; // SCREAM-342: they stood at the curb: the count starts again
         p.walking = true;
         p.plan = { kind: 'follow' };
         return;

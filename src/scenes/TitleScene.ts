@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { counterOn } from '../state/Counter';
 import { continueStory, SceneKeys, startEvening, startStory } from '../flow';
+import { fadeTo, loadStoryAhead } from './loadAhead';
 import { loadStory } from '../state/StorySave';
 import { tutorialDone } from '../state/Tutorial';
 import { loadHighScores } from '../state/HighScores';
@@ -18,7 +19,8 @@ export function modesUnlocked(): boolean {
 const LOCK_NOTE = "Play Story's first day to unlock Quick Play.";
 import { formatMoney } from '../util/format';
 import { driveLaps, TRUCK_KEY, TRUCK_URL } from '../ui/truckLaps';
-import { weekdayName } from '../state/Residents';
+import { dayText } from '../state/Residents';
+import { STORY_DAYS } from '../config/tuning';
 
 // Issue #4: title screen. Placeholder text until art direction (#17) is decided.
 // SCREAM-53 (PO, October 30, after playtest feedback): no difficulty choice;
@@ -62,6 +64,9 @@ export class TitleScene extends Phaser.Scene {
   /** SCREAM-169: which question the box is asking. */
   private asking: 'story' | 'uncle' = 'story';
   private confirmGroup: Phaser.GameObjects.GameObject[] = [];
+  /** SCREAM-270: the open question's answers and which one is marked (test hooks). */
+  answers: { label: string; pick: () => void; text: Phaser.GameObjects.Text }[] = [];
+  answerSelected = 0;
 
   constructor() {
     super(SceneKeys.Title);
@@ -85,15 +90,18 @@ export class TitleScene extends Phaser.Scene {
     });
 
     this.starting = false;
+    // SCREAM-243: while the title is up, fetch what a Story's first screens need.
+    loadStoryAhead(this, !tutorialDone());
     this.selected = 0;
     this.confirming = false;
     this.asking = 'story';
     this.confirmGroup = [];
+    this.answers = [];
     const save = loadStory();
     this.options = save
       ? [
           { id: 'quick', label: 'Quick Play' },
-          { id: 'continue', label: `Continue Story: ${weekdayName(save.day)}, ${formatMoney(save.cashCents)}` },
+          { id: 'continue', label: `Continue Story: ${dayText(save.day, STORY_DAYS)}, ${formatMoney(save.cashCents)}` },
           { id: 'story', label: 'New Story' },
         ]
       : [
@@ -105,26 +113,24 @@ export class TitleScene extends Phaser.Scene {
     if (locked) for (const o of this.options) o.locked = o.id === 'quick';
     this.selected = Math.max(0, this.options.findIndex((o) => !o.locked));
 
-    this.add
-      .text(width / 2, 112, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
-      .setOrigin(0.5);
-    // How to drive: the one set of controls.
-    this.add.rectangle(width / 2, 238, 520, 150, 0x1f2a44).setStrokeStyle(2, 0x4d5a70);
-    this.add.text(width / 2, 186, 'HOW TO DRIVE', { fontFamily: 'monospace', fontSize: '24px', color: '#ffe066' }).setOrigin(0.5);
-    this.add
-      .text(width / 2, 252, '↑ Gas      ↓ Brake / Reverse\n← → Steer      Q Park Brake\n\nPull up beside a customer and stop.', {
-        fontFamily: 'monospace',
-        fontSize: '17px',
-        color: '#d6deeb',
-        align: 'center',
-        lineSpacing: 4,
-      })
-      .setOrigin(0.5);
-
+    // SCREAM-292 (PO, November 12): "Move the Title and Menu options together and Vertically center
+    // the text." The title, the options and (before the uncle's evening is done) the lock note are
+    // one group, centred on the screen.
     const spacing = this.options.length > 3 ? 26 : this.options.length > 2 ? 30 : 34;
+    const TITLE_H = 60;
+    const TITLE_GAP = 36; // engineering's call: about one line of the title's height, a little less
+    const NOTE_H = locked ? 26 : 0;
+    const groupH = TITLE_H + TITLE_GAP + this.options.length * spacing + NOTE_H;
+    const groupTop = Math.round(height / 2 - groupH / 2);
+    const firstOptionY = groupTop + TITLE_H + TITLE_GAP + spacing / 2;
+    this.add
+      .text(width / 2, groupTop + TITLE_H / 2, 'ICE MACHINE', { fontFamily: 'monospace', fontSize: '52px', color: '#bfe6ff' })
+      .setOrigin(0.5);
+    // SCREAM-286 (PO, November 12): no HOW TO DRIVE box; the drive screen's line names the keys.
+
     this.modeTexts = this.options.map((m, i) =>
       this.add
-        .text(width / 2, 345 + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
+        .text(width / 2, firstOptionY + i * spacing, m.label, { fontFamily: 'monospace', fontSize: '24px', color: '#d6deeb' })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .on('pointerover', () => {
@@ -141,12 +147,10 @@ export class TitleScene extends Phaser.Scene {
     );
     this.refreshModes();
     this.lockNote = this.add
-      .text(width / 2, 345 + this.options.length * spacing + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
+      .text(width / 2, firstOptionY + (this.options.length - 0.5) * spacing + NOTE_H / 2 + 2, locked ? LOCK_NOTE : '', { fontFamily: 'monospace', fontSize: '15px', color: '#8a9bb3' })
       .setOrigin(0.5)
       .setName('lock-note');
-    this.add
-      .text(width / 2, height - 32, '↑ ↓ Or Mouse: Choose    Press Enter Or Click To Start', { fontFamily: 'monospace', fontSize: '16px', color: '#8a9bb3' })
-      .setOrigin(0.5);
+    // SCREAM-286: no line of keys along the bottom here.
     this.add
       .text(width / 2, height - 12, 'Art: LimeZu (limezu.itch.io)   Map data © OpenStreetMap contributors   Tune: Travis Morgan (SoundEffectsFactory.com)' + (counterOn() ? '   Counts anonymous plays' : ''), { fontFamily: 'monospace', fontSize: '12px', color: '#6b7a93' })
       .setOrigin(0.5);
@@ -154,13 +158,23 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', (event: KeyboardEvent) => {
       if (this.starting) return;
       const key = event.key;
-      if (this.confirming && this.asking === 'uncle') {
-        if (key === 'u' || key === 'U') this.startNewStory(true);
-        else if (key === 'o' || key === 'O') this.startNewStory(false);
-        else if (key === 'Escape') this.closeConfirm();
-        return;
-      }
       if (this.confirming) {
+        // SCREAM-270: ← → move between a question's two answers and Enter picks the marked one.
+        // A held Enter (still down from choosing New Story) doesn't count.
+        if (key === 'ArrowLeft' || key === 'ArrowRight') {
+          this.answerSelected = (this.answerSelected + 1) % this.answers.length;
+          return this.refreshAnswers();
+        }
+        if (key === 'Enter') {
+          if (!event.repeat) this.answers[this.answerSelected]?.pick();
+          return;
+        }
+        if (this.asking === 'uncle') {
+          if (key === 'u' || key === 'U') this.startNewStory(true);
+          else if (key === 'o' || key === 'O') this.startNewStory(false);
+          else if (key === 'Escape') this.closeConfirm();
+          return;
+        }
         if (key === 'y' || key === 'Y') this.newStory();
         else if (key === 'n' || key === 'N' || key === 'Escape') this.closeConfirm();
         return;
@@ -194,11 +208,14 @@ export class TitleScene extends Phaser.Scene {
   private start(id: Mode): void {
     this.starting = true;
     if (id === 'continue') {
-      if (!continueStory(this)) {
-        this.starting = false; // The save vanished (storage cleared): stay on the title.
-        this.scene.restart();
-      }
-    } else startEvening(this);
+      // SCREAM-243: a short fade into the game.
+      fadeTo(this, [SceneKeys.Cooler, SceneKeys.Hud], () => {
+        if (!continueStory(this)) {
+          this.starting = false; // The save vanished (storage cleared): stay on the title.
+          this.scene.restart();
+        }
+      });
+    } else fadeTo(this, [], () => startEvening(this), false); // Quick play: no fade; it only waits for pictures still loading
   }
 
   /** SCREAM-205: a new Story. The first time, the uncle's evening is Day 1; after that, ask. */
@@ -210,7 +227,8 @@ export class TitleScene extends Phaser.Scene {
 
   private startNewStory(withUncle: boolean): void {
     this.starting = true;
-    startStory(this, withUncle);
+    // SCREAM-243: a short fade to the credits (With Uncle) or the New Bike screen (On My Own).
+    fadeTo(this, withUncle ? [SceneKeys.TutorialCrawl, SceneKeys.Hud] : [SceneKeys.StoryIntro], () => startStory(this, withUncle));
   }
 
   /** SCREAM-169: after a first full play, the uncle's steps can be skipped. */
@@ -218,12 +236,7 @@ export class TitleScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.confirming = true;
     this.asking = 'uncle';
-    const option = (x: number, label: string, guided: boolean) =>
-      this.add
-        .text(x, height / 2 + 50, label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.startNewStory(guided));
+    loadStoryAhead(this, true); // SCREAM-243: his credits, in case the answer is With Uncle
     this.confirmGroup = [
       this.add.rectangle(0, 0, width, height, 0x000000, 0.6).setOrigin(0, 0),
       this.add.rectangle(width / 2, height / 2, 560, 190, 0x1f2a44).setStrokeStyle(2, 0xffe066),
@@ -235,8 +248,13 @@ export class TitleScene extends Phaser.Scene {
           align: 'center',
         })
         .setOrigin(0.5),
-      option(width / 2 - 120, 'With Uncle (U)', true),
-      option(width / 2 + 120, 'On My Own (O)', false),
+      ...this.addAnswers(
+        [
+          { x: width / 2 - 120, label: 'With Uncle (U)', pick: () => this.startNewStory(true) },
+          { x: width / 2 + 120, label: 'On My Own (O)', pick: () => this.startNewStory(false) },
+        ],
+        0,
+      ),
     ];
   }
 
@@ -256,22 +274,55 @@ export class TitleScene extends Phaser.Scene {
           lineSpacing: 8,
         })
         .setOrigin(0.5),
-      // SCREAM-90: click Yes or No, or press Y or N.
-      this.add
-        .text(width / 2 - 110, height / 2 + 50, 'Yes, Start Over (Y)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.newStory()),
-      this.add
-        .text(width / 2 + 140, height / 2 + 50, 'No (N)', { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.closeConfirm()),
+      // SCREAM-90: click Yes or No, or press Y or N. SCREAM-270: Enter picks the marked one,
+      // which starts on No so a second Enter can't wipe a saved story by accident.
+      ...this.addAnswers(
+        [
+          { x: width / 2 - 110, label: 'Yes, Start Over (Y)', pick: () => this.newStory() },
+          { x: width / 2 + 140, label: 'No (N)', pick: () => this.closeConfirm() },
+        ],
+        1,
+      ),
     ];
+  }
+
+  /**
+   * SCREAM-270: a question's answers, in a row. A left click picks the one under the mouse;
+   * ← → move the mark and Enter picks the marked one. Returns what was drawn, for the group.
+   */
+  private addAnswers(list: { x: number; label: string; pick: () => void }[], marked: number): Phaser.GameObjects.Text[] {
+    const { width, height } = this.scale;
+    this.answerSelected = marked;
+    this.answers = list.map((a, i) => ({
+      label: a.label,
+      pick: a.pick,
+      text: this.add
+        .text(a.x, height / 2 + 44, a.label, { fontFamily: 'monospace', fontSize: '18px', color: '#ffe066' })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerover', () => {
+          this.answerSelected = i;
+          this.refreshAnswers();
+        })
+        .on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+          if (pointer.button === 0) a.pick();
+        }),
+    }));
+    this.refreshAnswers();
+    // SCREAM-286: no "← → Choose    Enter Or Click To Pick" line under the answers.
+    return this.answers.map((a) => a.text);
+  }
+
+  private refreshAnswers(): void {
+    this.answers.forEach((a, i) => {
+      const on = i === this.answerSelected;
+      a.text.setText(on ? `> ${a.label} <` : a.label).setColor(on ? '#ffe066' : '#8a9bb3');
+    });
   }
 
   private closeConfirm(): void {
     this.confirming = false;
+    this.answers = [];
     this.confirmGroup.forEach((o) => o.destroy());
     this.confirmGroup = [];
   }

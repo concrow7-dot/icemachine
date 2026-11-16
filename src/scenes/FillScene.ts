@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { COOLER_CAPACITY, CRATE_SIDE } from '../config/tuning';
+import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
 import { getEvening, SceneKeys } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
@@ -32,13 +33,25 @@ const BAG_FIRST_X = 380;
 const BAG_Y = 410;
 const BAG_GAP = 48;
 const INK = '#2b1d10';
+/** SCREAM-273: BACK TO THE WINDOW is centred under the tip jar (the jar stands at x 124). */
+const WINDOW_BUTTON_X = 124;
 
 export class FillScene extends Phaser.Scene {
   private evening!: EveningState;
   private tipBar!: TipBar;
   private serveButton!: Phaser.GameObjects.Text;
+  /** SCREAM-240: the button for B. SCREAM-282: it reads FORGOT ORDER. */
+  windowButton!: Phaser.GameObjects.Text;
+  /** The keys along the bottom (SCREAM-288: B is named only while FORGOT ORDER is there). */
+  keysLine!: Phaser.GameObjects.Text;
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private lids: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-269: the shut, plain doors over the covered half of each crate in Story (test hook). */
+  coveredHalves: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
+  coveredRows: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-293: the crates' top: lower in Story, where they are a row shorter. */
+  private crateTop = CRATE_TOP;
   private bagIcons: Phaser.GameObjects.Image[] = [];
   private bagEmpty!: Phaser.GameObjects.Text;
   private focusMark!: Phaser.GameObjects.Graphics;
@@ -69,21 +82,38 @@ export class FillScene extends Phaser.Scene {
     this.focus = 0;
     const { width, height } = this.scale;
 
-    this.add.image(0, 0, FILL_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    this.add.image(0, 0, FILL_KEY).setOrigin(0, 0).setDisplaySize(width, height).setDepth(-2); // SCREAM-293: under the moved crates
+    // SCREAM-293: the open part of each crate (Story: 2 columns by 3 rows) sets its size and place.
+    const { coolerColumns: cols, coolerRows: rows } = this.evening.spec;
+    const crateH = rows * CELL + 2 * CELL_PAD;
+    const openW = cols < CRATE_SIDE ? CELL_PAD + cols * CELL : CRATE_PX;
+    this.crateTop = crateTopFor(CRATE_TOP, crateH, CRATE_PX);
     this.add
       .text(599, 61, 'THE COOLER  –  FILL THE ORDER', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
     // The tip cup stands on the shelf on the left wall.
-    this.tipBar = new TipBar(this, 124, 386, true);
+    // SCREAM-281 (PO, November 12): with a tall green bar above it that shrinks as the tip ticks down.
+    this.tipBar = new TipBar(this, 124, 386, true, true, undefined, this.evening.sale?.tipSteps ?? this.evening.tipSteps); // SCREAM-313: this sale's own steps
 
     for (let i = 0; i < COOLER_CAPACITY; i++) {
-      const { x, y } = cellCentre(i);
+      const { x, y } = cellCentre(i, this.crateTop);
       const icon = this.add.image(x, y, FLAVOUR_ICONS_KEY, 0).setScale(0.92).setVisible(false);
       icon.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.take(i));
       this.cellIcons.push(icon);
     }
     this.focusMark = this.add.graphics();
-    CRATE_LEFTS.forEach((left, crate) => this.lids.push(this.makeLid(left, crate)));
+    // SCREAM-269 (PO's sketch, November 12): in Story each crate has two half doors with a handle
+    // each. The left one opens (swinging up); the right one is a plain panel that stays shut.
+    // Quick play keeps one lid per crate.
+    this.coveredHalves = [];
+    this.coveredRows = [];
+    const half = this.evening.spec.coolerHalfCovered;
+    CRATE_LEFTS.forEach((left, crate) => {
+      this.lids.push(this.makeLid(left, crate, openW, crateH));
+      if (openW < CRATE_PX) this.coveredHalves.push(addCoveredHalf(this, left + openW, this.crateTop, CRATE_PX - openW, crateH, true));
+      // SCREAM-291, SCREAM-293: and the bottom row is gone altogether.
+      if (crateH < CRATE_PX) this.coveredRows.push(moveShortCrate(this, FILL_KEY, left, CRATE_PX, CRATE_TOP, crateH, CRATE_PX));
+    });
 
     this.add.text(BAG_FIRST_X - 14, 340, 'IN THE BAG', { fontFamily: 'monospace', fontSize: '14px', fontStyle: 'bold', color: INK });
     this.bagEmpty = this.add.text(BAG_FIRST_X - 14, BAG_Y - 8, 'Nothing yet: open a crate and click an ice cream.', {
@@ -93,7 +123,7 @@ export class FillScene extends Phaser.Scene {
     });
 
     this.serveButton = this.add
-      .text(880, 470, 'SERVE', {
+      .text(600, 470, 'SERVE', {
         fontFamily: 'monospace',
         fontSize: '22px',
         color: '#ffffff',
@@ -104,8 +134,24 @@ export class FillScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     this.serveButton.on('pointerdown', () => this.serve());
 
-    this.add
-      .text(width / 2, height - 9, '1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve   B: Back To The Window', {
+    // SCREAM-240 (PO, November 10): a button for B. SCREAM-273 (PO, November 12): it sits on the
+    // left under the tip jar and its shelf, and SERVE takes its old place in the middle.
+    this.windowButton = this.add
+      // SCREAM-282 (PO, November 12): it reads FORGOT ORDER, and goes straight to the customer
+      // saying the order again (which costs the tip, like R at the window).
+      .text(WINDOW_BUTTON_X, 470, 'FORGOT ORDER', {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        color: '#ffffff',
+        backgroundColor: '#1d5c8c',
+        padding: { x: 14, y: 7 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    this.windowButton.on('pointerdown', () => this.forgotOrder());
+
+    this.keysLine = this.add
+      .text(width / 2, height - 9, '', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: INK,
@@ -124,7 +170,7 @@ export class FillScene extends Phaser.Scene {
       if ((key === '+' || key === '=') && this.openCrate !== null) this.take(this.openCrate * CRATE_CELLS + this.focus);
       if (key === '-' || key === '_') this.evening.putBack(this.evening.bagContents.length - 1);
       if (key === 'Enter' || key === ' ') this.serve();
-      if (key === 'b' || key === 'B' || key === 'Backspace') this.scene.start(SceneKeys.Sales);
+      if (key === 'b' || key === 'B' || key === 'Backspace') this.forgotOrder();
     });
 
     const onChange = () => this.onSaleChanged();
@@ -143,23 +189,25 @@ export class FillScene extends Phaser.Scene {
   }
 
   /** A crate's lid: frosted, solid (no peeking), with its number on it. Clicking the crate opens it. */
-  private makeLid(left: number, crate: number): Phaser.GameObjects.Container {
+  private makeLid(left: number, crate: number, w: number = CRATE_PX, h: number = CRATE_PX): Phaser.GameObjects.Container {
     const g = this.add.graphics();
-    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, CRATE_PX, CRATE_PX);
+    g.fillStyle(0xdff3f8, 1).fillRect(0, 0, w, h);
     g.fillStyle(0xffffff, 0.7);
-    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % CRATE_PX) + 6, ((k * 37) % CRATE_PX) + 6, 2 + (k % 3));
-    g.lineStyle(10, 0xffffff, 0.6).lineBetween(CRATE_PX * 0.15, CRATE_PX, CRATE_PX * 0.45, 0);
-    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, CRATE_PX - 4, CRATE_PX - 4);
-    g.fillStyle(0xffffff, 1).fillRect(CRATE_PX / 2 - 22, CRATE_PX - 22, 44, 10);
-    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(CRATE_PX / 2 - 22, CRATE_PX - 22, 44, 10);
+    for (let k = 0; k < 18; k++) g.fillCircle(((k * 53) % (w - 12)) + 6, ((k * 37) % h) + 6, 2 + (k % 3));
+    g.lineStyle(10, 0xffffff, 0.6).lineBetween(w * 0.15, h, w * 0.45, 0);
+    g.lineStyle(4, 0x7f7f7f, 1).strokeRect(2, 2, w - 4, h - 4);
+    // The handle (narrower on a half door).
+    const handle = w < CRATE_PX ? 28 : 44;
+    g.fillStyle(0xffffff, 1).fillRect(w / 2 - handle / 2, h - 22, handle, 10);
+    g.lineStyle(3, 0x7f7f7f, 1).strokeRect(w / 2 - handle / 2, h - 22, handle, 10);
     const number = this.add
-      .text(CRATE_PX / 2, CRATE_PX / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
+      .text(w / 2, h / 2 - 6, String(crate + 1), { fontFamily: MARKER_FONT, fontSize: '48px', color: '#5a6b7a' })
       .setOrigin(0.5);
-    const lid = this.add.container(left, CRATE_TOP, [g, number]).setDepth(10);
+    const lid = this.add.container(left, this.crateTop, [g, number]).setDepth(10);
     // PO (November 2): click on the cooler to open it. A plain click zone over the whole crate,
     // under the ice creams (once the crate is open, clicking an ice cream takes it instead).
     this.add
-      .zone(left, CRATE_TOP, CRATE_PX, CRATE_PX)
+      .zone(left, this.crateTop, w, h)
       .setOrigin(0, 0)
       .setDepth(-1)
       .setInteractive({ useHandCursor: true })
@@ -217,13 +265,25 @@ export class FillScene extends Phaser.Scene {
 
   private moveFocus(dx: number, dy: number): void {
     if (this.openCrate === null) return;
-    const col = (this.focus % CRATE_SIDE + dx + CRATE_SIDE) % CRATE_SIDE;
-    const row = (Math.floor(this.focus / CRATE_SIDE) + dy + CRATE_SIDE) % CRATE_SIDE;
+    // SCREAM-269: with the right half covered, the keyboard stays in the open columns.
+    const cols = this.evening.spec.coolerColumns;
+    const col = (this.focus % CRATE_SIDE + dx + cols) % cols;
+    const rows = this.evening.spec.coolerRows; // SCREAM-291, 293: only the open rows
+    const row = (Math.floor(this.focus / CRATE_SIDE) + dy + rows) % rows;
     this.focus = row * CRATE_SIDE + col;
     this.refresh();
   }
 
   /** Hands the bag over at the window; the customer will ask "How much?". */
+  /** SCREAM-282: back to the window, where the customer says the order again (no tip after that). */
+  private forgotOrder(): void {
+    const sale = this.evening.sale;
+    // SCREAM-288: only twice per customer; after that the button is gone and B does nothing.
+    if (!sale?.askAgain(this.evening.nowMs)) return;
+    this.evening.tutorial?.release(); // as R does at the window (SCREAM-172)
+    this.scene.start(SceneKeys.Sales);
+  }
+
   private serve(): void {
     if (this.evening.sale?.handOver()) this.scene.start(SceneKeys.Sales);
   }
@@ -250,7 +310,7 @@ export class FillScene extends Phaser.Scene {
     });
     this.focusMark.clear();
     if (this.openCrate !== null) {
-      const c = cellCentre(this.openCrate * CRATE_CELLS + this.focus);
+      const c = cellCentre(this.openCrate * CRATE_CELLS + this.focus, this.crateTop);
       this.focusMark.lineStyle(3, 0xffc533, 1).strokeRect(c.x - CELL / 2 + 1, c.y - CELL / 2 + 1, CELL - 2, CELL - 2);
     }
 
@@ -263,15 +323,18 @@ export class FillScene extends Phaser.Scene {
     );
     this.bagEmpty.setVisible(this.bagIcons.length === 0);
     this.serveButton.setAlpha(sale.bagCount > 0 ? 1 : 0.4);
+    // SCREAM-288: FORGOT ORDER goes away once this customer has been asked twice.
+    this.windowButton.setVisible(sale.canAskAgain);
+    this.keysLine.setText(`1 2 3: Open A Crate   ↑↓←→ Move   + Take   − Put Back   Enter: Serve${sale.canAskAgain ? '   B: Forgot Order' : ''}`);
   }
 }
 
 /** The middle of a square on screen (the same places as on the prep screen). */
-function cellCentre(i: number): { x: number; y: number } {
+function cellCentre(i: number, top: number): { x: number; y: number } {
   const crate = Math.floor(i / CRATE_CELLS);
   const inCrate = i % CRATE_CELLS;
   return {
     x: (CRATE_LEFTS[crate] ?? 0) + CELL_PAD + (inCrate % CRATE_SIDE) * CELL + CELL / 2,
-    y: CRATE_TOP + CELL_PAD + Math.floor(inCrate / CRATE_SIDE) * CELL + CELL / 2,
+    y: top + CELL_PAD + Math.floor(inCrate / CRATE_SIDE) * CELL + CELL / 2,
   };
 }

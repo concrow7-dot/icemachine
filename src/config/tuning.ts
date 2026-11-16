@@ -14,15 +14,35 @@ export const STARTING_CASH_CENTS = 5000;
 /**
  * SCREAM-19 (PO, October 31): Story mode starts with set cash; cash and stock then carry over.
  * SCREAM-205 (PO, November 8): the uncle's $50 (was $100). With the uncle on Day 1 it arrives with his line at the cooler.
+ * SCREAM-294 (PO, November 12): $25. The $600 bike stays. Quick play keeps its $50 above.
  */
-export const STORY_START_CASH_CENTS = 5000;
+export const STORY_START_CASH_CENTS = 2500;
+
+/**
+ * SCREAM-243 (PO, November 12: "a short fade between screens"): leaving the title or the New Bike
+ * screen for a Story fades to black for this long, and the next screen fades in for as long.
+ */
+export const SCREEN_FADE_MS = 200;
+/** SCREAM-243: if pictures are still loading this long after that fade, the loading screen comes up. */
+export const LOAD_AHEAD_LOADING_AFTER_MS = 600;
+
+/**
+ * SCREAM-295: on the end-of-day screen a click moves on, but not in its first half second
+ * (a click meant for the sales window or the cooler as the evening ends shouldn't skip it).
+ */
+export const DAY_END_CLICK_WAIT_MS = 500;
+/** SCREAM-207: the "How To Drive" pop-up ignores clicks and Enter for this long after it opens (a key still held from before doesn't close it). */
+export const HOW_TO_DRIVE_CLOSE_WAIT_MS = 500;
+/** SCREAM-207: the pop-up opens this long after the drive screen is up, so the player sees the road first. */
+export const HOW_TO_DRIVE_DELAY_MS = 600;
 
 /**
  * SCREAM-19 / SCREAM-65 (PO, October 31): a Story run was 3 evenings.
  * SCREAM-85 (PO, November 8): 5 evenings, a full week; the uncle's evening is Day 1 (SCREAM-205).
  * Lower it to 1 or 2 to test the end of a run quickly.
  */
-export const STORY_DAYS = 5;
+// SCREAM-322 (PO, November 14): "making the story 10 days long. Monday through friday for day 1-5 and 6-10".
+export const STORY_DAYS = 10;
 
 /** SCREAM-18 (PO, October 31): the story's goal, a new bike, cost $200. SCREAM-85 (PO, November 8): $600 for the 5-day run. */
 export const BIKE_PRICE_CENTS = 60000;
@@ -43,6 +63,20 @@ export const MAX_PRICE_CENTS = 1000;
 
 /** Issue #23: first-playable rule, customers refuse to pay more than this per ice cream. */
 export const REFUSE_ABOVE_CENTS = 400;
+/**
+ * SCREAM-271 (PO, November 13: "the average person won't accept the ice cream over $2.50"):
+ * in Story, each ice cream can have its own price above which customers leave it out of their
+ * order. One not listed keeps REFUSE_ABOVE_CENTS. Quick play keeps REFUSE_ABOVE_CENTS for all.
+ * (SCREAM-272 will set the others.)
+ */
+// PO, November 14 (testing SCREAM-313 and 312): "I want the price people are willing to pay to be both be $3."
+export const STORY_REFUSE_ABOVE_CENTS: { [flavour: string]: number | undefined } = { eclair: 250, spongepop: 300, explorer: 300, louball: 300, drumcone: 300 };
+/** SCREAM-271: the ice cream Story starts with; every other one is bought on the cork board. */
+export const STORY_FIRST_FLAVOUR = 'eclair';
+/** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
+export const ICE_CREAM_UNLOCK_CENTS = 1500;
+/** PO, November 14 (testing SCREAM-313 and 312): SpongePop's note costs $20 and the Lil Explorer Pop's $25. Others keep ICE_CREAM_UNLOCK_CENTS. */
+export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500, louball: 3000, drumcone: 3000 };
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
@@ -124,6 +158,9 @@ export const PLACEHOLDER_SALE_CENTS = 400;
 
 // ---- Selling (#13-#15), decided in doc 08 ----
 
+/** SCREAM-288 (PO, November 12): how many times one customer can be asked for the order again. */
+export const ASK_AGAIN_LIMIT = 2;
+
 /** How long the customer's order stays in the speech bubble, in seconds. */
 export const ORDER_SHOW_SECONDS = 5;
 
@@ -139,12 +176,38 @@ export const ORDER_PICTURE_CHANCE = 0.5;
  */
 export const ORDER_SIZE_WEIGHTS = [15, 30, 30, 12, 8, 5];
 
-/** The tip countdown: starts when the order is hidden and runs this many seconds. */
+/** The tip countdown: starts when the order is hidden and runs this many seconds (SCREAM-303: without the power-up; the game reads tipCountdownSeconds in Sale.ts). */
 export const TIP_COUNTDOWN_SECONDS = 40;
 
 /** Tip percentage for each 10-second step of the countdown: 20% within 10 s, then 15%, 10%, 5%, then none. */
 export const TIP_STEP_SECONDS = 10;
 export const TIP_PERCENT_STEPS = [20, 15, 10, 5];
+/**
+ * SCREAM-303 (PO, November 14): with the Service With A Smile power-up, "25% is the first tip
+ * number. It also extends the time you can get a tip. It should still countdown to 5%, then 0":
+ * one more 10-second step at the top, so 50 seconds in all.
+ */
+export const SMILE_TIP_PERCENT_STEPS = [25, 20, 15, 10, 5];
+
+/**
+ * SCREAM-313 (PO, November 14; decision 116): in Story, a kid whose order includes a SpongePop
+ * tips this many percentage points more at every step ("10 points more": 30%, 25%, 20%, 15%).
+ */
+export const SPONGEPOP_KID_TIP_POINTS = 10;
+
+/**
+ * SCREAM-312 (PO, November 14; decision 117): the Lil Explorer Pop's exploration tip, paid in
+ * cash for each Explorer Pop sold in Story, growing with the straight-line distance from home.
+ * On the home map (Elm Park): $0 at home up to $1.00 at the roundabout. On the other map (Foley
+ * Stadium): $1.50 at the roundabout you arrive at (Newton Square), up to $5.00 at the farthest
+ * customer, and on beyond that if there were anyone. In $0.10 steps.
+ */
+export const EXPLORATION_HOME_MAX_CENTS = 100;
+export const EXPLORATION_AWAY_START_CENTS = 150;
+export const EXPLORATION_AWAY_FARTHEST_CENTS = 500;
+export const EXPLORATION_STEP_CENTS = 10;
+/** SCREAM-303 (PO: "$15"). */
+export const SMILE_PRICE_CENTS = 1500;
 
 /** A customer at the window waits this long, from when the conversation starts, before leaving. */
 export const WINDOW_PATIENCE_SECONDS = 60;
@@ -248,6 +311,14 @@ export const CUSTOMER_REGULAR_CHANCE = 0.35;
 
 /** PO: people inside their houses are half as likely (they don't hear as well; the AC is on). */
 export const CUSTOMER_INDOORS_FACTOR = 0.5;
+/**
+ * SCREAM-329 (PO, November 14): Speaker with Heavier Bass, $40 (his answer). "More likely to get
+ * customers in their home": asked which chance, he chose the some-days people (anyone who isn't an
+ * every-day regular). Their Likelihood counts for this much more while the music reaches them.
+ * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
+ */
+export const BASS_PRICE_CENTS = 4000;
+export const BASS_SOMETIMES_FACTOR = 1.1;
 
 /** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
 export const CUSTOMER_RUN_SPEED = 37;
@@ -300,8 +371,11 @@ export const FUEL_CENT_STEP = 50;
 /** SCREAM-173 (PO, November 6): "I have twenty bucks on me, add that and I'll pay this time." */
 export const UNCLE_GAS_CENTS = 2000;
 
-/** SCREAM-185 (PO, November 6): "I left $50 on the truck for you." */
-export const UNCLE_LEFT_CENTS = 5000;
+/**
+ * SCREAM-185 (PO, November 6): "I left $50 on the truck for you."
+ * SCREAM-294: what he leaves is Story's starting money, so it is $25 now (his line says the same).
+ */
+export const UNCLE_LEFT_CENTS = STORY_START_CASH_CENTS;
 
 /**
  * How far a full tank goes, in px of driving. PO: a full evening of driving uses
@@ -337,6 +411,118 @@ export const FUEL_QUICK_PLAY_START = 1;
 /** SCREAM-171: the guided tutorial starts low on gas (the uncle: "Let's go get some gas"). */
 export const FUEL_TUTORIAL_START = 0.25;
 
+
+// ---- SCREAM-204 (PO, November 11-12): Story starts with a weaker truck ----
+// PO: "there are two areas of the game we should make the player worse at, at the beginning of
+// the game, so that the power-ups feel like they are earned: driving (the truck) and music (the
+// radius the music reaches)." Then: "Cooler size needs to be reduced as well" and "Fuel: it needs
+// to go down faster". Quick play keeps the full-strength truck. How much weaker is engineering's
+// starting guess for each; power-ups (decision 073) will win these back.
+
+/** Story's top speed: this share of TRUCK_SPEED. */
+export const STORY_TRUCK_SPEED_FACTOR = 0.8;
+/** Story takes this many times longer to reach top speed. PO, November 12: "Acceleration should be worse by double." */
+export const STORY_TRUCK_ACCELERATION_FACTOR = 4; // then (02:17) "Acceleration should be reduced by 2x": twice as long again, 10 s
+/**
+ * Story takes this many times longer to brake to a stop. PO, November 12: "the brake is way too good. If the
+ * person holds break it should take 400x longer to break." Read as 400%, 4 times as long (0.15 s to 0.6 s);
+ * 400 times would be a full minute.
+ */
+export const STORY_TRUCK_BRAKING_FACTOR = 16; // (02:17) "reduced by 2x": 1.2 s; (02:36) "Braking reduced again. 2x worse": 2.4 s
+/**
+ * PO, November 12: "roll speed should be reduced by 75%." Story's creep (the speed the truck rolls at with
+ * no key held, TRUCK_CREEP_SPEED) is this share of Quick play's: 72 to 18 px/s.
+ */
+export const STORY_TRUCK_CREEP_FACTOR = 0.25 * (2 / 3); // then (02:17) "Roll speed should be reduced by 1/3": 18 to 12 px/s
+/**
+ * PO, November 12 (02:17): "Reverse speed should be maxed out at 1/3 of current." Story's top reverse
+ * speed is this share of TRUCK_REVERSE_SPEED (about 137 to 46 px/s).
+ */
+export const STORY_TRUCK_REVERSE_SPEED_FACTOR = 1 / 3;
+/**
+ * PO, November 12 (02:17): "Reverse acceleration should be reduced. Should be half of current". Story takes
+ * this many times longer to reach its full reverse speed (0.5 s to 1 s).
+ */
+export const STORY_TRUCK_REVERSE_ACCELERATION_FACTOR = 2;
+/** Story's wheel turns the truck this share as fast at speed (the tightest turn when slow is unchanged). */
+export const STORY_TRUCK_TURN_FACTOR = 0.9;
+/**
+ * PO, November 12 (02:36): "At any speed above roll: turning should be 2x worse". In Story, whenever the
+ * truck is going faster than its roll (the creep with no key held), the wheel turns it this share as
+ * fast, so every turn is twice as wide. At roll speed or slower, turning is as before.
+ */
+export const STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR = 0.5;
+/**
+ * PO, November 12 (02:49): "I think the roll for 10 seconds is too long, lets go to 4 seconds". The roll
+ * is what the truck does after the gas is let go: it keeps most of its speed and slows gently to its
+ * creep. In Story, rolling down from top speed to the creep takes this many seconds (Quick play keeps
+ * TRUCK_COAST_KEEP, about 10 s).
+ */
+export const STORY_TRUCK_ROLL_SECONDS = 4;
+/**
+ * SCREAM-309 (PO, November 14): the Gitty Up power-up: "Increase acceleration by 10%. The truck still
+ * is heavy, so don't expect much." The truck speeds up this many times as fast (accelerationSeconds
+ * divided by it: Story's 10 s from a stop to top speed becomes about 9.1 s).
+ */
+export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
+/** SCREAM-309 (PO: "Lets go with $20"). */
+export const GITTY_UP_PRICE_CENTS = 2000;
+/**
+ * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
+ * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
+ * as fast with it. The PO agreed to 12 to 18 px/s (Story's creep before the November 12 cut).
+ * SCREAM-336 (PO, November 15, testing): first "5% more on both" (1.55: 18.6 px/s, and 25.2 with Steam
+ * Engine); it didn't show, so: "trot should be where trot and steam are. and trot and steam should be
+ * another 2x increase": Trot alone 12 to 25.2 px/s (x 2.1).
+ */
+export const TROT_CREEP_FACTOR = 2.1;
+/**
+ * SCREAM-326 (PO, November 14): Steam Engine, $30. First +10%; while testing: "it should be the same effect as
+ * trot, just on top of it" (it added Trot's step again). SCREAM-336 (PO, November 15): "trot and steam
+ * should be another 2x increase": it doubles the roll speed Trot gives (25.2 to 50.4 px/s).
+ */
+export const STEAM_PRICE_CENTS = 3000;
+export const STEAM_CREEP_FACTOR = 2;
+/** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 5% better (braking time / 1.05; 10% at first, the PO while testing: "only be 5% better as well"). */
+export const BRAKES_PRICE_CENTS = 3000;
+export const BRAKES_FACTOR = 1.05;
+/** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
+export const TRAIN_PRICE_CENTS = 3000;
+export const TRAIN_TOP_SPEED_FACTOR = 1.05;
+/** SCREAM-310 (PO: "Lets go with $20"). */
+export const TROT_PRICE_CENTS = 2000;
+/** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
+export const SPEAKER_PRICE_CENTS = 3000;
+export const SPEAKER_RADIUS_FACTOR = 1.1;
+/** SCREAM-317 (PO, November 14): the Calculator note, $30. */
+export const CALCULATOR_PRICE_CENTS = 3000;
+/** SCREAM-330 (PO, November 14): This Century Register, $40 (his answer): a tablet at the window; a click on an ice cream adds its price. */
+export const REGISTER_PRICE_CENTS = 4000;
+/** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
+export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
+/**
+ * SCREAM-269 (PO, November 12: "24 to start"): in Story the right half of every crate is covered, so
+ * the cooler holds half as much: 3 crates x 8 squares = 24 (SCREAM-25 will uncover them). It was 2
+ * whole crates and a locked third (32) for a few hours.
+ */
+export const STORY_COOLER_HALF_COVERED = true;
+/**
+ * SCREAM-291, SCREAM-293 (PO, November 12): the squares of each crate that are open in Story's
+ * starting cooler: 2 columns by 3 rows (18 in all). The rest stays drawn in the art and comes back
+ * when these grow (PO: "I do want to eventually reveal the other sections of the cooler"; SCREAM-25).
+ */
+export const STORY_COOLER_COLUMNS = 2;
+export const STORY_COOLER_ROWS = 3;
+/**
+ * Story burns gas this many times as fast.
+ * SCREAM-298 (PO, November 13): "increase the rate that gas burns by 5%": 1.3 becomes 1.3 x 1.05.
+ */
+export const STORY_FUEL_BURN_FACTOR = 1.3 * 1.05;
+/**
+ * PO, November 12: "when player runs out, then should start with 1/3 tank now": after an evening
+ * that ended out of gas, the next Story day starts with this much (it was the 1/6 above).
+ */
+export const FUEL_STORY_OUT_OF_GAS_START = 1 / 3;
 
 /** The HUD's gauge turns red at or below this much of a tank. */
 export const FUEL_LOW = 0.15;
@@ -392,6 +578,12 @@ export const HINT_FIRST_AFTER_SALES = 3;
 export const HINT_GAP_SALES = 4;
 /** At most this many hints in an evening. */
 export const HINT_MAX_PER_EVENING = 2;
+/**
+ * SCREAM-245 (PO, November 14): the Handy Notebook, $40 (his answer). Every hint a customer says
+ * at the window is written down once it is owned. How many fit on a page of it.
+ */
+export const NOTEBOOK_PRICE_CENTS = 4000;
+export const NOTEBOOK_ENTRIES_PER_PAGE = 4;
 
 // ---- Customers mention their own schedule (SCREAM-247) ----
 // PO, November 10 (decision 064): now and then a customer leaving the window says something
@@ -403,8 +595,11 @@ export const SCHEDULE_LINE_CHANCE = 0.3;
  * their line tells the player more, so they say it more often (PO, November 10: "I would like a variety").
  */
 export const SCHEDULE_LINE_CHANCE_SOME_DAYS = 0.6;
-/** At most this many schedule lines in an evening, so they stay a treat and not noise. */
-export const SCHEDULE_LINES_MAX_PER_EVENING = 4;
+/**
+ * At most this many schedule lines in an evening, so they stay a treat and not noise.
+ * SCREAM-275 (PO, November 12): one a night (was 4).
+ */
+export const SCHEDULE_LINES_MAX_PER_EVENING = 1;
 
 // ---- Hard-to-find customers (SCREAM-250) ----
 // PO, November 10 (decision 067): a few people are only there in a short window (30 seconds
@@ -450,4 +645,94 @@ export const PORTAL_VOLUME = 0.1;
  * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
  * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
  */
+/** SCREAM-299 (decision 107, PO, November 13): the rotary hint comes when this many regulars have each been served twice in the Story run. */
+export const ROTARY_HINT_REGULARS = 3;
 export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
+
+// ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
+/** How much of the tank the can pours in when the tank runs empty: a fifth. */
+export const GAS_CAN_FILL = 1 / 5;
+/** How long the game stops while the can shows, in ms, and how many times it pulses. */
+export const GAS_CAN_POP_MS = 1500;
+export const GAS_CAN_PULSES = 3;
+
+/**
+ * SCREAM-334 (PO, November 14 sketch and November 15 answers; decision 138): the Two Ball Lou
+ * Ball. "Tip is Double. Controls are reversed for 10 seconds." Every Story sale that includes one
+ * pays double the tip, and afterwards the steering is swapped (left is right) for 10 seconds of
+ * driving. The note costs $30, one costs $2.00, and customers pay up to $3.00 (he first said $3.75, then, November 15: "The two ball and the drum can be sold for $3")
+ * (ICE_CREAM_UNLOCK_PRICES, flavours.ts, STORY_REFUSE_ABOVE_CENTS).
+ */
+export const LOU_BALL_TIP_FACTOR = 2;
+export const LOU_BALL_REVERSED_SECONDS = 10;
+
+/**
+ * SCREAM-335 (PO, November 14 sketch and November 15 answers; decision 139): the Drum Cone.
+ * "Music is replaced by drum solo. Music Radius increases by 10% for 30 seconds." Every Story
+ * sale that includes one starts 30 seconds (of driving) in which the truck's tune is a drum
+ * solo and the music ring is 10% bigger. The note costs $30, one costs $2.00, and customers
+ * pay up to $3.00 (he first said $3.75, then, November 15: "The two ball and the drum can be sold for $3").
+ */
+export const DRUM_CONE_RADIUS_FACTOR = 1.1;
+export const DRUM_CONE_SOLO_SECONDS = 30;
+
+/**
+ * SCREAM-340 (PO, November 15, notepad sketches: "Truck upgrade: Reverse speed", named "Back it up"):
+ * the Back It Up note (Truck tree, fourth row, under Brakes Made This Century). The price and the
+ * strength are engineering's proposals; the strength isn't shown (decision 132). Story's top reverse
+ * speed goes from about 46 to about 68 px/s.
+ */
+export const BACK_IT_UP_PRICE_CENTS = 4000;
+export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
+
+/**
+ * SCREAM-25 (PO, November 15, notepad sketches: "Truck upgrade: Cooler size", named "More Junk", then (02:40) "Change \"more Junk\" to \"More Space for Scream\""):
+ * the More Space for Scream note (Truck tree, fifth row). His answer on how much it opens: "The two slots in a
+ * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
+ * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
+ */
+export const MORE_JUNK_PRICE_CENTS = 5000;
+export const MORE_JUNK_EXTRA_ROWS = 1;
+
+/**
+ * SCREAM-341 (PO, November 15, notepad sketches: "Better Mirrors: indicator for customers, show
+ * exact customer"; asked what the player should see, he chose edge markers): the Better Mirrors note
+ * (Customer tree, fourth row, under the Handy Notebook). With it, each customer on their way to the
+ * truck who is off screen has a round marker at the screen's edge, with their face, pointing at them.
+ * The price and the marker's sizes (px on the map, before the camera's zoom) are engineering's proposals.
+ */
+export const MIRRORS_PRICE_CENTS = 5000;
+export const MIRROR_MARKER_RADIUS = 13;
+export const MIRROR_MARKER_MARGIN = 24;
+/** Extra room kept clear at the top (song name, credit) and bottom (key hints, park brake) of the road view, map px. */
+export const MIRROR_MARKER_TOP_EXTRA = 13;
+export const MIRROR_MARKER_BOTTOM_EXTRA = 58;
+/** The gas dial's corner (bottom left of the road view), map px wide and high: markers stay above it. */
+export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
+
+/**
+ * SCREAM-342 (PO, November 15, notepad sketches: "Customer speed: most customers run after you
+ * faster", named "Speedy Neighbors"). Asked who "most" is, he wrote: "I think it should be adults
+ * will follow the truck for only so long and then they will go home. Some kids will be fast and
+ * follow the truck anywhere. Others are slower and will give up after 20 seconds". He then chose:
+ * the rules apply to everyone in Story "From the start"; adults follow for "30 seconds"; the fast
+ * kids are the Residents sheet's Fast column (engineering ticked a first four; he changes them).
+ * Engineering's proposals: how much faster a fast kid is, the note's price and its strength (not
+ * shown, decision 132). The seconds count only while the customer is walking after the truck, and
+ * start again each time they have reached the curb and the truck drives off.
+ */
+export const CHASE_ADULT_SECONDS = 30;
+export const CHASE_SLOW_KID_SECONDS = 20;
+export const FAST_KID_SPEED_FACTOR = 1.5;
+export const SPEEDY_PRICE_CENTS = 6000;
+export const SPEEDY_SPEED_FACTOR = 1.25;
+
+/**
+ * SCREAM-168 (PO, November 15): asked whether regulars should chase further, he wrote "Yes
+ * regulars should chase forever", then "Let's have 70% of regulars chase. Add the tell." He then
+ * chose: the other 30% of regulars "Wait at their own curb" (they never follow the truck) and
+ * "The game picks" which 70% (fixed per person, from their ID). He chose "A waving hand" as the
+ * tell, saw it built, and wrote "I want to remove the wave actually": there is no tell. Story's
+ * chasing rules only (not Quick play or the uncle's evening).
+ */
+export const CHASE_REGULAR_SHARE = 0.7;

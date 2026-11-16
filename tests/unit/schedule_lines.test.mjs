@@ -27,10 +27,11 @@ test('Lists of days read naturally, in the week\'s order', () => {
   assert.equal(dayList([4, 0, 2]), 'Monday, Wednesday and Friday');
 });
 
-test('The next day home: Monday → Thursday for Mon+Thu; Thursday → Monday; a one-day person waits a week', () => {
+test('The next day home (played days; SCREAM-322 skips the weekend): Monday → Thursday for Mon+Thu; Thursday → Monday; a one-day person waits a week', () => {
   assert.equal(daysUntilHome([0, 3], 1), 3);
-  assert.equal(daysUntilHome([0, 3], 4), 4);
-  assert.equal(daysUntilHome([2], 3), 7);
+  assert.equal(daysUntilHome([0, 3], 4), 2);
+  assert.equal(daysUntilHome([2], 3), 5);
+  assert.equal(daysUntilHome([5, 6], 1), null); // weekend only: never on a played day
   assert.equal(daysUntilHome([], 1), null);
 });
 
@@ -360,7 +361,7 @@ test('SCREAM-250 (PO): hints about them are less common than hints about other n
 
 test('SCREAM-250: Elm Park has three hard-to-find customers, each with a 30-second window (18 minutes on the clock), 10 ice creams and a tiny Likelihood', () => {
   const hard = TUTORIAL_RESIDENTS.filter((r) => r.hardToFind);
-  assert.deepEqual(hard.map((r) => r.name.trim()), ['Pizza Joe', 'Zombie Poplicks', 'Ruth Butter Ginsburg']);
+  assert.deepEqual(hard.map((r) => r.name.trim()), ['Pizza Joe', 'Zombie A Poplicks', 'Ruth Butter Ginsburg']);
   for (const r of hard) {
     assert.equal(r.hours[1] - r.hours[0], 18, r.name);
     assert.equal(r.orderSize, 10, r.name);

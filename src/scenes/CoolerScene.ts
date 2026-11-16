@@ -1,10 +1,12 @@
 import * as Phaser from 'phaser';
-import { FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
+import { FLAVOURS, getFlavour, type Flavour, type FlavourId } from '../config/flavours';
 import { COOLER_CAPACITY, CRATE_SIDE, PRICE_STEP_CENTS } from '../config/tuning';
-import { getEvening, returnToTruck, SceneKeys } from '../flow';
+import { addCoveredHalf, crateTopFor, moveShortCrate } from '../ui/coveredHalf';
+import { getEvening, getStory, returnToTruck, SceneKeys } from '../flow';
 import { CoolerOrder } from '../state/CoolerOrder';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { addFlavourIcon, flavourFrame, FLAVOUR_ICONS_KEY, loadFlavourArt, MARKER_FONT, MENU_COLOURS } from '../ui/flavourArt';
+import { flavourNoteOf, showFlavourNote, type OpenFlavourNote } from '../ui/flavourNote';
 import { formatMoney } from '../util/format';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { addUnclePointer } from '../ui/unclePointer';
@@ -27,6 +29,12 @@ import { addUnclePointer } from '../ui/unclePointer';
 const COOLER_KEY = 'cooler-inside';
 const COOLER_URL = 'assets/interior/cooler-inside.png';
 
+/** Queues the cooler's pictures that aren't loaded yet (its own preload, and SCREAM-243's loading ahead). */
+export function loadCoolerArt(scene: Phaser.Scene): void {
+  if (!scene.textures.exists(COOLER_KEY)) scene.load.image(COOLER_KEY, COOLER_URL);
+  loadFlavourArt(scene);
+}
+
 /** Screen positions; the "shared" ones match draw_cooler.py. */
 const COOLER_LAYOUT = {
   /** Shared: the freezer's dark opening. */
@@ -39,8 +47,10 @@ const COOLER_LAYOUT = {
   /** The clipboard's paper, and the centres of its flavour rows. */
   paper: { left: 24, right: 224 },
   rowY: [152, 214, 276, 338],
+  /** SCREAM-334: with more than four ice creams unlocked the rows sit closer: the first row's centre and the step. */
+  compactRows: { first: 140, step: 42, height: 40 },
   /** Today's Menu: the cards' size, where they start, and the gap between them. */
-  card: { w: 156, h: 160, top: 334, firstLeft: 262, gap: 18 },
+  card: { w: 156, h: 160, top: 334, firstLeft: 262, gap: 18, maxCards: 4 },
 };
 const LID_OPEN_MS = 600;
 /** How long the lids stay shut before opening, so the player sees them. */
@@ -49,7 +59,20 @@ const INK = '#2b1d10';
 const BUTTON = '#1d5c8c';
 const UNPAID = 0xffcf33;
 
+/**
+ * SCREAM-334: Today's Menu has room for `full` cards at full size. With more, every card is
+ * scaled down (and the gaps with it) so the row is as wide as `full` cards were.
+ */
+export function menuCardFit(count: number, w: number, gap: number, full: number): { scale: number; gap: number } {
+  if (count <= full) return { scale: 1, gap };
+  const scale = (full * w + (full - 1) * gap) / (count * w + (count - 1) * gap);
+  return { scale, gap: gap * scale };
+}
+
 type Focus = { area: 'clipboard'; row: number } | { area: 'menu'; index: number };
+
+/** SCREAM-343: how faint the menu's + button is when the price can't go higher. */
+const TOP_PRICE_PLUS_ALPHA = 0.35;
 
 type MenuCard = {
   flavour: FlavourId;
@@ -57,6 +80,8 @@ type MenuCard = {
   frame: Phaser.GameObjects.Rectangle;
   price: Phaser.GameObjects.Text;
   margin: Phaser.GameObjects.Text;
+  /** SCREAM-343: the + button, greyed when the price is at its top (null on a locked menu). */
+  plus: Phaser.GameObjects.Text | null;
 };
 
 export class CoolerScene extends Phaser.Scene {
@@ -65,16 +90,66 @@ export class CoolerScene extends Phaser.Scene {
   private locked = false;
   /** SCREAM-54: at the cooler after pulling into Home's driveway; leaving goes back to the road. */
   private restocking = false;
+  /** The clipboard rows' centres tonight (SCREAM-334: closer together with more than four ice creams). */
+  private rowYs: readonly number[] = [];
   private buyButton?: Phaser.GameObjects.Text;
+  /** SCREAM-323: RETURN TO TRUCK, bottom left (Story; test hook). */
+  returnButton?: Phaser.GameObjects.Text;
+  /** What B does: back to the truck (or the empty-cooler warning). */
+  private goBack?: () => void;
+  /** SCREAM-355: the ice cream's note opened over the cooler (null when none is). A test hook. */
+  flavourNote: OpenFlavourNote | null = null;
+  /** SCREAM-355: each clipboard row's "i" button, by flavour. A test hook. */
+  infoButtons = new Map<FlavourId, Phaser.GameObjects.Container>();
+
+  /**
+   * SCREAM-355 (PO, November 15): "I want to be able to click on flavors and see the power": opens
+   * the ice cream's cork-board note over the cooler, to read. Story only (Quick play's have no notes).
+   */
+  showNote(flavour: FlavourId): void {
+    if (this.flavourNote || !getStory(this) || !flavourNoteOf(flavour)) return;
+    this.flavourNote = showFlavourNote(this, flavour, () => (this.flavourNote = null));
+  }
+
+  /** SCREAM-355: a small round "i" button at (x, y) that opens this ice cream's note. */
+  private makeInfoButton(x: number, y: number, flavour: FlavourId): void {
+    const button = this.add.container(x, y, [
+      this.add.circle(0, 0, 9, 0x2884d6).setStrokeStyle(2, 0xffffff),
+      this.add.text(0, 0, 'i', { fontFamily: 'monospace', fontSize: '13px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
+    ]).setName(`info-${flavour}`);
+    // A zone bigger than the circle, so a finger can hit it (SCREAM-77).
+    const hit = this.add.zone(x - 14, y - 14, 28, 28).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
+      event.stopPropagation();
+      this.showNote(flavour);
+    });
+    this.infoButtons.set(flavour, button);
+  }
+  /** SCREAM-277: the keys along the bottom (test hook). */
+  keysLine?: Phaser.GameObjects.Text;
   private focus: Focus = { area: 'clipboard', row: 0 };
   private rowHighlight!: Phaser.GameObjects.Rectangle;
   private rowCounts: Phaser.GameObjects.Text[] = [];
+  /** SCREAM-271: the clipboard's rows (test hook): every ice cream, or in Story the unlocked ones. */
+  offered: Flavour[] = [];
   /** SCREAM-133: each row's add button, the ice cream's picture with a "+" on it, by flavour. */
   private addButtons = new Map<FlavourId, Phaser.GameObjects.Container>();
   private cellIcons: Phaser.GameObjects.Image[] = [];
   private unpaidMarks!: Phaser.GameObjects.Graphics;
   /** SCREAM-131: the yellow outline round the crate new picks go into. */
   private crateMark!: Phaser.GameObjects.Graphics;
+  /** SCREAM-269: the plain panels over the covered half of each crate in Story (test hook). */
+  coveredHalves: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-291: the strips over the missing bottom row of each crate (Story). */
+  coveredRows: Phaser.GameObjects.Container[] = [];
+  /** SCREAM-293: the crates' top: lower in Story, where they are a row shorter. */
+  private get crateTop(): number {
+    return crateTopFor(COOLER_LAYOUT.crateTop, this.crateHeight, CRATE_SIDE * COOLER_LAYOUT.cell + 2 * COOLER_LAYOUT.cellPad);
+  }
+  /** SCREAM-293: a crate's height: its open rows (Story: 3). */
+  private get crateHeight(): number {
+    return this.evening.spec.coolerRows * COOLER_LAYOUT.cell + 2 * COOLER_LAYOUT.cellPad;
+  }
   private cards: MenuCard[] = [];
   private emptyMenu!: Phaser.GameObjects.Text;
   private title!: Phaser.GameObjects.Text;
@@ -88,26 +163,35 @@ export class CoolerScene extends Phaser.Scene {
     super(SceneKeys.Cooler);
   }
 
+  /** SCREAM-307: opened from the driver's seat with nothing stocked: say so at once. */
+  private warnOnOpen = false;
+
+  init(data: { warnEmpty?: boolean }): void {
+    this.warnOnOpen = !!data?.warnEmpty;
+  }
+
   preload(): void {
-    if (!this.textures.exists(COOLER_KEY)) this.load.image(COOLER_KEY, COOLER_URL);
-    loadFlavourArt(this);
+    loadCoolerArt(this);
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
   create(): void {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells);
+    this.evening.capMenuPrices();
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f));
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;
     this.focus = { area: 'clipboard', row: 0 };
     this.rowCounts = [];
+    this.infoButtons.clear();
+    this.flavourNote = null;
     this.cellIcons = [];
     this.cards = [];
     const { width, height } = this.scale;
 
-    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+    this.add.image(0, 0, COOLER_KEY).setOrigin(0, 0).setDisplaySize(width, height).setDepth(-2); // SCREAM-293: under the moved crates
     this.title = this.add
       .text(599, 61, '', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: INK })
       .setOrigin(0.5);
@@ -130,32 +214,45 @@ export class CoolerScene extends Phaser.Scene {
         width / 2,
         516,
         this.locked
-          ? 'Stock and prices were locked when you left for the road.'
+          ? this.evening.isPeeking
+            ? 'Just looking: stock is bought and prices are set at home.' // SCREAM-321
+            : 'Stock and prices were locked when you left for the road.'
           : this.restocking
             ? 'Restocking at home: the clock is running. Bought stock can be added to, not returned.'
+            : !this.evening.isClockRunning && this.evening.clockWaitsForDrive
+            ? 'The clock starts when you press DRIVE. Everything locks when you drive off.' // SCREAM-318
             : !this.evening.isClockRunning
             ? 'The clock starts when you leave the cooler. Everything locks when you drive off.'
             : 'Bought stock can be added to, not returned. Everything locks when you drive off.',
         { fontFamily: 'monospace', fontSize: '12px', color: !this.locked && !this.evening.isClockRunning ? '#1d5c8c' : '#5a4636' },
       )
       .setOrigin(0.5);
-    this.add
-      .text(
-        width / 2,
-        height - 9,
-        this.locked
-          ? 'B Or Backspace: Back To The Truck'
-          : this.restocking
-            ? '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Back On The Road'
-            : '↑↓←→ Move   + / − Change   Enter: Buy Stock   B: Cancel And Go Back',
-        { fontFamily: 'monospace', fontSize: '13px', color: INK },
-      )
+    this.keysLine = this.add
+      .text(width / 2, height - 9, this.keysText(), { fontFamily: 'monospace', fontSize: '13px', color: INK })
       .setOrigin(0.5);
     this.noteText = this.note.text;
     this.noteColor = this.note.style.color as string;
     this.noteTimer = undefined;
 
     this.addKeys();
+
+    // SCREAM-323 (PO, November 14, testing #235): "While in the cooler, we need a button to return to
+    // the truck view." Story (not the uncle's evening): bottom left, on the strip under the clipboard,
+    // styled like the window's RETURN TO COOLER. It does what B does.
+    this.returnButton = undefined;
+    if (this.evening.clockWaitsForDrive) {
+      this.returnButton = this.add
+        .text(14, height - 19, 'RETURN TO TRUCK', {
+          fontFamily: 'monospace',
+          fontSize: '14px',
+          color: '#ffffff',
+          backgroundColor: '#1d5c8c',
+          padding: { x: 9, y: 5 },
+        })
+        .setOrigin(0, 0.5)
+        .setInteractive({ useHandCursor: true });
+      this.returnButton.on('pointerdown', () => this.goBack?.());
+    }
 
     const onChange = () => this.refresh();
     this.evening.on(EveningEvents.CoolerChanged, onChange);
@@ -167,6 +264,7 @@ export class CoolerScene extends Phaser.Scene {
 
     this.refresh();
     this.openLids();
+    if (this.warnOnOpen) this.warnEmpty(); // SCREAM-307
   }
 
   // ---- The clipboard ----
@@ -177,37 +275,44 @@ export class CoolerScene extends Phaser.Scene {
     this.add
       .text(middle, 104, 'Available Ice Cream', { fontFamily: MARKER_FONT, fontSize: '19px', color: INK })
       .setOrigin(0.5);
-    this.rowHighlight = this.add.rectangle(middle, rowY[0] ?? 0, paper.right - paper.left - 6, 56, 0xffe066, 0.55);
-
-    FLAVOURS.forEach((flavour, row) => {
-      const y = rowY.at(row) ?? 0;
+    // SCREAM-271: in Story the clipboard lists only the ice creams unlocked so far.
+    this.offered = FLAVOURS.filter((f) => this.evening.flavourUnlocked(f.id));
+    // SCREAM-334: a fifth and sixth ice cream fit by putting the rows closer together.
+    const compact = this.offered.length > rowY.length;
+    const { first, step, height } = COOLER_LAYOUT.compactRows;
+    this.rowYs = compact ? this.offered.map((_, row) => first + row * step) : rowY;
+    const rowH = compact ? height : 56;
+    this.rowHighlight = this.add.rectangle(middle, this.rowYs[0] ?? 0, paper.right - paper.left - 6, rowH, 0xffe066, 0.55);
+    this.offered.forEach((flavour, row) => {
+      const y = this.rowYs.at(row) ?? 0;
       // SCREAM-144 (PO, November 3): no picture on the left; name and price left-aligned, the add picture on the right.
       const textLeft = paper.left + 12;
+      const lowerY = y + (compact ? 13 : 16);
       this.add
-        .text(textLeft, y - 14, flavour.name, {
+        .text(textLeft, y - (compact ? 7 : 14), flavour.name, {
           fontFamily: 'monospace',
-          fontSize: '13px',
+          fontSize: compact ? '11px' : '13px',
           fontStyle: 'bold',
           color: INK,
           wordWrap: { width: 132 },
         })
         .setOrigin(0, 0.5)
         .setLineSpacing(-2);
-      this.add.text(textLeft, y + 16, `${formatMoney(flavour.costCents)} each`, {
+      this.add.text(textLeft, lowerY, `${formatMoney(flavour.costCents)} each`, {
         fontFamily: 'monospace',
-        fontSize: '12px',
+        fontSize: compact ? '11px' : '12px',
         color: '#5a4636',
       }).setOrigin(0, 0.5);
       // How many of this flavour are in the cooler.
       this.rowCounts.push(
         this.add
-          .text(paper.right - 52, y + 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#5a4636' })
+          .text(paper.right - 52, lowerY, '', { fontFamily: 'monospace', fontSize: compact ? '11px' : '12px', color: '#5a4636' })
           .setOrigin(1, 0.5),
       );
       if (!this.locked) {
         // The whole row picks one; so does its + button.
         const hit = this.add
-          .rectangle(middle, y, paper.right - paper.left - 6, 56, 0xffffff, 0.001)
+          .rectangle(middle, y, paper.right - paper.left - 6, rowH, 0xffffff, 0.001)
           .setInteractive({ useHandCursor: true });
         hit.on('pointerdown', () => {
           this.focus = { area: 'clipboard', row };
@@ -216,8 +321,10 @@ export class CoolerScene extends Phaser.Scene {
         this.makeAddButton(paper.right - 26, y, flavour.id, () => {
           this.focus = { area: 'clipboard', row };
           this.pick(flavour.id);
-        });
+        }, compact ? 0.72 : 1);
       }
+      // SCREAM-355: an "i" beside the row's price opens the ice cream's note (added last, so it is above the row's click area).
+      if (getStory(this) && flavourNoteOf(flavour.id)) this.makeInfoButton(paper.left + 104, lowerY, flavour.id);
     });
 
     this.totals = this.add
@@ -245,14 +352,19 @@ export class CoolerScene extends Phaser.Scene {
   // ---- The crates ----
 
   private makeCells(): void {
-    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const { crateLefts, cell, cellPad } = COOLER_LAYOUT;
+    const crateTop = this.crateTop;
     const crateSize = CRATE_SIDE * cell + 2 * cellPad;
+    // SCREAM-293: Story's crates are a row shorter.
+    const crateH = this.crateHeight;
+    const cols = this.evening.spec.coolerColumns;
+    const openW = cols < CRATE_SIDE ? cellPad + cols * cell : crateSize;
     // SCREAM-131 (PO, November 2): picks go into the chosen crate. Click a crate (or press 1, 2, 3) to choose it.
     this.crateMark = this.add.graphics();
     if (!this.locked) {
       crateLefts.forEach((left, crate) => {
         this.add
-          .rectangle(left, crateTop, crateSize, crateSize, 0xffffff, 0.001)
+          .rectangle(left, crateTop, crateSize, crateH, 0xffffff, 0.001)
           .setOrigin(0, 0)
           .setInteractive({ useHandCursor: true })
           .on('pointerdown', () => {
@@ -260,6 +372,14 @@ export class CoolerScene extends Phaser.Scene {
             this.refresh();
           });
       });
+    }
+    // SCREAM-269: in Story the right half of every crate is under a plain panel.
+    this.coveredHalves = [];
+    this.coveredRows = [];
+    if (openW < crateSize) crateLefts.forEach((left) => this.coveredHalves.push(addCoveredHalf(this, left + openW, crateTop, crateSize - openW, crateH)));
+    if (crateH < crateSize) {
+      // SCREAM-291, SCREAM-293: the bottom row is gone altogether.
+      crateLefts.forEach((left) => this.coveredRows.push(moveShortCrate(this, COOLER_KEY, left, crateSize, COOLER_LAYOUT.crateTop, crateH, crateSize)));
     }
     for (let i = 0; i < COOLER_CAPACITY; i++) {
       const { x, y } = this.cellCentre(i);
@@ -290,7 +410,8 @@ export class CoolerScene extends Phaser.Scene {
 
   /** The middle of a square on screen. */
   private cellCentre(i: number): { x: number; y: number } {
-    const { crateLefts, crateTop, cell, cellPad } = COOLER_LAYOUT;
+    const { crateLefts, cell, cellPad } = COOLER_LAYOUT;
+    const crateTop = this.crateTop;
     const crate = Math.floor(i / (CRATE_SIDE * CRATE_SIDE));
     const inCrate = i % (CRATE_SIDE * CRATE_SIDE);
     return {
@@ -303,6 +424,7 @@ export class CoolerScene extends Phaser.Scene {
   private cellAt(x: number, y: number): number {
     const { cell } = COOLER_LAYOUT;
     for (let i = 0; i < COOLER_CAPACITY; i++) {
+      if (!this.evening.cellOpen(i)) continue; // SCREAM-269: nothing drops onto a covered half
       const c = this.cellCentre(i);
       if (Math.abs(x - c.x) <= cell / 2 && Math.abs(y - c.y) <= cell / 2) return i;
     }
@@ -360,6 +482,11 @@ export class CoolerScene extends Phaser.Scene {
       const margin = this.add.text(cx, 148, '', { fontFamily: 'monospace', fontSize: '11px', color: '#2e7d32' }).setOrigin(0.5);
       parts.push(margin);
       const container = this.add.container(0, 0, parts);
+      // SCREAM-355: a click on the card (not on its - or +, which stop the click) opens the ice cream's note.
+      if (getStory(this) && flavourNoteOf(flavour.id)) {
+        frame.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.showNote(flavour.id));
+      }
+      let plus: Phaser.GameObjects.Text | null = null;
       if (!this.locked) {
         const change = (direction: -1 | 1) => () => {
           this.focus = { area: 'menu', index: this.visibleCards().findIndex((c) => c.flavour === flavour.id) };
@@ -367,9 +494,10 @@ export class CoolerScene extends Phaser.Scene {
           this.refresh();
         };
         container.add(this.makeButton(16, 120, '−', change(-1), 16, false));
-        container.add(this.makeButton(w - 16, 120, '+', change(1), 16, false));
+        plus = this.makeButton(w - 16, 120, '+', change(1), 16, false);
+        container.add(plus);
       }
-      this.cards.push({ flavour: flavour.id, container, frame, price, margin });
+      this.cards.push({ flavour: flavour.id, container, frame, price, margin, plus });
     });
   }
 
@@ -384,18 +512,18 @@ export class CoolerScene extends Phaser.Scene {
    * SCREAM-133 (PO, November 2): the clipboard's add button is the ice cream's picture with a
    * "+" badge on it that gently pulses. It grows a little under the mouse and bounces when it adds one.
    */
-  private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void): void {
-    const picture = addFlavourIcon(this, 0, 0, flavour, 1.4);
-    const badge = this.add.container(15, -20, [
+  private makeAddButton(x: number, y: number, flavour: FlavourId, onClick: () => void, size = 1): void {
+    const picture = addFlavourIcon(this, 0, 0, flavour, 1.4 * size);
+    const badge = this.add.container(15 * size, -20 * size, [
       this.add.circle(0, 0, 8, 0x2e7d32).setStrokeStyle(2, 0xffffff),
       this.add.text(0, -1, '+', { fontFamily: 'monospace', fontSize: '15px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5),
     ]);
     this.tweens.add({ targets: badge, scale: 1.25, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const button = this.add.container(x, y, [picture, badge]).setName(`add-${flavour}`);
     // A zone for the click area (a container's own hit area sits off-centre).
-    const hit = this.add.zone(x - 22, y - 27, 44, 54).setOrigin(0, 0).setInteractive({ useHandCursor: true });
-    hit.on('pointerover', () => picture.setScale(1.55));
-    hit.on('pointerout', () => picture.setScale(1.4));
+    const hit = this.add.zone(x - 22, y - 27 * size, 44, 54 * size).setOrigin(0, 0).setInteractive({ useHandCursor: true });
+    hit.on('pointerover', () => picture.setScale(1.55 * size));
+    hit.on('pointerout', () => picture.setScale(1.4 * size));
     hit.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, event: Phaser.Types.Input.EventData) => {
       event.stopPropagation();
       onClick();
@@ -431,12 +559,20 @@ export class CoolerScene extends Phaser.Scene {
       if (leaving) return;
       // At home (SCREAM-54) the player may drive off without buying (out of cash, say).
       if (!this.locked && !this.restocking && this.evening.stockLeft === 0) {
+        // SCREAM-307: an evening that opened at the hub can go back there with nothing bought (the
+        // clock still waiting), to look at the cork board first.
+        if (this.evening.opensAtHub && !this.evening.isClockRunning) {
+          leaving = true;
+          returnToTruck(this, 'cooler', false);
+          return;
+        }
         this.warnEmpty();
         return;
       }
       leaving = true;
       this.leave();
     };
+    this.goBack = back;
     keyboard?.on('keydown-B', back);
     keyboard?.on('keydown-BACKSPACE', back);
     if (this.locked) return;
@@ -464,7 +600,7 @@ export class CoolerScene extends Phaser.Scene {
   /** Up and down: between the clipboard's flavours, or along the menu's cards. */
   private moveFocus(direction: -1 | 1): void {
     if (this.focus.area === 'clipboard') {
-      this.focus = { area: 'clipboard', row: (this.focus.row + direction + FLAVOURS.length) % FLAVOURS.length };
+      this.focus = { area: 'clipboard', row: (this.focus.row + direction + this.offered.length) % this.offered.length };
     } else {
       const count = this.visibleCards().length;
       if (count > 0) this.focus = { area: 'menu', index: (this.focus.index + direction + count) % count };
@@ -488,7 +624,7 @@ export class CoolerScene extends Phaser.Scene {
   /** + and -: on the clipboard, pick one or put the last one back; on the menu, change the price. */
   private adjust(direction: -1 | 1): void {
     if (this.focus.area === 'clipboard') {
-      const flavour = FLAVOURS.at(this.focus.row)?.id;
+      const flavour = this.offered.at(this.focus.row)?.id;
       if (!flavour) return;
       if (direction === 1) this.pick(flavour);
       else if (this.order.removeOne(flavour)) this.refresh();
@@ -518,7 +654,19 @@ export class CoolerScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Pays for the draft order and heads back to the truck. */
+  /** SCREAM-277: nothing new has been picked, so the button would charge nothing. */
+  private get nothingNew(): boolean {
+    return this.order.costCents === 0;
+  }
+
+  /** The line of keys along the bottom; Enter is named after what the button says (SCREAM-277). */
+  private keysText(): string {
+    if (this.locked) return 'B Or Backspace: Back To The Truck';
+    // SCREAM-286 (PO, November 12): only Enter is left on the line.
+    return this.nothingNew ? 'Enter: Done' : 'Enter: Buy Stock';
+  }
+
+  /** Pays for the draft order (nothing, when the button says DONE) and heads back to the truck. */
   private buy(): void {
     // An order that leaves the cooler empty doesn't count (#66 feedback).
     if (this.order.total === 0) {
@@ -530,6 +678,11 @@ export class CoolerScene extends Phaser.Scene {
 
   /** Back to the truck after prep; back on the road after restocking at home (SCREAM-54). */
   private leave(): void {
+    // SCREAM-319: in Story a home stop goes back to the truck screen (still at home), DRIVE highlighted.
+    if (this.restocking && this.evening.homeOpensTruck) {
+      returnToTruck(this, 'driver');
+      return;
+    }
     if (this.restocking) {
       this.evening.endRestock();
       if (!this.evening.isOver) this.scene.start(SceneKeys.Drive);
@@ -559,7 +712,8 @@ export class CoolerScene extends Phaser.Scene {
     for (const [x0, x1] of [[left, mid], [mid, right]]) {
       const w = (x1 ?? 0) - (x0 ?? 0);
       const h = bottom - top;
-      const lid = this.add.graphics().setDepth(10);
+      // SCREAM-297: above the grey covered halves (depth 11), which showed through the shut lids.
+      const lid = this.add.graphics().setDepth(12).setName('cooler-lid');
       lid.fillStyle(0xcfeef5, 1).fillRect(0, 0, w, h);
       lid.lineStyle(10, 0xffffff, 0.7).lineBetween(w * 0.15, h, w * 0.45, 0).lineBetween(w * 0.3, h, w * 0.6, 0);
       lid.lineStyle(6, 0x7f7f7f, 1).strokeRect(3, 3, w - 6, h - 6);
@@ -579,28 +733,30 @@ export class CoolerScene extends Phaser.Scene {
   }
 
   private refresh(): void {
-    const { rowY, cell, card: cardSize } = COOLER_LAYOUT;
+    const { cell, card: cardSize } = COOLER_LAYOUT;
     const total = this.order.total;
     this.title.setText(
       (this.locked ? 'THE COOLER  (stock is set for tonight)' : this.restocking ? 'THE COOLER  –  RESTOCK AT HOME' : 'THE COOLER  –  PREP') +
-        `     ${total} / ${COOLER_CAPACITY}`,
+        `     ${total} / ${this.order.capacity}`,
     );
 
     // Clipboard: how many of each, and the focus.
-    FLAVOURS.forEach((flavour, row) => {
+    this.offered.forEach((flavour, row) => {
       const count = this.order.quantity(flavour.id);
       this.rowCounts.at(row)?.setText(count > 0 ? `x${count}` : '');
     });
     this.rowHighlight.setVisible(this.focus.area === 'clipboard' && !this.locked);
-    if (this.focus.area === 'clipboard') this.rowHighlight.setY(rowY.at(this.focus.row) ?? 0);
+    if (this.focus.area === 'clipboard') this.rowHighlight.setY(this.rowYs.at(this.focus.row) ?? 0);
 
     // The crates, and the outline round the one new picks go into.
     const cells = this.order.cells;
     this.crateMark.clear();
     if (!this.locked) {
-      const { crateLefts, crateTop, cellPad } = COOLER_LAYOUT;
+      const { crateLefts, cellPad } = COOLER_LAYOUT;
+      const crateTop = this.crateTop;
       const size = CRATE_SIDE * cell + 2 * cellPad;
-      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, size + 6);
+      const h = this.crateHeight; // SCREAM-293
+      this.crateMark.lineStyle(4, 0xffc533, 1).strokeRect((crateLefts.at(this.order.crate) ?? 0) - 3, crateTop - 3, size + 6, h + 6);
     }
     this.unpaidMarks.clear();
     cells.forEach((c, i) => {
@@ -618,12 +774,16 @@ export class CoolerScene extends Phaser.Scene {
       this.focus = visible.length > 0 ? { area: 'menu', index: visible.length - 1 } : { area: 'clipboard', row: 0 };
     }
     this.emptyMenu.setVisible(visible.length === 0);
+    // SCREAM-334: more than four cards are drawn smaller so they all fit across the wall.
+    const fit = menuCardFit(visible.length, cardSize.w, cardSize.gap, cardSize.maxCards);
     this.cards.forEach((card) => card.container.setVisible(false));
     visible.forEach((card, n) => {
       const slot = this.order.slots.find((s) => s.flavour === card.flavour);
       if (!slot) return;
-      card.container.setVisible(true).setPosition(cardSize.firstLeft + n * (cardSize.w + cardSize.gap), cardSize.top);
+      card.container.setVisible(true).setScale(fit.scale).setPosition(cardSize.firstLeft + n * (cardSize.w * fit.scale + fit.gap), cardSize.top);
       card.price.setText(formatMoney(slot.priceCents).replace(/\.00$/, ''));
+      // SCREAM-343: at the top price the + is greyed out, so the player sees why it stopped.
+      card.plus?.setAlpha(this.order.atTopPrice(card.flavour, PRICE_STEP_CENTS) ? TOP_PRICE_PLUS_ALPHA : 1);
       const profitEach = slot.priceCents - getFlavour(slot.flavour).costCents;
       // SCREAM-72 (PO): no "$4" warning; players find the price ceiling from how customers react.
       if (profitEach <= 0) card.margin.setText('No profit at this price').setColor('#b3261e');
@@ -641,7 +801,10 @@ export class CoolerScene extends Phaser.Scene {
           // SCREAM-191: before the uncle hands over his $50, it's what the player is spending.
           `${this.evening.uncleGiftComing ? "Uncle's" : 'Cash:'} ${formatMoney(this.evening.stockBudgetCents)} → ${formatMoney(this.order.cashAfterCents)}`,
       );
-      this.buyButton?.setText(`BUY STOCK  ${formatMoney(this.order.costCents)}`);
+      // SCREAM-277 (PO, November 12): with nothing new picked there is nothing to buy, so the
+      // button says DONE with no price. It goes back to BUY STOCK as soon as something is picked.
+      this.buyButton?.setText(this.nothingNew ? 'DONE' : `BUY STOCK  ${formatMoney(this.order.costCents)}`);
+      this.keysLine?.setText(this.keysText());
     }
   }
 }

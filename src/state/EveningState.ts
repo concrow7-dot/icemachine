@@ -1,23 +1,25 @@
 import * as Phaser from 'phaser';
 import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../config/flavours';
 import type { CoolerOrder } from './CoolerOrder';
-import { generateOrder, orderTotalCents, Sale } from './Sale';
+import { generateOrder, orderTotalCents, Sale, withExtraIceCream, type OrderLine } from './Sale';
+import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
-import { ROTARY_HINT_LINE } from '../config/tuning';
+import {
+  BASS_SOMETIMES_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
+import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { assignHints } from './Hints';
 import { HINT_LINES } from '../config/hintLines';
-import { assignNeighbourLines, assignScheduleLines, neighbourLineToday, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
+import { assignNeighbourLines, assignScheduleLines, isSpecialCustomer, neighbourLineToday, scheduleLineToday, type ScheduleLine } from './ScheduleLines';
 import { SCHEDULE_LINES } from '../config/scheduleLines';
 import { NEIGHBOUR_LINES } from '../config/neighbourLines';
 import { TutorialEvents, TutorialRun } from './Tutorial';
 import { count } from './Counter';
 import { RoadNetwork } from './RoadGeometry';
 import {
-  COOLER_CAPACITY,
   ORDER_PICTURE_CHANCE,
   HINT_CHANCE,
   HINT_FIRST_AFTER_SALES,
@@ -41,11 +43,20 @@ import {
   FUEL_QUICK_PLAY_START,
   FUEL_TUTORIAL_START,
   FUEL_STEP_CENTS,
-  FUEL_TANK_PX,
   STARTING_CASH_CENTS,
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
+import { MAX_PRICE_CENTS } from '../config/tuning';
+import { MIRRORS_ID, SPEEDY_ID } from '../config/powerUps';
+import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
+import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
+import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
+import { addNotebookEntry, type NotebookEntry } from './Notebook';
+
+/** SCREAM-296: every note on the cork board. */
+const POWER_UP_NOTES = placeNotes(POWER_UP_TREES);
+
 export const EveningEvents = {
   /** (changeCents: number, cashCents: number, label: string, popup: boolean) */
   MoneyChanged: 'money-changed',
@@ -130,7 +141,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private ended = false;
   /** SCREAM-119: the evening ended because the tank ran empty. */
   private ranOutOfGas = false;
-  private readonly startCashCents: number;
+  private startCashCents: number;
   /** SCREAM-191: the uncle's $50 is still to come (guided tutorial, before his line at the cooler). */
   private uncleGiftPending = false;
   private cashCents: number;
@@ -138,6 +149,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private prepLocked = false;
   /** SCREAM-54: true while the player is at the cooler after pulling into Home's driveway. */
   private restockingNow = false;
+  /** SCREAM-321: looking inside the truck with Tab, away from home. */
+  private peekingNow = false;
   private readonly lengthMs = EVENING_LENGTH_SECONDS * 1000;
   /** SCREAM-67: the resident being served at the window, or null. */
   private servingNow: ResidentNow | null = null;
@@ -148,6 +161,27 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private damageTotalCents = 0;
   private salesTotalCents = 0;
   private tipsTotalCents = 0;
+  /** SCREAM-312: exploration tips tonight (their own row on the end-of-day screen). */
+  private explorationTotalCents = 0;
+  /** SCREAM-334: how much longer the steering is reversed (left is right), in ms of driving. 0 = normal. */
+  steeringReversedMs = 0;
+  get steeringReversed(): boolean {
+    return this.steeringReversedMs > 0;
+  }
+  /** SCREAM-334: called by the driving view each frame the player is driving: runs the driving-only timers down. */
+  driveTick(deltaMs: number): void {
+    if (this.steeringReversedMs > 0) this.steeringReversedMs = Math.max(0, this.steeringReversedMs - deltaMs);
+    if (this.drumSoloMs > 0) this.drumSoloMs = Math.max(0, this.drumSoloMs - deltaMs);
+  }
+  /** SCREAM-335: how much longer the Drum Cone's drum solo plays, in ms of driving. 0 = the usual tune. */
+  drumSoloMs = 0;
+  get drumSolo(): boolean {
+    return this.drumSoloMs > 0;
+  }
+  /** SCREAM-335: tonight's truck with the music ring 10% bigger, used while the drum solo plays. */
+  private truckDrum?: { of: TruckSpec; spec: TruckSpec };
+  /** SCREAM-313: the part of tonight's tips that SpongePops earned (their own row on the end-of-day screen). */
+  private spongePopTotalCents = 0;
   /** SCREAM-93: the most paid for one order tonight, price plus tip. */
   private largestSaleTotalCents = 0;
   private stockSpentCents = 0;
@@ -173,6 +207,19 @@ export class EveningState extends Phaser.Events.EventEmitter {
   mapSwitches = 0;
   /** SCREAM-169: the uncle's steps, on the tutorial map when he's guiding; null otherwise. */
   readonly tutorial: TutorialRun | null;
+  /**
+   * SCREAM-307 (PO, November 14): "on the second night. The player should start not at the
+   * cooler, but at the truck screen. That way they can decide to go to the powerups or the
+   * cooler screen first." Story from Day 2 on. The clock still waits until the player leaves
+   * the cooler or drives off.
+   */
+  readonly opensAtHub: boolean;
+  /**
+   * SCREAM-318 (PO, November 14): "At the beginning of the night, I want to make it so the clock
+   * doesn't start until the player hits \"Drive\"". Story (not the uncle's guided evening): leaving
+   * the cooler no longer starts the clock; only DRIVE on the truck screen does.
+   */
+  readonly clockWaitsForDrive: boolean;
 
   /** SCREAM-137: the chance a customer shows pictures instead of names (tests set 0 or 1). */
   orderPictureChance = ORDER_PICTURE_CHANCE;
@@ -219,7 +266,17 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * crate by crate and row by row, so the player has to remember where things are. Kept in
    * step with the stock counts (`coolerSlots`) by syncCells().
    */
-  private readonly coolerCells: (FlavourId | null)[] = Array.from({ length: COOLER_CAPACITY }, () => null);
+  private readonly coolerCells: (FlavourId | null)[] = [];
+  /** SCREAM-204: what tonight's truck can do (Story's is weaker than Quick play's). SCREAM-309: and the power-ups that change it. */
+  private truckNow!: TruckSpec;
+  get spec(): TruckSpec {
+    if (this.drumSoloMs <= 0) return this.truckNow;
+    // SCREAM-335: during a Drum Cone's drum solo the music reaches 10% further.
+    if (this.truckDrum?.of !== this.truckNow) {
+      this.truckDrum = { of: this.truckNow, spec: { ...this.truckNow, musicRadius: this.truckNow.musicRadius * DRUM_CONE_RADIUS_FACTOR } };
+    }
+    return this.truckDrum.spec;
+  }
   /** During a sale: each ice cream in the bag and the square it came from, so it can go back there. */
   private bagCells: { cell: number; slot: number }[] = [];
 
@@ -244,8 +301,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
     /** SCREAM-145: paid sales per resident over the run so far, and whether the roundabout's secret is out. */
     visits?: Readonly<Record<string, number>>;
     rotaryHintGiven?: boolean;
+    /** SCREAM-268: Story only: the uncle's $20 for gas hasn't been used yet this run. */
+    uncleGas?: boolean;
+    /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
+    powerUps?: readonly string[];
+    /** SCREAM-245: Story only: what the Handy Notebook holds so far this run. */
+    notebook?: readonly NotebookEntry[];
   }, mapId: MapId = 'worcester', guided = false) {
     super();
+    // SCREAM-334: an ice cream made for Story has no slot in Quick play's cooler (Quick play is unchanged).
+    if (!carry?.story) {
+      for (let i = this.coolerSlots.length - 1; i >= 0; i--) if (getFlavour(this.coolerSlots[i].flavour).storyOnly) this.coolerSlots.splice(i, 1);
+    }
     this.tutorial = guided && mapId === 'tutorial' ? new TutorialRun() : null;
     // SCREAM-187 (PO, November 6): "I left $50 on the truck for you to get started." (once)
     const run = this.tutorial;
@@ -263,8 +330,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.mapId = mapId;
     this.homeMapId = mapId;
     this.story = carry?.story;
+    this.opensAtHub = !!carry?.story && carry.story.day >= 2 && !this.tutorial; // SCREAM-307
+    this.clockWaitsForDrive = !!carry?.story && !this.tutorial; // SCREAM-318
+    for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
+    this.uncleGasLeft = carry?.uncleGas ?? false;
+    this.powerUpsOwned = [...(carry?.powerUps ?? [])];
+    this.notebook = (carry?.notebook ?? []).map((e) => ({ ...e })); // SCREAM-245
+    this.truckNow = truckSpec(!!carry?.story, this.powerUpsOwned);
+    this.gasCanReady = this.powerUpsOwned.includes(GAS_CAN_ID); // SCREAM-122: full again every day
     this.mapsJoined = !!carry?.story && !this.tutorial;
     setCurrentMap(mapId);
     const map = currentMap();
@@ -296,8 +371,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
       target.quantity += slot.quantity;
       target.priceCents = slot.priceCents;
     });
+    // SCREAM-204 / SCREAM-269: a save from before the smaller cooler can hold more than fits now: the extras
+    // (from the last flavours back) are left behind.
+    let over = this.coolerSlots.reduce((sum, sl) => sum + sl.quantity, 0) - this.spec.coolerCapacity;
+    for (let n = this.coolerSlots.length - 1; n >= 0 && over > 0; n--) {
+      const sl = this.coolerSlots[n];
+      if (!sl) continue;
+      const cut = Math.min(sl.quantity, over);
+      sl.quantity -= cut;
+      over -= cut;
+    }
     carry?.cells?.forEach((f, i) => {
-      if (i < COOLER_CAPACITY) this.coolerCells[i] = f;
+      if (this.cellOpen(i)) this.coolerCells[i] = f; // SCREAM-269: nothing sits under a covered half
     });
     this.syncCells();
   }
@@ -311,6 +396,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), this.story);
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
+      people.sometimesFactor = this.bassFactor; // SCREAM-329
+      people.chaseRules = !!this.story && !this.tutorial; // SCREAM-342: Story's chasing rules, not in the uncle's evening
+      people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
       this.residentsByMap.set(id, people);
     }
@@ -323,12 +411,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   readonly visits: Record<string, number>;
   rotaryHintGiven: boolean;
-  /** SCREAM-145: the regulars who have been served a second time, in order (the second one tells). */
+  /** SCREAM-145: the regulars served a second time this evening, in order (tests read it). */
   readonly secondVisits: string[] = [];
 
   /**
-   * SCREAM-145 (PO, November 9): counts a paid sale, and on a regular's second visit, if they're the
-   * second regular to get there this run, they pass on the way to the other neighbourhood.
+   * SCREAM-145 (PO, November 9): counts a paid sale, and on a regular's second visit they may pass
+   * on the way to the other neighbourhood. SCREAM-299 (PO, November 13): "The player should then
+   * successfully complete 2 transactions with 3 regulars": the third regular of the run to be
+   * served twice tells (it was the second). Counted over the whole run, from `visits`.
    */
   private countVisit(sale: Sale): void {
     const person = this.servingNow;
@@ -338,9 +428,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.visits[id] = (this.visits[id] ?? 0) + 1;
     if (this.visits[id] !== 2 || this.residents.kindOf(person.resident) !== 'regular') return;
     this.secondVisits.push(id);
-    if (this.rotaryHintGiven || this.secondVisits.length !== 2) return;
+    if (this.rotaryHintGiven) return;
+    const servedTwice = this.residents.all.filter((p) => (this.visits[p.resident.id] ?? 0) >= 2 && this.residents.kindOf(p.resident) === 'regular').length;
+    if (servedTwice < ROTARY_HINT_REGULARS) return;
     this.rotaryHintGiven = true;
     sale.addRotaryHint(ROTARY_HINT_LINE);
+    this.writeDown(ROTARY_HINT_LINE); // SCREAM-245
   }
 
   /** SCREAM-145: true while the truck is away from the map home is on. */
@@ -362,6 +455,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     setCurrentMap(to);
     this.residentsOn(to);
     this.truckPosition = spot;
+    this.streetNow = ''; // SCREAM-237: the other map's streets
     this.mapSwitches += 1;
     this.emit(EveningEvents.MapChanged, to);
     return to;
@@ -383,6 +477,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.coolerCells;
   }
 
+  /** SCREAM-269: whether a square can be used tonight (in Story the right half of each crate is covered). */
+  cellOpen(cell: number): boolean {
+    return coolerCellOpenIn(this.spec.coolerColumns, this.spec.coolerRows, cell);
+  }
+
+  /** The first empty square that can be used, or -1. */
+  private firstEmptyCell(): number {
+    return this.coolerCells.findIndex((f, i) => f === null && this.cellOpen(i));
+  }
+
   /** Which crate a square is in (0, 1 or 2). */
   static crateOf(cell: number): number {
     return Math.floor(cell / (CRATE_SIDE * CRATE_SIDE));
@@ -401,7 +505,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
         count--;
       }
       while (count < slot.quantity) {
-        const empty = this.coolerCells.indexOf(null);
+        const empty = this.firstEmptyCell();
         if (empty < 0) break;
         this.coolerCells[empty] = slot.flavour;
         count++;
@@ -514,6 +618,25 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.emit(EveningEvents.MoneyChanged, cents, this.cashCents, label, popup);
   }
 
+  /**
+   * Debug (Shift+9, SCREAM-324; PO, November 14): "add money to my wallet on any screen ... +$50".
+   * Only the cash changes: the starting cash rises with it, so tonight's profit doesn't count it.
+   */
+  debugAddCash(cents: number): void {
+    if (this.ended) return;
+    this.startCashCents += cents;
+    this.changeMoney(cents, 'Debug');
+  }
+
+  /**
+   * Debug (Shift+0, SCREAM-337; PO, November 15): "another testing helper. Fill gas." The tank
+   * is full again; it costs nothing and counts as no purchase. The Temporary Gas Can is left alone.
+   */
+  debugFillGas(): void {
+    if (this.ended) return;
+    this.fuelLeft = 1;
+  }
+
   // ---- Damage (#10) ----
 
   /** Charges for a hit on the road (pothole, parked car, road edge). Cash may go below zero. */
@@ -533,14 +656,157 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.largestSaleTotalCents;
   }
 
+  // ---- Power-ups (SCREAM-296) ----
+
+  private powerUpsOwned: string[] = [];
+  private powerUpsSpentCents = 0;
+
+  /** The power-ups owned now: the run's, plus any bought tonight. Restart Evening goes back to the run's. */
+  get powerUps(): readonly string[] {
+    return this.powerUpsOwned;
+  }
+
+  /**
+   * 073: power-ups are bought at home. SCREAM-320 (PO, November 14): "I want the player to be able
+   * to purchase powerups while at home at any time": before setting off, and on every home stop.
+   */
+  get atHome(): boolean {
+    return (!this.prepLocked || this.restockingNow) && !this.ended;
+  }
+
+  /** Whether the cork board's note can be bought now, and if not, why. */
+  powerUpStatus(id: string): BuyStatus | null {
+    const note = POWER_UP_NOTES.find((n) => n.id === id);
+    // SCREAM-271: the free notes (the Chocolate Eclair) are owned without being in the run's list.
+    return note ? buyStatus(note, [...FREE_NOTE_IDS, ...this.powerUpsOwned], this.cashCents, this.atHome) : null;
+  }
+
+  /**
+   * SCREAM-271 (PO, November 13): in Story only the Chocolate Eclair can be stocked until an
+   * ice cream's note is bought on the cork board. Quick play has them all.
+   */
+  flavourUnlocked(flavour: FlavourId): boolean {
+    // SCREAM-334: an ice cream made for Story's cork board is never on Quick play's clipboard.
+    if (!this.story) return !getFlavour(flavour).storyOnly;
+    const id = iceCreamNoteId(flavour);
+    return FREE_NOTE_IDS.includes(id) || this.powerUpsOwned.includes(id);
+  }
+
+  /** SCREAM-303: tonight's tip steps: 25% first and 10 seconds longer once Service With A Smile is owned. */
+  get tipSteps(): readonly number[] {
+    return this.powerUpsOwned.includes(SMILE_ID) ? SMILE_TIP_PERCENT_STEPS : TIP_PERCENT_STEPS;
+  }
+
+  /**
+   * The tip steps for one sale: tonight's (SCREAM-303), plus 10 points at every step when a kid's
+   * order includes a SpongePop (SCREAM-313, PO, November 14; Story only).
+   */
+  saleTipSteps(order: readonly OrderLine[], customer?: ResidentNow): readonly number[] {
+    const points = this.spongePopPoints(order, customer);
+    return points > 0 ? this.tipSteps.map((percent) => percent + points) : this.tipSteps;
+  }
+
+  /** SCREAM-313: the extra tip points a SpongePop brings: 10 for a kid who orders one in Story, else 0. */
+  spongePopPoints(order: readonly OrderLine[], customer?: ResidentNow): number {
+    const kidWithSpongePop = this.story && !!customer?.resident.kid && order.some((line) => line.flavour === 'spongepop');
+    return kidWithSpongePop ? SPONGEPOP_KID_TIP_POINTS : 0;
+  }
+
+  /** SCREAM-271: the ice creams the clipboard offers tonight, in the order of FLAVOURS. */
+  get unlockedFlavours(): FlavourId[] {
+    return FLAVOURS.map((f) => f.id).filter((id) => this.flavourUnlocked(id));
+  }
+
+  /** SCREAM-271: the most a customer pays for one of these tonight before leaving it out of the order. */
+  refuseAboveCents(flavour: FlavourId): number {
+    return this.story ? storyRefuseAboveCents(flavour) : REFUSE_ABOVE_CENTS;
+  }
+
+  /**
+   * SCREAM-343 (PO, November 15): "At the cooler, when seeing today's menu, the player should not be
+   * able to raise the price above the one stated on the cork board". In Story (not the uncle's
+   * evening) Today's Menu stops at the price on the ice cream's note; elsewhere at MAX_PRICE_CENTS.
+   */
+  menuTopPriceCents(flavour: FlavourId): number {
+    return this.story && !this.tutorial ? storyRefuseAboveCents(flavour) : MAX_PRICE_CENTS;
+  }
+
+  /** SCREAM-343: brings any menu price above its top down to it (an old save's); called when the cooler opens. */
+  capMenuPrices(): void {
+    for (const slot of this.coolerSlots) slot.priceCents = Math.min(slot.priceCents, this.menuTopPriceCents(slot.flavour));
+  }
+
+  /** SCREAM-245: the Handy Notebook's entries, oldest first (kept for the whole Story run). */
+  readonly notebook: NotebookEntry[];
+
+  /** SCREAM-245: the Handy Notebook is owned: hints are written down, and it sits in the truck to be read. */
+  get hasNotebook(): boolean {
+    return this.powerUpsOwned.includes(NOTEBOOK_ID);
+  }
+
+  /** SCREAM-245: with the notebook, writes down what the customer at the window just said (a hint of any kind). */
+  private writeDown(text: string): void {
+    const who = this.servingNow?.resident.name;
+    if (!this.hasNotebook || !this.story || !who) return;
+    addNotebookEntry(this.notebook, { day: this.story.day, who, text });
+  }
+
+  /** SCREAM-342: Speedy Neighbors: how much faster most customers go after the truck (1 without the note). */
+  get speedyFactor(): number {
+    return this.powerUpsOwned.includes(SPEEDY_ID) ? SPEEDY_SPEED_FACTOR : 1;
+  }
+
+  /** SCREAM-341: Better Mirrors is owned: the road shows a marker for each customer on their way who is off screen. */
+  get hasBetterMirrors(): boolean {
+    return this.powerUpsOwned.includes(MIRRORS_ID);
+  }
+
+  /** SCREAM-329: how much more the some-days people's Likelihood counts with Speaker with Heavier Bass (Story only: notes are). */
+  get bassFactor(): number {
+    return this.powerUpsOwned.includes(BASS_ID) ? BASS_SOMETIMES_FACTOR : 1;
+  }
+
+  /** Buys a note from the cork board with tonight's cash. Returns false, changing nothing, if it can't be bought. */
+  buyPowerUp(id: string): boolean {
+    const note = POWER_UP_NOTES.find((n) => n.id === id);
+    if (!note || this.powerUpStatus(id) !== 'ok') return false;
+    this.powerUpsOwned.push(id);
+    if (id === GAS_CAN_ID) this.gasCanReady = true; // it comes full
+    this.truckNow = truckSpec(!!this.story, this.powerUpsOwned); // SCREAM-309: a power-up may change the truck
+    if (id === BASS_ID) for (const people of this.residentsByMap.values()) people.sometimesFactor = this.bassFactor; // SCREAM-329: from now on
+    if (id === SPEEDY_ID) for (const people of this.residentsByMap.values()) people.speedyFactor = this.speedyFactor; // SCREAM-342: from now on
+    this.powerUpsSpentCents += note.priceCents;
+    this.changeMoney(-note.priceCents, 'Power-up');
+    return true;
+  }
+
+  /**
+   * SCREAM-312 (PO, November 14): in Story, each Lil Explorer Pop in a paid order earns an
+   * exploration tip that grows with the straight-line distance from home. Paid even when the
+   * customer leaves no normal tip. Measured at the customer's pickup square (where the truck is).
+   */
+  private payExplorationTip(sale: Sale): void {
+    const pops = sale.order.filter((line) => line.flavour === 'explorer').reduce((n, line) => n + line.count, 0);
+    const at = this.servingNow?.pickup;
+    if (!this.story || pops === 0 || !at) return;
+    const cents = pops * explorationTipCents(this.mapId, this.homeMapId, at[0], at[1]);
+    if (cents <= 0) return;
+    sale.explorationTipCents = cents;
+    this.explorationTotalCents += cents;
+    this.changeMoney(cents, 'Exploration tip');
+  }
+
   /** Tonight's breakdown for the results screen (#16). */
-  get breakdown(): { salesCents: number; tipsCents: number; stockCents: number; gasCents: number; damageCents: number } {
+  get breakdown(): { salesCents: number; tipsCents: number; spongePopCents: number; explorationCents: number; stockCents: number; gasCents: number; damageCents: number; powerUpsCents: number } {
     return {
       salesCents: this.salesTotalCents,
       tipsCents: this.tipsTotalCents,
+      spongePopCents: this.spongePopTotalCents, // SCREAM-313
+      explorationCents: this.explorationTotalCents, // SCREAM-312
       stockCents: this.stockSpentCents,
       gasCents: this.gasSpentCents,
       damageCents: this.damageTotalCents,
+      powerUpsCents: this.powerUpsSpentCents,
     };
   }
 
@@ -560,18 +826,45 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.ranOutOfGas;
   }
 
+  // SCREAM-122 (PO, November 13): the Temporary Gas Can. Owned for the rest of the run once
+  // bought, and full at the start of every evening; it pours itself in once an evening.
+  private gasCanReady = false;
+  private gasCansPoured = 0;
+
+  /** SCREAM-207: the "How To Drive" pop-up has been shown this evening (it shows once, on Day 1's first drive). */
+  howToDriveShown = false;
+
+  /** True while tonight's can is still full. */
+  get gasCanFull(): boolean {
+    return this.gasCanReady;
+  }
+
+  /** How many times the can has been poured in tonight (0 or 1). */
+  get gasCansUsed(): number {
+    return this.gasCansPoured;
+  }
+
   /**
    * Uses up the gas for driving this many px (forward or back). SCREAM-119 (PO, November 2):
    * when the tank runs empty, the evening ends (it used to let the truck crawl to the pumps).
+   * SCREAM-122: unless the Temporary Gas Can is full: then it pours itself in (a fifth of a
+   * tank), the evening carries on, and this returns true so the road can show the can.
    */
-  burnFuel(px: number): void {
-    if (this.ended || px <= 0) return;
+  burnFuel(px: number): boolean {
+    if (this.ended || px <= 0) return false;
     const before = this.fuelLeft;
-    this.fuelLeft = Math.max(0, this.fuelLeft - px / FUEL_TANK_PX);
+    this.fuelLeft = Math.max(0, this.fuelLeft - px / this.spec.fuelTankPx);
     if (before > 0 && this.fuelLeft <= 0) {
+      if (this.gasCanReady) {
+        this.gasCanReady = false;
+        this.gasCansPoured += 1;
+        this.fuelLeft = GAS_CAN_FILL;
+        return true;
+      }
       this.ranOutOfGas = true;
       this.endNow();
     }
+    return false;
   }
 
   /**
@@ -587,8 +880,22 @@ export class EveningState extends Phaser.Events.EventEmitter {
    * the $20 he has on him.
    */
   get unclePaysGas(): boolean {
-    return this.tutorial?.step === 'pump';
+    return this.tutorial?.step === 'pump' || this.uncleLeftGas;
   }
+
+  /**
+   * SCREAM-268 (PO, November 12): in Story, a player who didn't get the uncle's gas at his pump
+   * (On My Own, or he was skipped first) finds his $20 waiting at their first pump:
+   * "Your uncle left $20 for you to use." It is used up only when gas is bought with it.
+   */
+  get uncleLeftGas(): boolean {
+    return this.uncleGasLeft && (!this.tutorial || this.tutorial.skipped);
+  }
+
+  /** SCREAM-268: the uncle's $20 is still to come in this Story run. */
+  private uncleGasLeft: boolean;
+  /** SCREAM-268: the uncle's $20 was used tonight (StoryRun carries it on). */
+  uncleGasUsed = false;
 
   /**
    * The most gas the player can buy now, in cents: up to a full tank (SCREAM-184), and no more
@@ -607,12 +914,23 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!this.unclePaysGas) {
       this.gasSpentCents += cents;
       this.changeMoney(-cents, 'Gas');
+    } else {
+      this.uncleGasLeft = false;
+      this.uncleGasUsed = true;
     }
     this.tutorial?.signal('gasBought');
     return true;
   }
 
   // ---- Customers (#7, set for real by #12) ----
+
+  /**
+   * SCREAM-241: who else is waiting at the parked truck right now (set by the road when a sale starts);
+   * the window uses it to offer "Next Customer". Null before the first sale.
+   */
+  nextAtTruck: (() => ResidentNow | undefined) | null = null;
+  /** SCREAM-241: the player drove off (B) with people still waiting: the road serves nobody until the truck moves. */
+  windowShutUntilMoved = false;
 
   /** True while a customer is waiting at the window (issue #7: window only usable during a sale). */
   get customerWaiting(): boolean {
@@ -670,9 +988,23 @@ export class EveningState extends Phaser.Events.EventEmitter {
     }
     this.setCustomerWaiting(true);
     // SCREAM-218: an empty cooler (the HUD's SOLD OUT) is "sold out", not "too expensive".
-    this.saleNow = new Sale(generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize), this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
+    const refuse = (f: FlavourId) => this.refuseAboveCents(f);
+    let order = generateOrder(this.coolerSlots, Math.random, customer?.resident.orderSize, refuse);
+    // SCREAM-315 (PO, November 14): with a Chocolate Eclair in the cooler, every Story customer orders one more ice cream.
+    // SCREAM-354 (PO, November 15): of any kind they'd buy, not only an eclair.
+    if (this.story) order = withExtraIceCream(order, this.coolerSlots, Math.random, refuse);
+    this.saleNow = new Sale(order, this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
+    // SCREAM-334 (PO): a sale with a Two Ball Lou Ball pays double the tip, once, however many are in the order.
+    if (this.story && order.some((line) => line.flavour === 'louball')) {
+      this.saleNow.louBall = true;
+      this.saleNow.tipFactor *= LOU_BALL_TIP_FACTOR;
+    }
+    // SCREAM-335 (PO): a sale with a Drum Cone starts the drum solo once it is paid.
+    if (this.story && order.some((line) => line.flavour === 'drumcone')) this.saleNow.drumCone = true;
+    this.saleNow.tipSteps = this.saleTipSteps(this.saleNow.order, customer); // SCREAM-303, SCREAM-313
+    this.saleNow.spongePopPoints = this.spongePopPoints(this.saleNow.order, customer);
     this.lastSalePhase = this.saleNow.phase;
     this.emit(EveningEvents.SaleChanged);
     return this.saleNow;
@@ -730,7 +1062,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   /** Puts an ice cream in a square, or the first empty one if that's taken. Doesn't tidy up. */
   private placeInCell(cell: number, flavour: FlavourId): void {
-    const target = this.coolerCells[cell] === null ? cell : this.coolerCells.indexOf(null);
+    const target = this.coolerCells[cell] === null && this.cellOpen(cell) ? cell : this.firstEmptyCell();
     if (target >= 0) this.coolerCells[target] = flavour;
   }
 
@@ -743,9 +1075,18 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (sale.outcome?.kind === 'paid') {
       this.changeMoney(sale.outcome.priceCents, 'Sale');
       this.salesTotalCents += sale.outcome.priceCents;
-      if (sale.outcome.tipCents > 0) this.changeMoney(sale.outcome.tipCents, 'Tip');
-      this.tipsTotalCents += sale.outcome.tipCents;
-      this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents);
+      // SCREAM-313 (PO, November 14): the part of the tip a SpongePop earned is shown and counted on its own.
+      const sponge = sale.spongePopTipCents;
+      if (sale.outcome.tipCents - sponge > 0) this.changeMoney(sale.outcome.tipCents - sponge, 'Tip');
+      if (sponge > 0) this.changeMoney(sponge, 'SpongePop tip');
+      this.tipsTotalCents += sale.outcome.tipCents - sponge;
+      this.spongePopTotalCents += sponge;
+      this.payExplorationTip(sale); // SCREAM-312
+      // SCREAM-334: ...and the steering is reversed for 10 seconds of driving (a second sale starts them again).
+      if (sale.louBall) this.steeringReversedMs = LOU_BALL_REVERSED_SECONDS * 1000;
+      // SCREAM-335: ...and a Drum Cone's drum solo plays for 30 seconds of driving (a second sale starts them again).
+      if (sale.drumCone) this.drumSoloMs = DRUM_CONE_SOLO_SECONDS * 1000;
+      this.largestSaleTotalCents = Math.max(this.largestSaleTotalCents, sale.outcome.priceCents + sale.outcome.tipCents + sale.explorationTipCents);
       this.paidSales += 1;
       this.countVisit(sale); // SCREAM-145
       if (sale.outcome.tipCents > 0 && !sale.toldAboutRotary) this.maybeHint(sale);
@@ -776,6 +1117,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.forceHint = false;
     const pick = choices[Math.floor(Math.random() * choices.length)].resident;
     sale.addHint(pick.id, this.hintFor.get(pick.id)!);
+    this.writeDown(this.hintFor.get(pick.id)!); // SCREAM-245
     this.hintsGiven.push(pick.id);
     this.lastHintAtSale = this.paidSales;
   }
@@ -794,11 +1136,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const forced = this.forceScheduleLine || this.forceNeighbourLine;
     if (!forced && this.scheduleLinesSaid >= SCHEDULE_LINES_MAX_PER_EVENING) return;
     const everyDay = (me.days?.length ?? 0) >= 7;
-    const own = scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard);
+    // SCREAM-275: only special customers talk about their own week, and only special neighbours are talked about.
+    const own = isSpecialCustomer(me)
+      ? scheduleLineToday(this.scheduleLinesFor.get(me.id), me, this.story.day, STORY_DAYS, Math.random, this.scheduleLinesHeard)
+      : null;
     // SCREAM-248 (decision 065): or something about a neighbour on their street.
     const neighbour = neighbourLineToday(
       me,
-      this.residents.all.map((p) => p.resident),
+      this.residents.all.map((p) => p.resident).filter(isSpecialCustomer),
       this.neighbourLinesFor,
       this.story.day,
       STORY_DAYS,
@@ -815,10 +1160,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.forceNeighbourLine = false;
     if (aboutNeighbour) {
       sale.addNeighbourLine(neighbour!.about, neighbour!.text);
+      this.writeDown(neighbour!.text); // SCREAM-245
       this.neighboursToldAbout.push(neighbour!.about);
       this.scheduleLinesHeard.push(neighbour!.id);
     } else {
       sale.addScheduleLine(own!.text);
+      this.writeDown(own!.text); // SCREAM-245
       this.scheduleLinesHeard.push(own!.id);
     }
     this.scheduleLinesSaid += 1;
@@ -896,6 +1243,19 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.truckPosition;
   }
 
+  /** SCREAM-237: the street the truck was last on (the road view sets it whenever the truck is on a named street). */
+  streetNow = '';
+  /**
+   * SCREAM-237 (PO, November 15: "Street instead"): the street for Story's top bar. The last one
+   * the truck drove on; before it has driven tonight (home's driveway), the street nearest to it.
+   */
+  get street(): string {
+    if (this.streetNow) return this.streetNow;
+    const roads = roadsOf(this.mapId, MAPS[this.mapId].data);
+    const seg = roads.nearestSegment(this.truckPosition.x, this.truckPosition.y);
+    return seg ? (roads.names[seg.road] ?? '') : '';
+  }
+
   /** Remembers where the truck stopped, so driving resumes from the same place. */
   parkTruck(position: TruckPosition): void {
     this.truckPosition = { ...position };
@@ -930,6 +1290,39 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   endRestock(): void {
     this.restockingNow = false;
+  }
+
+  /**
+   * SCREAM-319 (PO, November 14): "When the player pulls into home ... it should be on the truck
+   * screen, not the cooler screen." Story (not the uncle's evening): a home stop opens the truck
+   * screen, where the cooler, the cork board and DRIVE are.
+   */
+  get homeOpensTruck(): boolean {
+    return this.clockWaitsForDrive;
+  }
+
+  /**
+   * SCREAM-321 (PO, November 14): "If the player is at very low speed, they can hit \"Tab\" and they
+   * will go to the inside truck view. They can see inventory at this time, but not purchase it. They
+   * can see powerups but not purchase them." Story, once the truck has set off. The clock runs.
+   */
+  get canPeek(): boolean {
+    return this.clockWaitsForDrive && this.prepLocked && !this.restockingNow && !this.ended;
+  }
+
+  startPeek(): boolean {
+    if (!this.canPeek) return false;
+    this.peekingNow = true;
+    return true;
+  }
+
+  endPeek(): void {
+    this.peekingNow = false;
+  }
+
+  /** True while looking inside the truck with Tab (SCREAM-321). */
+  get isPeeking(): boolean {
+    return this.peekingNow;
   }
 
   /** True while restocking at home (SCREAM-54). */
@@ -969,7 +1362,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     });
     // SCREAM-131/132: the squares as the player arranged them.
     order.layout.forEach((f, i) => {
-      this.coolerCells[i] = f;
+      this.coolerCells[i] = this.cellOpen(i) ? f : null;
     });
     this.syncCells();
     if (cost !== 0) this.changeMoney(-cost, 'Stock', false);

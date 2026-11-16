@@ -25,6 +25,12 @@ export class CoolerOrder {
   private readonly owned: readonly Readonly<CoolerSlot>[];
   private readonly cash: () => number;
   private readonly draft: CoolerCell[];
+  /** SCREAM-269: how many squares can be used (in Story half of every crate is covered to start). */
+  readonly capacity: number;
+  /** SCREAM-269: whether a square can be used. */
+  private readonly open: (cell: number) => boolean;
+  /** SCREAM-343: the highest price Today's Menu allows for a flavour (in Story, the price on its cork board note). */
+  private readonly topPrice: (flavour: FlavourId) => number;
   /** The squares holding this draft's picks, in the order they were picked. */
   private picked: number[] = [];
   private moved = false;
@@ -37,16 +43,20 @@ export class CoolerOrder {
    * `owned` is the cooler's stock as it is now, `cells` where each of those ice creams sits,
    * `cash` reads the player's current cash.
    */
-  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = []) {
+  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], open: (cell: number) => boolean = () => true, topPrice: (flavour: FlavourId) => number = () => MAX_PRICE_CENTS) {
+    this.open = open;
+    this.topPrice = (flavour) => Math.min(MAX_PRICE_CENTS, topPrice(flavour));
+    this.capacity = Array.from({ length: COOLER_CAPACITY }, (_, i) => i).filter((i) => open(i)).length;
     this.owned = owned.map((s) => ({ ...s }));
     this.cash = cash;
-    this.slots = owned.map((s) => ({ ...s }));
+    // SCREAM-343: a price above the top (an old save's, say) is brought down when the cooler opens.
+    this.slots = owned.map((s) => ({ ...s, priceCents: Math.min(s.priceCents, this.topPrice(s.flavour)) }));
     this.draft = Array.from({ length: COOLER_CAPACITY }, (_, i) => {
-      const f = cells[i] ?? null;
+      const f = open(i) ? (cells[i] ?? null) : null;
       return f ? { flavour: f, paid: true } : null;
     });
     // Start on the first crate with room.
-    const firstEmpty = this.draft.indexOf(null);
+    const firstEmpty = this.draft.findIndex((c, i) => c === null && open(i));
     this.crate = firstEmpty < 0 ? 0 : Math.floor(firstEmpty / CRATE_CELLS);
   }
 
@@ -67,7 +77,7 @@ export class CoolerOrder {
 
   /** True when every square is taken. */
   get isFull(): boolean {
-    return this.total >= COOLER_CAPACITY;
+    return this.total >= this.capacity;
   }
 
   /** What Buy Stock will charge: only what's been picked in this draft. */
@@ -118,7 +128,7 @@ export class CoolerOrder {
     for (let step = 0; step < crates && target < 0; step++) {
       const crate = (this.crate + step) % crates;
       for (let i = crate * CRATE_CELLS; i < (crate + 1) * CRATE_CELLS; i++) {
-        if (this.draft[i] === null) {
+        if (this.draft[i] === null && this.open(i)) {
           target = i;
           this.crate = crate;
           break;
@@ -155,7 +165,7 @@ export class CoolerOrder {
 
   /** SCREAM-132: moves an ice cream to another square, swapping with whatever is there. */
   move(from: number, to: number): boolean {
-    if (from === to || from < 0 || to < 0 || from >= COOLER_CAPACITY || to >= COOLER_CAPACITY) return false;
+    if (from === to || from < 0 || to < 0 || from >= COOLER_CAPACITY || to >= COOLER_CAPACITY || !this.open(to)) return false;
     const a = this.draft[from] ?? null;
     if (!a) return false;
     const b = this.draft[to] ?? null;
@@ -171,9 +181,15 @@ export class CoolerOrder {
     const slot = this.slot(flavour);
     if (!slot) return false;
     const next = slot.priceCents + deltaCents;
-    if (next < MIN_PRICE_CENTS || next > MAX_PRICE_CENTS) return false;
+    if (next < MIN_PRICE_CENTS || next > this.topPrice(flavour)) return false;
     slot.priceCents = next;
     return true;
+  }
+
+  /** SCREAM-343: true when this flavour's price can't go up another step (the + button is greyed). */
+  atTopPrice(flavour: FlavourId, stepCents: number): boolean {
+    const slot = this.slot(flavour);
+    return !slot || slot.priceCents + stepCents > this.topPrice(flavour);
   }
 
   private refuse(reason: 'full' | 'cash'): false {

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import { SceneKeys } from '../flow';
 import { currentMap } from '../config/maps';
+import type { GameMap } from '../config/maps';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { addMapOverview, loadMapOverview } from '../ui/mapOverview';
 import { musicFor } from '../audio/Music';
@@ -10,6 +11,12 @@ import { formatMoney } from '../util/format';
 /** SCREAM-178 (PO, November 5): the ice cream truck tune that plays with the credits (see public/assets/audio/README.md). */
 export const CREDITS_TUNE_KEY = 'credits-tune';
 const CREDITS_TUNE_URL = 'assets/audio/credits-tune.mp3';
+
+/** Queues the credits' map and tune if they aren't loaded yet (its own preload, and SCREAM-243's loading ahead). */
+export function loadCreditsArt(scene: Phaser.Scene, map: GameMap): void {
+  loadMapOverview(scene, map);
+  if (!scene.cache.audio.exists(CREDITS_TUNE_KEY)) scene.load.audio(CREDITS_TUNE_KEY, CREDITS_TUNE_URL);
+}
 const CREDITS_TUNE_VOLUME = 0.7;
 
 /**
@@ -76,8 +83,7 @@ export class TutorialCrawlScene extends Phaser.Scene {
   }
 
   preload(): void {
-    loadMapOverview(this, currentMap());
-    if (!this.cache.audio.exists(CREDITS_TUNE_KEY)) this.load.audio(CREDITS_TUNE_KEY, CREDITS_TUNE_URL);
+    loadCreditsArt(this, currentMap());
     showLoadingWhileLoading(this);
   }
 
@@ -128,11 +134,13 @@ export class TutorialCrawlScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', () => this.finish());
 
-    // The tune, unless the player has muted the music (M). It pauses with the game (Esc), and
-    // fades out once the uncle appears (UncleIntroScene), however the credits ended.
+    // The tune. It pauses with the game (Esc), and fades out once the uncle appears
+    // (UncleIntroScene), however the credits ended. SCREAM-186: it plays muted when the music is
+    // muted, and M mutes or unmutes it like the music.
     this.sound.stopByKey(CREDITS_TUNE_KEY);
-    if (!musicFor(this).muted) {
+    {
       const tune = this.sound.add(CREDITS_TUNE_KEY, { volume: CREDITS_TUNE_VOLUME });
+      musicFor(this).follow(tune as Phaser.Sound.WebAudioSound);
       tune.play();
       const pause = () => tune.pause();
       const resume = () => tune.resume();

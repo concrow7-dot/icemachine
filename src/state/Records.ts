@@ -49,5 +49,5 @@ export function offerLargestSale(table: ScoreTable, cents: number, date = new Da
 export function largestSaleLine(cents: number, record: { before: number; isNew: boolean }, formatMoney: (c: number) => string): string {
   if (cents <= 0) return 'Largest sale: none yet';
   if (record.isNew) return `Largest sale: ${formatMoney(cents)}  NEW RECORD!`;
-  return `Largest sale: ${formatMoney(cents)}  (record ${formatMoney(record.before)})`;
+  return `Largest sale: ${formatMoney(cents)}  (Record ${formatMoney(record.before)})`;
 }

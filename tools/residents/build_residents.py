@@ -28,7 +28,10 @@ and optionally Order size, Hinted, Mon to Sun (TRUE or FALSE: home that day, in 
 From and Until (SCREAM-249: the hours of the evening they're home, in Story; blank = all evening),
 and Hard to find (SCREAM-250: Yes = they always come out in their short From-Until window, tip 4
 times as much, and at other times go by their Likelihood, which should be tiny; needs From and Until).
-Street is for reading only: it comes from the house. House is a number from 1 to the
+Street (SCREAM-353, PO, November 15) is the street the game says they live on: in hints,
+schedule lines and who counts as a neighbour. It must be a street on that map; left blank,
+it is the street nearest the top of their house (how the column was first filled in). It
+does not move the house, door, yard or curb spot. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
 
@@ -225,6 +228,9 @@ def read_csv():
             bad('Order size must be blank or a whole number from 1 to 12')
         person = {'id': rid, 'name': (r['Name'] or '').strip(), 'kid': age == 'kid', 'house': house,
                   'likelihood': likely / 100, 'look': look}
+        # SCREAM-353 (PO, November 15): the sheet's Street is the street the game uses.
+        if (r.get('Street') or '').strip():
+            person['street'] = r['Street'].strip()
         if size:
             person['orderSize'] = int(size)
         # SCREAM-103 (PO, November 8): an optional "Hinted" column: Yes means other customers
@@ -269,6 +275,15 @@ def read_csv():
             if not person.get('days'):
                 bad('Hard to find needs at least one ticked day')
             person['hardToFind'] = True
+        # SCREAM-342 (PO, November 15): an optional "Fast" column: Yes = a kid who is fast and
+        # follows the truck anywhere (other kids give up after a while). Kids only.
+        fast = (r.get('Fast') or '').strip().lower()
+        if fast not in ('', 'yes', 'no'):
+            bad('Fast must be Yes or blank')
+        if fast == 'yes':
+            if age != 'kid':
+                bad('Fast is for kids only')
+            person['fast'] = True
         out.append(person)
     return out
 
@@ -501,6 +516,7 @@ def place(m, people, index):
     # SCREAM-158: a hand-made map (Tiled) keeps each house's own number, gaps and all.
     numbers = m.get('houseNumbers') or list(range(1, len(houses) + 1))
     by_number = dict(zip(numbers, houses))
+    street_names = {r['name'] for r in m['roads'] if not r.get('ring')}
     out = []
     for p in people:
         if p['house'] not in by_number:
@@ -510,14 +526,19 @@ def place(m, people, index):
         # change to one person's yard no longer shifts everyone listed after them.
         door, pts = yard(m, segs, h, blocks, random.Random(f'73-{p["id"]}'))
         spot = curb(m, segs, door, blocks)
-        out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street_of(streets, h),
+        # SCREAM-353: the sheet's Street, if it names a street on this map; else the one nearest the house.
+        street = p.get('street') or street_of(streets, h)
+        if street not in street_names:
+            sys.exit(f'{p["id"]} {p["name"]}: "{street}" is not a street on this map ({", ".join(sorted(street_names))})')
+        out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': street,
                     'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
                     'door': door, 'yard': pts, 'curb': spot,
                     **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
                     **({'hinted': True} if p.get('hinted') else {}),
                     **({'days': p['days']} if 'days' in p else {}),
                     **({'hours': p['hours']} if 'hours' in p else {}),
-                    **({'hardToFind': True} if p.get('hardToFind') else {})})
+                    **({'hardToFind': True} if p.get('hardToFind') else {}),
+                    **({'fast': True} if p.get('fast') else {})})
     return out
 
 

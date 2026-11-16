@@ -2,6 +2,7 @@ import { FLAVOURS, type FlavourId } from '../config/flavours';
 import type { CoolerSlot } from './EveningState';
 import type { RunTotals } from './StoryRun';
 import { FUEL_STORY_START } from '../config/tuning';
+import { readNotebook, type NotebookEntry } from './Notebook';
 
 // SCREAM-17 (PO, October 31): Story mode is saved in the browser, the same way
 // high scores are (decision 004): no accounts, and clearing the browser's data
@@ -26,6 +27,12 @@ export type StorySave = {
   /** SCREAM-145: paid sales per resident so far, and whether a regular has told the roundabout's trick. */
   visits?: Record<string, number>;
   rotaryHintGiven?: boolean;
+  /** SCREAM-268: the uncle's $20 of gas has been used (at his pump, or at the first pump on your own). */
+  uncleGasUsed?: boolean;
+  /** SCREAM-296: the power-ups owned (the cork board's note ids). Saves from before it have none. */
+  powerUps?: string[];
+  /** SCREAM-245: the Handy Notebook's entries (oldest first). Saves from before it have none. */
+  notebook?: NotebookEntry[];
 };
 
 /**
@@ -74,12 +81,18 @@ export function loadStory(): StorySave | null {
           ? Object.fromEntries(Object.entries(data.visits as Record<string, unknown>).filter(([, v]) => Number.isInteger(v) && (v as number) > 0) as [string, number][])
           : undefined,
       rotaryHintGiven: data.rotaryHintGiven === true,
+      uncleGasUsed: data.uncleGasUsed === true,
+      powerUps: Array.isArray(data.powerUps) ? data.powerUps.filter((id): id is string => typeof id === 'string') : undefined,
+      notebook: readNotebook(data.notebook),
       totals: {
         salesCents: cents(t.salesCents),
         tipsCents: cents(t.tipsCents),
+        explorationCents: cents(t.explorationCents), // SCREAM-312: 0 in older saves
+        spongePopCents: cents(t.spongePopCents), // SCREAM-313: 0 in older saves
         stockCents: cents(t.stockCents),
         gasCents: cents(t.gasCents),
         damageCents: cents(t.damageCents),
+        powerUpsCents: cents(t.powerUpsCents),
         largestSaleCents: cents(t.largestSaleCents),
       },
     };
