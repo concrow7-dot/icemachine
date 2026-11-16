@@ -755,3 +755,21 @@ export const PARK_HOME_WALK_MINUTES = 20;
 export const PARK_LEAVE_SPEED = 22;
 /** People at the park pick a spot at least this far (px) from anyone else's. */
 export const PARK_SPOT_GAP = 12;
+
+// ---- SCREAM-182 (PO, November 6, his drawing "Customer Likelihood"; built November 16): Story's curve ----
+// Once someone hears the truck, their chance of coming out rises, peaks, then fades over 30 seconds.
+// His answer (November 15): "Height and peak time" change per customer: their Likelihood sets the
+// height (as before) and each person's peak comes a little earlier or later.
+/**
+ * The curve's shape, from his drawing: [seconds heard, height], height 1 = the top of his graph.
+ * It starts partway up, peaks at about 7 seconds and fades to just above nothing by 30.
+ */
+export const CUSTOMER_CURVE_POINTS: readonly (readonly [number, number])[] = [[0, 0.45], [7, 0.93], [15, 0.35], [22, 0.12], [30, 0.03]];
+/**
+ * The chance each second at height 1, before Likelihood (engineering's call): picked so that, over
+ * the 30 seconds, as many people come out as with the old falling chance (decisions 033, 034 cut the
+ * numbers on purpose). Only when they come out changes.
+ */
+export const CUSTOMER_CURVE_SCALE = 0.1125;
+/** Each resident's peak comes up to this many seconds earlier or later than the drawing's 7 (the same for them every evening). */
+export const CUSTOMER_CURVE_PEAK_SPREAD = 2;

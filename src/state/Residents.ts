@@ -41,6 +41,9 @@ import {
   BUYERS_INSIDE_SECONDS,
   BUYERS_OUTSIDE_SECONDS,
   BUYERS_START_OUTSIDE_CHANCE,
+  CUSTOMER_CURVE_POINTS,
+  CUSTOMER_CURVE_SCALE,
+  CUSTOMER_CURVE_PEAK_SPREAD,
   PARK_VISITORS_TONIGHT,
   PARK_STAY_LATE,
   PARK_LEAVE_MINUTES,
@@ -330,6 +333,44 @@ export function customerChance(heard: number, likelihood: number, indoors: boole
   return base * likelihood * indoorsFactor;
 }
 
+/**
+ * SCREAM-182 (PO, November 6, his drawing; "Height and peak time", November 15): in Story, the chance
+ * in a second that someone who has heard the truck for `heard` seconds wants ice cream. It rises to a
+ * peak at `peakAt` seconds, then fades by CUSTOMER_DECIDE_SECONDS (the shape is CUSTOMER_CURVE_POINTS,
+ * stretched so its peak comes at `peakAt`); times CUSTOMER_CURVE_SCALE, their likelihood, and halved
+ * indoors. Regulars keep their steady chance (decision 034): see `customerChance`.
+ */
+export function curveChance(heard: number, likelihood: number, indoors: boolean, peakAt: number): number {
+  if (heard > CUSTOMER_DECIDE_SECONDS) return 0;
+  const pts = CUSTOMER_CURVE_POINTS;
+  const drawnPeak = pts.reduce((best, p) => (p[1] > best[1] ? p : best))[0];
+  const end = pts[pts.length - 1]![0];
+  const at = (t: number) => (t <= drawnPeak ? (t * peakAt) / drawnPeak : peakAt + ((t - drawnPeak) * (end - peakAt)) / (end - drawnPeak));
+  let height = pts[pts.length - 1]![1];
+  for (let i = 0; i + 1 < pts.length; i++) {
+    const a = at(pts[i]![0]);
+    const b = at(pts[i + 1]![0]);
+    if (heard >= a && heard <= b) {
+      height = pts[i]![1] + ((pts[i + 1]![1] - pts[i]![1]) * (heard - a)) / (b - a || 1);
+      break;
+    }
+  }
+  return height * CUSTOMER_CURVE_SCALE * likelihood * (indoors ? CUSTOMER_INDOORS_FACTOR : 1);
+}
+
+/** SCREAM-182: when this resident's curve peaks, in seconds heard: the drawing's peak, nudged by their ID (the same every evening). */
+export function peakTimeOf(id: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  // Mixed well, so IDs that differ only in their last digit still get different peaks.
+  h = Math.imul(h ^ (h >>> 16), 2246822507);
+  h = Math.imul(h ^ (h >>> 13), 3266489909);
+  h ^= h >>> 16;
+  const spread = ((h >>> 0) / 4294967296) * 2 - 1;
+  const drawnPeak = CUSTOMER_CURVE_POINTS.reduce((best, p) => (p[1] > best[1] ? p : best))[0];
+  return drawnPeak + spread * CUSTOMER_CURVE_PEAK_SPREAD;
+}
+
 /** SCREAM-148 / 152 (PO, November 3): sometimes buyers and regulars are outside about 3/4 of the time; never buyers as before. */
 function routineFor(resident: Resident, story?: { day: number; seed: number }): {
   startOutside: number;
@@ -348,6 +389,9 @@ export class Residents {
   private sinceRoll = 0;
   /** The chance formula, for the browser tests. */
   static readonly chance = customerChance;
+  /** SCREAM-182: Story's curve and each resident's peak, for the browser tests. */
+  static readonly curveChance = curveChance;
+  static readonly peakTimeOf = peakTimeOf;
   /** SCREAM-148: the buyer kinds, for the browser tests. */
   static readonly kind = buyerKind;
   static readonly buysTonight = buysTonight;
@@ -769,7 +813,9 @@ export class Residents {
       if (!inRing || !ring?.open || this.hearingOff || !p.buys || p.decided) continue;
       const regular = this.kindOf(p.resident) === 'regular';
       const likelihood = this.likelihoodNow(p.resident);
-      if (this.rnd() < customerChance(p.heard, likelihood, indoors, regular)) this.wantIceCream(p);
+      // SCREAM-182: in Story the chance rises to a peak, then fades (regulars stay steady).
+      const chance = this.story && !regular ? curveChance(p.heard, likelihood, indoors, peakTimeOf(p.resident.id)) : customerChance(p.heard, likelihood, indoors, regular);
+      if (this.rnd() < chance) this.wantIceCream(p);
       else if (p.heard >= CUSTOMER_DECIDE_SECONDS) p.decided = true;
     }
   }
