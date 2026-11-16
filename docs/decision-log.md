@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 160 — Closing the truck for business (withdrawn before it was merged) (2026-11-16)
+
+**Decision (Jira SCREAM-233, PO, November 10; built November 16 as PR #272, never merged):** "Allow the truck to shut down for business while driving around." His answers: "Separate Closed sign" (C and a CLOSE / OPEN FOR BUSINESS button; the music kept playing), customers on their way "turn back home", "Top bar only".
+
+**Withdrawn (Jira SCREAM-367, PO, November 16, 01:48):** "I want to remove the close and close for business mechanic", while testing it. Asked how, he chose "Drop #272 and #275": both pull requests were closed unmerged, so it never reached main. Decision 163 (C in the line of keys, SCREAM-362, PR #275) went with it.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+## 163 — "C Close" in the line of keys (withdrawn before it was merged) (2026-11-16)
+
+**Decision (Jira SCREAM-362, PO, November 16, 01:14):** "Add the closed for business C button to the regular menu." Built as PR #275; closed unmerged with decision 160 (SCREAM-367).
+
 ## 159 — The uncle pays for the whole first tank of gas (2026-11-15)
 
 **Decision (Jira SCREAM-360, under SCREAM-5, PO, November 15, 23:06):** "New high priority ticket: The uncle pays for the whole first tank of gas." Before, he paid up to $20 (decision 040's pump stop, SCREAM-173), and a full tank costs $30, so his money never filled it.
