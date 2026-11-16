@@ -44,6 +44,7 @@ import {
   CUSTOMER_CURVE_POINTS,
   CUSTOMER_CURVE_SCALE,
   CUSTOMER_CURVE_PEAK_SPREAD,
+  RESIDENT_CAR_ARRIVE_CLEAR,
   PARK_VISITORS_TONIGHT,
   PARK_STAY_LATE,
   PARK_LEAVE_MINUTES,
@@ -109,6 +110,11 @@ export interface Resident {
    * Their `door` is where they walk off the map, their `yard` and `curb` are the park's.
    */
   visitor?: boolean;
+  /**
+   * SCREAM-252 (PO, November 15): the sheet's "Car": where their car parks on the street in front of
+   * their house, [x, y, the road's angle], while they are home (Story).
+   */
+  car?: [number, number, number];
 }
 
 /** SCREAM-249: whether a resident with hours is home at this time (minutes since midnight). No hours = always. */
@@ -676,6 +682,55 @@ export class Residents {
     return this.people.filter((p) => p.atPark && !p.leaving && p.outside && (p.customer === 'none' || p.customer === 'done'));
   }
 
+  /** SCREAM-252: the ids of the residents whose car is on the street right now. */
+  private readonly carsOut = new Set<string>();
+  private carsStarted = false;
+
+  /**
+   * SCREAM-252 (PO, November 15): whether this resident's car should be on the street now: Story, a
+   * day they are home (ticked), and inside their From and Until. Engineering's call: a car stays out
+   * while they are at the park (they walked), and goes once they leave for the evening.
+   */
+  carWanted(r: Resident): boolean {
+    if (!r.car || !this.story || !this.carsOn) return false;
+    if (!(r.days?.includes(weekdayOf(this.story.day)) ?? false)) return false;
+    if (r.park && !r.visitor) return true;
+    return this.homeNow(r);
+  }
+  /** SCREAM-252: false in the uncle's evening and outside Story (EveningState sets it). */
+  carsOn = false;
+
+  /** SCREAM-252: the residents' cars on the street now, with a colour number for each owner. */
+  get carsNow(): { x: number; y: number; angle: number; colour: number; id: string }[] {
+    const out: { x: number; y: number; angle: number; colour: number; id: string }[] = [];
+    for (const p of this.people) {
+      const c = p.resident.car;
+      if (c && this.carsOut.has(p.resident.id)) out.push({ x: c[0], y: c[1], angle: c[2], colour: colourOf(p.resident.id), id: p.resident.id });
+    }
+    return out;
+  }
+
+  /**
+   * SCREAM-252: cars come and go with their owners. At the start of the evening they are simply there;
+   * later a car only pulls up when the truck and any waiting customer's pink square are well clear of it.
+   */
+  private moveCars(): void {
+    for (const p of this.people) {
+      const r = p.resident;
+      if (!r.car) continue;
+      const want = this.carWanted(r);
+      const out = this.carsOut.has(r.id);
+      if (!want && out) this.carsOut.delete(r.id);
+      if (want && !out) {
+        const [x, y] = r.car;
+        const truckClear = !this.truck || Math.hypot(this.truck[0] - x, this.truck[1] - y) > RESIDENT_CAR_ARRIVE_CLEAR;
+        const squaresClear = this.people.every((o) => o.customer !== 'waiting' || Math.hypot(o.pickup[0] - x, o.pickup[1] - y) > RESIDENT_CAR_ARRIVE_CLEAR / 2);
+        if (!this.carsStarted || (truckClear && squaresClear)) this.carsOut.add(r.id);
+      }
+    }
+    this.carsStarted = true;
+  }
+
   /** Everyone, inside or out, in the sheet's order. */
   get all(): readonly ResidentNow[] {
     return this.people;
@@ -693,6 +748,7 @@ export class Residents {
   update(dt: number, ring?: Ring): void {
     this.now += dt;
     if (ring) this.truck = [ring.x, ring.y];
+    this.moveCars(); // SCREAM-252
     if (ring?.soldOut) this.sendHomeSoldOut();
     this.sinceRoll += dt;
     while (this.sinceRoll >= 1) {
@@ -1119,6 +1175,13 @@ export class Residents {
     const i = Math.floor(this.rnd() * n);
     return [r.yard[i * 2], r.yard[i * 2 + 1]];
   }
+}
+
+/** SCREAM-252: a colour number for a resident's car, the same for them every time. */
+function colourOf(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 function facingFor(dx: number, dy: number): ResidentFacing {

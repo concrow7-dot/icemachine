@@ -3,7 +3,7 @@ import { defaultPriceCents, FLAVOURS, getFlavour, type FlavourId } from '../conf
 import type { CoolerOrder } from './CoolerOrder';
 import { generateOrder, orderTotalCents, Sale, withExtraIceCream, type OrderLine } from './Sale';
 import { explorationTipCents } from './ExplorationTip';
-import { MAPS, currentMap, setCurrentMap, type MapId } from '../config/maps';
+import { MAPS, currentMap, fixedParkedCars, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
   BASS_SOMETIMES_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
@@ -102,11 +102,12 @@ function roadsOf(id: MapId, map: WorcesterMap): RoadNetwork {
   if (!roads) ROAD_NETWORKS.set(id, (roads = new RoadNetwork(map.roads, map.roadMask)));
   return roads;
 }
-function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork) {
+function pinkSquareFitsOn(map: WorcesterMap, roads: RoadNetwork, cars: () => readonly { x: number; y: number }[] = () => map.parkedCars) {
   return (x: number, y: number, road: number): boolean => {
     if (!roads.onRoad(x, y) || roads.nearestSegment(x, y)?.road !== road) return false;
     const near = (a: { x: number; y: number }, d: number) => Math.hypot(a.x - x, a.y - y) < d;
-    if (map.parkedCars.some((c) => near(c, PINK_CLEAR_CAR))) return false;
+    // SCREAM-252: the cars on the street now (the map's own, and residents' while they're home).
+    if (cars().some((c) => near(c, PINK_CLEAR_CAR))) return false;
     if (map.gasStations.some((g) => near(g.bay, PINK_CLEAR_BAY)) || near(map.homeStart, PINK_CLEAR_BAY)) return false;
     return true;
   };
@@ -401,7 +402,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!people) {
       const map = MAPS[id];
       const roads = roadsOf(id, map.data);
-      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads)), this.story);
+      const cars = () => [...fixedParkedCars(map), ...(this.residentsByMap.get(id)?.carsNow ?? [])]; // SCREAM-252
+      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story);
+      people.carsOn = !!this.story && !this.tutorial; // SCREAM-252: Story, not the uncle's evening
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
       people.sometimesFactor = this.bassFactor; // SCREAM-329

@@ -34,7 +34,8 @@ it is the street nearest the top of their house (how the column was first filled
 does not move the house, door, yard or curb spot. Park (SCREAM-224, PO, November 15; the
 tutorial map, Elm Park, only): Yes with no House = a park visitor, who lives in none of the
 houses and is only ever at the park (the basketball court and the playground); Yes with a House
-and a From time = a resident who is at the park until they come home. House is a number from 1 to the
+and a From time = a resident who is at the park until they come home. Car (SCREAM-252, PO, November 15; Elm Park only): Yes = they have a car, parked on the street
+in front of their house while they are home (Story); it needs a House. House is a number from 1 to the
 number of houses (home not included). Look is any whole number; each one picks a
 different combination of body, eyes, outfit, hair and accessory.
 
@@ -326,6 +327,17 @@ def read_csv():
             if age != 'kid':
                 bad('Fast is for kids only')
             person['fast'] = True
+        # SCREAM-252 (PO, November 15): an optional "Car" column: Yes = their car is parked on the
+        # street in front of their house while they are home, in Story.
+        car = (r.get('Car') or '').strip().lower()
+        if car not in ('', 'yes', 'no'):
+            bad('Car must be Yes or blank')
+        if car == 'yes':
+            if visitor:
+                bad('a park visitor has no house, so no car')
+            if not TUTORIAL:
+                bad('Car is only for the Elm Park tab for now')
+            person['car'] = True
         out.append(person)
     return out
 
@@ -595,7 +607,60 @@ def place(m, people, index):
         if p.get('park'):
             pk = park_of(m, segs, blocks, p)
             out[-1]['park'] = {'spots': pk['spots'], 'exit': pk['exit'], 'curb': pk['curb']}
+    # SCREAM-252: each car's spot, once every pink square is known (cars keep clear of all of them).
+    wants = {p['id'] for p in people if p.get('car')}
+    squares = [(o['curb'][2], o['curb'][3]) for o in out] + [(o['park']['curb'][2], o['park']['curb'][3]) for o in out if o.get('park')]
+    cars = []
+    for o in out:
+        if o['id'] in wants:
+            o['car'] = car_spot(m, o, squares, cars)
+            cars.append(o['car'])
     return out
+
+
+CAR_GAP = 82          # a car's centre from any pink square (the game's PINK_CLEAR_CAR is 80) and from the next car
+CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
+
+
+def car_spot(m, r, squares, cars):
+    """SCREAM-252: where a resident's car parks: in the curb lane on their own curb spot's street,
+    a little along from their pink square (so the truck can still pull in there), clear of every
+    pink square, other cars, junctions, the pump bays and home's driveway. [x, y, angle]."""
+    sx, sy, ang = r['curb'][2], r['curb'][3], r['curb'][4]
+    tx, ty = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+    segs_all = [(ri, rd['points'][i], rd['points'][i + 1], rd['points'][i + 2], rd['points'][i + 3])
+                for ri, rd in enumerate(m['roads']) for i in range(0, len(rd['points']) - 2, 2)]
+    # A street can be in the map as more than one road (Institute Road is two): go by its name.
+    own = m['roads'][min(segs_all, key=lambda sg: seg_dist(sx, sy, *sg[1:])[0])[0]]['name']
+    mask = m['roadMask']
+
+    def on_asphalt(px, py):
+        runs = mask['rows'][int(py // mask['scale'])] if 0 <= py < len(mask['rows']) * mask['scale'] else []
+        col = int(px // mask['scale'])
+        return any(runs[k] <= col < runs[k + 1] for k in range(0, len(runs), 2))
+
+    for slide in [d * k for k in range(90, 410, 10) for d in (1, -1)]:  # nearest first, either way along the street
+        x, y = sx + tx * slide, sy + ty * slide
+        # The whole car on the asphalt (its four corners).
+        hl, hw = 30, 18
+        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-hw, hw)]
+        if not all(on_asphalt(*c) for c in corners):
+            continue
+        if m['roads'][min(segs_all, key=lambda sg: seg_dist(x, y, *sg[1:])[0])[0]]['name'] != own:
+            continue
+        # Out of junctions: well clear of every other street's asphalt.
+        if any(m['roads'][ri]['name'] != own and seg_dist(x, y, *sg)[0] < half_of(m["roads"][ri]) + CAR_JUNCTION for ri, *sg in segs_all):
+            continue
+        if any(math.dist((x, y), q) < CAR_GAP for q in squares):
+            continue
+        if any(math.dist((x, y), (c[0], c[1])) < CAR_GAP for c in cars):
+            continue
+        if any(math.dist((x, y), (g['bay']['x'], g['bay']['y'])) < BAY_CLEAR + 20 for g in m.get('gasStations', [])):
+            continue
+        if math.dist((x, y), (m['homeStart']['x'], m['homeStart']['y'])) < BAY_CLEAR + 20:
+            continue
+        return [round(x, 1), round(y, 1), ang]
+    sys.exit(f'{r["id"]} {r["name"]}: no room for their car on {r["street"]} near their pink square')
 
 
 def park_of(m, segs, blocks, p):
@@ -682,7 +747,7 @@ def check():
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1
             continue
-        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours', 'hardToFind', 'orderSize', 'park', 'visitor') if old.get(k) != r.get(k)]
+        diffs = [k for k in ('street', 'door', 'yard', 'curb', 'days', 'hours', 'hardToFind', 'orderSize', 'park', 'visitor', 'car') if old.get(k) != r.get(k)]
         if diffs:
             moved += 1
             what = ', '.join(f'street {old.get("street")} -> {r["street"]}' if k == 'street' else k for k in diffs)
