@@ -136,7 +136,7 @@ const PINK_CLEAR_BAY = 100;
 
 export class EveningState extends Phaser.Events.EventEmitter {
   private elapsedMs = 0;
-  /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
+  /** #66: the evening opens at the cooler with the clock stopped at 4:00 PM (SCREAM-371); it starts when you leave the cooler. */
   private clockRunning = false;
   private ended = false;
   /** SCREAM-119: the evening ended because the tank ran empty. */
@@ -527,12 +527,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   // ---- Clock (#5) ----
 
-  /** How far through the evening we are, from 0 (5pm) to 1 (8pm). */
+  /** How far through the evening we are, from 0 (4pm) to 1 (8pm). */
   get progress(): number {
     return Math.min(this.elapsedMs / this.lengthMs, 1);
   }
 
-  /** Current in-game time as minutes since midnight (5pm = 1020). */
+  /** Current in-game time as minutes since midnight (4pm = 960). */
   get clockMinutes(): number {
     const startMinutes = EVENING_START_HOUR * 60;
     const spanMinutes = (EVENING_END_HOUR - EVENING_START_HOUR) * 60;

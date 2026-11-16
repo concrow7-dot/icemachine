@@ -103,10 +103,10 @@ const { chromium } = require('playwright');
   const yesAt = await sc('Pause', '[s.answers[0].x, s.answers[0].y]');
   const b2 = await (await page.$('canvas')).boundingBox();
   await page.mouse.click(b2.x + yesAt[0], b2.y + yesAt[1]); await wait(400);
-  check('Clicking Yes restarts', (await scenes()) + ' ' + Math.floor(await ev('e.clockMinutes')), 'Cooler,Hud 1020');
+  check('Clicking Yes restarts', (await scenes()) + ' ' + Math.floor(await ev('e.clockMinutes')), 'Cooler,Hud 960');
   await wait(300); await press('+'); await press('Enter'); await wait(300); await press('Escape'); await press('ArrowDown', 2);
   await press('Enter'); await press('y'); await wait(400);
-  check('Y (shortcut): a brand-new evening (cooler, 5:00 PM, $50, menu gone)', [await scenes(), Math.floor(await ev('e.clockMinutes')), await ev('e.moneyCents')].join(' '), 'Cooler,Hud 1020 5000');
+  check('Y (shortcut): a brand-new evening (cooler, 4:00 PM, $50, menu gone)', [await scenes(), Math.floor(await ev('e.clockMinutes')), await ev('e.moneyCents')].join(' '), 'Cooler,Hud 960 5000');
   check('...and the restarted evening saved no high score', await scoresSaved(), 0);
 
   // ---- Quit ----

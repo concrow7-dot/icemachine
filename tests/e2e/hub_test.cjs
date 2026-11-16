@@ -24,7 +24,7 @@ const { chromium } = require('playwright');
   check('Enter on title opens the cooler first (#66)', await scenes(), 'Cooler,Hud');
   const clockAt = async () => page.evaluate(() => window.__game.registry.get('evening').clockMinutes);
   const k0 = await clockAt(); await wait(1200);
-  check('...with the clock waiting at 5:00 PM', (await clockAt()) === k0 && Math.floor(k0) === 1020, true);
+  check('...with the clock waiting at 4:00 PM', (await clockAt()) === k0 && Math.floor(k0) === 960, true);
   check('...and a note saying so', await page.evaluate(() => window.__game.scene.getScene('Cooler').children.list.some(o => o.text && o.text.startsWith('The clock starts when you leave the cooler'))), true);
   await press('b'); await wait(200);
   check("B with an empty cooler: can't leave yet", await scenes(), 'Cooler,Hud');

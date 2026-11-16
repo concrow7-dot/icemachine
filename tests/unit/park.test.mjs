@@ -162,14 +162,14 @@ test('the music reaches the park: people there come to the park\'s curb, then go
   const curb = visitors[0].curb;
   const ring = { x: curb[2], y: curb[3], radius: 400, open: true };
   const joe = people.all.find((p) => p.resident.name === 'Joe Sullivan');
-  at(17 * 60 + 2, ring);
+  at(16 * 60 + 2, ring); // SCREAM-371: the evening starts at 4:00
   assert.ok(joe.heard > 0 || joe.customer !== 'none', 'a resident who isn\'t home yet hears it too: he is out at the park');
-  at(17 * 60 + 10, ring);
+  at(16 * 60 + 10, ring);
   const came = people.all.filter((p) => p.atPark && p.customer !== 'none');
   assert.ok(came.length >= 2, `${came.length} of the 13 wanted ice cream in 10 game minutes`);
   for (const p of people.waiting) assert.deepEqual([p.pickup[0], p.pickup[1]], [curb[2], curb[3]], `${p.resident.name} waits at the park's curb`);
   // Nobody hears it from now on; they give up waiting and walk back to the park, done for the evening.
-  at(17 * 60 + 34);
+  at(16 * 60 + 34);
   for (const p of came) {
     assert.equal(p.customer, 'done', p.resident.name);
     assert.ok(p.atPark, p.resident.name);

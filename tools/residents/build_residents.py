@@ -79,7 +79,7 @@ EXPORT = 'RESIDENTS'
 TUTORIAL = False
 HEADER = ['ID', 'Name', 'Age', 'Street', 'House', 'Likelihood (%)', 'Look', 'Notes']
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']   # SCREAM-221: optional columns
-EVENING = (17 * 60, 20 * 60)   # SCREAM-249: the evening runs from 5 PM to 8 PM (tuning.ts)
+EVENING = (16 * 60, 20 * 60)   # SCREAM-249, SCREAM-371: the evening runs from 4 PM to 8 PM (tuning.ts)
 
 
 # ---- SCREAM-224 (PO, November 15): the park on the tutorial map (Elm Park) ----
@@ -295,7 +295,7 @@ def read_csv():
             text = (r.get(col) or '').strip()
             minutes = clock_minutes(text) if text else None
             if text and (minutes is None or not EVENING[0] <= minutes <= EVENING[1]):
-                bad(f'{col} must be blank or a time from 5:00 PM to 8:00 PM, like 7:00 PM')
+                bad(f'{col} must be blank or a time from 4:00 PM to 8:00 PM, like 7:00 PM')
             hours.append(minutes)
         if hours[0] is not None and hours[1] is not None and hours[0] >= hours[1]:
             bad('From must be earlier than Until')
