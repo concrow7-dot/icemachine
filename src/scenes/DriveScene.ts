@@ -616,7 +616,7 @@ export class DriveScene extends Phaser.Scene {
       this.parkLabel.setVisible(true);
     } else {
       this.driveHard(dt);
-      this.evening.driveTick(dt * 1000); // SCREAM-334: timers that count only while the player drives
+      this.evening.driveTick(dt * 1000, this.speed !== 0); // SCREAM-334: timers that count only while the player drives; SCREAM-358: the reversed steering only while moving
     }
     // SCREAM-335: a Drum Cone's drum solo plays in place of the tune while its 30 seconds run.
     this.music.setDrumSolo(this.evening.drumSolo);

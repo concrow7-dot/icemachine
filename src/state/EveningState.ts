@@ -163,14 +163,23 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private tipsTotalCents = 0;
   /** SCREAM-312: exploration tips tonight (their own row on the end-of-day screen). */
   private explorationTotalCents = 0;
-  /** SCREAM-334: how much longer the steering is reversed (left is right), in ms of driving. 0 = normal. */
+  /**
+   * SCREAM-334: how much longer the steering is reversed (left is right), in ms. 0 = normal.
+   * SCREAM-358 (PO, November 15: "The key bindings reversing isn't happening"): it runs down only
+   * while the truck is moving. It used to run down parked too, so after a sale (parked on the brake,
+   * waiting for or serving the next customer) it was over before the player steered at all.
+   */
   steeringReversedMs = 0;
   get steeringReversed(): boolean {
     return this.steeringReversedMs > 0;
   }
-  /** SCREAM-334: called by the driving view each frame the player is driving: runs the driving-only timers down. */
-  driveTick(deltaMs: number): void {
-    if (this.steeringReversedMs > 0) this.steeringReversedMs = Math.max(0, this.steeringReversedMs - deltaMs);
+  /**
+   * SCREAM-334: called by the driving view each frame the player has the wheel: runs the driving-only
+   * timers down. `moving` (SCREAM-358): whether the truck is moving this frame; the reversed steering
+   * waits while it is parked. The drum solo counts either way (it calls customers while parked too).
+   */
+  driveTick(deltaMs: number, moving = true): void {
+    if (moving && this.steeringReversedMs > 0) this.steeringReversedMs = Math.max(0, this.steeringReversedMs - deltaMs);
     if (this.drumSoloMs > 0) this.drumSoloMs = Math.max(0, this.drumSoloMs - deltaMs);
   }
   /** SCREAM-335: how much longer the Drum Cone's drum solo plays, in ms of driving. 0 = the usual tune. */

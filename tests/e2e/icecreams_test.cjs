@@ -131,15 +131,17 @@ const { chromium } = require('playwright');
   check('SCREAM-334: a sale with a Two Ball Lou Ball pays double the tip, and the steering is reversed for 10 seconds', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
   await wait(400);
   check('...the countdown shows, starting at 10', (await drive('s.reversedLabel.visible')) + ' | ' + (await drive('s.reversedLabel.text')) + ' | ' + (await ev('e.steeringReversedMs') >= 9000), 'true | STEERING REVERSED  10 | true');
+  // SCREAM-358 (PO, November 15): the 10 seconds only run while the truck is moving.
+  check('SCREAM-358: parked since the sale, none of the 10 seconds has gone, and the countdown still shows', (await ev('e.steeringReversedMs')) + ' ' + (await drive('s.reversedLabel.visible')), '10000 true');
   await page.screenshot({ path: outDir + '/icecreams_steering_reversed.png' });
   // Driving with Right held, frame by frame (like the feel suite). Reversed, the truck turns left (its heading goes down).
   const turned = () => drive(`(() => { const g = s.roads.nearestSegment(s.truck.x, s.truck.y); s.truck.setPosition((g.ax + g.bx) / 2, (g.ay + g.by) / 2); s.setHeading(Math.atan2(g.by - g.ay, g.bx - g.ax) * 180 / Math.PI); const h0 = s.heading; s.parkBrake = false; s.held = ['right']; for (let i = 0; i < 6; i++) { s.speed = 40; s.update(0, 16); } const d = s.heading - h0; s.held = []; s.speed = 0; s.parkBrake = true; return Math.abs(d) < 0.2 ? 0 : Math.sign(d); })()`);
   check('...holding Right turns the truck left', await turned(), -1);
-  check('...the 10 seconds run down in the driving view', await ev('e.steeringReversedMs < 9600 && e.steeringReversedMs > 7500'), true);
+  check('...they run down while the truck moves (the six frames driven above)', await ev('e.steeringReversedMs < 10000 && e.steeringReversedMs > 9000'), true);
   const left = await ev('e.steeringReversedMs'); await wait(600);
-  check('...parked on the brake they still count', (await ev('e.steeringReversedMs')) < left, true);
+  check('...and wait again once it is parked on the brake', (await ev('e.steeringReversedMs')) === left, true);
   check('...a second sale starts the 10 seconds again; it doesn\'t add up', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
-  await ev('(e.steeringReversedMs = 200, true)'); await wait(500);
+  await ev('(e.steeringReversedMs = 60, true)'); await turned(); await wait(200); // six moving frames (96 ms) use them up
   check('...when they run out the steering is normal again and the countdown goes', (await ev('e.steeringReversed')) + ' ' + (await drive('s.reversedLabel.visible')) + ' ' + (await turned()), 'false false 1');
 
   // ---- SCREAM-335: the Drum Cone's drum solo ----
