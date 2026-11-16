@@ -388,7 +388,8 @@ const { chromium } = require('playwright');
       s.cameras.main.stopFollow(); s.cameras.main.centerOn(c.x, c.y);
       await new Promise(r => setTimeout(r, 300));
       const into = s.obstacleAt(c.x - Math.cos(rad) * 40, c.y - Math.sin(rad) * 40, c.angle);
-      const clear = s.obstacleAt(c.x - Math.cos(rad) * 140, c.y - Math.sin(rad) * 140, c.angle);
+      // The car is snug against the curb (PO, November 16), so a truck behind it sits a little out from the curb: either side, one is clear.
+      const clear = [1, -1].map((k) => s.obstacleAt(c.x - Math.cos(rad) * 140 - Math.sin(rad) * 16 * k, c.y - Math.sin(rad) * 140 + Math.cos(rad) * 16 * k, c.angle)).includes(null) ? null : 'blocked';
       return into + ' ' + clear;
     });
     await page.screenshot({ path: outDir + '/story_resident_car.png' });

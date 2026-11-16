@@ -23,7 +23,8 @@ OUT_JSON = os.path.join(ROOT, 'public', 'assets', 'limezu', 'cars.json')
 OUT_TS = os.path.join(ROOT, 'src', 'config', 'carModels.ts')
 
 # The pack's own size, 30% smaller (PO): its shortest car, 183 px long, becomes 66 px (about 64% of the truck's 104).
-CAR_SCALE = 66 / 183
+# SCREAM-361 (PO, November 16, 13:05): "Make the cars 15% smaller": 66 px becomes about 56.
+CAR_SCALE = 66 / 183 * 0.85
 VIEWS = ['right', 'down', 'left', 'up']
 PAD = 2
 
