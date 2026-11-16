@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 165 — A hidden Shift+F freezes the game as it looks, for screenshots (2026-11-16)
+
+**Decision (Jira SCREAM-363, under SCREAM-202, PO, November 16, 01:20; "Build all four", 01:45):** "I want to be able to pause mid game showing the screen that I'm seeing. This will help getting screenshots. It should be Shift + something. It should be hidden so that it isn't available to regular players."
+
+**Why (product owner's rationale):** "This will help getting screenshots."
+
+**Engineering's calls (proposals):** Shift+F ("freeze"; the Shift + number keys are all taken); every evening screen, both modes; every scene but the top bar pauses, the top bar's clock stops, the sound pauses, other keys do nothing; nothing on screen says it's frozen (it would be in the screenshot); not in any key list, like the other debug keys.
+
 ## 164 — Residents' cars are the art pack's cars, 30% smaller than the pack, every owner a different one (2026-11-16)
 
 **Decision (Jira SCREAM-361, under SCREAM-6, PO, November 16, 01:00 to 01:14):** "How much effort would it be to use cars from the art pack to replace those cars." Shown one of the pack's cars at today's size and at the pack's own size: "Lets make the cars 30% smaller, show me an example of that. The hitbox should match the car. Lets only do cars on the elm park map for now." Shown that: "I like that, lets go ahead with that." And: "I would also like to use as much variety in the cars as possible."
