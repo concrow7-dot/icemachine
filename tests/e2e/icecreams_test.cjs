@@ -91,7 +91,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-343: Today's Menu stops at the price on the ice cream's cork board note ----
   const raise = (f, n) => sc('Cooler', `(() => { for (let i = 0; i < ${n}; i++) s.order.changePrice('${f}', 25); s.refresh(); return s.order.slots.find(x => x.flavour === '${f}').priceCents; })()`);
   const plusAlpha = (f) => sc('Cooler', `s.cards.find(c => c.flavour === '${f}').plus.alpha`);
-  check('SCREAM-343: the eclair starts under its top price: the + is bright', (await sc('Cooler', "s.order.slots[0].priceCents")) + ' ' + (await plusAlpha('eclair')), '200 1');
+  check('SCREAM-374: the eclair went onto the menu at its top price, $2.50: the + is greyed', (await sc('Cooler', "s.order.slots[0].priceCents")) + ' ' + (await plusAlpha('eclair')), '250 0.35');
   check('...raised 20 times it stops at the $2.50 on its note, and the + is greyed', (await raise('eclair', 20)) + ' ' + (await plusAlpha('eclair')), '250 0.35');
   check('...SpongePop, the Explorer Pop and the Lou Ball stop at $3.00; the sandwich at the general $4.00', [await raise('spongepop', 20), await raise('explorer', 20), await raise('louball', 20), await raise('cookie', 20)].join(), '300,300,300,400');
   await page.screenshot({ path: outDir + '/icecreams_price_cap.png' });
@@ -100,7 +100,8 @@ const { chromium } = require('playwright');
   {
     // The price buttons on a small card still work (SpongePop: SCREAM-343 leaves it room under its $3.00).
     const [x, y] = await sc('Cooler', "(() => { const c = s.cards.find(c => c.flavour === 'spongepop').container; return [c.x + (156 - 16) * c.scaleX, c.y + 120 * c.scaleY]; })()");
-    const was = await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents");
+    // SCREAM-374: SpongePop goes onto the menu at its top, so the test lowers it a step first.
+    const was = await sc('Cooler', "(s.order.changePrice('spongepop', -25), s.refresh(), s.order.slots.find(x => x.flavour === 'spongepop').priceCents)");
     await page.mouse.click(x, y); await wait(150);
     check('...a small card\'s + still raises its price', (await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents")) - was, 25);
   }
