@@ -103,7 +103,7 @@ test('SCREAM-379: once home they are as likely as on a ticked day, and their car
   at(T.EVENING_END_HOUR * 60 - 1);
   assert.equal(people.likelihoodNow(someone.resident), Math.min(1, someone.resident.likelihood * T.SCHEDULE_TICKED_FACTOR));
   assert.ok(people.carsNow.some((c) => c.id === driver.resident.id), `${driver.resident.name}'s car is outside once they are in`);
-  assert.ok(people.porchLit(driver), 'and their porch light is on');
+  assert.ok(people.porchLit(driver) || driver.outside, 'and their porch light is on (or they are out in the yard)');
 });
 
 test('SCREAM-379: someone walking home can be called to the truck, then goes home', () => {

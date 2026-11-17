@@ -616,10 +616,17 @@ def place(m, people, index):
     random.Random('361').shuffle(order)
     if len(wants) > len(order):
         print(f'Warning: {len(wants)} cars but only {len(order)} kinds: some owners share one')
-    model_of = {rid: order[k % len(order)] for k, rid in enumerate(wants)}
+    # SCREAM-380 (PO, November 17: "convert 2 walkers to cars"): giving someone new a car must not
+    # change anyone else's. Owners who already have a car keep its kind (read from the file the last
+    # build wrote) and are given their spots first; new owners take the kinds not in use, in the
+    # seeded order, and park where there is room left.
+    kept = {rid: model for rid, model in previous_car_models().items() if rid in wants and model in order}
+    free = [model for model in order if model not in kept.values()] or order
+    new = [rid for rid in wants if rid not in kept]
+    model_of = {**kept, **{rid: free[k % len(free)] for k, rid in enumerate(new)}}
     squares = [(o['curb'][2], o['curb'][3]) for o in out] + [(o['park']['curb'][2], o['park']['curb'][3]) for o in out if o.get('park')]
     cars = []
-    for o in out:
+    for o in [x for x in out if x['id'] in kept] + [x for x in out if x['id'] in new]:
         if o['id'] in model_of:
             spot = car_spot(m, o, squares, cars, next(c for c in models if c['model'] == model_of[o['id']]))
             if spot is None:
@@ -634,6 +641,18 @@ CAR_TRUCK_ROOM = 62   # SCREAM-361: from a pink square to the end of a car (the 
 CAR_CAR_GAP = 12      # between two cars, bumper to bumper
 CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
 CAR_CURB_GAP = 1      # SCREAM-361, SCREAM-372 (PO, November 16: "closer to the curb or edge of the street"): from the side of a car's picture to the curb (was 3, and measured from a wider box)
+
+
+def previous_car_models():
+    """SCREAM-380: each car owner's kind of car in the residents file the last build wrote (Elm Park
+    only has cars), by resident id. Empty if there is no such file yet."""
+    path = os.path.join(ROOT, 'src', 'config', 'tutorialResidents.ts')
+    try:
+        text = open(path, encoding='utf-8').read()
+        start = text.index('= [', text.index('TUTORIAL_RESIDENTS')) + 2
+        return {r['id']: r['car'][3] for r in json.loads(text[start:text.rindex(']') + 1]) if r.get('car')}
+    except (OSError, ValueError, KeyError, IndexError):
+        return {}
 
 
 def car_models():

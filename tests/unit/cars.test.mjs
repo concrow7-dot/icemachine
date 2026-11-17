@@ -20,8 +20,8 @@ const evening = (day, list = TUTORIAL_RESIDENTS, minutes = 17 * 60) => {
   return r;
 };
 
-test('the sheet: 14 adults with a house have a car (engineering\'s draft); Foley Stadium has none', () => {
-  assert.equal(withCar.length, 14);
+test('the sheet: 16 adults with a house have a car (14 were engineering\'s draft; the PO asked for 2 more, November 17); Foley Stadium has none', () => {
+  assert.equal(withCar.length, 16);
   for (const r of withCar) assert.ok(!r.kid && !r.visitor, r.name);
   assert.equal(RESIDENTS.filter((r) => r.car).length, 0);
 });

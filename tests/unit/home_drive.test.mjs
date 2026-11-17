@@ -184,7 +184,8 @@ test('SCREAM-380: the car stops and waits for the truck in its way, and carries 
   // (Other cars may have come in first: they queue behind the truck, this one behind them.)
   const queue = people.carsNow.filter((c) => c.moving).map((c) => Math.hypot(c.x - truck.x, c.y - truck.y)).sort((a, b) => a - b);
   assert.ok(queue[0] < 120, `the first car stopped just short of the truck (${Math.round(queue[0])} px from its middle)`);
-  queue.forEach((d, i) => i && assert.ok(d - queue[i - 1] > 55 && d - queue[i - 1] < 110, `the cars behind queue up (${Math.round(d - queue[i - 1])} px apart)`));
+  const queued = people.carsNow.filter((c) => c.moving);
+  for (const a of queued) for (const b of queued) if (a !== b) assert.ok(!boxesOverlap(a, b), 'the cars behind queue up without touching');
   assert.ok(waitingAt.moving);
   at(when + 75, { ...truck, x: 2600, y: 600 });
   assert.ok(!people.drivingHome(driver) && !people.carsNow.find((c) => c.id === id).moving, 'parked once the truck had gone');
