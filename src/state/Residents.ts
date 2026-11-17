@@ -45,6 +45,7 @@ import {
   CUSTOMER_CURVE_SCALE,
   CUSTOMER_CURVE_PEAK_SPREAD,
   RESIDENT_CAR_ARRIVE_CLEAR,
+  RESIDENT_CAR_BOX_INSET,
   RESIDENT_CAR_TRUCK_ROOM,
   PARK_VISITORS_TONIGHT,
   PARK_STAY_LATE,
@@ -240,6 +241,18 @@ export interface ResidentCar {
   /** How far a pink square's centre keeps from the car's centre (px). */
   clear: number;
   id: string;
+}
+
+/**
+ * SCREAM-372: a car's [length, width] on the ground, px, for the way it faces. Its length is the
+ * long side of the picture it is drawn with (side-on, or nose-up / nose-down); its width is always
+ * the nose-on picture's width: a side-on picture is taller than the car is wide (it shows the roof).
+ */
+export function carFootprint(model: number, angle: number): [number, number] {
+  const m = CAR_MODELS.find((x) => x.model === model);
+  if (!m) return [66, 34];
+  const k = Math.round((((angle % 360) + 360) % 360) / 90) % 4; // 0 right, 1 down, 2 left, 3 up (DriveScene.carView)
+  return k % 2 === 0 ? [m.right[0], m.down[0]] : [m.down[1], m.down[0]];
 }
 
 /** What a resident is doing right now. */
@@ -728,9 +741,17 @@ export class Residents {
     for (const p of this.people) {
       const c = p.resident.car;
       if (!c || !this.carsOut.has(p.resident.id)) continue;
-      const size = CAR_MODELS.find((m) => m.model === c[3])?.right ?? [66, 40];
-      const halfLength = size[0] / 2;
-      out.push({ x: c[0], y: c[1], angle: c[2], model: c[3], halfLength, halfWidth: size[1] / 2, clear: halfLength + RESIDENT_CAR_TRUCK_ROOM, id: p.resident.id });
+      const [length, width] = carFootprint(c[3], c[2]);
+      out.push({
+        x: c[0],
+        y: c[1],
+        angle: c[2],
+        model: c[3],
+        halfLength: length / 2 - RESIDENT_CAR_BOX_INSET,
+        halfWidth: width / 2 - RESIDENT_CAR_BOX_INSET,
+        clear: length / 2 + RESIDENT_CAR_TRUCK_ROOM,
+        id: p.resident.id,
+      });
     }
     return out;
   }

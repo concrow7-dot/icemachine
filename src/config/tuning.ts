@@ -796,6 +796,13 @@ export const RESIDENT_CAR_ARRIVE_CLEAR = 160;
 // ---- SCREAM-361 (PO, November 16): the residents' cars are the art pack's cars ----
 /** Room kept between a pink square and the end of a resident's car, so the truck (half length 52) can pull in (px). */
 export const RESIDENT_CAR_TRUCK_ROOM = 62;
+/**
+ * SCREAM-372 (PO, November 16): "Reduce the size of the hit boxes to better match the actual shape
+ * of the cars." A car's hit box is the picture it is drawn with (nose-up and nose-down pictures are
+ * narrower than side-on ones), pulled in this many px on every side, so its mirrors and rounded
+ * corners don't catch the truck (engineering's number).
+ */
+export const RESIDENT_CAR_BOX_INSET = 3;
 /** The pack's cars' picture sheet (tools/cars/build_cars.py). */
 export const CARS_KEY = 'pack-cars';
 export const CARS_PNG = 'assets/limezu/cars.png';

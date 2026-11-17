@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 173 — Residents' cars: hit boxes that match the car, parked against the curb (2026-11-16)
+
+**Decision (Jira SCREAM-372, under SCREAM-11, PO, November 16, 21:33, with a screenshot of the truck stuck between two cars):** "two cars are parked across from each other. This wouldn't be a problem, I actually like that there is some challenge there, but the hit boxes on the cars are two wide and I can't pass between them. Two things: Reduce the size of the hit boxes to better match the actual shape of the cars. Also, lets move the cars closer to the curb or edge of the street." A car's hit box now comes from the picture it is drawn with (a nose-up or nose-down car is narrower than the side-on picture the box used to be taken from), pulled in 3 px on every side; and cars park with the side of their picture 1 px from the curb (it was 3 px, measured from the wider box, so about 5 px on streets that run up the map). The pair he met (on Germain Street in the map's data) keeps facing each other: the room between their boxes goes from about 45 px to 62 px, for a truck 42 px wide.
+
+**Why (product owner's rationale):** "the hit boxes on the cars are two wide and I can't pass between them."
+
+**Engineering's calls (proposals):** 3 px in on every side (mirrors and rounded corners); a side-on car's box is as wide as the car seen nose-on, not as tall as its side-on picture (which shows the roof); the pink squares keep the same room from a car's end; Sully Babe's car lands nearer his own curb spot (the rebuild found room there).
+
 ## 172 — Cheaper power-ups, priced by row: $10, $15, $20, $30 in both trees (2026-11-16)
 
 **Decision (Jira SCREAM-369, under SCREAM-78, PO, November 16, 01:58):** "High level ticket: I want to reduce the prices of the powerups. The first level should cost $10. The second $15. The next $20. Then $30." And (21:25): "I want to make the customer powerups the same pricing order top to bottom as the truck powerups." Asked whether to build the cheaper prices as well, he picked **"Build it too"**. The Truck and Customer trees now cost the same, row by row: first row $10 (Temporary Gas Can, Service With A Smile; were $15); second $15 (More Space for Scream, Trot, were $20; Upgrade Speaker, Calculator, were $30); third $20 (Train Off The Tracks, Brakes Made This Century, Steam Engine, were $30; Speaker with Heavier Bass, Handy Notebook, This Century Register, were $40); fourth $30 (Back It Up $40, Gitty Up $50, Better Mirrors $50, Speedy Neighbors $60 before). His answers: **"Both $30"** for the fourth row (the left and right notes no longer differ), **"Keep their prices"** for the Ice Cream tree, and **"Yes, by row"** for More Space for Scream ($15) and Gitty Up ($30), which decision 166 had swapped.

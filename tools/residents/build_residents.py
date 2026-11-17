@@ -626,14 +626,14 @@ def place(m, people, index):
                 print(f'No room for {o["id"]} {o["name"]}\'s car on {o["street"]}: they get none')
                 continue
             o['car'] = spot
-            cars.append(spot + [car_half(next(c for c in models if c['model'] == spot[3]))[0]])
+            cars.append(spot + [car_half(next(c for c in models if c['model'] == spot[3]), spot[2])[0]])
     return out
 
 
 CAR_TRUCK_ROOM = 62   # SCREAM-361: from a pink square to the end of a car (the truck's half length, 52, and a little)
 CAR_CAR_GAP = 12      # between two cars, bumper to bumper
 CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
-CAR_CURB_GAP = 3      # SCREAM-361 (PO, November 16: "closer to the curb"): from a car's side to the curb
+CAR_CURB_GAP = 1      # SCREAM-361, SCREAM-372 (PO, November 16: "closer to the curb or edge of the street"): from the side of a car's picture to the curb (was 3, and measured from a wider box)
 
 
 def car_models():
@@ -642,9 +642,14 @@ def car_models():
     return json.loads(s[s.index('= [') + 2:s.rindex(']') + 1])
 
 
-def car_half(model):
-    """Half its length and half its width on the map, parked along the street (its side view)."""
-    return model['right'][0] / 2, model['right'][1] / 2
+def car_half(model, ang=0):
+    """Half the length and half the width of the picture the car is drawn with when it faces `ang`
+    (degrees): side-on on a street that runs across the map, nose-up or nose-down on one that runs
+    up it (SCREAM-372: those pictures are narrower, so the car can sit closer to the curb)."""
+    k = round((ang % 360) / 90) % 4
+    if k % 2 == 0:
+        return model['right'][0] / 2, model['right'][1] / 2
+    return model['down'][1] / 2, model['down'][0] / 2
 
 
 def car_spot(m, r, squares, cars, model):
@@ -654,7 +659,7 @@ def car_spot(m, r, squares, cars, model):
     traffic goes on that side. [x, y, facing angle in degrees, model], or None if there's no room."""
     sx, sy, ang = r['curb'][2], r['curb'][3], r['curb'][4]
     tx, ty = math.cos(math.radians(ang)), math.sin(math.radians(ang))
-    hl, hw = car_half(model)
+    hl, hw = car_half(model, ang)
     segs_all = [(ri, rd['points'][i], rd['points'][i + 1], rd['points'][i + 2], rd['points'][i + 3])
                 for ri, rd in enumerate(m['roads']) for i in range(0, len(rd['points']) - 2, 2)]
     # A street can be in the map as more than one road (Institute Road is two): go by its name.
@@ -681,7 +686,9 @@ def car_spot(m, r, squares, cars, model):
         if edge is None:
             continue
         x, y = mx + ux * (edge - hw - CAR_CURB_GAP), my + uy * (edge - hw - CAR_CURB_GAP)
-        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-hw, hw)]
+        # SCREAM-372: the corners are checked 3 px in from the car's sides: a street a few degrees off
+        # straight would otherwise push a snug car's corner a pixel or two over the curb and lose the spot.
+        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-(hw - 3), hw - 3)]
         if not all(on_asphalt(*c) for c in corners):
             continue
         if m['roads'][min(segs_all, key=lambda sg: seg_dist(x, y, *sg[1:])[0])[0]]['name'] != own:
