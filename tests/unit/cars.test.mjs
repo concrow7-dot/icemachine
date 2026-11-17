@@ -34,7 +34,7 @@ test('"lets remove the old parked cars": Elm Park has no parked cars of its own;
 
 test('each car parks on its owner\'s street, near their pink square, with room for the truck, clear of the other cars', () => {
   const squares = TUTORIAL_RESIDENTS.flatMap((r) => [[r.curb[2], r.curb[3]], ...(r.park ? [[r.park.curb[2], r.park.curb[3]]] : [])]);
-  const half = (r) => carFootprint(r.car[3], r.car[2])[0] / 2; // SCREAM-372: the length of the picture it is drawn with
+  const half = (r) => CAR_MODELS.find((m) => m.model === r.car[3]).right[0] / 2;
   for (const r of withCar) {
     const [x, y, angle] = r.car;
     const own = Math.hypot(x - r.curb[2], y - r.curb[3]);
@@ -73,17 +73,17 @@ test('SCREAM-372 (PO: "I can\'t pass between them"): two cars across the street 
   assert.deepEqual(carFootprint(1, 95.9), [52, 29], 'nose-down: the nose-down picture');
   assert.deepEqual(carFootprint(1, -175.4), [56, 29], 'side-on: as long as the side-on picture, as wide as the car');
   const cars = withCar.map((r) => ({ name: r.name, x: r.car[0], y: r.car[1], angle: r.car[2], half: carFootprint(r.car[3], r.car[2])[1] / 2 - RESIDENT_CAR_BOX_INSET }));
-  let pairs = 0;
+  const pairs = [];
   for (const a of cars) for (const b of cars) {
     if (a.name >= b.name) continue;
     const t = (a.angle * Math.PI) / 180;
     const dx = b.x - a.x, dy = b.y - a.y;
     const along = Math.abs(dx * Math.cos(t) + dy * Math.sin(t)), across = Math.abs(-dx * Math.sin(t) + dy * Math.cos(t));
     if (along > 60 || across < 40 || across > 130) continue; // not beside each other, or on the same side, or another street
-    pairs++;
+    pairs.push(`${a.name} + ${b.name}`);
     assert.ok(across - a.half - b.half >= TRUCK_WIDTH + 12, `${a.name} and ${b.name}: ${Math.round(across - a.half - b.half)} px between them for a ${TRUCK_WIDTH} px truck`);
   }
-  assert.ok(pairs >= 1, 'the pair the PO met is still there (he likes the challenge)');
+  assert.ok(pairs.includes('Kathleen Scoopley + Susie Parlor'), 'the pair the PO met on Haviland Street is still there (he likes the challenge)');
 });
 
 test('a car is out on the days its owner is home (their ticks), and not on the others', () => {

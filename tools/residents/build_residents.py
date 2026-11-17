@@ -626,7 +626,7 @@ def place(m, people, index):
                 print(f'No room for {o["id"]} {o["name"]}\'s car on {o["street"]}: they get none')
                 continue
             o['car'] = spot
-            cars.append(spot + [car_half(next(c for c in models if c['model'] == spot[3]), spot[2])[0]])
+            cars.append(spot + [car_half(next(c for c in models if c['model'] == spot[3]))[0]])
     return out
 
 
@@ -659,7 +659,8 @@ def car_spot(m, r, squares, cars, model):
     traffic goes on that side. [x, y, facing angle in degrees, model], or None if there's no room."""
     sx, sy, ang = r['curb'][2], r['curb'][3], r['curb'][4]
     tx, ty = math.cos(math.radians(ang)), math.sin(math.radians(ang))
-    hl, hw = car_half(model, ang)
+    pl, hw = car_half(model, ang)   # SCREAM-372: the picture it is drawn with: how close to the curb it sits
+    hl = model['right'][0] / 2      # spacing along the street still goes by its side-on length, so nobody's car changes place
     segs_all = [(ri, rd['points'][i], rd['points'][i + 1], rd['points'][i + 2], rd['points'][i + 3])
                 for ri, rd in enumerate(m['roads']) for i in range(0, len(rd['points']) - 2, 2)]
     # A street can be in the map as more than one road (Institute Road is two): go by its name.
@@ -688,7 +689,7 @@ def car_spot(m, r, squares, cars, model):
         x, y = mx + ux * (edge - hw - CAR_CURB_GAP), my + uy * (edge - hw - CAR_CURB_GAP)
         # SCREAM-372: the corners are checked 3 px in from the car's sides: a street a few degrees off
         # straight would otherwise push a snug car's corner a pixel or two over the curb and lose the spot.
-        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-(hw - 3), hw - 3)]
+        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-pl, pl) for b in (-(hw - 3), hw - 3)]
         if not all(on_asphalt(*c) for c in corners):
             continue
         if m['roads'][min(segs_all, key=lambda sg: seg_dist(x, y, *sg[1:])[0])[0]]['name'] != own:
