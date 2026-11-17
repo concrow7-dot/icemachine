@@ -77,7 +77,7 @@ const { chromium } = require('playwright');
     const { writingFor, ADULT_HANDS, KID_HANDS } = await import('/src/state/Handwriting.js');
     const s = window.__game.scene.getScene('Sales'); const r = window.__game.registry.get('evening').servingNow.resident;
     const w = writingFor(r); const fonts = []; document.fonts.forEach(f => { if (f.status === 'loaded') fonts.push(f.family.replace(/"/g, '')); });
-    return [s.writing.hand === w.hand, (r.kid ? KID_HANDS : ADULT_HANDS).includes(w.hand), s.bubbleText.style.fontFamily.includes(w.hand.font), s.speakerText.style.fontFamily.includes(w.hand.font), fonts.includes(w.hand.font), s.bubbleText.angle === w.tilt, parseInt(s.speakerText.style.fontSize) > 18].join(' ');
+    return [s.writing.hand === w.hand, (r.kid ? KID_HANDS : ADULT_HANDS).includes(w.hand), s.bubbleText.style.fontFamily.includes(w.hand.font), s.speakerText.style.fontFamily.includes(w.hand.font), fonts.includes(w.hand.font), Math.abs(s.bubbleText.angle - w.tilt) < 0.01, parseInt(s.speakerText.style.fontSize) > 18].join(' ');
   });
   check('SCREAM-378: the words and the name are in this customer\'s handwriting (font loaded), the name bigger than 18 px', hand, 'true true true true true true true');
   check('SCREAM-378: the order fits inside the bubble', await sc('Sales', '(b => b.top > 125 + 30 && b.bottom < 125 + 150 - 8 && b.left > 90 + 8 && b.right < 570 - 8)(s.bubbleText.getBounds())'), true);
