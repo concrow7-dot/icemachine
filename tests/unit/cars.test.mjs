@@ -5,11 +5,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { Residents, weekdayOf } = await game('state/Residents');
+const { Residents, weekdayOf, carFootprint } = await game('state/Residents');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { RESIDENTS } = await game('config/residents');
 const { MAPS, fixedParkedCars } = await game('config/maps');
-const { RESIDENT_CAR_ARRIVE_CLEAR, RESIDENT_CAR_TRUCK_ROOM } = await game('config/tuning');
+const { RESIDENT_CAR_ARRIVE_CLEAR, RESIDENT_CAR_TRUCK_ROOM, RESIDENT_CAR_BOX_INSET, TRUCK_WIDTH } = await game('config/tuning');
 const { CAR_MODELS } = await game('config/carModels');
 
 const withCar = TUTORIAL_RESIDENTS.filter((r) => r.car);
@@ -59,9 +59,31 @@ test('SCREAM-361: "30% smaller" than the pack, then "15% smaller" (PO, November 
   const r = evening(1); r.update(0.1);
   for (const c of r.carsNow) {
     const m = CAR_MODELS.find((x) => x.model === c.model);
-    assert.equal(c.halfLength * 2, m.right[0]);
-    assert.equal(c.halfWidth * 2, m.right[1]);
+    // SCREAM-372: the box is the picture the car is drawn with (nose-down or nose-up on Elm Park's
+    // streets that run up the map), pulled in on every side.
+    const [length, width] = carFootprint(c.model, c.angle);
+    assert.equal(c.halfLength, length / 2 - RESIDENT_CAR_BOX_INSET);
+    assert.equal(c.halfWidth, width / 2 - RESIDENT_CAR_BOX_INSET);
+    assert.equal(width, m.down[0], 'never wider than the car seen nose-on');
+    assert.ok(c.halfWidth * 2 < m.right[1], 'narrower than the old box (the side-on picture)');
   }
+});
+
+test('SCREAM-372 (PO: "I can\'t pass between them"): two cars across the street from each other leave room for the truck', () => {
+  assert.deepEqual(carFootprint(1, 95.9), [52, 29], 'nose-down: the nose-down picture');
+  assert.deepEqual(carFootprint(1, -175.4), [56, 29], 'side-on: as long as the side-on picture, as wide as the car');
+  const cars = withCar.map((r) => ({ name: r.name, x: r.car[0], y: r.car[1], angle: r.car[2], half: carFootprint(r.car[3], r.car[2])[1] / 2 - RESIDENT_CAR_BOX_INSET }));
+  const pairs = [];
+  for (const a of cars) for (const b of cars) {
+    if (a.name >= b.name) continue;
+    const t = (a.angle * Math.PI) / 180;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const along = Math.abs(dx * Math.cos(t) + dy * Math.sin(t)), across = Math.abs(-dx * Math.sin(t) + dy * Math.cos(t));
+    if (along > 60 || across < 40 || across > 130) continue; // not beside each other, or on the same side, or another street
+    pairs.push(`${a.name} + ${b.name}`);
+    assert.ok(across - a.half - b.half >= TRUCK_WIDTH + 12, `${a.name} and ${b.name}: ${Math.round(across - a.half - b.half)} px between them for a ${TRUCK_WIDTH} px truck`);
+  }
+  assert.ok(pairs.includes('Kathleen Scoopley + Susie Parlor'), 'the pair the PO met on Haviland Street is still there (he likes the challenge)');
 });
 
 test('a car is out on the days its owner is home (their ticks), and not on the others', () => {
@@ -116,7 +138,7 @@ test('someone who gets home later: the car pulls up when they do, but never onto
   assert.equal(r.carsNow.length, 0, 'gone out again after their Until');
 });
 
-test('SCREAM-361 (PO, November 16, 13:01: "next to the curb parked"): every car sits against the curb, its side within 6 px of where the asphalt ends', () => {
+test('SCREAM-361 (PO, November 16, 13:01: "next to the curb parked"): every car sits against the curb, its side within 6 px of where the asphalt ends; SCREAM-372 ("closer to the curb or edge of the street"): within 3 px, measured from the picture it is drawn with', () => {
   const mask = MAPS.tutorial.data.roadMask;
   const onAsphalt = (x, y) => {
     const runs = mask.rows[Math.floor(y / mask.scale)] || [];
@@ -133,8 +155,9 @@ test('SCREAM-361 (PO, November 16, 13:01: "next to the curb parked"): every car 
     const gap = Math.min(...[1, -1].map((sgn) => {
       let d = 0;
       while (d < 200 && onAsphalt(x + sgn * nx * d, y + sgn * ny * d)) d++;
-      return d - m.right[1] / 2;
+      const sideOn = Math.round((((facing % 360) + 360) % 360) / 90) % 2 === 0;
+      return d - (sideOn ? m.right[1] : m.down[0]) / 2;
     }));
-    assert.ok(gap >= 0 && gap <= 6, `${res.name}: ${gap} px from the curb`);
+    assert.ok(gap >= 0 && gap <= 3, `${res.name}: ${gap} px from the curb`);
   }
 });
