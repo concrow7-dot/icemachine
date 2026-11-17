@@ -46,18 +46,19 @@ MAPS = {
     'tutorial': dict(ts='tutorial.ts', export='TUTORIAL', art='map-tutorial', roads='map-tutorial',
                      residents=os.path.join('tools', 'tutorial', 'residents.csv'), sheet='sheet 23'),
     'worcester': dict(ts='worcester.ts', export='WORCESTER', art='map', roads='map',
-                      residents=os.path.join('tools', 'residents', 'residents.csv'), sheet='sheet 15'),
+                      residents=os.path.join('tools', 'residents', 'residents.csv'), sheet='sheet 15', ground_scale=2),
 }
 
 
 def use_map(name):
-    global OUT_TS, OUT_ART, OUT_ROADS, RESIDENTS_CSV, EXPORT, SHEET
+    global OUT_TS, OUT_ART, OUT_ROADS, RESIDENTS_CSV, EXPORT, SHEET, GROUND_SCALE
     c = MAPS[name]
     OUT_TS = os.path.join(ROOT, 'src', 'config', c['ts'])
     OUT_ART = os.path.join(ROOT, 'public', 'assets', 'limezu', c['art'])
     OUT_ROADS = os.path.join(ROOT, 'public', 'assets', c['roads'])
     RESIDENTS_CSV = os.path.join(ROOT, c['residents'])
     EXPORT, SHEET = c['export'], c['sheet']
+    GROUND_SCALE = c.get('ground_scale', 1)
 
 
 use_map('tutorial')
@@ -406,11 +407,16 @@ def main(tmx, singles):
     for f in os.listdir(OUT_ROADS):
         if f.startswith('roads_') and f.endswith('.png'): os.remove(os.path.join(OUT_ROADS, f))
     road_tiles = []
-    for ty in range(0, H, GROUND_TILE):
-        for tx in range(0, W, GROUND_TILE):
-            part = ground.crop((tx, ty, min(W, tx + GROUND_TILE), min(H, ty + GROUND_TILE)))
+    # SCREAM-384: Worcester's ground is kept at half size (ground_scale 2: 1024 px of map per picture, drawn at 2x),
+    # as build_map.py made it: a map that big at full size is three times the pictures, and the driving view
+    # takes visibly longer to load. If the PO paints ground tiles on that map, set its ground_scale to 1.
+    step = GROUND_TILE * GROUND_SCALE
+    for ty in range(0, H, step):
+        for tx in range(0, W, step):
+            part = ground.crop((tx, ty, min(W, tx + step), min(H, ty + step)))
+            if GROUND_SCALE != 1: part = part.resize((max(1, part.width // GROUND_SCALE), max(1, part.height // GROUND_SCALE)), Image.NEAREST)
             if not part.getbbox(): continue
-            key = f'roads_{tx // GROUND_TILE}_{ty // GROUND_TILE}'
+            key = f'roads_{tx // step}_{ty // step}'
             part.save(os.path.join(OUT_ROADS, key + '.png'), optimize=True)
             road_tiles.append({'key': key, 'x': tx, 'y': ty})
 
@@ -444,7 +450,7 @@ def main(tmx, singles):
     out = dict(base)
     out.update({'home': home, 'objects': objects, 'signs': signs,
                 'sprites': [{'key': k, 'w': im.width, 'h': im.height} for k, im in sprites.items()],
-                'houseNumbers': house_numbers, 'roadTiles': road_tiles, 'roadTileScale': 1,
+                'houseNumbers': house_numbers, 'roadTiles': road_tiles, 'roadTileScale': GROUND_SCALE,
                 'assetVersion': h.hexdigest()[:10]})
     order = ['width', 'height', 'roads', 'labels', 'areas', 'homeStart', 'signs', 'home', 'gasStations', 'curbSpots',
              'potholes', 'parkedCars', 'objects', 'houseNumbers', 'sprites', 'roadTiles', 'roadTileScale', 'roadMask',
