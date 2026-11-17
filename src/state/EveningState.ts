@@ -310,6 +310,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     /** SCREAM-145: paid sales per resident over the run so far, and whether the roundabout's secret is out. */
     visits?: Readonly<Record<string, number>>;
     rotaryHintGiven?: boolean;
+    /** SCREAM-377: Story only: the other map has been reached on an earlier evening. */
+    otherMapSeen?: boolean;
     /** SCREAM-268: Story only: the uncle's $20 for gas hasn't been used yet this run. */
     uncleGas?: boolean;
     /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
@@ -344,6 +346,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
+    this.otherMapSeen = carry?.otherMapSeen ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
     this.notebook = (carry?.notebook ?? []).map((e) => ({ ...e })); // SCREAM-245
@@ -448,6 +451,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.writeDown(ROTARY_HINT_LINE); // SCREAM-245
   }
 
+  /** SCREAM-377 (PO, November 16): "once the player teleports to the other map, that map should become available too." */
+  otherMapSeen = false;
+  /** SCREAM-377: the maps the in-truck map can show: home's first, then the other one once the truck has been there. */
+  get knownMaps(): MapId[] {
+    const other: MapId = this.homeMapId === 'tutorial' ? 'worcester' : 'tutorial';
+    return this.otherMapSeen ? [this.homeMapId, other] : [this.homeMapId];
+  }
+
   /** SCREAM-145: true while the truck is away from the map home is on. */
   get awayFromHome(): boolean {
     return this.mapId !== this.homeMapId;
@@ -469,6 +480,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.truckPosition = spot;
     this.streetNow = ''; // SCREAM-237: the other map's streets
     this.mapSwitches += 1;
+    this.otherMapSeen = true; // SCREAM-377: the in-truck map shows this map from now on
     this.emit(EveningEvents.MapChanged, to);
     return to;
   }

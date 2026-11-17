@@ -112,6 +112,16 @@ export const KEY_GROUPS: readonly KeyGroup[] = [
     ],
   },
   {
+    // SCREAM-377: the map on the truck's wall.
+    title: 'The Map',
+    rows: [
+      ['N (In The Truck)', 'Open The Map'],
+      ['← → Or A D', 'The Other Map'],
+      ['B, Backspace Or Enter', 'Back To The Truck'],
+      ['Esc', 'Pause'],
+    ],
+  },
+  {
     title: 'The End Of The Day',
     rows: [['Enter Or Click', 'Start The Next Day']],
   },

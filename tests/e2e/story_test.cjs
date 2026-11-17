@@ -559,6 +559,7 @@ const { chromium } = require('playwright');
   check('...then it has closed', (await portalWait("s.portal.state === 'lapping'")) + ' ' + (await sc('Drive', 's.portal.visible')), 'true false');
   check('...in about a second (well under 4 even on a busy machine)', Date.now() - closeStart < 4000, true);
   check('Three laps: the truck is in Foley Stadium', (await ev('e.mapId')) + ' ' + (await ev('e.mapSwitches')), 'worcester 1');
+  check('SCREAM-377: ...and from now on the in-truck map knows both maps', (await ev('e.knownMaps.join()')) + ' ' + (await ev('e.otherMapSeen')), 'tutorial,worcester true');
   check('SCREAM-237: ...the top bar no longer names the neighbourhood (was SCREAM-145)', /Foley Stadium|Elm Park/.test(await hudClock()), false);
   check('...on the road there, on Newton Square (the roundabout)', (await scenes()) + ' ' + (await sc('Drive', "(() => { const r = s.laps.ring; return Math.round(Math.hypot(s.truck.x - r.x, s.truck.y - r.y)) === r.r; })()")), 'Drive,Hud true');
   check('...Newton Square is at the top of the map', await sc('Drive', 's.laps.ring.y < 600'), true);
