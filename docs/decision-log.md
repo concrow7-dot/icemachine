@@ -10,9 +10,11 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Why (product owner's rationale):** _to be filled in by the PO._
 
-**Engineering's calls (proposals):** the car takes the shortest way along the streets, arriving the way it is parked; it drives at about a third of the truck's top speed (170 px a second, 80 in corners), 16 px right of the middle of the street, which clears the cars parked at the curb; it also waits for anyone on foot in its way and for another car ahead, so cars queue behind a truck that is serving in their lane; if its parking spot is blocked it waits in the road beside it; the owner cannot be served until they have parked and got out; the clock time a driver is given (decision 179) is when the car comes onto the map; a map with no road running off its edge, or a sheet with no Car column (Foley Stadium today), falls back to walking.
+**Engineering's calls (proposals):** the car takes the shortest way along the streets, arriving the way it is parked; it drives at about a third of the truck's top speed (170 px a second, 80 in corners; slowed to 136 and 64 the same night, below), 16 px right of the middle of the street, which clears the cars parked at the curb; it also waits for anyone on foot in its way and for another car ahead, so cars queue behind a truck that is serving in their lane; if its parking spot is blocked it waits in the road beside it; the owner cannot be served until they have parked and got out; the clock time a driver is given (decision 179) is when the car comes onto the map; a map with no road running off its edge, or a sheet with no Car column (Foley Stadium today), falls back to walking.
 
 After seeing the numbers (about 5 cars and 8 walkers an evening), PO, November 17, 01:51: "I want to convert 2 walkers to cars". Jane Frostin (Westland Street) and Gerry Gelato (Germain Street) now have a car: 16 owners. Engineering's pick of who (a proposal): the two adults without a car who are away every weekday, so about two more people drive each evening. The build now keeps every existing owner's kind of car and spot when someone new gets one.
+
+PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Engineering read this as 80% of the cars' own top speed: 136 px a second (was 170), and 64 in corners (was 80).
 
 ## 179 — On their unticked days people are away, and come home through the evening from the map's edge (2026-11-17)
 

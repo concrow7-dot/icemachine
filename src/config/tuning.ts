@@ -839,8 +839,11 @@ export const AWAY_ROUNDABOUT_COST = 4;
 export const HOME_DRIVE_LANE_OFFSET = 16;
 /** Corner rounding on the way home, px. */
 export const HOME_DRIVE_CORNER_RADIUS = 40;
-/** A resident's car on its way home: cruising and cornering speeds (px/s), speeding up and braking (px/s²). The truck does about 440 to 550. */
-export const HOME_DRIVE_PROFILE = { cruise: 170, accel: 110, brake: 320, bendSpeed: 80 } as const;
+/**
+ * A resident's car on its way home: cruising and cornering speeds (px/s), speeding up and braking (px/s²). The truck does about 440 to 550.
+ * PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Read as 80% of what they did (170 and 80 in corners).
+ */
+export const HOME_DRIVE_PROFILE = { cruise: 136, accel: 110, brake: 320, bendSpeed: 64 } as const;
 /** The last stretch, over which the car leaves its lane for its parking spot, px. */
 export const HOME_DRIVE_PARK_GLIDE = 90;
 /** How much room a car on its way home leaves in front of it when it stops for something, px (beyond its own nose). */
