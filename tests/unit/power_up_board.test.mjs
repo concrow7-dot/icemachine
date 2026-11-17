@@ -64,10 +64,10 @@ test('SCREAM-296: every note has a name and a price', () => {
   assert.equal(notes.find((n) => n.id === 'customer-9').name, 'CUSTOMER 9');
   // SCREAM-341: Customer 7 is Better Mirrors now, under the Handy Notebook.
   const mirrors = notes.find((n) => n.id === 'better-mirrors');
-  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 5000, ['handy-notebook'], 'mirror']);
+  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 3000, ['handy-notebook'], 'mirror']);
   // SCREAM-342: Customer 8 is Speedy Neighbors now, under Better Mirrors.
   const speedy = notes.find((n) => n.id === 'speedy-neighbors');
-  assert.deepEqual([speedy.name, speedy.priceCents, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', 6000, ['handy-notebook'], 'sneaker', 'Most customers run after the truck faster.']);
+  assert.deepEqual([speedy.name, speedy.priceCents, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', 3000, ['handy-notebook'], 'sneaker', 'Most customers run after the truck faster.']);
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && (n.priceCents > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 
@@ -83,20 +83,20 @@ test('SCREAM-296: when a note can be bought', () => {
   assert.equal(buyStatus(below, [], 0, false), 'locked', 'locked is said before away or poor');
 });
 
-test('SCREAM-122: the Temporary Gas Can is the top Truck note, $15, with its own name and picture', () => {
+test('SCREAM-122: the Temporary Gas Can is the top Truck note, $10 (SCREAM-369), with its own name and picture', () => {
   const can = notes.find((n) => n.id === 'temp-gas-can');
-  assert.deepEqual([can.tree, can.number, can.name, can.priceCents, can.logo], [0, 1, 'TEMPORARY GAS CAN', 1500, 'gas-can']);
+  assert.deepEqual([can.tree, can.number, can.name, can.priceCents, can.logo], [0, 1, 'TEMPORARY GAS CAN', 1000, 'gas-can']);
   assert.match(can.description, /a splash to get you going/);
   const dummy = notes.find((n) => n.id === 'truck-9');
   assert.deepEqual([dummy.name, dummy.logo, dummy.from], ['TRUCK 9', 'truck', ['back-it-up', 'gitty-up']]);
-  // SCREAM-364 (PO, November 16): More Space for Scream is the left note under the gas can, $20.
+  // SCREAM-364 (PO, November 16): More Space for Scream is the left note under the gas can, $15 (SCREAM-369).
   const junk = notes.find((n) => n.id === 'more-junk');
-  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE SPACE FOR SCREAM', 2000, ['temp-gas-can'], 'more-junk']);
+  assert.deepEqual([junk.name, junk.priceCents, junk.from, junk.logo], ['MORE SPACE FOR SCREAM', 1500, ['temp-gas-can'], 'more-junk']);
 });
 
-test('SCREAM-364 (PO: "switch "more space for scream" with "gitty up" in both location and price"): Gitty Up is the right note under Brakes, $50', () => {
+test('SCREAM-364 (PO: "switch "more space for scream" with "gitty up" in both location and price"): Gitty Up is the right note under Brakes; SCREAM-369: $30, its row\'s price', () => {
   const gitty = notes.find((n) => n.id === 'gitty-up');
-  assert.deepEqual([gitty.tree, gitty.name, gitty.priceCents, gitty.logo, gitty.from], [0, 'GITTY UP', 5000, 'gitty-up', ['brakes-made-this-century']]);
+  assert.deepEqual([gitty.tree, gitty.name, gitty.priceCents, gitty.logo, gitty.from], [0, 'GITTY UP', 3000, 'gitty-up', ['brakes-made-this-century']]);
   assert.match(gitty.description, /Increase acceleration\./);
   assert.deepEqual(notes.find((n) => n.id === 'brakes-made-this-century').from, ['more-junk', 'trot']);
   const junk = notes.find((n) => n.id === 'more-junk');
@@ -104,9 +104,9 @@ test('SCREAM-364 (PO: "switch "more space for scream" with "gitty up" in both lo
   assert.ok(junk.y === trot.y && junk.x < trot.x, 'More Space for Scream sits where Gitty Up was, left of Trot');
 });
 
-test('SCREAM-310: Trot is the right note under the gas can, $20, with its own name and picture', () => {
+test('SCREAM-310: Trot is the right note under the gas can, $15, with its own name and picture', () => {
   const trot = notes.find((n) => n.id === 'trot');
-  assert.deepEqual([trot.tree, trot.name, trot.priceCents, trot.logo, trot.from], [0, 'TROT', 2000, 'trot', ['temp-gas-can']]);
+  assert.deepEqual([trot.tree, trot.name, trot.priceCents, trot.logo, trot.from], [0, 'TROT', 1500, 'trot', ['temp-gas-can']]);
   assert.match(trot.description, /without any gas pedal/);
   assert.deepEqual(notes.find((n) => n.id === 'steam-engine').from, ['trot']);
 });
@@ -146,35 +146,35 @@ test('SCREAM-303: Service With A Smile is the only top note of the Customer tree
   const tops = notes.filter((n) => n.tree === 2 && n.from.length === 0).map((n) => n.id);
   assert.deepEqual(tops, ['service-with-a-smile']);
   assert.deepEqual(notes.filter((n) => n.from.includes('service-with-a-smile')).map((n) => n.id), ['upgrade-speaker', 'calculator']);
-  // SCREAM-317: the right one is Calculator, $30.
+  // SCREAM-317: the right one is Calculator, $15.
   const calc = notes.find((n) => n.id === 'calculator');
-  assert.deepEqual([calc.name, calc.priceCents, calc.description], ['CALCULATOR', 3000, 'Get a calculator to use at the sales window.']);
-  // SCREAM-81: the left one is Upgrade Speaker, $30.
+  assert.deepEqual([calc.name, calc.priceCents, calc.description], ['CALCULATOR', 1500, 'Get a calculator to use at the sales window.']);
+  // SCREAM-81: the left one is Upgrade Speaker, $15.
   const speaker = notes.find((n) => n.id === 'upgrade-speaker');
-  assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 3000, 'Increase the reach of the speaker.']);
+  assert.deepEqual([speaker.name, speaker.priceCents, speaker.description], ['UPGRADE SPEAKER', 1500, 'Increase the reach of the speaker.']);
 });
 
-test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $30', () => {
+test('SCREAM-80: Train Off The Tracks is the Truck tree\'s left third-row note, under Gitty Up, $20', () => {
   const n = notes.find((x) => x.id === 'train-off-the-tracks');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 3000, 'train-off-tracks', ['more-junk'], 'Max velocity increased.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'TRAIN OFF THE TRACKS', 2000, 'train-off-tracks', ['more-junk'], 'Max velocity increased.']);
 });
 
-test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $30; Truck 7 hangs from it', () => {
+test('SCREAM-325: Brakes Made This Century is the middle third-row note, under Gitty Up or Trot, $20; Truck 7 hangs from it', () => {
   const n = notes.find((x) => x.id === 'brakes-made-this-century');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 3000, 'brake-disc', ['more-junk', 'trot'], 'Brakes are better.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'BRAKES MADE THIS CENTURY', 2000, 'brake-disc', ['more-junk', 'trot'], 'Brakes are better.']);
   // SCREAM-340: Truck 7 is Back It Up now.
   const back = notes.find((x) => x.id === 'back-it-up');
-  assert.deepEqual([back.name, back.priceCents, back.from, back.logo, back.description], ['BACK IT UP', 4000, ['brakes-made-this-century'], 'back-it-up', 'Increase the speed of the truck in reverse.']);
+  assert.deepEqual([back.name, back.priceCents, back.from, back.logo, back.description], ['BACK IT UP', 3000, ['brakes-made-this-century'], 'back-it-up', 'Increase the speed of the truck in reverse.']);
 });
 
-test('SCREAM-326: Steam Engine is the right third-row note, under Trot, $30', () => {
+test('SCREAM-326: Steam Engine is the right third-row note, under Trot, $20', () => {
   const n = notes.find((x) => x.id === 'steam-engine');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'STEAM ENGINE', 3000, 'steam-engine', ['trot'], 'Increase the speed of the truck as it rolls.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [0, 'STEAM ENGINE', 2000, 'steam-engine', ['trot'], 'Increase the speed of the truck as it rolls.']);
 });
 
-test('SCREAM-329: Speaker with Heavier Bass is the Customer tree\'s left third-row note, under Upgrade Speaker, $40', () => {
+test('SCREAM-329: Speaker with Heavier Bass is the Customer tree\'s left third-row note, under Upgrade Speaker, $20', () => {
   const n = notes.find((x) => x.id === 'heavier-bass');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'SPEAKER WITH HEAVIER BASS', 4000, 'bass-guitar', ['upgrade-speaker'], 'More likely to get customers in their home.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'SPEAKER WITH HEAVIER BASS', 2000, 'bass-guitar', ['upgrade-speaker'], 'More likely to get customers in their home.']);
   assert.equal(buyStatus(n, ['service-with-a-smile'], 4000, true), 'locked');
   assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'ok');
 });
@@ -188,4 +188,13 @@ test('PO, November 15 (03:28): two notes come out of Brakes Made This Century an
     assert.deepEqual(at(last).from, [left, right]);
     assert.ok(at(last).y > at(left).y && at(last).x === at(parent).x); // the dummy below, in the middle
   }
+});
+
+test('SCREAM-369 (PO: "The first level should cost $10. The second $15. The next $20. Then $30."): the Truck and Customer trees cost the same, row by row; the Ice Cream tree keeps its prices', () => {
+  const byRow = [1000, 1500, 2000, 3000];
+  for (const id of ['truck', 'customer']) {
+    const tree = POWER_UP_TREES.find((t) => t.id === id);
+    for (const n of tree.notes.filter((x) => x.row < 4)) assert.equal(n.priceCents, byRow[n.row], `${id}: ${n.name ?? n.id}`);
+  }
+  assert.deepEqual(POWER_UP_TREES.find((t) => t.id === 'icecream').notes.map((n) => n.priceCents), [0, 2000, 2500, 3000, 3000, 1500]);
 });

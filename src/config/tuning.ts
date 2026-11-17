@@ -214,7 +214,7 @@ export const EXPLORATION_AWAY_START_CENTS = 150;
 export const EXPLORATION_AWAY_FARTHEST_CENTS = 500;
 export const EXPLORATION_STEP_CENTS = 10;
 /** SCREAM-303 (PO: "$15"). */
-export const SMILE_PRICE_CENTS = 1500;
+export const SMILE_PRICE_CENTS = 1000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $15)
 
 /** A customer at the window waits this long, from when the conversation starts, before leaving. */
 export const WINDOW_PATIENCE_SECONDS = 60;
@@ -324,7 +324,7 @@ export const CUSTOMER_INDOORS_FACTOR = 0.5;
  * every-day regular). Their Likelihood counts for this much more while the music reaches them.
  * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
  */
-export const BASS_PRICE_CENTS = 4000;
+export const BASS_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 /**
  * SCREAM-366 (PO, November 16: "I want to make it harder for people in their home to become customers.
  * That way the powerup has a bigger effect"; his answers "A quarter as likely" and "Bass: indoors back
@@ -479,7 +479,7 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
  */
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
-export const GITTY_UP_PRICE_CENTS = 5000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20)
+export const GITTY_UP_PRICE_CENTS = 3000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20) // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
 /**
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
@@ -494,23 +494,23 @@ export const TROT_CREEP_FACTOR = 2.1;
  * trot, just on top of it" (it added Trot's step again). SCREAM-336 (PO, November 15): "trot and steam
  * should be another 2x increase": it doubles the roll speed Trot gives (25.2 to 50.4 px/s).
  */
-export const STEAM_PRICE_CENTS = 3000;
+export const STEAM_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const STEAM_CREEP_FACTOR = 2;
 /** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 5% better (braking time / 1.05; 10% at first, the PO while testing: "only be 5% better as well"). */
-export const BRAKES_PRICE_CENTS = 3000;
+export const BRAKES_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const BRAKES_FACTOR = 1.05;
 /** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
-export const TRAIN_PRICE_CENTS = 3000;
+export const TRAIN_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const TRAIN_TOP_SPEED_FACTOR = 1.05;
 /** SCREAM-310 (PO: "Lets go with $20"). */
-export const TROT_PRICE_CENTS = 2000;
+export const TROT_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
-export const SPEAKER_PRICE_CENTS = 3000;
+export const SPEAKER_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const SPEAKER_RADIUS_FACTOR = 1.1;
 /** SCREAM-317 (PO, November 14): the Calculator note, $30. */
-export const CALCULATOR_PRICE_CENTS = 3000;
+export const CALCULATOR_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 /** SCREAM-330 (PO, November 14): This Century Register, $40 (his answer): a tablet at the window; a click on an ice cream adds its price. */
-export const REGISTER_PRICE_CENTS = 4000;
+export const REGISTER_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**
@@ -595,7 +595,7 @@ export const HINT_MAX_PER_EVENING = 2;
  * SCREAM-245 (PO, November 14): the Handy Notebook, $40 (his answer). Every hint a customer says
  * at the window is written down once it is owned. How many fit on a page of it.
  */
-export const NOTEBOOK_PRICE_CENTS = 4000;
+export const NOTEBOOK_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 export const NOTEBOOK_ENTRIES_PER_PAGE = 4;
 
 // ---- Customers mention their own schedule (SCREAM-247) ----
@@ -695,7 +695,7 @@ export const DRUM_CONE_SOLO_SECONDS = 30;
  * strength are engineering's proposals; the strength isn't shown (decision 132). Story's top reverse
  * speed goes from about 46 to about 68 px/s.
  */
-export const BACK_IT_UP_PRICE_CENTS = 4000;
+export const BACK_IT_UP_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
 
 /**
@@ -704,7 +704,7 @@ export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
  * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
  * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
  */
-export const MORE_JUNK_PRICE_CENTS = 2000; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50)
+export const MORE_JUNK_PRICE_CENTS = 1500; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50) // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
 export const MORE_JUNK_EXTRA_ROWS = 1;
 
 /**
@@ -714,7 +714,7 @@ export const MORE_JUNK_EXTRA_ROWS = 1;
  * truck who is off screen has a round marker at the screen's edge, with their face, pointing at them.
  * The price and the marker's sizes (px on the map, before the camera's zoom) are engineering's proposals.
  */
-export const MIRRORS_PRICE_CENTS = 5000;
+export const MIRRORS_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
 export const MIRROR_MARKER_RADIUS = 13;
 export const MIRROR_MARKER_MARGIN = 24;
 /** Extra room kept clear at the top (song name, credit) and bottom (key hints, park brake) of the road view, map px. */
@@ -737,7 +737,7 @@ export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
 export const CHASE_ADULT_SECONDS = 30;
 export const CHASE_SLOW_KID_SECONDS = 20;
 export const FAST_KID_SPEED_FACTOR = 1.5;
-export const SPEEDY_PRICE_CENTS = 6000;
+export const SPEEDY_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $60)
 export const SPEEDY_SPEED_FACTOR = 1.25;
 
 /**

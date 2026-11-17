@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 172 — Cheaper power-ups, priced by row: $10, $15, $20, $30 in both trees (2026-11-16)
+
+**Decision (Jira SCREAM-369, under SCREAM-78, PO, November 16, 01:58):** "High level ticket: I want to reduce the prices of the powerups. The first level should cost $10. The second $15. The next $20. Then $30." And (21:25): "I want to make the customer powerups the same pricing order top to bottom as the truck powerups." Asked whether to build the cheaper prices as well, he picked **"Build it too"**. The Truck and Customer trees now cost the same, row by row: first row $10 (Temporary Gas Can, Service With A Smile; were $15); second $15 (More Space for Scream, Trot, were $20; Upgrade Speaker, Calculator, were $30); third $20 (Train Off The Tracks, Brakes Made This Century, Steam Engine, were $30; Speaker with Heavier Bass, Handy Notebook, This Century Register, were $40); fourth $30 (Back It Up $40, Gitty Up $50, Better Mirrors $50, Speedy Neighbors $60 before). His answers: **"Both $30"** for the fourth row (the left and right notes no longer differ), **"Keep their prices"** for the Ice Cream tree, and **"Yes, by row"** for More Space for Scream ($15) and Gitty Up ($30), which decision 166 had swapped.
+
+**Options considered:** the Customer tree at the Truck tree's old prices ($15, $20, $30, $40 and $50; he agreed to those first, then chose to build the cheaper rows too); the fourth row at $30 left and $40 right; the Ice Cream tree following the rows ($15, $20, $30).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the fifth-row dummy notes stay unbuyable; nobody is refunded for notes already bought in a saved Story run; the $600 bike is unchanged.
+
 ## 171 — A longer evening: 4:00 to 8:00 PM, 7 minutes (2026-11-16)
 
 **Decision (Jira SCREAM-371, under SCREAM-78, PO, November 16, 17:34 and 17:36):** "I want to slightly increase how long every night is. Both in story and quickplay." Then: "I want to actually make the night be from 4pm to 8pm. Lets make it 7 minutes long." Every evening (Story, the uncle's evening, Quick play) now runs from 4:00 PM to 8:00 PM and lasts 7 minutes of real time; it was 5:00 to 8:00 PM in 5 minutes. A game minute takes 1.75 seconds (it was 1.67), so the clock ticks at almost the same pace and the evening gains an hour at its start. Asked whether the uncle's evening gets longer too, he picked **"Yes, every evening"**.

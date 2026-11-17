@@ -182,7 +182,7 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         col: 1,
         row: 0,
         from: [],
-        priceCents: 1500,
+        priceCents: 1000, // SCREAM-369 (PO, November 16): the first row costs $10 (was $15)
         name: 'TEMPORARY GAS CAN',
         description: 'Run out of gas and it pours itself in: a splash to get you going. Full again every day.',
         logo: 'gas-can',
