@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 186 — Two Ball Lou Ball: the tip is 1.5 times (was double), and the gas and the brake swap too (2026-11-17)
+
+**Decision (Jira SCREAM-389, under SCREAM-78; PO, November 17, 15:22):** "Let's work on making the Lou ball more balanced. Let's make the tip reduce". Asked what the tip should become, he chose "Tip x 1.5 (Recommended)". Asked ticket only or ticket and build: "Ticket and build. One thing I want to add is I want to make driving forward and reverse also flipped during the time of the buff." So a Story sale that includes a Two Ball Lou Ball pays 1.5 times the tip (it was 2 times, decision 138), and for the 10 seconds of driving after it, up brakes and reverses and down is the gas, as well as left and right being swapped.
+
+**Options considered:** tip x 1.5 (engineering's recommendation); tip x 1.25; keeping x 2 but only on the Lou Balls' own share of the price.
+
+**Why (product owner's rationale):** to make the Lou Ball "more balanced" (his words above). _Anything more: to be filled in by the PO._ Background, engineering's and not his reason: the balance write-up of November 17 found the Lou Ball costs and sells for the same as the Drum Cone and doubled the tip on top, about $10 an evening more than the Drum Cone at 10 customers an evening.
+
+**Engineering's calls (proposals):** the label on the road says "CONTROLS REVERSED" (it was "STEERING REVERSED"), since more than the steering is flipped; the sales window says "BIG TIP" (it was "DOUBLE TIP"); the park brake (Q) and every other key are unchanged; the note still says "High upside, crazy downside."; the 10 seconds, the $20 price and the $0.75 cost to stock are unchanged.
+
 ## 185 — Foley Stadium: driveways by the houses, parking by the apartments (2026-11-17)
 
 **Decision (Jira SCREAM-388, under SCREAM-10; PO, November 17, 12:53, while testing SCREAM-384 to 387):** "I want to add driveways". His answers: which buildings: "Houses yes, apartments get parking" (small houses and modern buildings get a driveway each; apartment buildings get a small shared parking area beside them instead); the look: "Differ by neighbourhood" (dark asphalt like Elm Park by the small houses, a paler paved look by the modern buildings, marked parking bays by the apartments); cars: "Looks only" (painted ground under everything, no effect on play; cars on Foley Stadium would be a separate ticket).

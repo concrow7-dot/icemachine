@@ -403,7 +403,7 @@ export class Sale {
 
   /** SCREAM-250: the tip is multiplied by this (4 for a hard-to-find customer). */
   tipFactor = 1;
-  /** SCREAM-334: this order includes a Two Ball Lou Ball (Story): the tip is doubled and the steering is reversed afterwards. */
+  /** SCREAM-334: this order includes a Two Ball Lou Ball (Story): the tip is 1.5 times as big (SCREAM-389; it was doubled) and the controls are reversed afterwards. */
   louBall = false;
   /** SCREAM-335: this order includes a Drum Cone (Story): paying for it starts the drum solo. */
   drumCone = false;

@@ -140,7 +140,7 @@ const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y);
 
 /** SCREAM-334: the countdown shown while the steering is reversed (doc 15). */
 export function steeringReversedText(seconds: number): string {
-  return `STEERING REVERSED  ${seconds}`;
+  return `CONTROLS REVERSED  ${seconds}`; // SCREAM-389: the gas and the brake swap too (was STEERING REVERSED)
 }
 
 /** SCREAM-335: the countdown shown while the drum solo plays (doc 15). */
@@ -251,7 +251,7 @@ export class DriveScene extends Phaser.Scene {
   /** Which way the truck last moved (1 forward, -1 reverse): it creeps that way when you let go. */
   private rolling = 1;
   private parkLabel!: Phaser.GameObjects.Text;
-  /** SCREAM-334: "STEERING REVERSED 7" while a Two Ball Lou Ball's 10 seconds run (test hook). */
+  /** SCREAM-334, SCREAM-389: "CONTROLS REVERSED 7" while a Two Ball Lou Ball's 10 seconds run (test hook). */
   reversedLabel!: Phaser.GameObjects.Text;
   /** SCREAM-335: "DRUM SOLO 23" while a Drum Cone's 30 seconds run (test hook). */
   drumLabel!: Phaser.GameObjects.Text;
@@ -734,8 +734,11 @@ export class DriveScene extends Phaser.Scene {
 
   /** Car-style driving (#32): the only way to drive since Easy was removed (SCREAM-53). */
   private driveHard(dt: number): void {
-    const gas = this.held.includes('up');
-    const brake = this.held.includes('down');
+    // SCREAM-389 (PO, November 17: "I want to make driving forward and reverse also flipped during the
+    // time of the buff"): while a Two Ball Lou Ball's 10 seconds run, up brakes and reverses and down is the gas.
+    const flipped = this.evening.steeringReversed;
+    const gas = this.held.includes(flipped ? 'down' : 'up');
+    const brake = this.held.includes(flipped ? 'up' : 'down');
     // SCREAM-334: after a Two Ball Lou Ball sale the steering is swapped for 10 seconds of driving.
     const steer = ((this.held.includes('right') ? 1 : 0) - (this.held.includes('left') ? 1 : 0)) * (this.evening.steeringReversed ? -1 : 1);
 

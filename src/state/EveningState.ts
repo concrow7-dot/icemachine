@@ -167,6 +167,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   private explorationTotalCents = 0;
   /**
    * SCREAM-334: how much longer the steering is reversed (left is right), in ms. 0 = normal.
+   * SCREAM-389: for the same time the gas and the brake are swapped too.
    * SCREAM-358 (PO, November 15: "The key bindings reversing isn't happening"): it runs down only
    * while the truck is moving. It used to run down parked too, so after a sale (parked on the brake,
    * waiting for or serving the next customer) it was over before the player steered at all.
@@ -1042,7 +1043,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.saleNow = new Sale(order, this.coolerSlots.length, this.nowMsValue, Math.random() < this.orderPictureChance, this.isSoldOut);
     // SCREAM-250 (PO): a hard-to-find customer tips 4 times as much (Story only, like all traits).
     if (this.story && customer?.resident.hardToFind) this.saleNow.tipFactor = HARD_TO_FIND_TIP_FACTOR;
-    // SCREAM-334 (PO): a sale with a Two Ball Lou Ball pays double the tip, once, however many are in the order.
+    // SCREAM-334 (PO): a sale with a Two Ball Lou Ball pays 1.5 times the tip (SCREAM-389; it was double), once, however many are in the order.
     if (this.story && order.some((line) => line.flavour === 'louball')) {
       this.saleNow.louBall = true;
       this.saleNow.tipFactor *= LOU_BALL_TIP_FACTOR;

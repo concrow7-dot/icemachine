@@ -431,8 +431,8 @@ export class SalesScene extends Phaser.Scene {
   private celebrate(priceCents: number, tipCents: number, spongePopCents = 0, explorationCents = 0, doubled = false): void {
     const plainTip = tipCents - spongePopCents;
     const lines: { text: string; colour: string; size: number }[] = [
-      // SCREAM-334: a Two Ball Lou Ball's doubled tip says so.
-      { text: plainTip > 0 ? `+${formatMoney(plainTip)} ${doubled ? 'DOUBLE TIP' : 'TIP'}` : 'No tip', colour: plainTip > 0 ? '#1d5c8c' : '#8a6a4a', size: 44 },
+      // SCREAM-334: a Two Ball Lou Ball's bigger tip says so. SCREAM-389: it is 1.5 times now, so BIG TIP (was DOUBLE TIP).
+      { text: plainTip > 0 ? `+${formatMoney(plainTip)} ${doubled ? 'BIG TIP' : 'TIP'}` : 'No tip', colour: plainTip > 0 ? '#1d5c8c' : '#8a6a4a', size: 44 },
     ];
     if (spongePopCents > 0) lines.push({ text: `+${formatMoney(spongePopCents)} SPONGEPOP TIP`, colour: '#c2185b', size: 30 });
     // SCREAM-312 (PO, November 14): the exploration tip is its own line, after the tip.
