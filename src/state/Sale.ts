@@ -314,7 +314,8 @@ export class Sale {
   /**
    * The player types a price and presses Enter. Returns what happened:
    * - `retry`: wrong items, first time: the customer says the right order again,
-   *   the items go back in the cooler, and the player tries again (Q27)
+   *   the items stay in the bag (SCREAM-383; they used to go back in the cooler),
+   *   and the player tries again (Q27)
    * - `reprice`: too high, first time (SCREAM-120): the customer says so and the
    *   player types the price again, with no tip
    * - otherwise the sale is over (see `outcome`)

@@ -158,10 +158,16 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter');
   check('Wrong items, first time: the customer says the right order', (await ev('e.sale.line')).includes('I wanted 1 Lil Explorer Pop'), true);
-  check('...items go back in the cooler, order shown again', (await stock()) + ' ' + (await ev('e.sale.phase')), '8,4,5,0 ordering');
+  // SCREAM-383 (PO, November 17): "leave the items you tried to give the customer in the bag" (they used to go back in the cooler).
+  check('SCREAM-383: ...the items stay in the bag (not back in the cooler), order shown again', (await stock()) + ' ' + (await ev('e.sale.bagCount + " " + e.bagContents.map(i => i.flavour).join(",")')) + ' ' + (await ev('e.sale.phase')), '7,4,5,0 1 eclair ordering');
   check('...and the tip is gone', await sc('Sales', 's.tipBar.label.text'), 'No tip');
   await tick(5100);
-  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("explorer")'); await wait(100); await press('Enter'); await wait(300);
+  await press('c'); await wait(300);
+  check('SCREAM-383: ...back at the cooler the bag still holds what was handed over', await sc('Fill', 's.evening.bagContents.map(i => i.flavour).join(",")'), 'eclair');
+  // Fix only the mistake: the eclair back in its square, the Explorer Pop in.
+  await ev('e.putBack(0)'); await wait(100);
+  check('SCREAM-383: ...taking the wrong one out puts it back in the cooler', (await stock()) + ' ' + (await ev('e.sale.bagCount')), '8,4,5,0 0');
+  await sc('Fill', 's.takeFlavour("explorer")'); await wait(100); await press('Enter'); await wait(300);
   const c2 = await cash();
   await page.keyboard.type('2'); await press('Enter');
   check('Right items, undercharged ($2.00 < $2.50): accepted, no tip', ((await cash()) - c2) + ' ' + (await ev('e.sale.outcome.kind')), '200 paid');

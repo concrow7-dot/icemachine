@@ -1117,7 +1117,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
     const sale = this.saleNow;
     if (!sale) return;
     const result = sale.charge(priceCents, orderTotalCents(sale.order, this.coolerSlots), this.nowMsValue);
-    if (result === 'retry') this.returnBagToStock(sale);
+    // SCREAM-383 (PO, November 17): "When you give an incorrect order, leave the items you tried to give the
+    // customer in the bag. Currently you need to completely restock it." So after a first wrong order the bag
+    // keeps what was handed over (it used to go back to the cooler); the player fixes only the mistake.
     if (sale.outcome?.kind === 'paid') {
       this.changeMoney(sale.outcome.priceCents, 'Sale');
       this.salesTotalCents += sale.outcome.priceCents;
