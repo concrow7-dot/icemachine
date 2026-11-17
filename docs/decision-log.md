@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 175 — The Lil Explorer Pop's explorer has brown skin, dark braids and brown eyes (2026-11-16)
+
+**Decision (Jira SCREAM-375, under SCREAM-6, PO, November 16, 21:42):** "the person who the lil explorer is based off of is latino, so I don't want it to seem like we are changing the race of our pop. Can you make a more latino looking explorer." The pop's picture is redrawn: warm brown skin, dark brown braids and fringe, brown eyes; she was ginger with freckles and blue eyes. The safari hat, the green bows and the shape are unchanged. The same picture is used in the cooler, on Today's Menu, in orders and on her power-up note.
+
+**Why (product owner's rationale):** "I don't want it to seem like we are changing the race of our pop."
+
+**Engineering's calls (proposals):** the exact colours; no freckles; still our own character (the art direction's rule: never copy a licensed character), with nothing taken from any real character's look.
+
 ## 174 — The eclair, SpongePop and Lil Explorer Pop join Today's Menu at the most a customer pays (2026-11-16)
 
 **Decision (Jira SCREAM-374, under SCREAM-78, PO, November 16, 21:42):** "On the chocolate éclair, spongepop and lil explorer, ake the price the max allowed when added fomr available ice cream." In Story, when the first one of these is added from Available Ice Cream, its line on Today's Menu starts at the most a customer pays for it: the Chocolate Eclair $2.50 (it started at $2.00), SpongePop and the Lil Explorer Pop $3.00 (they started at $2.50). The Two Ball Lou Ball and the Drum Cone already start at their most ($3.00).
