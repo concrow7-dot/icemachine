@@ -1,4 +1,6 @@
 import { currentMap } from '../config/maps';
+import { loadHandFonts } from '../ui/handFonts';
+import { UNCLE_HAND } from '../state/Handwriting';
 import * as Phaser from 'phaser';
 import { PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
 import { musicFor } from '../audio/Music';
@@ -42,6 +44,11 @@ export class HudScene extends Phaser.Scene {
 
   constructor() {
     super(SceneKeys.Hud);
+  }
+
+  /** SCREAM-378: the uncle's box is written in his handwriting. */
+  preload(): void {
+    loadHandFonts(this, [UNCLE_HAND]);
   }
 
   create(): void {

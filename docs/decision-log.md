@@ -2,6 +2,68 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 183 — After a wrong order, the ice creams stay in the bag (2026-11-17)
+
+**Decision (Jira SCREAM-383, under SCREAM-154, PO, November 17, 02:16):** "When you give an incorrect order, leave the items you tried to give the customer in the bag. Currently you need to completely restock it." After a first wrong order (the customer says "That's not what I asked for. I wanted ...") the bag keeps what was handed over; back at the cooler the player takes out what is wrong and adds what is missing. It used to go back to its squares in the cooler, so the whole bag had to be filled again. Still one second chance only: a second wrong order ends the sale and the customer leaves with the items.
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** having to restock the whole bag (his words above). _Anything more: to be filled in by the PO._
+
+## 182 — Temporary Gas Can note: the last line is "Refills daily." (2026-11-17)
+
+**Decision (Jira SCREAM-382, under SCREAM-78, PO, November 17, 02:02):** "On the temporary gas can. I want to change the last line to be: "Refills daily."" The note now reads: "Run out of gas and it pours itself in: a splash to get you going. Refills daily." (its last line was "Full again every day.").
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** "I just liked the shorter more concise wording."
+
+## 181 — "Roundabout", not "rotary": the teleport hint, and the street's name (2026-11-17)
+
+**Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." Asked at 02:12 whether the street "Elm Park Rotary" (on the map and in the top bar) should change too: "Yes": it is "Elm Park Roundabout". Asked whether the game should use his own line from the sheet once its typos were fixed: "Yes fix my typos and use that". The regular's hint now reads: "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it." From now on the word is "roundabout" in chat, tickets, docs and on screen.
+
+**Options considered:** changing only the word in engineering's old line (the first build); leaving the street's name.
+
+**Why (product owner's rationale):** "It's a New England only term so I wanted more people to understand the term."
+
+**Engineering's calls (proposals):** in his line "I;ve" became "I've", the stray "a" at the end went, and the full stop in the middle of the sentence became a comma, so it reads as one sentence; the names in the code (`ROTARY_HINT_LINE`, `rotaryHintGiven`) and the sheet tab's name keep "rotary"; the street's name was changed in `tools/tutorial/roads.json` and in the built map file by hand (a full map build needs the art repo and would give the same name).
+
+## 180 — Car owners drive home along the road and park outside their house (2026-11-17)
+
+**Decision (Jira SCREAM-380, under SCREAM-11, PO, November 17, about 00:55):** asked how people who are away (decision 179) should get home, he chose **"Drive in by car"**: car owners drive in along the road and park; others walk. Engineering had said this is much bigger, as nothing but the truck moved on the road before. Asked what happens when a moving car and the truck meet: **"The car stops and waits"**: it brakes when the truck is in its way and carries on once clear, and driving into it costs the same as bumping a parked car. People without a car: **"They walk in"**. So a resident with a Car in the sheet who is away comes home in it: the car comes onto the map where the road runs off its edge (in Elm Park, west of the roundabout), drives along the streets in its lane, round the roundabout the way traffic goes, to its own parking spot; the owner then gets out and walks to the door.
+
+**Options considered:** the car keeps going and any contact is a bump; no contact while moving (solid only once parked); kids riding home with a neighbour; everyone walking for now.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the car takes the shortest way along the streets, arriving the way it is parked; it drives at about a third of the truck's top speed (170 px a second, 80 in corners; slowed to 136 and 64 the same night, below), 16 px right of the middle of the street, which clears the cars parked at the curb; it also waits for anyone on foot in its way and for another car ahead, so cars queue behind a truck that is serving in their lane; if its parking spot is blocked it waits in the road beside it; the owner cannot be served until they have parked and got out; the clock time a driver is given (decision 179) is when the car comes onto the map; a map with no road running off its edge, or a sheet with no Car column (Foley Stadium today), falls back to walking.
+
+After seeing the numbers (about 5 cars and 8 walkers an evening), PO, November 17, 01:51: "I want to convert 2 walkers to cars". Jane Frostin (Westland Street) and Gerry Gelato (Germain Street) now have a car: 16 owners. Engineering's pick of who (a proposal): the two adults without a car who are away every weekday, so about two more people drive each evening. The build now keeps every existing owner's kind of car and spot when someone new gets one.
+
+PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Engineering read this as 80% of the cars' own top speed: 136 px a second (was 170), and 64 in corners (was 80).
+
+The PO confirmed both the same night (02:12): the speed is 80% of "The current cars speed", and of Jane Frostin and Gerry Gelato, "Sure those are good."
+
+## 179 — On their unticked days people are away, and come home through the evening from the map's edge (2026-11-17)
+
+**Decision (Jira SCREAM-379, under SCREAM-11, PO, November 17, 00:48):** "I want to make it so that the days people aren't home (marked in the residents sheet), they don't show up on their property. I also want to make it so that those people slowly arrive home throughout the evening. Similar to Drake Maye being in the park and then home at 7pm. I want people to slowly make it home, they should come from the edge of the map and make there way home. Starting at 5:30 they should start getting home, especially the adults." His answers: once home they can buy **"Yes, like a ticked day"**; **"Some stay out"** (a few, random each evening, never come home that evening); car owners **"Drive in by car"** (decision 180) and people without a car **"walk in"**; two stacked pull requests. So in Story a resident whose day is not ticked starts the evening away: not in their yard, no porch light, no car outside, and they do not hear the truck. From 5:30 PM they appear just outside the map and walk home along their own street's sidewalk; once they have appeared they are as likely to want ice cream as on a ticked day. This replaces decision 057's rule for an unticked day (still at home, 5 times less likely), which now only applies to nobody: everyone unticked is away.
+
+**Options considered:** once home, buying rarely (the old unticked chance) or not at all; everyone home by 7:30, or only adults coming home; walking in with the car appearing when the owner is home (what this ticket alone does), or with no change to cars.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** adults: three in four appear between 5:30 and 6:30, the rest up to 7:30; kids any time from 5:30 to 7:30; about 1 in 6 stay out (`AWAY_STAY_OUT_SHARE`), rolled from the Story run's seed and the day, so an evening is the same if replayed; they walk at 30 px a second (a brisk walk) from whichever end of their street is nearer the map's edge, or straight in behind the house or across the street where the edge is much nearer that way, and never across the middle of the roundabout; someone walking home can be served on the way if they hear the truck, then carries on home; the three residents who spend the evening at the park (decision 158) and the hard-to-find customers are unchanged; someone with a From is back no earlier than it, and someone whose Until they would miss stays out; not in the uncle's evening, not in Quick play (it has no days); the lines customers say about their week keep their wording.
+
+## 178 — Hand-drawn speech bubbles inside the truck, and handwriting that suits each customer (2026-11-16)
+
+**Decision (Jira SCREAM-378, under SCREAM-6, PO, November 16, 23:45):** "I want to upgrade the look of the speech bubble on the sales screen. Its too pixelated for the look we are going for for inside the truck." His answers: the new bubble is **"Hand-drawn cartoon"** (rounded, a slightly wobbly dark ink line, a curved tail, to match his drawings of the truck's inside); it changes for the **"Window and the uncle"** (the customer's and the player's bubbles at the sales window, the uncle's text box and the uncle's intro; the small "!" over customers on the map keeps the pixel bubble of SCREAM-126). On the lettering, in his own words: "What is we do a bunch of different ones. Adults will have better handwritting. Lets make the kids orders and names be a bit more childlike, still readable but not perfect. some kids should be near perfect, others messy. Lets have the names be written slightly larger than they are now as well." So the words and the name in a bubble are in handwriting: three neat hands for adults, six for kids from nearly perfect to messy (the messier ones lean a little off level), and names are larger (18 px became about 22).
+
+**Options considered:** a clean, even comic bubble; the PO sending his own sketch of a bubble; changing only the sales window, or every bubble including the map's "!"; keeping the typewriter font, or one hand-lettered font for everyone (he asked for many instead).
+
+**Why (product owner's rationale):** the pixel bubble did not fit the look of the inside of the truck (his words above). _His reason for the different handwritings: to be filled in by the PO._
+
+**Engineering's calls (proposals):** each person keeps the same handwriting every evening, worked out from their ID, with no new column in the Residents sheet; ten free fonts (SIL Open Font Licence or Apache 2.0), kept in `public/assets/fonts` with their licence files: adults Kalam, Delius, Architects Daughter; kids, neat to messy, Coming Soon, Schoolbell, Gochi Hand, Indie Flower, Gloria Hallelujah, Just Me Again Down Here; the uncle and the player's "You" bubble Patrick Hand; the words are a little bigger than before (22 px became about 25) because handwriting is narrower than the typewriter font; a line too tall for the usual bubble is written smaller; both modes, as it is a look and not a rule; the bubble is painted on a canvas at twice its size so its line is smooth; the old inner line is gone.
+
 ## 177 — A map on the truck's wall: Elm Park, then Foley Stadium once the truck has been there (2026-11-16)
 
 **Decision (Jira SCREAM-377, under SCREAM-10, PO, November 16, 22:27):** "I want to add a map to game. The map should show the elm park map, and then once the player teleports to the other map, that map should become available too. Two arrows on the side should bring the player between maps. The map should show details like home and gas stations, parks." Where it opens, with his red sketch of a "MAP" poster on the wall between the side door and the window: "Here is where I want to add it in the truck. Any time the player can get to this view, they should be able to see the map." His other answers: the clock **"Keeps running"** while it is open; it also shows **"Where the truck is"**, **"Street names"** and **"The roundabout portal"**. So a poster hangs on the truck's wall in every mode; a click (or N) opens a drawn map of the map home is on, with home, the gas stations, the parks, street names and the truck; once the truck has been through the roundabout the other map is there too (saved with the Story run), two arrow buttons switch between them, and the roundabout is marked on both.

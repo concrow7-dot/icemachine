@@ -608,6 +608,7 @@ export class DriveScene extends Phaser.Scene {
       radius: this.evening.spec.musicRadius,
       open: this.evening.acceptingCustomers,
       soldOut: this.evening.isSoldOut, // SCREAM-155
+      heading: this.heading, // SCREAM-380: cars on their way home stop for the truck
     });
     this.updateResidentCars(); // SCREAM-252
     this.drawResidents(time);
@@ -1210,15 +1211,18 @@ export class DriveScene extends Phaser.Scene {
       this.cars.push({ x: c.x, y: c.y, angle: c.angle, halfLength: c.halfLength, halfWidth: c.halfWidth });
       seen.add(c.id);
       let g = this.residentCars.get(c.id);
+      const view = carView(c.angle);
       if (!g) {
-        const view = carView(c.angle);
-        g = this.add
-          .image(c.x, c.y, CARS_KEY, `car${c.model}_${view.name}`)
-          .setAngle(c.angle - view.angle)
-          .setDepth(RESIDENT_DEPTH + c.y / DEPTH_PER_PX);
+        g = this.add.image(c.x, c.y, CARS_KEY, `car${c.model}_${view.name}`);
         this.residentCars.set(c.id, g);
       }
-      g.setVisible(true);
+      // SCREAM-380: a car on its way home moves and turns, so every car is placed afresh each frame.
+      const frame = `car${c.model}_${view.name}`;
+      if (g.frame.name !== frame) g.setFrame(frame);
+      g.setPosition(c.x, c.y)
+        .setAngle(c.angle - view.angle)
+        .setDepth(RESIDENT_DEPTH + c.y / DEPTH_PER_PX)
+        .setVisible(true);
     }
     for (const [id, g] of this.residentCars) if (!seen.has(id)) g.setVisible(false);
   }

@@ -657,11 +657,15 @@ export const PORTAL_VOLUME = 0.1;
 /**
  * PO (November 9): the hint comes from a regular on their second visit: the second regular in
  * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
- * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
+ * rewrites it there); "sync rotary hint" copies it here. (It was engineering's draft of November 9 until SCREAM-381.)
  */
 /** SCREAM-299 (decision 107, PO, November 13): the rotary hint comes when this many regulars have each been served twice in the Story run. */
 export const ROTARY_HINT_REGULARS = 3;
-export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
+// SCREAM-381 (PO, November 17): "I want to change the hint for the teleport to be "roundabout" from now on. It's
+// referred to as the rotary right now." (The names in the code keep "rotary".) The line is now the PO's own from
+// the sheet's hint tab ("Yes fix my typos and use that"): "I;ve" became "I've", the stray "a" at the end went, and
+// the full stop in the middle of the sentence became a comma (engineering's reading of it as one sentence).
+export const ROTARY_HINT_LINE = "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it.";
 
 // ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
 /** How much of the tank the can pours in when the tank runs empty: a fifth. */
@@ -812,3 +816,41 @@ export const CARS_JSON = 'assets/limezu/cars.json';
 // ---- SCREAM-374 (PO, November 16): ice creams that go onto Today's Menu at the most a customer pays (Story) ----
 /** Flavour ids. The Two Ball Lou Ball and the Drum Cone already start at their top ($3.00, flavours.ts). */
 export const MENU_STARTS_AT_TOP: readonly string[] = ['eclair', 'spongepop', 'explorer'];
+
+// ---- SCREAM-379 (PO, November 17): on their unticked days people are away, and come home through the evening ----
+/** "Starting at 5:30 they should start getting home": the first minute anyone who was away appears at the map's edge. */
+export const AWAY_FIRST_HOME_MINUTE = 17 * 60 + 30;
+/** "especially the adults": this share of the adults appear in the first hour (5:30 to 6:30); the rest, and the kids, any time up to AWAY_LAST_HOME_MINUTE. */
+export const AWAY_ADULT_EARLY_SHARE = 0.75;
+export const AWAY_ADULT_EARLY_UNTIL_MINUTE = 18 * 60 + 30;
+/** The last minute anyone appears at the map's edge (7:30 PM). */
+export const AWAY_LAST_HOME_MINUTE = 19 * 60 + 30;
+/** PO: "Some stay out": about this share of the people away never come home that evening (engineering's number). */
+export const AWAY_STAY_OUT_SHARE = 1 / 6;
+/** How fast someone walks home from the map's edge, px per second (a brisk walk: strolling is 11, running to the truck 37). */
+export const AWAY_WALK_SPEED = 30;
+/** Someone whose Until is this soon after they would appear stays out instead (minutes): they would not be home in time. */
+export const AWAY_WALK_ALLOWANCE_MINUTES = 30;
+/** How far outside the map someone coming home first appears, px. */
+export const AWAY_EDGE_MARGIN = 24;
+/** A walk in through the back yard, or straight across the street, counts as this many times its length, so people come along their street unless the edge is much nearer that way. */
+export const AWAY_BACK_YARD_COST = 1.5;
+/** A walk in that crosses the middle of a roundabout counts as this many times its length: nobody walks across one unless there is no other way. */
+export const AWAY_ROUNDABOUT_COST = 4;
+
+// ---- SCREAM-380 (PO, November 17): car owners drive home along the road ----
+/** How far right of a street's centre line a resident's car drives, px: clear of the cars parked at the curb. */
+export const HOME_DRIVE_LANE_OFFSET = 16;
+/** Corner rounding on the way home, px. */
+export const HOME_DRIVE_CORNER_RADIUS = 40;
+/**
+ * A resident's car on its way home: cruising and cornering speeds (px/s), speeding up and braking (px/s²). The truck does about 440 to 550.
+ * PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Read as 80% of what they did (170 and 80 in corners).
+ */
+export const HOME_DRIVE_PROFILE = { cruise: 136, accel: 110, brake: 320, bendSpeed: 64 } as const;
+/** The last stretch, over which the car leaves its lane for its parking spot, px. */
+export const HOME_DRIVE_PARK_GLIDE = 90;
+/** How much room a car on its way home leaves in front of it when it stops for something, px (beyond its own nose). */
+export const HOME_DRIVE_GAP = 14;
+/** How near a moving car's path a person on foot has to be to make it wait, px. */
+export const HOME_DRIVE_PERSON_ROOM = 22;

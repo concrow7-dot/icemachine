@@ -71,6 +71,16 @@ const { chromium } = require('playwright');
   check('Pulling up to a customer opens the sales screen (no hub)', await scenes(), 'Sales,Hud');
   check('The customer gives an order', await ev('e.sale.phase') + ' ' + (await ev('e.sale.order.length > 0')), 'ordering true');
   check('Bubble shows the order', await sc('Sales', 's.bubbleText.text') === await ev('e.sale.line'), true);
+  // SCREAM-378 (PO, November 16): a hand-drawn bubble, and the customer's own handwriting (adults neat, kids neat to messy).
+  check('SCREAM-378: the bubble is the hand-drawn one, its tail toward the customer', await sc('Sales', 's.bubble.image.name + " " + s.bubble.spec.tail.side + " " + s.bubble.spec.w'), 'hand-bubble right 480');
+  const hand = await page.evaluate(async () => {
+    const { writingFor, ADULT_HANDS, KID_HANDS } = await import('/src/state/Handwriting.js');
+    const s = window.__game.scene.getScene('Sales'); const r = window.__game.registry.get('evening').servingNow.resident;
+    const w = writingFor(r); const fonts = []; document.fonts.forEach(f => { if (f.status === 'loaded') fonts.push(f.family.replace(/"/g, '')); });
+    return [s.writing.hand === w.hand, (r.kid ? KID_HANDS : ADULT_HANDS).includes(w.hand), s.bubbleText.style.fontFamily.includes(w.hand.font), s.speakerText.style.fontFamily.includes(w.hand.font), fonts.includes(w.hand.font), Math.abs(s.bubbleText.angle - w.tilt) < 0.01, parseInt(s.speakerText.style.fontSize) > 18].join(' ');
+  });
+  check('SCREAM-378: the words and the name are in this customer\'s handwriting (font loaded), the name bigger than 18 px', hand, 'true true true true true true true');
+  check('SCREAM-378: the order fits inside the bubble', await sc('Sales', '(b => b.top > 125 + 30 && b.bottom < 125 + 150 - 8 && b.left > 90 + 8 && b.right < 570 - 8)(s.bubbleText.getBounds())'), true);
   check('Tip cup on the counter, full, no % while the order is showing (SCREAM-134)', (await sc('Sales', 's.tipBar.container.visible')) + ' ' + (await sc('Sales', 'JSON.stringify(s.tipBar.label.text)')), 'true ""');
   await page.screenshot({ path: outDir + '/sale_order.png' });
   await setOrder([{ slot: 0, flavour: 'eclair', count: 2 }, { slot: 1, flavour: 'spongepop', count: 1 }]);
@@ -148,10 +158,16 @@ const { chromium } = require('playwright');
   await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("eclair")'); await wait(100); await press('Enter'); await wait(300);
   await page.keyboard.type('2'); await press('Enter');
   check('Wrong items, first time: the customer says the right order', (await ev('e.sale.line')).includes('I wanted 1 Lil Explorer Pop'), true);
-  check('...items go back in the cooler, order shown again', (await stock()) + ' ' + (await ev('e.sale.phase')), '8,4,5,0 ordering');
+  // SCREAM-383 (PO, November 17): "leave the items you tried to give the customer in the bag" (they used to go back in the cooler).
+  check('SCREAM-383: ...the items stay in the bag (not back in the cooler), order shown again', (await stock()) + ' ' + (await ev('e.sale.bagCount + " " + e.bagContents.map(i => i.flavour).join(",")')) + ' ' + (await ev('e.sale.phase')), '7,4,5,0 1 eclair ordering');
   check('...and the tip is gone', await sc('Sales', 's.tipBar.label.text'), 'No tip');
   await tick(5100);
-  await press('c'); await wait(300); await sc('Fill', 's.takeFlavour("explorer")'); await wait(100); await press('Enter'); await wait(300);
+  await press('c'); await wait(300);
+  check('SCREAM-383: ...back at the cooler the bag still holds what was handed over', await sc('Fill', 's.evening.bagContents.map(i => i.flavour).join(",")'), 'eclair');
+  // Fix only the mistake: the eclair back in its square, the Explorer Pop in.
+  await ev('e.putBack(0)'); await wait(100);
+  check('SCREAM-383: ...taking the wrong one out puts it back in the cooler', (await stock()) + ' ' + (await ev('e.sale.bagCount')), '8,4,5,0 0');
+  await sc('Fill', 's.takeFlavour("explorer")'); await wait(100); await press('Enter'); await wait(300);
   const c2 = await cash();
   await page.keyboard.type('2'); await press('Enter');
   check('Right items, undercharged ($2.00 < $2.50): accepted, no tip', ((await cash()) - c2) + ' ' + (await ev('e.sale.outcome.kind')), '200 paid');
@@ -368,7 +384,8 @@ const { chromium } = require('playwright');
   await ev('(e.coolerSlots.forEach(s => s.priceCents = 450), window.__keep = e.coolerSlots.map(s => s.quantity), e.coolerSlots.forEach(s => s.quantity = 0), true)');
   await serveNow();
   check('Sold out: the player says "Sorry, I\'m sold out." (not "Too expensive!")', (await ev('e.sale.outcome.kind')) + ' ' + (await sc('Sales', 's.bubbleText.text')), "sold-out Sorry, I'm sold out.");
-  check('...the bubble is named "You", in blue, its tail pointing down', (await ev('e.sale.speaker')) + ' ' + (await sc('Sales', 's.speakerText.text')) + ' ' + (await sc('Sales', 's.speakerText.style.color')), 'player You #1d5c8c');
+  check('...the bubble is named "You", in blue, its tail pointing down', (await ev('e.sale.speaker')) + ' ' + (await sc('Sales', 's.speakerText.text')) + ' ' + (await sc('Sales', 's.speakerText.style.color')) + ' ' + (await sc('Sales', 's.bubble.spec.tail.side')), 'player You #1d5c8c down');
+  check('SCREAM-378: ...written in the player\'s own hand, level', await sc('Sales', 's.writing.hand.font + " " + s.bubbleText.style.fontFamily.includes(s.writing.hand.font) + " " + s.bubbleText.angle'), 'Patrick Hand true 0');
   check('...no price check, nothing charged, back on the road next', (await ev('e.sale.repriceUsed')) + ' ' + (await sc('Sales', 's.hint.text')), 'false Enter: Back On The Road');
   await page.screenshot({ path: outDir + '/sale_sold_out.png' });
   await press('Enter'); await wait(300);
@@ -379,7 +396,7 @@ const { chromium } = require('playwright');
 
   // ---- SCREAM-225 (PO, November 9): the speech bubble is drawn on every visit to the window ----
   // (Phaser reuses the scene; it used to skip drawing a bubble the same height as last time.)
-  const bubbleDrawn = () => sc('Sales', 's.bubble.commandBuffer.length > 50'); // an empty, cleared graphics still has a few commands
+  const bubbleDrawn = () => sc('Sales', 's.bubble.image.active && s.bubble.image.visible && s.bubble.spec.h >= 150 && s.bubble.image.displayHeight > 150 && s.textures.exists(s.bubble.image.texture.key)'); // SCREAM-378: the hand-drawn bubble's picture
   let drawnEvery = true;
   for (let i = 0; i < 3; i++) {
     await serveNow();

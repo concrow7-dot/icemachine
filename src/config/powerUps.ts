@@ -186,7 +186,8 @@ export const POWER_UP_TREES: PowerUpTree[] = [
         from: [],
         priceCents: 1000, // SCREAM-369 (PO, November 16): the first row costs $10 (was $15)
         name: 'TEMPORARY GAS CAN',
-        description: 'Run out of gas and it pours itself in: a splash to get you going. Full again every day.',
+        // SCREAM-382 (PO, November 17): "I want to change the last line to be: "Refills daily."" (it was "Full again every day.")
+        description: 'Run out of gas and it pours itself in: a splash to get you going. Refills daily.',
         logo: 'gas-can',
       },
       // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'", then

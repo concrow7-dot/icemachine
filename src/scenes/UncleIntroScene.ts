@@ -6,7 +6,9 @@ import { showLoadingWhileLoading } from './LoadingScene';
 import { CREDITS_TUNE_KEY } from './TutorialCrawlScene';
 import { HIGHLIGHT, OUTLINE, ZONES } from './TruckScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
-import { drawBubble } from '../ui/speechBubble';
+import { HandBubble } from '../ui/handBubble';
+import { handFamily, loadHandFonts } from '../ui/handFonts';
+import { UNCLE_HAND, handSize } from '../state/Handwriting';
 import { smoothUncleTexture, SMOOTH_FACTOR, UNCLE_KEY, UNCLE_URL } from '../ui/smoothPixels';
 
 /**
@@ -60,6 +62,7 @@ export class UncleIntroScene extends Phaser.Scene {
   preload(): void {
     loadTruckInterior(this);
     loadUncleArt(this);
+    loadHandFonts(this, [UNCLE_HAND]); // SCREAM-378
     showLoadingWhileLoading(this);
   }
 
@@ -123,24 +126,23 @@ export class UncleIntroScene extends Phaser.Scene {
     this.atHome = this.run.step === 'alone';
     if (this.atHome) this.cameras.main.fadeIn(500);
 
-    // The sales window's quote box, its tail stepping toward his face.
+    // The sales window's quote box, its tail curving toward his face (SCREAM-378: hand-drawn, in his handwriting).
     const bubbleStart = this.children.list.length;
-    drawBubble(this.add.graphics(), {
-      ...BUBBLE,
-      unit: 4,
-      innerLine: true,
-      tail: { side: 'right', at: 150, steps: 6, reach: 3 },
+    new HandBubble(this, BUBBLE.x, BUBBLE.y, {
+      w: BUBBLE.w,
+      h: BUBBLE.h,
+      seed: 11,
+      tail: { side: 'right', at: 134, width: 36, length: 70, lean: 30 },
     });
-    this.add.text(BUBBLE.x + 28, BUBBLE.y + 16, 'Uncle', {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      fontStyle: 'bold',
+    this.add.text(BUBBLE.x + 26, BUBBLE.y + 12, 'Uncle', {
+      fontFamily: handFamily(UNCLE_HAND),
+      fontSize: `${handSize(UNCLE_HAND, 21)}px`,
       color: '#c2185b',
     });
     this.lineText = this.add
       .text(BUBBLE.x + BUBBLE.w / 2, BUBBLE.y + BUBBLE.h / 2 + 6, '', {
-        fontFamily: 'monospace',
-        fontSize: '20px',
+        fontFamily: handFamily(UNCLE_HAND),
+        fontSize: `${handSize(UNCLE_HAND, 21)}px`,
         color: INK,
         align: 'center',
         wordWrap: { width: BUBBLE.w - 60 },

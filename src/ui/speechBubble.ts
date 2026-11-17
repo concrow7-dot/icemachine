@@ -3,8 +3,9 @@ import * as Phaser from 'phaser';
 /**
  * SCREAM-126 (PO, November 2): one speech bubble style for the whole game, like
  * Pokémon Yellow's text boxes: white, a dark pixel outline with notched corners, a
- * thin inner line, and a stepped pixel tail. Used by the "!" over customers on the map
- * and the customer's words at the window.
+ * thin inner line, and a stepped pixel tail. Used by the "!" over customers on the map.
+ * SCREAM-378 (PO, November 16): the bubbles inside the truck (the sales window, the uncle's
+ * box and intro) are hand-drawn now: see `handBubble.ts`.
  *
  * Everything is drawn in blocks of `unit` px, so it looks like pixel art at any size.
  */
