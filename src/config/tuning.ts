@@ -807,3 +807,7 @@ export const RESIDENT_CAR_BOX_INSET = 3;
 export const CARS_KEY = 'pack-cars';
 export const CARS_PNG = 'assets/limezu/cars.png';
 export const CARS_JSON = 'assets/limezu/cars.json';
+
+// ---- SCREAM-374 (PO, November 16): ice creams that go onto Today's Menu at the most a customer pays (Story) ----
+/** Flavour ids. The Two Ball Lou Ball and the Drum Cone already start at their top ($3.00, flavours.ts). */
+export const MENU_STARTS_AT_TOP: readonly string[] = ['eclair', 'spongepop', 'explorer'];
