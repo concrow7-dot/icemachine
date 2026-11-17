@@ -281,7 +281,10 @@ const { chromium } = require('playwright');
   check('...for about 4 seconds', held > 3.4 && held < 4.8 ? 'ok' : held.toFixed(1), 'ok');
   await wait(1200);
   check('Then his second line, and the truck creeps forward', (await uncle()) + ' | ' + (await drive('s.speed > 5 && s.speed < 40')), 'My best customers buy ice cream almost every night! Remembering where they live is the hard part. | true');
-  check('...a long line: his box grows a second row, and it fits', await page.evaluate(() => (b => b.height > 58 && b.text.y + b.text.height <= b.height - 58 / 2 - 6)(window.__game.scene.getScene('Hud').uncleBox)), true);
+  // SCREAM-378: in his handwriting (narrower than the old typewriter font) this line fits one row.
+  check('...a long line fits his box, in his handwriting', await page.evaluate(() => (b => b.text.style.fontFamily.includes('Patrick Hand') + ' ' + (b.text.y + b.text.height <= b.height - 58 / 2 - 4) + ' ' + (b.text.width <= 690 - 36))(window.__game.scene.getScene('Hud').uncleBox)), 'true true true');
+  check('SCREAM-378: his box is the hand-drawn bubble', await page.evaluate(() => (b => b.frame.image.name + ' ' + b.frame.spec.w + ' ' + !b.frame.spec.tail)(window.__game.scene.getScene('Hud').uncleBox)), 'hand-bubble 690 true');
+  check('...a line too long for one row: his box grows a second row, and it fits', await page.evaluate(() => (b => { const was = b.text.text; b.fitText('My best customers buy ice cream almost every night! Remembering where they live is the hard part, so write it down, kiddo, every single evening.'); const ok = b.height > 58 && b.frame.spec.h === b.height && b.text.y + b.text.height <= b.height - 58 / 2 - 4; b.fitText(was); return ok && b.height === 58; })(window.__game.scene.getScene('Hud').uncleBox)), true);
   await page.screenshot({ path: outDir + '/uncle_creep.png' });
   await page.waitForFunction(() => { const s = window.__game.scene.getScene('Drive'); return !s.scene.isActive() || !s.uncleLeg; }, null, { timeout: 15000 });
   const creep = (Date.now() - spottedAt) / 1000 - heldWall;

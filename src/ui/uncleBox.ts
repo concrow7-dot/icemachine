@@ -1,10 +1,13 @@
 import * as Phaser from 'phaser';
-import { drawBubble } from './speechBubble';
+import { HandBubble } from './handBubble';
+import { handFamily } from './handFonts';
+import { UNCLE_HAND, handSize } from '../state/Handwriting';
 import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
 
 /**
  * SCREAM-169: the uncle's lines during the guided tutorial, in the sales window's quote box
- * style (SCREAM-126, 127: his name top left in pink, PO November 5). He opens in the truck
+ * style (SCREAM-127: his name top left in pink, PO November 5; SCREAM-378: hand-drawn, in his
+ * handwriting, PO November 16). He opens in the truck
  * (UncleIntroScene); this smaller box carries his lines after that. Lives in the HUD, so it shows on every evening
  * screen. A line moves on by itself after LINE_MS, or straight away when clicked; the last
  * line of a step stays up until the player has done what it asks.
@@ -14,9 +17,16 @@ import { TutorialEvents, type TutorialRun } from '../state/Tutorial';
  * right). On the cooler (SCREAM-170) it sits top right, over the freezer's sign, clear of the
  * clipboard, Today's Menu and Buy Stock, which he talks about.
  */
-const BOX = { x: 0, y: 0, w: 690, h: 58, unit: 4 };
+const BOX = { x: 0, y: 0, w: 690, h: 58 };
+/** SCREAM-378: his box's look: a small bubble, so tighter corners and a finer line than the window's. */
+const LOOK = { radius: 14, line: 3, wobble: 1.2, seed: 5 };
+/** His words' sizes (before his hand's own scale): one row, and the smaller size for a long line. */
+const TEXT_PX = 15;
+const SMALL_PX = 14;
 /** PO (November 6): a line too long for one row gets a second row; the box grows down by this much. */
 const SECOND_ROW = 18;
+/** A line taller than this has wrapped onto a second row. */
+const ONE_ROW = 26;
 const SPOT_TOP = { x: 90, y: 48 };
 const SPOT_COOLER = { x: 254, y: 39 };
 const LINE_MS = 6000;
@@ -32,7 +42,7 @@ export class UncleBox {
   /** SCREAM-180: a yellow glow round the bubble that flashes as a new line arrives. */
   private readonly glow: Phaser.GameObjects.Graphics;
   private timer?: Phaser.Time.TimerEvent;
-  private readonly frame: Phaser.GameObjects.Graphics;
+  private readonly frame: HandBubble;
   private readonly hit: Phaser.GameObjects.Zone;
   /** The box's height now (one row, or two). */
   height = BOX.h;
@@ -46,18 +56,17 @@ export class UncleBox {
   constructor(scene: Phaser.Scene, run: TutorialRun) {
     this.scene = scene;
     this.run = run;
-    const g = drawBubble(scene.add.graphics(), { ...BOX, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
-    this.frame = g;
-    const name = scene.add.text(BOX.x + 18, BOX.y + 9, 'Uncle', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      fontStyle: 'bold',
+    this.frame = new HandBubble(scene, BOX.x, BOX.y, { w: BOX.w, h: BOX.h, ...LOOK });
+    const g = this.frame.image;
+    const name = scene.add.text(BOX.x + 18, BOX.y + 5, 'Uncle', {
+      fontFamily: handFamily(UNCLE_HAND),
+      fontSize: `${handSize(UNCLE_HAND, 15)}px`,
       color: '#c2185b',
     });
     // One row of text: his lines fit at this size (the longest, at the cooler, is 74 letters).
     this.text = scene.add.text(BOX.x + 18, BOX.y + 27, '', {
-      fontFamily: 'monospace',
-      fontSize: '14px',
+      fontFamily: handFamily(UNCLE_HAND),
+      fontSize: `${handSize(UNCLE_HAND, TEXT_PX)}px`,
       color: '#2b1d10',
       wordWrap: { width: BOX.w - 44 },
       lineSpacing: 2,
@@ -158,16 +167,16 @@ export class UncleBox {
 
   /** One row: a line too long for it at 14 px (e.g. his line at the window) is set at 13 px. */
   private fitText(line: string): void {
-    this.text.setFontSize(14).setText(line);
-    if (this.text.height > 24) this.text.setFontSize(13);
-    this.setHeight(this.text.height > 24 ? BOX.h + SECOND_ROW : BOX.h);
+    this.text.setFontSize(handSize(UNCLE_HAND, TEXT_PX)).setText(line);
+    if (this.text.height > ONE_ROW) this.text.setFontSize(handSize(UNCLE_HAND, SMALL_PX));
+    this.setHeight(this.text.height > ONE_ROW ? BOX.h + SECOND_ROW : BOX.h);
   }
 
   /** One row or two: the box grows down (its top stays put). */
   private setHeight(h: number): void {
     if (h === this.height) return;
     this.height = h;
-    drawBubble(this.frame, { ...BOX, h, tail: { side: 'down', at: 0, steps: 0 }, innerLine: true });
+    this.frame.draw({ w: BOX.w, h, ...LOOK });
     this.more.y = BOX.y + h - 12 - BOX.h / 2;
     this.hit.setSize(BOX.w, h);
     this.drawGlow();
