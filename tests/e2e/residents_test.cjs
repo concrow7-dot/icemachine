@@ -118,7 +118,10 @@ const { chromium } = require('playwright');
   check('Residents are drawn under the truck', await drive('s.residentSprites[0].depth < s.truck.depth'), true);
   // SCREAM-108: houses in many styles and colours, with ornaments in the yards.
   check('Houses come in 40+ different styles and colours (SCREAM-108)', await drive("new Set(s.map.objects.filter(o => /^(house|villa)/.test(o.key)).map(o => o.key)).size >= 40"), true);
-  check('...including Victorian houses and bigger mobile homes', await drive("['house_victorian', 'house_medium', 'house_big'].every(k => s.map.objects.some(o => o.key.startsWith(k)))"), true);
+  // SCREAM-384 to 387: three neighbourhoods, each with its own set of buildings and its own street lamp.
+  // (Written so it holds on every branch of the stack: a neighbourhood is either not dressed yet or fully there.)
+  check('...a dressed neighbourhood has 20+ of its own buildings (SCREAM-384)', await drive("['house_cottage', 'house_apt', 'house_modern'].every(k => (n => n === 0 || n >= 20)(s.map.objects.filter(o => o.key.startsWith(k)).length))"), true);
+  check('...and 20+ of its own street lamp', await drive("['lamp_double', 'lamp_single', 'lamp_curved'].every(k => (n => n === 0 || n >= 20)(s.map.objects.filter(o => o.key === k).length))"), true);
   check('...and 150+ yard ornaments of 40+ kinds', await drive("(o => o.length >= 150 && new Set(o.map(x => x.key)).size >= 40)(s.map.objects.filter(o => o.key.startsWith('orn_')))"), true);
   await page.screenshot({ path: outDir + '/residents.png' });
 
@@ -127,7 +130,7 @@ const { chromium } = require('playwright');
   check('No door or yard spot is on a tree trunk or inside a house', await drive(`s.evening.residents.all.every(p => {
     const r = p.resident; const pts = [r.door, ...Array.from({ length: r.yard.length / 2 }, (_, i) => [r.yard[i * 2], r.yard[i * 2 + 1]])];
     return pts.every(([x, y]) => s.map.objects.every(o => { const z = s.map.sprites.find(q => q.key === o.key);
-      if (o.key.startsWith('tree')) return !(Math.abs(x - o.x) < 11 && y > o.y - 14 && y < o.y + 4);
+      if (o.key.startsWith('tree') || o.key.startsWith('lamp')) return !(Math.abs(x - o.x) < 11 && y > o.y - 14 && y < o.y + 4); // a lamp post is a trunk too (SCREAM-385)
       return !(x > o.x - z.w / 2 && x < o.x + z.w / 2 && y > o.y - z.h && y < o.y); }));
   })`), true);
   // Stand someone just behind a tree, then just in front of it
