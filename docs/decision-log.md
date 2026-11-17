@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 183 — After a wrong order, the ice creams stay in the bag (2026-11-17)
+
+**Decision (Jira SCREAM-383, under SCREAM-154, PO, November 17, 02:16):** "When you give an incorrect order, leave the items you tried to give the customer in the bag. Currently you need to completely restock it." After a first wrong order (the customer says "That's not what I asked for. I wanted ...") the bag keeps what was handed over; back at the cooler the player takes out what is wrong and adds what is missing. It used to go back to its squares in the cooler, so the whole bag had to be filled again. Still one second chance only: a second wrong order ends the sale and the customer leaves with the items.
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** having to restock the whole bag (his words above). _Anything more: to be filled in by the PO._
+
 ## 182 — Temporary Gas Can note: the last line is "Refills daily." (2026-11-17)
 
 **Decision (Jira SCREAM-382, under SCREAM-78, PO, November 17, 02:02):** "On the temporary gas can. I want to change the last line to be: "Refills daily."" The note now reads: "Run out of gas and it pours itself in: a splash to get you going. Refills daily." (its last line was "Full again every day.").
