@@ -657,13 +657,15 @@ export const PORTAL_VOLUME = 0.1;
 /**
  * PO (November 9): the hint comes from a regular on their second visit: the second regular in
  * the Story run to be served a second time. The line lives in sheet 23's "Rotary hint" tab (the PO
- * rewrites it there); "sync rotary hint" copies it here. This is engineering's draft (November 9).
+ * rewrites it there); "sync rotary hint" copies it here. (It was engineering's draft of November 9 until SCREAM-381.)
  */
 /** SCREAM-299 (decision 107, PO, November 13): the rotary hint comes when this many regulars have each been served twice in the Story run. */
 export const ROTARY_HINT_REGULARS = 3;
 // SCREAM-381 (PO, November 17): "I want to change the hint for the teleport to be "roundabout" from now on. It's
-// referred to as the rotary right now." (The names in the code keep "rotary".)
-export const ROTARY_HINT_LINE = "Psst, between you and me: go round the roundabout at the end of Highland Street three times. There's a whole other neighbourhood past it.";
+// referred to as the rotary right now." (The names in the code keep "rotary".) The line is now the PO's own from
+// the sheet's hint tab ("Yes fix my typos and use that"): "I;ve" became "I've", the stray "a" at the end went, and
+// the full stop in the middle of the sentence became a comma (engineering's reading of it as one sentence).
+export const ROTARY_HINT_LINE = "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it.";
 
 // ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
 /** How much of the tank the can pours in when the tank runs empty: a fifth. */
