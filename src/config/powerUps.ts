@@ -133,14 +133,16 @@ const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
  * its own string; a third-row note under each; the sandwich in the middle of the fourth row,
  * unlocked by either third-row note.
  */
+// SCREAM-376 (PO, November 16): "I want to switch the lil explorer pop with the drum cone": the
+// Drum Cone hangs beside SpongePop now and the Lil Explorer Pop under it, in the third row.
 const ROW_THREE_LEFT_ID = iceCreamNoteId('louball'); // SCREAM-334
-const ROW_THREE_RIGHT_ID = iceCreamNoteId('drumcone'); // SCREAM-335
+const ROW_THREE_RIGHT_ID = iceCreamNoteId('explorer'); // SCREAM-376 (was the Drum Cone, SCREAM-335)
 const ICE_CREAM_PLACES: Record<FlavourId, { col: 0 | 1 | 2; row: number; from: string[] }> = {
   eclair: { col: 1, row: 0, from: [] },
   spongepop: { col: 0, row: 1, from: [iceCreamNoteId('eclair')] },
-  explorer: { col: 2, row: 1, from: [iceCreamNoteId('eclair')] },
+  drumcone: { col: 2, row: 1, from: [iceCreamNoteId('eclair')] },
   louball: { col: 0, row: 2, from: [iceCreamNoteId('spongepop')] },
-  drumcone: { col: 2, row: 2, from: [iceCreamNoteId('explorer')] },
+  explorer: { col: 2, row: 2, from: [iceCreamNoteId('drumcone')] },
   cookie: { col: 1, row: 3, from: [ROW_THREE_LEFT_ID, ROW_THREE_RIGHT_ID] },
 };
 
@@ -283,9 +285,9 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     notes: [
       iceCreamNote('eclair'),
       iceCreamNote('spongepop'),
-      iceCreamNote('explorer'),
+      iceCreamNote('drumcone'), // SCREAM-376: the second row, right (was the Lil Explorer Pop's place)
       iceCreamNote('louball'), // SCREAM-334: the third row, left
-      iceCreamNote('drumcone'), // SCREAM-335: the third row, right
+      iceCreamNote('explorer'), // SCREAM-376: the third row, right (was the Drum Cone's place)
       iceCreamNote('cookie'),
     ],
   },

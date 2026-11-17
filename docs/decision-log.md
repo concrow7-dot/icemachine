@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 176 — Ice Cream tree: the Lil Explorer Pop and the Drum Cone swap places; $15 for the second row, $20 for the third (2026-11-16)
+
+**Decision (Jira SCREAM-376, under SCREAM-78, PO, November 16, 22:02):** "I want to switch the lil explorer pop with the drum cone. I want to switch the location, and I want to change the price of buying the pops as powerups. The now spongpop drum cone line should be $15. The 2 ball and lil explorer should be $20." On the cork board the Drum Cone now hangs beside SpongePop under the eclair ($15 each; they were SpongePop $20 and, in that place, the Lil Explorer Pop $25), and the Lil Explorer Pop hangs under the Drum Cone beside the Two Ball Lou Ball ($20 each; that row was $30). The sandwich hangs under the Two Ball Lou Ball or the Lil Explorer Pop. This replaces "Keep their prices" for the Ice Cream tree in decision 172.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the sandwich keeps its $15; only the notes move and change price (what each ice cream does, costs to stock and sells for is unchanged); a saved run keeps every ice cream it already owns.
+
 ## 175 — The Lil Explorer Pop's explorer has brown skin, dark braids and brown eyes (2026-11-16)
 
 **Decision (Jira SCREAM-375, under SCREAM-6, PO, November 16, 21:42):** "the person who the lil explorer is based off of is latino, so I don't want it to seem like we are changing the race of our pop. Can you make a more latino looking explorer." The pop's picture is redrawn: warm brown skin, dark brown braids and fringe, brown eyes; she was ginger with freckles and blue eyes. The safari hat, the green bows and the shape are unchanged. The same picture is used in the cooler, on Today's Menu, in orders and on her power-up note.
