@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser';
-import { drawBubble } from '../ui/speechBubble';
+import { HandBubble } from '../ui/handBubble';
+import { handFamily, loadHandFonts } from '../ui/handFonts';
+import { ADULT_HANDS, PLAYER_HAND, handSize, writingFor, type Writing } from '../state/Handwriting';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { getFlavour, type FlavourId } from '../config/flavours';
 import { getEvening, SceneKeys } from '../flow';
@@ -41,7 +43,14 @@ const BUBBLE_Y = 125;
 const CUSTOMER_NAME_CSS = '#c2185b';
 const PLAYER_NAME_CSS = '#1d5c8c';
 const BUBBLE_H = 150;
-const BUBBLE_NAME_SPACE = 36;
+const BUBBLE_NAME_SPACE = 38;
+/** SCREAM-378: the bubble's left edge and width; the words' and the name's sizes before a hand's own scale (the name was 18). */
+const BUBBLE_X = 90;
+const BUBBLE_W = 480;
+const LINE_PX = 25;
+const NAME_PX = 22;
+/** A hair of extra ink round each letter, so thin handwriting reads as pen, not pencil. */
+const PEN_PX = 0.7;
 const BUBBLE_PAD = 14;
 /** The paid flash (PO, doc 08 Q16): the price, then the tip. Each flashes once (#69): 1.5x the old 250 ms in, 900 ms hold. */
 const FLASH_IN_MS = 375;
@@ -75,7 +84,10 @@ export class SalesScene extends Phaser.Scene {
   private tipBar!: TipBar;
   private bubbleText!: Phaser.GameObjects.Text;
   /** The speech bubble, and its height now (SCREAM-103: it grows for a long hint). */
-  private bubble!: Phaser.GameObjects.Graphics;
+  private bubble!: HandBubble;
+  /** SCREAM-378: the customer's handwriting, and whose the bubble is written in now (test hook). */
+  private customerWriting: Writing = { hand: ADULT_HANDS[0], tilt: 0 };
+  writing: Writing = this.customerWriting;
   private bubbleH = 0;
   /** SCREAM-218: who the bubble is drawn for (its tail points at them), and the name at its top left. */
   private bubbleSpeaker: 'customer' | 'player' = 'customer';
@@ -113,6 +125,7 @@ export class SalesScene extends Phaser.Scene {
     loadResidentSheet(this);
     if (!this.textures.exists(WINDOW_KEY)) this.load.image(WINDOW_KEY, WINDOW_URL);
     loadFlavourArt(this);
+    loadHandFonts(this); // SCREAM-378
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
@@ -156,28 +169,29 @@ export class SalesScene extends Phaser.Scene {
     }
 
     // The speech bubble, reaching across from the customer.
-    // SCREAM-126: the game's shared pixel bubble (Pokémon Yellow-style), tail stepping toward the customer.
-    this.bubble = this.add.graphics();
+    // SCREAM-378 (PO, November 16): hand-drawn, like the truck's inside (it was SCREAM-126's pixel bubble),
+    // its tail curving toward the customer.
+    this.bubble = new HandBubble(this, BUBBLE_X, BUBBLE_Y, { w: BUBBLE_W, h: BUBBLE_H });
     this.sizeBubble(BUBBLE_H);
+    // SCREAM-378 (PO): "Adults will have better handwritting ... some kids should be near perfect, others messy."
+    this.customerWriting = customer ? writingFor(customer.resident) : { hand: ADULT_HANDS[0], tilt: 0 };
+    this.writing = this.customerWriting;
     // SCREAM-127 (PO, November 2): the customer's name sits in the speech bubble, top left, like
     // the speaker's name in a Pokémon text box (it used to be a name tag under the customer).
     this.customerName = customer?.resident.name ?? '';
-    this.speakerText = this.add.text(118, 141, this.customerName, {
-      fontFamily: 'monospace',
-      fontSize: '18px',
-      fontStyle: 'bold',
-      color: CUSTOMER_NAME_CSS,
-    });
+    // SCREAM-378 (PO): "Lets have the names be written slightly larger than they are now as well."
+    this.speakerText = this.add.text(116, 136, this.customerName, { color: CUSTOMER_NAME_CSS, stroke: CUSTOMER_NAME_CSS, strokeThickness: PEN_PX });
     this.bubbleText = this.add
       .text(330, 212, '', {
-        fontFamily: 'monospace',
-        fontSize: '22px',
         color: INK,
+        stroke: INK,
+        strokeThickness: PEN_PX,
         align: 'center',
         wordWrap: { width: 440 },
       })
       .setOrigin(0.5);
     this.orderPictures = this.add.container(330, 212);
+    this.applyWriting();
 
     // SCREAM-125 (PO, November 2): a tip jar on the counter, right of the customer.
     // SCREAM-284 (PO, November 12): the same countdown bar as at the cooler, at the jar's size.
@@ -543,11 +557,14 @@ export class SalesScene extends Phaser.Scene {
     this.showSpeaker(sale.speaker);
     const pictures = sale.pictureLine;
     if (!pictures) {
-      this.bubbleText.setText(sale.line);
+      this.bubbleText.setFontSize(handSize(this.writing.hand, LINE_PX)).setText(sale.line);
       // SCREAM-103 (PO, November 8): a long hint makes the bubble taller (downwards), not the text smaller.
       // SCREAM-247: the same for a customer's schedule line.
       const long = !!sale.hintAbout || sale.saidSchedule || !!sale.neighbourAbout; // SCREAM-248: and a line about a neighbour
       const h = long ? Math.max(BUBBLE_H, Math.ceil(this.bubbleText.height) + BUBBLE_NAME_SPACE + 2 * BUBBLE_PAD) : BUBBLE_H;
+      // SCREAM-378: some hands are wider or taller than others: a line too tall for the usual bubble is written smaller.
+      const room = BUBBLE_H - BUBBLE_NAME_SPACE - BUBBLE_PAD;
+      for (let px = handSize(this.writing.hand, LINE_PX); !long && this.bubbleText.height > room && px > 14; ) this.bubbleText.setFontSize(--px);
       this.sizeBubble(h);
       this.bubbleText.setY(long ? BUBBLE_Y + BUBBLE_NAME_SPACE + (h - BUBBLE_NAME_SPACE) / 2 : 212);
       this.setOrderPictures('', []);
@@ -567,7 +584,9 @@ export class SalesScene extends Phaser.Scene {
     if (speaker === this.bubbleSpeaker) return;
     this.bubbleSpeaker = speaker;
     const player = speaker === 'player';
-    this.speakerText.setText(player ? 'You' : this.customerName).setColor(player ? PLAYER_NAME_CSS : CUSTOMER_NAME_CSS);
+    this.speakerText.setText(player ? 'You' : this.customerName).setColor(player ? PLAYER_NAME_CSS : CUSTOMER_NAME_CSS).setStroke(player ? PLAYER_NAME_CSS : CUSTOMER_NAME_CSS, PEN_PX);
+    this.writing = player ? { hand: PLAYER_HAND, tilt: 0 } : this.customerWriting;
+    this.applyWriting();
     const h = this.bubbleH;
     this.bubbleH = 0;
     this.sizeBubble(h);
@@ -577,10 +596,25 @@ export class SalesScene extends Phaser.Scene {
   private sizeBubble(h: number): void {
     if (h === this.bubbleH) return;
     this.bubbleH = h;
-    drawBubble(this.bubble.clear(), {
-      x: 90, y: BUBBLE_Y, w: 480, h, unit: 4, innerLine: true,
-      tail: this.bubbleSpeaker === 'player' ? { side: 'down', at: 216, steps: 7, reach: 2 } : { side: 'right', at: 96, steps: 7, reach: 3 },
+    this.bubble.draw({
+      w: BUBBLE_W,
+      h,
+      tail:
+        this.bubbleSpeaker === 'player'
+          ? { side: 'down', at: 232, width: 40, length: 54, lean: -22 }
+          : { side: 'right', at: 92, width: 38, length: 78, lean: 14 },
     });
+  }
+
+  /** SCREAM-378: writes the name and the words in the speaker's handwriting (a messy hand leans a little). */
+  private applyWriting(): void {
+    const { hand, tilt } = this.writing;
+    this.speakerText.setFontFamily(handFamily(hand)).setFontSize(handSize(hand, NAME_PX)).setAngle(tilt * 0.6);
+    this.bubbleText.setFontFamily(handFamily(hand)).setFontSize(handSize(hand, LINE_PX)).setAngle(tilt);
+    this.orderPictures.setAngle(tilt);
+    // The pictures' "2 ×" is rebuilt in the new hand the next time the order is shown.
+    this.orderPicturesKey = '';
+    this.orderPictures.removeAll(true);
   }
 
   private setOrderPictures(key: string, order: readonly { flavour: Parameters<typeof addFlavourIcon>[3]; count: number }[], y = 212): void {
@@ -591,7 +625,7 @@ export class SalesScene extends Phaser.Scene {
     let x = -((order.length - 1) * itemW) / 2;
     for (const line of order) {
       this.orderPictures.add(
-        this.add.text(x - 14, 0, `${line.count} ×`, { fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: INK }).setOrigin(1, 0.5),
+        this.add.text(x - 14, 0, `${line.count} ×`, { fontFamily: handFamily(this.writing.hand), fontSize: `${handSize(this.writing.hand, 26)}px`, color: INK, stroke: INK, strokeThickness: PEN_PX }).setOrigin(1, 0.5),
       );
       this.orderPictures.add(addFlavourIcon(this, x + 14, 0, line.flavour, 1.4).setName(`order-pic-${line.flavour}`));
       x += itemW;
