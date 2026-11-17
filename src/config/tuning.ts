@@ -833,3 +833,20 @@ export const AWAY_EDGE_MARGIN = 24;
 export const AWAY_BACK_YARD_COST = 1.5;
 /** A walk in that crosses the middle of a roundabout counts as this many times its length: nobody walks across one unless there is no other way. */
 export const AWAY_ROUNDABOUT_COST = 4;
+
+// ---- SCREAM-380 (PO, November 17): car owners drive home along the road ----
+/** How far right of a street's centre line a resident's car drives, px: clear of the cars parked at the curb. */
+export const HOME_DRIVE_LANE_OFFSET = 16;
+/** Corner rounding on the way home, px. */
+export const HOME_DRIVE_CORNER_RADIUS = 40;
+/**
+ * A resident's car on its way home: cruising and cornering speeds (px/s), speeding up and braking (px/s²). The truck does about 440 to 550.
+ * PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Read as 80% of what they did (170 and 80 in corners).
+ */
+export const HOME_DRIVE_PROFILE = { cruise: 136, accel: 110, brake: 320, bendSpeed: 64 } as const;
+/** The last stretch, over which the car leaves its lane for its parking spot, px. */
+export const HOME_DRIVE_PARK_GLIDE = 90;
+/** How much room a car on its way home leaves in front of it when it stops for something, px (beyond its own nose). */
+export const HOME_DRIVE_GAP = 14;
+/** How near a moving car's path a person on foot has to be to make it wait, px. */
+export const HOME_DRIVE_PERSON_ROOM = 22;

@@ -53,6 +53,7 @@ import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
 import { walkInRoute } from './ComingHome';
+import { RoadGraph } from './RoadGraph';
 
 /** SCREAM-296: every note on the cork board. */
 const POWER_UP_NOTES = placeNotes(POWER_UP_TREES);
@@ -406,7 +407,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!people) {
       const map = MAPS[id];
       const roads = roadsOf(id, map.data);
-      const cars = () => [...fixedParkedCars(map), ...(this.residentsByMap.get(id)?.carsNow ?? [])]; // SCREAM-252
+      const cars = () => [...fixedParkedCars(map), ...(this.residentsByMap.get(id)?.carsNow ?? []).filter((c) => !c.moving)]; // SCREAM-252 (SCREAM-380: not the cars driving home)
       people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story);
       people.carsOn = !!this.story && !this.tutorial; // SCREAM-252: Story, not the uncle's evening
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
@@ -416,7 +417,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
       if (this.story && !this.tutorial) people.openPark(); // SCREAM-224: people at the park, Story only, not the uncle's evening
-      if (this.story && !this.tutorial) people.sendAway((r) => walkInRoute(r, map.data.roads, map.data)); // SCREAM-379: away on their unticked days
+      if (this.story && !this.tutorial) {
+        // SCREAM-379: away on their unticked days. SCREAM-380: car owners drive home (the streets' web is made the first time it is needed).
+        let graph: RoadGraph | null = null;
+        people.sendAway(
+          (r) => walkInRoute(r, map.data.roads, map.data),
+          (r) => (r.car ? (graph ??= new RoadGraph(map.data.roads, map.data, map.data.roadMask)).driveIn({ x: r.car[0], y: r.car[1], angle: r.car[2] }) : null),
+        );
+      }
       this.residentsByMap.set(id, people);
     }
     return people;
