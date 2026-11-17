@@ -6,7 +6,7 @@ import { explorationTipCents } from './ExplorationTip';
 import { MAPS, currentMap, fixedParkedCars, setCurrentMap, type MapId } from '../config/maps';
 import { arrivalSpot } from './RingLaps';
 import {
-  BASS_INDOORS_FACTOR, STORY_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
+  BASS_INDOORS_FACTOR, STORY_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, TOW_COST_CENTS, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
 import { Residents, type ResidentNow, type Wall } from './Residents';
@@ -868,6 +868,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
   }
 
   /** SCREAM-119: true if the evening ended because the tank ran empty. */
+  /** SCREAM-390: what tonight's tow home cost, in cents (0 when there was none, or it was free). */
+  private towPaidCents = 0;
+  get towCents(): number {
+    return this.towPaidCents;
+  }
+
   get endedOutOfGas(): boolean {
     return this.ranOutOfGas;
   }
@@ -906,6 +912,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
         this.gasCansPoured += 1;
         this.fuelLeft = GAS_CAN_FILL;
         return true;
+      }
+      // SCREAM-390: in Story (not the uncle's evening) the tow home costs TOW_COST_CENTS, counted with tonight's gas.
+      if (this.story && (!this.tutorial || this.tutorial.skipped)) {
+        this.towPaidCents = TOW_COST_CENTS;
+        this.gasSpentCents += TOW_COST_CENTS;
+        this.changeMoney(-TOW_COST_CENTS, 'Tow home');
       }
       this.ranOutOfGas = true;
       this.endNow();

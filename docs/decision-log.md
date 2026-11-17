@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 187 — Running out of gas: the tow home costs $25 in Story (2026-11-17)
+
+**Decision (Jira SCREAM-390, under SCREAM-78; PO, November 17, 16:34):** "I like adding a price to the towing. Let's say $25." Asked what happens when the player has less than $25, he chose "Go below $0, run ends": the full $25 is always charged, and the out-of-money rule that was already there (cash below $0 at the end of an evening) then ends the run. Asked what the next day starts with after a tow, he chose "Keep a third (Recommended)". So in Story, when the tank runs dry and the evening ends with "Needed a tow home.", $25 is taken from the cash; the next day still starts with a third of a tank. The Temporary Gas Can still pours itself in first.
+
+**Options considered:** when the player can't pay: pay what they have, down to $0 (engineering's recommendation); go below $0 and the run ends (chosen); owe it and carry on. The next day's tank: a third (chosen) or a sixth. Engineering had first proposed a tow fee of about $10.
+
+**Why (product owner's rationale):** _to be filled in by the PO._ Background, engineering's and not his reason: the balance write-up of November 17 found that running dry cost nothing and gave a third of a tank the next day, so with the Temporary Gas Can a player never had to buy gas.
+
+**Engineering's calls (proposals):** the road says "Needed a tow home. -$25.00"; the tow is counted inside the end-of-day screen's Gas row (no new row), and the note beside it says "The tow home cost $25.00."; Quick play and the uncle's evening are not charged (the Story-only rule, decision 076).
+
 ## 186 — Two Ball Lou Ball: the tip is 1.5 times (was double), and the gas and the brake swap too (2026-11-17)
 
 **Decision (Jira SCREAM-389, under SCREAM-78; PO, November 17, 15:22):** "Let's work on making the Lou ball more balanced. Let's make the tip reduce". Asked what the tip should become, he chose "Tip x 1.5 (Recommended)". Asked ticket only or ticket and build: "Ticket and build. One thing I want to add is I want to make driving forward and reverse also flipped during the time of the buff." So a Story sale that includes a Two Ball Lou Ball pays 1.5 times the tip (it was 2 times, decision 138), and for the 10 seconds of driving after it, up brakes and reverses and down is the gas, as well as left and right being swapped.

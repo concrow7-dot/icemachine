@@ -19,6 +19,11 @@ import { dayText } from '../state/Residents';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
+/** SCREAM-208, SCREAM-390: what the road says when the tank runs dry; in Story the tow's price follows (doc 15). */
+export function towMessage(towCents: number): string {
+  return towCents > 0 ? `Needed a tow home. -${formatMoney(towCents)}` : 'Needed a tow home.';
+}
+
 export class HudScene extends Phaser.Scene {
   private evening!: EveningState;
   /** SCREAM-19: "  Day 1/3" beside the clock in Story mode; empty in Quick play. */
@@ -360,13 +365,13 @@ export class HudScene extends Phaser.Scene {
     return this.moneyText.x - this.moneyText.width - 14;
   }
 
-  /** SCREAM-208: stops the truck, shows "Needed a tow home." (the gauge flashes meanwhile), then `then`. */
+  /** SCREAM-208: stops the truck, shows "Needed a tow home." (SCREAM-390: with its price in Story) (the gauge flashes meanwhile), then `then`. */
   private towHome(then: () => void): void {
     this.towing = true;
     (this.scene.get(SceneKeys.Drive) as unknown as { stopForTow?: () => void }).stopForTow?.();
     const { width, height } = this.scale;
     this.towText = this.add
-      .text(width / 2, height / 2, 'Needed a tow home.', {
+      .text(width / 2, height / 2, towMessage(this.evening.towCents), {
         fontFamily: 'monospace',
         fontSize: '30px',
         color: '#ffffff',

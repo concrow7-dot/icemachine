@@ -420,6 +420,14 @@ export const FUEL_STORY_MIN_START = 1 / 6;
  */
 export const TOW_MESSAGE_SECONDS = 2.5;
 
+/**
+ * SCREAM-390 (PO, November 17: "I like adding a price to the towing. Let's say $25."): in Story (not the
+ * uncle's evening), running the tank dry costs this for the tow home. His answers: the full amount is
+ * always charged ("Go below $0, run ends": the out-of-money rule then ends the run), and the next day
+ * still starts with FUEL_STORY_OUT_OF_GAS_START. Quick play is not charged.
+ */
+export const TOW_COST_CENTS = 2500;
+
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;
 /** SCREAM-171: the guided tutorial starts low on gas (the uncle: "Let's go get some gas"). */
