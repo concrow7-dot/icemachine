@@ -52,6 +52,7 @@ import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
+import { walkInRoute } from './ComingHome';
 
 /** SCREAM-296: every note on the cork board. */
 const POWER_UP_NOTES = placeNotes(POWER_UP_TREES);
@@ -415,6 +416,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
       if (this.story && !this.tutorial) people.openPark(); // SCREAM-224: people at the park, Story only, not the uncle's evening
+      if (this.story && !this.tutorial) people.sendAway((r) => walkInRoute(r, map.data.roads, map.data)); // SCREAM-379: away on their unticked days
       this.residentsByMap.set(id, people);
     }
     return people;
