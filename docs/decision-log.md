@@ -2,23 +2,27 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+<<<<<<< HEAD
 ## 182 — Temporary Gas Can note: the last line is "Refills daily." (2026-11-17)
 
 **Decision (Jira SCREAM-382, under SCREAM-78, PO, November 17, 02:02):** "On the temporary gas can. I want to change the last line to be: "Refills daily."" The note now reads: "Run out of gas and it pours itself in: a splash to get you going. Refills daily." (its last line was "Full again every day.").
 
 **Options considered:** none offered.
 
-**Why (product owner's rationale):** _to be filled in by the PO._
+**Why (product owner's rationale):** "I just liked the shorter more concise wording."
 
 ## 181 — The teleport hint says "roundabout", not "rotary" (2026-11-17)
+=======
+## 181 — "Roundabout", not "rotary": the teleport hint, and the street's name (2026-11-17)
+>>>>>>> feature/SCREAM-381-roundabout-hint
 
-**Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." The regular's hint now reads: "Psst, between you and me: go round the roundabout at the end of Highland Street three times. There's a whole other neighbourhood past it." The Residents sheet's hint line has the same word changed. From now on the word is "roundabout" in chat, tickets and docs.
+**Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." Asked at 02:12 whether the street "Elm Park Rotary" (on the map and in the top bar) should change too: "Yes": it is "Elm Park Roundabout". Asked whether the game should use his own line from the sheet once its typos were fixed: "Yes fix my typos and use that". The regular's hint now reads: "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it." From now on the word is "roundabout" in chat, tickets, docs and on screen.
 
-**Options considered:** none offered.
+**Options considered:** changing only the word in engineering's old line (the first build); leaving the street's name.
 
-**Why (product owner's rationale):** _to be filled in by the PO._
+**Why (product owner's rationale):** "It's a New England only term so I wanted more people to understand the term."
 
-**Engineering's calls (proposals):** only the word changed: the rest of the line is still engineering's draft of November 9, not the PO's own version in the sheet (which has typos to settle first); the street's name on the map and in the top bar, "Elm Park Rotary", is unchanged until he says; the names in the code (`ROTARY_HINT_LINE`, `rotaryHintGiven`) and the sheet tab's name keep "rotary".
+**Engineering's calls (proposals):** in his line "I;ve" became "I've", the stray "a" at the end went, and the full stop in the middle of the sentence became a comma, so it reads as one sentence; the names in the code (`ROTARY_HINT_LINE`, `rotaryHintGiven`) and the sheet tab's name keep "rotary"; the street's name was changed in `tools/tutorial/roads.json` and in the built map file by hand (a full map build needs the art repo and would give the same name).
 
 ## 180 — Car owners drive home along the road and park outside their house (2026-11-17)
 
@@ -33,6 +37,8 @@ Newest first. Each entry: what was decided, the options considered, and why.
 After seeing the numbers (about 5 cars and 8 walkers an evening), PO, November 17, 01:51: "I want to convert 2 walkers to cars". Jane Frostin (Westland Street) and Gerry Gelato (Germain Street) now have a car: 16 owners. Engineering's pick of who (a proposal): the two adults without a car who are away every weekday, so about two more people drive each evening. The build now keeps every existing owner's kind of car and spot when someone new gets one.
 
 PO, November 17, 02:03: "The cars should drive slower. 80% of top speed." Engineering read this as 80% of the cars' own top speed: 136 px a second (was 170), and 64 in corners (was 80).
+
+The PO confirmed both the same night (02:12): the speed is 80% of "The current cars speed", and of Jane Frostin and Gerry Gelato, "Sure those are good."
 
 ## 179 — On their unticked days people are away, and come home through the evening from the map's edge (2026-11-17)
 
