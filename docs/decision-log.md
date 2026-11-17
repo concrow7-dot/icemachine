@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 182 — Temporary Gas Can note: the last line is "Refills daily." (2026-11-17)
+
+**Decision (Jira SCREAM-382, under SCREAM-78, PO, November 17, 02:02):** "On the temporary gas can. I want to change the last line to be: "Refills daily."" The note now reads: "Run out of gas and it pours itself in: a splash to get you going. Refills daily." (its last line was "Full again every day.").
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
 ## 181 — The teleport hint says "roundabout", not "rotary" (2026-11-17)
 
 **Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." The regular's hint now reads: "Psst, between you and me: go round the roundabout at the end of Highland Street three times. There's a whole other neighbourhood past it." The Residents sheet's hint line has the same word changed. From now on the word is "roundabout" in chat, tickets and docs.
