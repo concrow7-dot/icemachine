@@ -179,6 +179,7 @@ const { chromium } = require('playwright');
   check('First Story: no question, no New Bike screen', (await sc('Title', 's.confirming')) + ' ' + (await page.evaluate(() => window.__game.scene.isActive('StoryIntro'))), 'false false');
   check('...straight into Day 1 with the uncle, on the tutorial map', (await ev('!!e.tutorial')) + ' ' + (await ev('e.mapId')) + ' ' + (await page.evaluate(() => window.__game.registry.get('story').day)), 'true tutorial 1');
   check('SCREAM-224: nobody is at the park in the uncle\'s evening, and no park visitor is on the map', await ev('e.residents.atParkNow.length + " " + e.residents.all.filter(p => p.resident.visitor && (p.outside || !p.gone)).length + " " + e.residents.parkOpen'), '0 0 false');
+  check('SCREAM-379, SCREAM-380: nobody is away in the uncle\'s evening, and no car is on its way home', await ev('e.residents.awayNow.length + " " + e.residents.awayOn + " " + e.residents.carsNow.filter(c => c.moving).length'), '0 false 0');
   await page.waitForFunction(() => window.__game.scene.isActive('TutorialCrawl')); await wait(1500);
   check('...the ice cream truck tune playing', await sc('TutorialCrawl', 's.sound.getAll("credits-tune").some(t => t.isPlaying)'), true);
   check('...over the tutorial map, zoomed out', await sc('TutorialCrawl', '(m => !!m && m.scale < 0.5)(s.children.getByName("crawl-map"))'), true);
