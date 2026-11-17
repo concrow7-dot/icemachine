@@ -4,7 +4,7 @@ import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 import { drawNotepad } from '../ui/powerUpLogo';
-import { loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
+import { drawMapPoster, mapPosterPoints } from '../ui/mapPoster';
 
 // Issue #7: the truck interior hub, like the Backyard Baseball treehouse.
 // SCREAM-57: the PO's coloured drawing of the inside of the truck (from his pen
@@ -75,13 +75,10 @@ export const ZONES: Zone[] = [
   {
     id: 'map',
     name: 'MAP',
-    points: [766, 148, 842, 148, 842, 262, 766, 262],
-    tag: { x: 804, y: 128 },
+    points: mapPosterPoints(),
+    tag: { x: 806, y: 130 },
   },
 ];
-
-/** SCREAM-377: the map poster on the wall (its top-left corner and size), drawn from the PO's sketch. */
-export const MAP_POSTER = { x: 770, y: 152, w: 68, h: 106 };
 
 /** SCREAM-245: where the Handy Notebook hangs (the middle of its picture) and how big it is drawn. */
 export const NOTEBOOK_AT = { x: 897, y: 402, size: 58 };
@@ -102,7 +99,6 @@ export class TruckScene extends Phaser.Scene {
 
   preload(): void {
     loadTruckInterior(this);
-    loadFlavourArt(this); // SCREAM-377: the marker font, for the map poster
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
@@ -114,18 +110,8 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
 
-    // SCREAM-377: the map poster: cream paper, "MAP" in red marker and a few red streets, as he sketched it.
-    {
-      const p = MAP_POSTER;
-      const poster = this.add.graphics();
-      poster.fillStyle(0xfff6e0, 1).fillRect(p.x, p.y, p.w, p.h);
-      poster.lineStyle(3, OUTLINE, 1).strokeRect(p.x, p.y, p.w, p.h);
-      poster.lineStyle(3, 0xd9261c, 1);
-      poster.lineBetween(p.x + 10, p.y + 44, p.x + 58, p.y + 36).lineBetween(p.x + 22, p.y + 34, p.x + 30, p.y + 96);
-      poster.lineBetween(p.x + 12, p.y + 74, p.x + 56, p.y + 66).lineBetween(p.x + 48, p.y + 38, p.x + 52, p.y + 96);
-      poster.fillStyle(0xd9261c, 1).fillCircle(p.x + 38, p.y + 84, 4);
-      this.add.text(p.x + p.w / 2, p.y + 16, 'MAP', { fontFamily: MARKER_FONT, fontSize: '20px', color: '#d9261c' }).setOrigin(0.5);
-    }
+    // SCREAM-377: the map poster on the wall (ui/mapPoster.ts), from the PO's sketches.
+    drawMapPoster(this);
 
     // SCREAM-245: the notebook itself, on a nail under the tip jar's shelf (only once it is owned).
     if (this.evening.hasNotebook) {
