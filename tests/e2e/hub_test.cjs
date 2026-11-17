@@ -355,6 +355,46 @@ const { chromium } = require('playwright');
   await press('b');
   await until(async () => (await scenes()) === 'Truck,Hud');
   check('...B goes back to the truck, the notebook still marked', await sel(), 'notebook');
+  // ---- SCREAM-377 (PO, November 16): the map on the truck's wall ----
+  await press('ArrowRight');
+  check('SCREAM-377: the arrow keys move between the stations as before (the map has its own key)', await sel(), 'menu');
+  {
+    const [mx, my] = await sc('Truck', "(() => { const z = s.constructor.name && window.__game.scene.getScene('Truck'); return [804, 205]; })()");
+    await page.mouse.move(mx, my); await wait(150);
+    check('...pointing at the poster on the wall by the window marks it: MAP', (await sel()) + ' ' + (await sc('Truck', 's.tag.text')), 'map MAP');
+    await page.screenshot({ path: outDir + '/hub_map_in_truck.png' });
+    await page.mouse.move(5, 300);
+  }
+  await press('n');
+  await until(async () => (await scenes()) === 'Map,Hud');
+  const mapNow = () => sc('Map', "s.known.join() + ' | ' + s.title.text + ' | ' + s.marks.map(m => m.kind).sort().join() + ' | arrows ' + s.arrows.length");
+  check('...N opens it: Elm Park only, with home, the gas station, the park and the truck; no arrows yet', await mapNow(), 'tutorial | ELM PARK | gas,home,park,truck | arrows 0');
+  check('...street names are written on it', await sc('Map', "s.streets.includes('Haviland Street') && s.streets.includes('Park Avenue')"), true);
+  check('...every marker is on the sheet', await sc('Map', "s.marks.every(m => m.x > 144 && m.x < 816 && m.y > 110 && m.y < 442)"), true);
+  await page.screenshot({ path: outDir + '/hub_map_elm_park.png' });
+  await press('ArrowRight');
+  check('...with one map known, Right changes nothing', await sc('Map', 's.title.text'), 'ELM PARK');
+  // The truck has been through the roundabout: the other map is known, and the roundabout is marked.
+  await page.evaluate(() => { window.__game.registry.get('evening').otherMapSeen = true; window.__game.scene.getScene('Map').scene.restart(); });
+  await wait(300);
+  check('...after teleporting: both maps, two arrows, and the roundabout marked', await mapNow(), 'tutorial,worcester | ELM PARK | gas,home,park,portal,truck | arrows 2');
+  await press('ArrowRight');
+  check('...Right shows Foley Stadium: its gas stations, parks and roundabout; no home and no truck (they are in Elm Park)', await mapNow(), 'tutorial,worcester | FOLEY STADIUM | gas,gas,park,park,park,portal | arrows 2');
+  await page.screenshot({ path: outDir + '/hub_map_foley_stadium.png' });
+  {
+    const [ax, ay] = await sc('Map', '[s.arrows[0].x, s.arrows[0].y]');
+    await page.mouse.click(ax, ay); await wait(150);
+    check('...clicking the arrow button goes back to Elm Park', await sc('Map', 's.title.text'), 'ELM PARK');
+    const clock0 = await ev('e.clockMinutes');
+    const [bx, by] = await sc('Map', '[s.backButton.x, s.backButton.y]');
+    await page.mouse.click(bx, by);
+    await until(async () => (await scenes()) === 'Truck,Hud');
+    check('...the BACK button goes back to the truck, the map marked', await sel(), 'map');
+    check('...looking at the map changed nothing in the evening', (await ev('e.clockMinutes')) === clock0, true);
+  }
+  await page.evaluate(() => { window.__game.registry.get('evening').otherMapSeen = false; });
+  await press('ArrowLeft');
+  check('...Left from the map goes to the notebook', await sel(), 'notebook');
   await press('ArrowLeft'); await press('Enter');
   await until(async () => (await scenes()) === 'Drive,Hud');
   check('SCREAM-81: ...and the ring drawn round the truck is the bigger one', await page.evaluate(() => Math.round(window.__game.scene.getScene('Drive').ring.radius * 10) / 10), 181.5);

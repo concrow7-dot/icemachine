@@ -24,6 +24,7 @@ export const SceneKeys = {
   TutorialCrawl: 'TutorialCrawl',
   PowerUps: 'PowerUps',
   Notebook: 'Notebook',
+  Map: 'Map',
   GasCan: 'GasCan',
   KeyBindings: 'KeyBindings',
   HowToDrive: 'HowToDrive',
@@ -37,6 +38,7 @@ export const EVENING_SCENES: string[] = [
   SceneKeys.Cooler,
   SceneKeys.PowerUps,
   SceneKeys.Notebook,
+  SceneKeys.Map,
   SceneKeys.Sales,
   SceneKeys.Fill,
   SceneKeys.Drive,
@@ -205,7 +207,7 @@ export function getEvening(scene: Phaser.Scene): EveningState {
 }
 
 /** Stations inside the truck (issue #7). */
-export type Station = 'menu' | 'cooler' | 'driver' | 'notebook' | 'window';
+export type Station = 'menu' | 'cooler' | 'driver' | 'map' | 'notebook' | 'window';
 
 /** Goes back to the truck interior with the given station highlighted. Leaving any station starts the clock (#66), except in Story (SCREAM-318: DRIVE does). */
 export function returnToTruck(from: Phaser.Scene, station: Station, startClock = true): void {

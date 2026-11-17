@@ -4,6 +4,7 @@ import { EveningEvents, EveningState } from '../state/EveningState';
 import { showLoadingWhileLoading } from './LoadingScene';
 import { INTERIOR_KEY, loadTruckInterior } from '../ui/truckInterior';
 import { drawNotepad } from '../ui/powerUpLogo';
+import { drawMapPoster, mapPosterPoints } from '../ui/mapPoster';
 
 // Issue #7: the truck interior hub, like the Backyard Baseball treehouse.
 // SCREAM-57: the PO's coloured drawing of the inside of the truck (from his pen
@@ -66,6 +67,17 @@ export const ZONES: Zone[] = [
     points: [866, 364, 928, 364, 928, 438, 866, 438],
     tag: { x: 880, y: 456 },
   },
+  // SCREAM-377 (PO, November 16, his red sketch on a screenshot: a "MAP" poster on the wall between
+  // the side door and the window): "Here is where I want to add it in the truck. Any time the player
+  // can get to this view, they should be able to see the map."
+  // Engineering's call: the arrow keys skip it (N opens it, or a click), so Left and Right move
+  // between the stations exactly as before.
+  {
+    id: 'map',
+    name: 'MAP',
+    points: mapPosterPoints(),
+    tag: { x: 806, y: 130 },
+  },
 ];
 
 /** SCREAM-245: where the Handy Notebook hangs (the middle of its picture) and how big it is drawn. */
@@ -97,6 +109,9 @@ export class TruckScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.image(0, 0, INTERIOR_KEY).setOrigin(0, 0).setDisplaySize(width, height);
+
+    // SCREAM-377: the map poster on the wall (ui/mapPoster.ts), from the PO's sketches.
+    drawMapPoster(this);
 
     // SCREAM-245: the notebook itself, on a nail under the tip jar's shelf (only once it is owned).
     if (this.evening.hasNotebook) {
@@ -136,7 +151,7 @@ export class TruckScene extends Phaser.Scene {
 
     this.add.rectangle(0, height - 34, width, 34, 0x000000, 0.45).setOrigin(0, 0);
     this.add
-      .text(width / 2, height - 17, this.evening.isPeeking ? '← → Choose    Enter: Go    Tab Or B: Back To The Road' : this.onTheRoad() ? '← → Choose    Enter: Go    B: Back To The Road' : '← → Choose    Enter: Go    Or Use The Mouse', {
+      .text(width / 2, height - 17, this.evening.isPeeking ? '← → Choose    Enter: Go    N: Map    Tab Or B: Back To The Road' : this.onTheRoad() ? '← → Choose    Enter: Go    N: Map    B: Back To The Road' : '← → Choose    Enter: Go    N: Map    Or Use The Mouse', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#ffffff',
@@ -152,6 +167,7 @@ export class TruckScene extends Phaser.Scene {
     keyboard?.on('keydown-A', () => this.move(-1));
     keyboard?.on('keydown-RIGHT', () => this.move(1));
     keyboard?.on('keydown-D', () => this.move(1));
+    keyboard?.on('keydown-N', () => this.activate('map')); // SCREAM-377
     keyboard?.on('keydown-ENTER', () => this.activate(this.selected));
     keyboard?.on('keydown-SPACE', () => this.activate(this.selected));
     // SCREAM-319: stopped at home after setting off, B goes back on the road, like DRIVE.
@@ -256,7 +272,7 @@ export class TruckScene extends Phaser.Scene {
     for (let step = 0; step < order.length; step++) {
       index = (index + direction + order.length) % order.length;
       const candidate = order.at(index);
-      if (candidate && this.isAvailable(candidate)) {
+      if (candidate && candidate !== 'map' && this.isAvailable(candidate)) { // SCREAM-377: the map has its own key
         this.selected = candidate;
         break;
       }
@@ -272,6 +288,7 @@ export class TruckScene extends Phaser.Scene {
     }
     if (id === 'cooler') this.scene.start(SceneKeys.Cooler);
     if (id === 'notebook') this.scene.start(SceneKeys.Notebook); // SCREAM-245: reading only
+    if (id === 'map') this.scene.start(SceneKeys.Map); // SCREAM-377: reading only
     if (id === 'driver') {
       // SCREAM-307: from the hub with nothing stocked yet, the cooler opens with its warning
       // instead (the truck can't set off empty, as the cooler already said, #66).

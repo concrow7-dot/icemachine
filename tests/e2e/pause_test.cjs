@@ -81,7 +81,7 @@ const { chromium } = require('playwright');
   await page.screenshot({ path: outDir + '/key_bindings_1.png' });
   await press('ArrowRight');
   check('...→ turns to page 2, which has lines too', (await sc('KeyBindings', 's.page')) + ' ' + (await sc('KeyBindings', 's.lines.length > 3')), '1 true');
-  check('...every group of keys is on some page', await sc('KeyBindings', "s.pages.flat().length"), 13); // SCREAM-245: The Handy Notebook is the 13th
+  check('...every group of keys is on some page', await sc('KeyBindings', "s.pages.flat().length"), 14); // SCREAM-245: The Handy Notebook is the 13th; SCREAM-377: The Map the 14th
   await press('ArrowLeft');
   check('...← turns back to page 1', await sc('KeyBindings', 's.page'), 0);
   await press('Escape');

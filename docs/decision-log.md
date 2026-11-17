@@ -2,6 +2,18 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 177 — A map on the truck's wall: Elm Park, then Foley Stadium once the truck has been there (2026-11-16)
+
+**Decision (Jira SCREAM-377, under SCREAM-10, PO, November 16, 22:27):** "I want to add a map to game. The map should show the elm park map, and then once the player teleports to the other map, that map should become available too. Two arrows on the side should bring the player between maps. The map should show details like home and gas stations, parks." Where it opens, with his red sketch of a "MAP" poster on the wall between the side door and the window: "Here is where I want to add it in the truck. Any time the player can get to this view, they should be able to see the map." His other answers: the clock **"Keeps running"** while it is open; it also shows **"Where the truck is"**, **"Street names"** and **"The roundabout portal"**. So a poster hangs on the truck's wall in every mode; a click (or N) opens a drawn map of the map home is on, with home, the gas stations, the parks, street names and the truck; once the truck has been through the roundabout the other map is there too (saved with the Story run), two arrow buttons switch between them, and the roundabout is marked on both.
+
+On the first build (22:59, with a pen sketch of the poster drawn slanted like the wall, "MAP" over a little street plan): "I want the map to look like it is a part of the truck more. Use the elm park map on the map. Also make the map feel a bit worn. Maybe an edge is bent." The poster is now drawn in the wall's perspective in the truck drawing's grey outline, on aged paper with fold lines, a cup ring and tape, with Elm Park's own streets in pen and its bottom corner bent up.
+
+**Options considered:** opening it from the road as well as the truck screen, or from the road only (he chose the truck's wall); the clock stopping while it is open.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the poster and the map are placeholder drawings by engineering (the poster from his sketch); N opens it and the arrow keys skip it, so Left and Right move between the stations as before; the map shows the streets' part of each map with a margin, and each street's name once; the roundabout is marked only after it has been used; home and the truck are marked only on the map they are on; Quick play and the uncle's evening get the poster too, with their one map; a BACK button and big arrow buttons for the mobile rule (SCREAM-77).
+
 ## 176 — Ice Cream tree: the Lil Explorer Pop and the Drum Cone swap places; $15 for the second row, $20 for the third (2026-11-16)
 
 **Decision (Jira SCREAM-376, under SCREAM-78, PO, November 16, 22:02):** "I want to switch the lil explorer pop with the drum cone. I want to switch the location, and I want to change the price of buying the pops as powerups. The now spongpop drum cone line should be $15. The 2 ball and lil explorer should be $20." On the cork board the Drum Cone now hangs beside SpongePop under the eclair ($15 each; they were SpongePop $20 and, in that place, the Lil Explorer Pop $25), and the Lil Explorer Pop hangs under the Drum Cone beside the Two Ball Lou Ball ($20 each; that row was $30). The sandwich hangs under the Two Ball Lou Ball or the Lil Explorer Pop. This replaces "Keep their prices" for the Ice Cream tree in decision 172.

@@ -4,6 +4,7 @@ import { LoadingScene } from './scenes/LoadingScene';
 import { PauseScene } from './scenes/PauseScene';
 import { PowerUpsScene } from './scenes/PowerUpsScene';
 import { NotebookScene } from './scenes/NotebookScene';
+import { MapScene } from './scenes/MapScene';
 import { GasCanScene } from './scenes/GasCanScene';
 import { KeyBindingsScene } from './scenes/KeyBindingsScene';
 import { HowToDriveScene } from './scenes/HowToDriveScene';
@@ -52,6 +53,7 @@ const config: Phaser.Types.Core.GameConfig = {
     CoolerScene,
     PowerUpsScene,
     NotebookScene,
+    MapScene,
     GasCanScene,
     KeyBindingsScene,
     HowToDriveScene,
