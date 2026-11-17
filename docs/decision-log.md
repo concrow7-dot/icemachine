@@ -2,6 +2,70 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 177 — A map on the truck's wall: Elm Park, then Foley Stadium once the truck has been there (2026-11-16)
+
+**Decision (Jira SCREAM-377, under SCREAM-10, PO, November 16, 22:27):** "I want to add a map to game. The map should show the elm park map, and then once the player teleports to the other map, that map should become available too. Two arrows on the side should bring the player between maps. The map should show details like home and gas stations, parks." Where it opens, with his red sketch of a "MAP" poster on the wall between the side door and the window: "Here is where I want to add it in the truck. Any time the player can get to this view, they should be able to see the map." His other answers: the clock **"Keeps running"** while it is open; it also shows **"Where the truck is"**, **"Street names"** and **"The roundabout portal"**. So a poster hangs on the truck's wall in every mode; a click (or N) opens a drawn map of the map home is on, with home, the gas stations, the parks, street names and the truck; once the truck has been through the roundabout the other map is there too (saved with the Story run), two arrow buttons switch between them, and the roundabout is marked on both.
+
+On the first build (22:59, with a pen sketch of the poster drawn slanted like the wall, "MAP" over a little street plan): "I want the map to look like it is a part of the truck more. Use the elm park map on the map. Also make the map feel a bit worn. Maybe an edge is bent." The poster is now drawn in the wall's perspective in the truck drawing's grey outline, on aged paper with fold lines, a cup ring and tape, with Elm Park's own streets in pen and its bottom corner bent up.
+
+**Options considered:** opening it from the road as well as the truck screen, or from the road only (he chose the truck's wall); the clock stopping while it is open.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the poster and the map are placeholder drawings by engineering (the poster from his sketch); N opens it and the arrow keys skip it, so Left and Right move between the stations as before; the map shows the streets' part of each map with a margin, and each street's name once; the roundabout is marked only after it has been used; home and the truck are marked only on the map they are on; Quick play and the uncle's evening get the poster too, with their one map; a BACK button and big arrow buttons for the mobile rule (SCREAM-77).
+
+## 176 — Ice Cream tree: the Lil Explorer Pop and the Drum Cone swap places; $15 for the second row, $20 for the third (2026-11-16)
+
+**Decision (Jira SCREAM-376, under SCREAM-78, PO, November 16, 22:02):** "I want to switch the lil explorer pop with the drum cone. I want to switch the location, and I want to change the price of buying the pops as powerups. The now spongpop drum cone line should be $15. The 2 ball and lil explorer should be $20." On the cork board the Drum Cone now hangs beside SpongePop under the eclair ($15 each; they were SpongePop $20 and, in that place, the Lil Explorer Pop $25), and the Lil Explorer Pop hangs under the Drum Cone beside the Two Ball Lou Ball ($20 each; that row was $30). The sandwich hangs under the Two Ball Lou Ball or the Lil Explorer Pop. This replaces "Keep their prices" for the Ice Cream tree in decision 172.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the sandwich keeps its $15; only the notes move and change price (what each ice cream does, costs to stock and sells for is unchanged); a saved run keeps every ice cream it already owns.
+
+## 175 — The Lil Explorer Pop's explorer has brown skin, dark braids and brown eyes (2026-11-16)
+
+**Decision (Jira SCREAM-375, under SCREAM-6, PO, November 16, 21:42):** "the person who the lil explorer is based off of is latino, so I don't want it to seem like we are changing the race of our pop. Can you make a more latino looking explorer." The pop's picture is redrawn: warm brown skin, dark brown braids and fringe, brown eyes; she was ginger with freckles and blue eyes. The safari hat, the green bows and the shape are unchanged. The same picture is used in the cooler, on Today's Menu, in orders and on her power-up note.
+
+**Why (product owner's rationale):** "I don't want it to seem like we are changing the race of our pop."
+
+**Engineering's calls (proposals):** the exact colours; no freckles; still our own character (the art direction's rule: never copy a licensed character), with nothing taken from any real character's look.
+
+## 174 — The eclair, SpongePop and Lil Explorer Pop join Today's Menu at the most a customer pays (2026-11-16)
+
+**Decision (Jira SCREAM-374, under SCREAM-78, PO, November 16, 21:42):** "On the chocolate éclair, spongepop and lil explorer, ake the price the max allowed when added fomr available ice cream." In Story, when the first one of these is added from Available Ice Cream, its line on Today's Menu starts at the most a customer pays for it: the Chocolate Eclair $2.50 (it started at $2.00), SpongePop and the Lil Explorer Pop $3.00 (they started at $2.50). The Two Ball Lou Ball and the Drum Cone already start at their most ($3.00).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** read as "the price it starts at when it goes onto the menu"; Story only, not the uncle's evening or Quick play (the standing rule, decision 076); the Cookie Ice Cream Sandwich keeps its start ($3.00 of $4.00) because he didn't name it; an ice cream still in the cooler from yesterday keeps the price the player left it at, and one that sold out and is added again starts at its most again.
+
+## 173 — Residents' cars: hit boxes that match the car, parked against the curb (2026-11-16)
+
+**Decision (Jira SCREAM-372, under SCREAM-11, PO, November 16, 21:33, with a screenshot of the truck stuck between two cars):** "two cars are parked across from each other. This wouldn't be a problem, I actually like that there is some challenge there, but the hit boxes on the cars are two wide and I can't pass between them. Two things: Reduce the size of the hit boxes to better match the actual shape of the cars. Also, lets move the cars closer to the curb or edge of the street." A car's hit box now comes from the picture it is drawn with (a nose-up or nose-down car is narrower than the side-on picture the box used to be taken from), pulled in 3 px on every side; and cars park with the side of their picture 1 px from the curb (it was 3 px, measured from the wider box, so about 5 px on streets that run up the map). The pair he met on Haviland Street (Susie Parlor's and Kathleen Scoopley's cars) keeps facing each other: the room between their boxes goes from about 44 px to 58 px, for a truck 42 px wide.
+
+**Why (product owner's rationale):** "the hit boxes on the cars are two wide and I can't pass between them."
+
+**Engineering's calls (proposals):** 3 px in on every side (mirrors and rounded corners); a side-on car's box is as wide as the car seen nose-on, not as tall as its side-on picture (which shows the roof); the pink squares keep the same room from a car's end; every car keeps its place along its street (Kathleen Scoopley's moved 10 px along, the others only toward the curb).
+
+## 172 — Cheaper power-ups, priced by row: $10, $15, $20, $30 in both trees (2026-11-16)
+
+**Decision (Jira SCREAM-369, under SCREAM-78, PO, November 16, 01:58):** "High level ticket: I want to reduce the prices of the powerups. The first level should cost $10. The second $15. The next $20. Then $30." And (21:25): "I want to make the customer powerups the same pricing order top to bottom as the truck powerups." Asked whether to build the cheaper prices as well, he picked **"Build it too"**. The Truck and Customer trees now cost the same, row by row: first row $10 (Temporary Gas Can, Service With A Smile; were $15); second $15 (More Space for Scream, Trot, were $20; Upgrade Speaker, Calculator, were $30); third $20 (Train Off The Tracks, Brakes Made This Century, Steam Engine, were $30; Speaker with Heavier Bass, Handy Notebook, This Century Register, were $40); fourth $30 (Back It Up $40, Gitty Up $50, Better Mirrors $50, Speedy Neighbors $60 before). His answers: **"Both $30"** for the fourth row (the left and right notes no longer differ), **"Keep their prices"** for the Ice Cream tree, and **"Yes, by row"** for More Space for Scream ($15) and Gitty Up ($30), which decision 166 had swapped.
+
+**Options considered:** the Customer tree at the Truck tree's old prices ($15, $20, $30, $40 and $50; he agreed to those first, then chose to build the cheaper rows too); the fourth row at $30 left and $40 right; the Ice Cream tree following the rows ($15, $20, $30).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the fifth-row dummy notes stay unbuyable; nobody is refunded for notes already bought in a saved Story run; the $600 bike is unchanged.
+
+## 171 — A longer evening: 4:00 to 8:00 PM, 7 minutes (2026-11-16)
+
+**Decision (Jira SCREAM-371, under SCREAM-78, PO, November 16, 17:34 and 17:36):** "I want to slightly increase how long every night is. Both in story and quickplay." Then: "I want to actually make the night be from 4pm to 8pm. Lets make it 7 minutes long." Every evening (Story, the uncle's evening, Quick play) now runs from 4:00 PM to 8:00 PM and lasts 7 minutes of real time; it was 5:00 to 8:00 PM in 5 minutes. A game minute takes 1.75 seconds (it was 1.67), so the clock ticks at almost the same pace and the evening gains an hour at its start. Asked whether the uncle's evening gets longer too, he picked **"Yes, every evening"**.
+
+**Options considered:** first offered: 5 minutes 15 seconds, 5 minutes 30 seconds or 6 minutes on the same 5:00 to 8:00 clock (he picked 6 minutes, then replaced it with 4:00 to 8:00 in 7 minutes).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the park keeps its clock times (full from the start, emptying from 5:45, 1 or 2 left by 7:00), so it is busy an hour longer; residents' From and Until times stay as they are in the sheet (someone home from 6:00 is now away for the first two hours), and the sheet may use times from 4:00 PM; nothing else is rebalanced (the gas tank, prices, the $600 bike, Quick play's saved high scores).
+
 ## 170 — Bigger − and + price buttons on Today's Menu (2026-11-16)
 
 **Decision (Jira SCREAM-370, under SCREAM-154, PO, November 16, 12:58):** "I want to increase the size of the blue + and - buttons. Not much larger". The − and + on each menu card in the cooler grow from about 22 x 20 px to about 28 x 28 px (text 16 → 20 px, more padding) and sit 2 px further in from the card's edges.

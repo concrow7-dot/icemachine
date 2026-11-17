@@ -53,11 +53,12 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
   await until(async () => (await scenes()).includes('Cooler')); await wait(300);
   await ev("(e.changeMoney(30000, 'Test', false), true)");
-  check('SCREAM-334: the Two Ball Lou Ball\'s note: $30, under SpongePop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 3000 | 0 | 2 | icecream-spongepop | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
+  check('SCREAM-334: the Two Ball Lou Ball\'s note: $20 (SCREAM-376), under SpongePop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 2000 | 0 | 2 | icecream-spongepop | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
   check('...it can\'t be bought before SpongePop; after SpongePop it can', (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true true eclair,spongepop,louball');
   check('...it costs $0.75 to stock (SCREAM-365; was $1.00) and is refused above $3.00', await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('louball').costCents + ' ' + e.refuseAboveCents('louball') + ' ' + e.slots.find(x => x.flavour === 'louball').priceCents; }), '75 300 300');
   check('...the sandwich hangs from it: it can be bought now', await ev("e.buyPowerUp('icecream-cookie')"), true);
-  await ev("(e.buyPowerUp('icecream-explorer'), true)");
+  // SCREAM-376: the Explorer Pop hangs under the Drum Cone now; here it is owned without it, as in a run saved before the swap.
+  await ev("(e.powerUpsOwned.push('icecream-explorer'), true)");
 
   // ---- The cooler with five ice creams ----
   await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
@@ -91,7 +92,7 @@ const { chromium } = require('playwright');
   // ---- SCREAM-343: Today's Menu stops at the price on the ice cream's cork board note ----
   const raise = (f, n) => sc('Cooler', `(() => { for (let i = 0; i < ${n}; i++) s.order.changePrice('${f}', 25); s.refresh(); return s.order.slots.find(x => x.flavour === '${f}').priceCents; })()`);
   const plusAlpha = (f) => sc('Cooler', `s.cards.find(c => c.flavour === '${f}').plus.alpha`);
-  check('SCREAM-343: the eclair starts under its top price: the + is bright', (await sc('Cooler', "s.order.slots[0].priceCents")) + ' ' + (await plusAlpha('eclair')), '200 1');
+  check('SCREAM-374: the eclair went onto the menu at its top price, $2.50: the + is greyed', (await sc('Cooler', "s.order.slots[0].priceCents")) + ' ' + (await plusAlpha('eclair')), '250 0.35');
   check('...raised 20 times it stops at the $2.50 on its note, and the + is greyed', (await raise('eclair', 20)) + ' ' + (await plusAlpha('eclair')), '250 0.35');
   check('...SpongePop, the Explorer Pop and the Lou Ball stop at $3.00; the sandwich at the general $4.00', [await raise('spongepop', 20), await raise('explorer', 20), await raise('louball', 20), await raise('cookie', 20)].join(), '300,300,300,400');
   await page.screenshot({ path: outDir + '/icecreams_price_cap.png' });
@@ -100,12 +101,13 @@ const { chromium } = require('playwright');
   {
     // The price buttons on a small card still work (SpongePop: SCREAM-343 leaves it room under its $3.00).
     const [x, y] = await sc('Cooler', "(() => { const c = s.cards.find(c => c.flavour === 'spongepop').container; return [c.x + (156 - 16) * c.scaleX, c.y + 120 * c.scaleY]; })()");
-    const was = await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents");
+    // SCREAM-374: SpongePop goes onto the menu at its top, so the test lowers it a step first.
+    const was = await sc('Cooler', "(s.order.changePrice('spongepop', -25), s.refresh(), s.order.slots.find(x => x.flavour === 'spongepop').priceCents)");
     await page.mouse.click(x, y); await wait(150);
     check('...a small card\'s + still raises its price', (await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents")) - was, 25);
   }
   // ---- SCREAM-335: the Drum Cone's note, and the cooler with all six ----
-  check('SCREAM-335: the Drum Cone\'s note: $30, under the Lil Explorer Pop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 3000 | 2 | 2 | icecream-explorer | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
+  check('SCREAM-335: the Drum Cone\'s note: $15, beside SpongePop under the eclair (SCREAM-376), with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.find(t => t.id === 'icecream').notes.find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 1500 | 2 | 1 | icecream-eclair | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
   check('...bought (the Explorer Pop is owned): $0.75 to stock (SCREAM-365), refused above $3.00', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone') + ' ' + e.slots.find(x => x.flavour === 'drumcone').priceCents; })), 'true 75 300 300');
   await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
   check('Six ice creams unlocked: six rows, all above the totals', await sc('Cooler', "s.offered.map(f => f.id).join() + ' ' + s.rowYs.join() + ' ' + (Math.max(...s.rowYs) + 20 < s.totals.y - 14)"), 'eclair,spongepop,explorer,cookie,louball,drumcone 140,182,224,266,308,350 true');

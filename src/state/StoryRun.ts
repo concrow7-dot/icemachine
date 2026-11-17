@@ -65,6 +65,8 @@ export class StoryRun {
   /** SCREAM-145: paid sales per resident so far this run, and whether a regular has told the roundabout's trick. */
   visits: Record<string, number> = {};
   rotaryHintGiven = false;
+  /** SCREAM-377: the other map has been reached (the in-truck map shows both). */
+  otherMapSeen = false;
   /**
    * SCREAM-268 (PO, November 12): the uncle's $20 for gas. Used at his pump on his evening; a player
    * who goes On My Own or skips him first gets it at their first pump instead.
@@ -94,6 +96,7 @@ export class StoryRun {
       this.totals = { ...save.totals };
       this.visits = { ...(save.visits ?? {}) };
       this.rotaryHintGiven = save.rotaryHintGiven ?? false;
+      this.otherMapSeen = save.otherMapSeen ?? false;
       this.uncleGasUsed = save.uncleGasUsed ?? false;
       this.powerUps = [...(save.powerUps ?? [])];
       this.notebook = (save.notebook ?? []).map((e) => ({ ...e }));
@@ -112,6 +115,7 @@ export class StoryRun {
         story: { day: this.day, seed: this.seed },
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
+        otherMapSeen: this.otherMapSeen,
         uncleGas: !this.uncleGasUsed,
         powerUps: this.powerUps,
         notebook: this.notebook,
@@ -136,6 +140,7 @@ export class StoryRun {
     this.fuel = evening.endedOutOfGas ? FUEL_STORY_OUT_OF_GAS_START : Math.max(evening.fuel, FUEL_STORY_MIN_START);
     this.visits = { ...evening.visits }; // SCREAM-145
     this.rotaryHintGiven = evening.rotaryHintGiven;
+    if (evening.otherMapSeen) this.otherMapSeen = true; // SCREAM-377
     if (evening.uncleGasUsed) this.uncleGasUsed = true;
     this.powerUps = [...evening.powerUps]; // SCREAM-296
     this.notebook = evening.notebook.map((e) => ({ ...e })); // SCREAM-245
@@ -164,6 +169,7 @@ export class StoryRun {
         seed: this.seed,
         visits: this.visits,
         rotaryHintGiven: this.rotaryHintGiven,
+        otherMapSeen: this.otherMapSeen,
         uncleGasUsed: this.uncleGasUsed,
         powerUps: this.powerUps,
         notebook: this.notebook,

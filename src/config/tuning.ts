@@ -1,11 +1,18 @@
 // Tuning values: numbers the product owner may want to change after playtests.
 // Change them here, not inside the scenes.
 
-/** Real-world length of one evening, in seconds. Issue #5: 5 minutes for the first playable. */
-export const EVENING_LENGTH_SECONDS = 300;
+/**
+ * Real-world length of one evening, in seconds. Issue #5: 5 minutes for the first playable.
+ * SCREAM-371 (PO, November 16): "Lets make it 7 minutes long." Every mode.
+ */
+export const EVENING_LENGTH_SECONDS = 420;
 
-/** In-game clock: the evening runs from 5pm to 8pm (24-hour clock). */
-export const EVENING_START_HOUR = 17;
+/**
+ * In-game clock: the evening runs from 4pm to 8pm (24-hour clock). It was 5pm to 8pm;
+ * SCREAM-371 (PO, November 16): "make the night be from 4pm to 8pm". With 7 minutes that is
+ * 1.75 s per game minute (it was 1.67), so the clock ticks at almost the same pace.
+ */
+export const EVENING_START_HOUR = 16;
 export const EVENING_END_HOUR = 20;
 
 /** Issue #21: cash the player starts with, in cents ($50). Quick play: resets each evening. */
@@ -76,7 +83,8 @@ export const STORY_FIRST_FLAVOUR = 'eclair';
 /** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
 export const ICE_CREAM_UNLOCK_CENTS = 1500;
 /** PO, November 14 (testing SCREAM-313 and 312): SpongePop's note costs $20 and the Lil Explorer Pop's $25. Others keep ICE_CREAM_UNLOCK_CENTS. */
-export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500, louball: 3000, drumcone: 3000 };
+/** SCREAM-376 (PO, November 16): "The now spongpop drum cone line should be $15. The 2 ball and lil explorer should be $20." (They were $20, $25, $30 and $30.) */
+export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 1500, drumcone: 1500, louball: 2000, explorer: 2000 };
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO
@@ -207,7 +215,7 @@ export const EXPLORATION_AWAY_START_CENTS = 150;
 export const EXPLORATION_AWAY_FARTHEST_CENTS = 500;
 export const EXPLORATION_STEP_CENTS = 10;
 /** SCREAM-303 (PO: "$15"). */
-export const SMILE_PRICE_CENTS = 1500;
+export const SMILE_PRICE_CENTS = 1000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $15)
 
 /** A customer at the window waits this long, from when the conversation starts, before leaving. */
 export const WINDOW_PATIENCE_SECONDS = 60;
@@ -317,7 +325,7 @@ export const CUSTOMER_INDOORS_FACTOR = 0.5;
  * every-day regular). Their Likelihood counts for this much more while the music reaches them.
  * The 1.1 is engineering's proposal, like the other notes; it isn't shown (decision 132).
  */
-export const BASS_PRICE_CENTS = 4000;
+export const BASS_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 /**
  * SCREAM-366 (PO, November 16: "I want to make it harder for people in their home to become customers.
  * That way the powerup has a bigger effect"; his answers "A quarter as likely" and "Bass: indoors back
@@ -472,7 +480,7 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
  */
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
-export const GITTY_UP_PRICE_CENTS = 5000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20)
+export const GITTY_UP_PRICE_CENTS = 3000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20) // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
 /**
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
@@ -487,23 +495,23 @@ export const TROT_CREEP_FACTOR = 2.1;
  * trot, just on top of it" (it added Trot's step again). SCREAM-336 (PO, November 15): "trot and steam
  * should be another 2x increase": it doubles the roll speed Trot gives (25.2 to 50.4 px/s).
  */
-export const STEAM_PRICE_CENTS = 3000;
+export const STEAM_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const STEAM_CREEP_FACTOR = 2;
 /** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 5% better (braking time / 1.05; 10% at first, the PO while testing: "only be 5% better as well"). */
-export const BRAKES_PRICE_CENTS = 3000;
+export const BRAKES_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const BRAKES_FACTOR = 1.05;
 /** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
-export const TRAIN_PRICE_CENTS = 3000;
+export const TRAIN_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const TRAIN_TOP_SPEED_FACTOR = 1.05;
 /** SCREAM-310 (PO: "Lets go with $20"). */
-export const TROT_PRICE_CENTS = 2000;
+export const TROT_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
-export const SPEAKER_PRICE_CENTS = 3000;
+export const SPEAKER_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const SPEAKER_RADIUS_FACTOR = 1.1;
 /** SCREAM-317 (PO, November 14): the Calculator note, $30. */
-export const CALCULATOR_PRICE_CENTS = 3000;
+export const CALCULATOR_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 /** SCREAM-330 (PO, November 14): This Century Register, $40 (his answer): a tablet at the window; a click on an ice cream adds its price. */
-export const REGISTER_PRICE_CENTS = 4000;
+export const REGISTER_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**
@@ -588,7 +596,7 @@ export const HINT_MAX_PER_EVENING = 2;
  * SCREAM-245 (PO, November 14): the Handy Notebook, $40 (his answer). Every hint a customer says
  * at the window is written down once it is owned. How many fit on a page of it.
  */
-export const NOTEBOOK_PRICE_CENTS = 4000;
+export const NOTEBOOK_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 export const NOTEBOOK_ENTRIES_PER_PAGE = 4;
 
 // ---- Customers mention their own schedule (SCREAM-247) ----
@@ -688,7 +696,7 @@ export const DRUM_CONE_SOLO_SECONDS = 30;
  * strength are engineering's proposals; the strength isn't shown (decision 132). Story's top reverse
  * speed goes from about 46 to about 68 px/s.
  */
-export const BACK_IT_UP_PRICE_CENTS = 4000;
+export const BACK_IT_UP_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
 
 /**
@@ -697,7 +705,7 @@ export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
  * row, on the bottom of all three cooler spots should open up. 6 more total. 2 in each slot": one
  * more open row in every crate (Story's 18 squares become 24). The price is engineering's proposal.
  */
-export const MORE_JUNK_PRICE_CENTS = 2000; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50)
+export const MORE_JUNK_PRICE_CENTS = 1500; // SCREAM-364 (PO, November 16): swapped with Gitty Up's (was $50) // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
 export const MORE_JUNK_EXTRA_ROWS = 1;
 
 /**
@@ -707,7 +715,7 @@ export const MORE_JUNK_EXTRA_ROWS = 1;
  * truck who is off screen has a round marker at the screen's edge, with their face, pointing at them.
  * The price and the marker's sizes (px on the map, before the camera's zoom) are engineering's proposals.
  */
-export const MIRRORS_PRICE_CENTS = 5000;
+export const MIRRORS_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
 export const MIRROR_MARKER_RADIUS = 13;
 export const MIRROR_MARKER_MARGIN = 24;
 /** Extra room kept clear at the top (song name, credit) and bottom (key hints, park brake) of the road view, map px. */
@@ -730,7 +738,7 @@ export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
 export const CHASE_ADULT_SECONDS = 30;
 export const CHASE_SLOW_KID_SECONDS = 20;
 export const FAST_KID_SPEED_FACTOR = 1.5;
-export const SPEEDY_PRICE_CENTS = 6000;
+export const SPEEDY_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $60)
 export const SPEEDY_SPEED_FACTOR = 1.25;
 
 /**
@@ -747,7 +755,7 @@ export const CHASE_REGULAR_SHARE = 0.7;
 // "There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to
 // empty out. so that by 7 there are only 1 or 2 people left." His answers: "A mix" (the three
 // residents who get home late, plus new visitors) and "Random each evening".
-/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 at 5:00). */
+/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 from the start of the evening, 4:00 since SCREAM-371). */
 export const PARK_VISITORS_TONIGHT = 10;
 /** How many of tonight's visitors stay at the park all evening: from, to (rolled each evening). */
 export const PARK_STAY_LATE: readonly [number, number] = [1, 2];
@@ -789,7 +797,18 @@ export const RESIDENT_CAR_ARRIVE_CLEAR = 160;
 // ---- SCREAM-361 (PO, November 16): the residents' cars are the art pack's cars ----
 /** Room kept between a pink square and the end of a resident's car, so the truck (half length 52) can pull in (px). */
 export const RESIDENT_CAR_TRUCK_ROOM = 62;
+/**
+ * SCREAM-372 (PO, November 16): "Reduce the size of the hit boxes to better match the actual shape
+ * of the cars." A car's hit box is the picture it is drawn with (nose-up and nose-down pictures are
+ * narrower than side-on ones), pulled in this many px on every side, so its mirrors and rounded
+ * corners don't catch the truck (engineering's number).
+ */
+export const RESIDENT_CAR_BOX_INSET = 3;
 /** The pack's cars' picture sheet (tools/cars/build_cars.py). */
 export const CARS_KEY = 'pack-cars';
 export const CARS_PNG = 'assets/limezu/cars.png';
 export const CARS_JSON = 'assets/limezu/cars.json';
+
+// ---- SCREAM-374 (PO, November 16): ice creams that go onto Today's Menu at the most a customer pays (Story) ----
+/** Flavour ids. The Two Ball Lou Ball and the Drum Cone already start at their top ($3.00, flavours.ts). */
+export const MENU_STARTS_AT_TOP: readonly string[] = ['eclair', 'spongepop', 'explorer'];

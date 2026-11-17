@@ -46,7 +46,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { MAX_PRICE_CENTS } from '../config/tuning';
+import { MAX_PRICE_CENTS, MENU_STARTS_AT_TOP } from '../config/tuning';
 import { MIRRORS_ID, SPEEDY_ID } from '../config/powerUps';
 import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
@@ -136,7 +136,7 @@ const PINK_CLEAR_BAY = 100;
 
 export class EveningState extends Phaser.Events.EventEmitter {
   private elapsedMs = 0;
-  /** #66: the evening opens at the cooler with the clock stopped at 5:00 PM; it starts when you leave the cooler. */
+  /** #66: the evening opens at the cooler with the clock stopped at 4:00 PM (SCREAM-371); it starts when you leave the cooler. */
   private clockRunning = false;
   private ended = false;
   /** SCREAM-119: the evening ended because the tank ran empty. */
@@ -310,6 +310,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     /** SCREAM-145: paid sales per resident over the run so far, and whether the roundabout's secret is out. */
     visits?: Readonly<Record<string, number>>;
     rotaryHintGiven?: boolean;
+    /** SCREAM-377: Story only: the other map has been reached on an earlier evening. */
+    otherMapSeen?: boolean;
     /** SCREAM-268: Story only: the uncle's $20 for gas hasn't been used yet this run. */
     uncleGas?: boolean;
     /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
@@ -344,6 +346,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     for (let i = 0; i < COOLER_CAPACITY; i++) this.coolerCells.push(null);
     this.visits = { ...(carry?.visits ?? {}) };
     this.rotaryHintGiven = carry?.rotaryHintGiven ?? false;
+    this.otherMapSeen = carry?.otherMapSeen ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
     this.notebook = (carry?.notebook ?? []).map((e) => ({ ...e })); // SCREAM-245
@@ -448,6 +451,14 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.writeDown(ROTARY_HINT_LINE); // SCREAM-245
   }
 
+  /** SCREAM-377 (PO, November 16): "once the player teleports to the other map, that map should become available too." */
+  otherMapSeen = false;
+  /** SCREAM-377: the maps the in-truck map can show: home's first, then the other one once the truck has been there. */
+  get knownMaps(): MapId[] {
+    const other: MapId = this.homeMapId === 'tutorial' ? 'worcester' : 'tutorial';
+    return this.otherMapSeen ? [this.homeMapId, other] : [this.homeMapId];
+  }
+
   /** SCREAM-145: true while the truck is away from the map home is on. */
   get awayFromHome(): boolean {
     return this.mapId !== this.homeMapId;
@@ -469,6 +480,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.truckPosition = spot;
     this.streetNow = ''; // SCREAM-237: the other map's streets
     this.mapSwitches += 1;
+    this.otherMapSeen = true; // SCREAM-377: the in-truck map shows this map from now on
     this.emit(EveningEvents.MapChanged, to);
     return to;
   }
@@ -527,12 +539,12 @@ export class EveningState extends Phaser.Events.EventEmitter {
 
   // ---- Clock (#5) ----
 
-  /** How far through the evening we are, from 0 (5pm) to 1 (8pm). */
+  /** How far through the evening we are, from 0 (4pm) to 1 (8pm). */
   get progress(): number {
     return Math.min(this.elapsedMs / this.lengthMs, 1);
   }
 
-  /** Current in-game time as minutes since midnight (5pm = 1020). */
+  /** Current in-game time as minutes since midnight (4pm = 960). */
   get clockMinutes(): number {
     const startMinutes = EVENING_START_HOUR * 60;
     const spanMinutes = (EVENING_END_HOUR - EVENING_START_HOUR) * 60;
@@ -741,6 +753,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   menuTopPriceCents(flavour: FlavourId): number {
     return this.story && !this.tutorial ? storyRefuseAboveCents(flavour) : MAX_PRICE_CENTS;
+  }
+
+  /**
+   * SCREAM-374 (PO, November 16): "On the chocolate éclair, spongepop and lil explorer, [m]ake the
+   * price the max allowed when added [from] available ice cream." In Story (not the uncle's
+   * evening) those three go onto Today's Menu at the most a customer pays; null = keep its price.
+   */
+  menuAddPriceCents(flavour: FlavourId): number | null {
+    if (!this.story || this.tutorial || !MENU_STARTS_AT_TOP.includes(flavour)) return null;
+    return this.menuTopPriceCents(flavour);
   }
 
   /** SCREAM-343: brings any menu price above its top down to it (an old save's); called when the cooler opens. */

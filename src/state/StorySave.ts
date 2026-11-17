@@ -27,6 +27,8 @@ export type StorySave = {
   /** SCREAM-145: paid sales per resident so far, and whether a regular has told the roundabout's trick. */
   visits?: Record<string, number>;
   rotaryHintGiven?: boolean;
+  /** SCREAM-377: the truck has been through the roundabout to the other map, so the in-truck map shows it too. */
+  otherMapSeen?: boolean;
   /** SCREAM-268: the uncle's $20 of gas has been used (at his pump, or at the first pump on your own). */
   uncleGasUsed?: boolean;
   /** SCREAM-296: the power-ups owned (the cork board's note ids). Saves from before it have none. */
@@ -81,6 +83,7 @@ export function loadStory(): StorySave | null {
           ? Object.fromEntries(Object.entries(data.visits as Record<string, unknown>).filter(([, v]) => Number.isInteger(v) && (v as number) > 0) as [string, number][])
           : undefined,
       rotaryHintGiven: data.rotaryHintGiven === true,
+      otherMapSeen: data.otherMapSeen === true,
       uncleGasUsed: data.uncleGasUsed === true,
       powerUps: Array.isArray(data.powerUps) ? data.powerUps.filter((id): id is string => typeof id === 'string') : undefined,
       notebook: readNotebook(data.notebook),

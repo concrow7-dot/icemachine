@@ -182,7 +182,7 @@ export class CoolerScene extends Phaser.Scene {
     this.evening = getEvening(this);
     // SCREAM-191: counts the uncle's $50 before he hands it over (guided tutorial).
     this.evening.capMenuPrices();
-    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f), (f) => this.evening.stockCostOf(f));
+    this.order = new CoolerOrder(this.evening.slots, () => this.evening.stockBudgetCents, this.evening.cells, (i) => this.evening.cellOpen(i), (f) => this.evening.menuTopPriceCents(f), (f) => this.evening.stockCostOf(f), (f) => this.evening.menuAddPriceCents(f));
     this.restocking = this.evening.isRestocking;
     this.locked = this.evening.isPrepLocked && !this.restocking;
     this.buyButton = undefined;

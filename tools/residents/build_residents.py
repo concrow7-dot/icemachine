@@ -79,7 +79,7 @@ EXPORT = 'RESIDENTS'
 TUTORIAL = False
 HEADER = ['ID', 'Name', 'Age', 'Street', 'House', 'Likelihood (%)', 'Look', 'Notes']
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']   # SCREAM-221: optional columns
-EVENING = (17 * 60, 20 * 60)   # SCREAM-249: the evening runs from 5 PM to 8 PM (tuning.ts)
+EVENING = (16 * 60, 20 * 60)   # SCREAM-249, SCREAM-371: the evening runs from 4 PM to 8 PM (tuning.ts)
 
 
 # ---- SCREAM-224 (PO, November 15): the park on the tutorial map (Elm Park) ----
@@ -295,7 +295,7 @@ def read_csv():
             text = (r.get(col) or '').strip()
             minutes = clock_minutes(text) if text else None
             if text and (minutes is None or not EVENING[0] <= minutes <= EVENING[1]):
-                bad(f'{col} must be blank or a time from 5:00 PM to 8:00 PM, like 7:00 PM')
+                bad(f'{col} must be blank or a time from 4:00 PM to 8:00 PM, like 7:00 PM')
             hours.append(minutes)
         if hours[0] is not None and hours[1] is not None and hours[0] >= hours[1]:
             bad('From must be earlier than Until')
@@ -633,7 +633,7 @@ def place(m, people, index):
 CAR_TRUCK_ROOM = 62   # SCREAM-361: from a pink square to the end of a car (the truck's half length, 52, and a little)
 CAR_CAR_GAP = 12      # between two cars, bumper to bumper
 CAR_JUNCTION = 50     # how far past another street's edge a car keeps (out of junctions)
-CAR_CURB_GAP = 3      # SCREAM-361 (PO, November 16: "closer to the curb"): from a car's side to the curb
+CAR_CURB_GAP = 1      # SCREAM-361, SCREAM-372 (PO, November 16: "closer to the curb or edge of the street"): from the side of a car's picture to the curb (was 3, and measured from a wider box)
 
 
 def car_models():
@@ -642,9 +642,14 @@ def car_models():
     return json.loads(s[s.index('= [') + 2:s.rindex(']') + 1])
 
 
-def car_half(model):
-    """Half its length and half its width on the map, parked along the street (its side view)."""
-    return model['right'][0] / 2, model['right'][1] / 2
+def car_half(model, ang=0):
+    """Half the length and half the width of the picture the car is drawn with when it faces `ang`
+    (degrees): side-on on a street that runs across the map, nose-up or nose-down on one that runs
+    up it (SCREAM-372: those pictures are narrower, so the car can sit closer to the curb)."""
+    k = round((ang % 360) / 90) % 4
+    if k % 2 == 0:
+        return model['right'][0] / 2, model['right'][1] / 2
+    return model['down'][1] / 2, model['down'][0] / 2
 
 
 def car_spot(m, r, squares, cars, model):
@@ -654,7 +659,8 @@ def car_spot(m, r, squares, cars, model):
     traffic goes on that side. [x, y, facing angle in degrees, model], or None if there's no room."""
     sx, sy, ang = r['curb'][2], r['curb'][3], r['curb'][4]
     tx, ty = math.cos(math.radians(ang)), math.sin(math.radians(ang))
-    hl, hw = car_half(model)
+    pl, hw = car_half(model, ang)   # SCREAM-372: the picture it is drawn with: how close to the curb it sits
+    hl = model['right'][0] / 2      # spacing along the street still goes by its side-on length, so nobody's car changes place
     segs_all = [(ri, rd['points'][i], rd['points'][i + 1], rd['points'][i + 2], rd['points'][i + 3])
                 for ri, rd in enumerate(m['roads']) for i in range(0, len(rd['points']) - 2, 2)]
     # A street can be in the map as more than one road (Institute Road is two): go by its name.
@@ -681,7 +687,9 @@ def car_spot(m, r, squares, cars, model):
         if edge is None:
             continue
         x, y = mx + ux * (edge - hw - CAR_CURB_GAP), my + uy * (edge - hw - CAR_CURB_GAP)
-        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-hl, hl) for b in (-hw, hw)]
+        # SCREAM-372: the corners are checked 3 px in from the car's sides: a street a few degrees off
+        # straight would otherwise push a snug car's corner a pixel or two over the curb and lose the spot.
+        corners = [(x + tx * a - ty * b, y + ty * a + tx * b) for a in (-pl, pl) for b in (-(hw - 3), hw - 3)]
         if not all(on_asphalt(*c) for c in corners):
             continue
         if m['roads'][min(segs_all, key=lambda sg: seg_dist(x, y, *sg[1:])[0])[0]]['name'] != own:
