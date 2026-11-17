@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 171 — A longer evening: 4:00 to 8:00 PM, 7 minutes (2026-11-16)
+
+**Decision (Jira SCREAM-371, under SCREAM-78, PO, November 16, 17:34 and 17:36):** "I want to slightly increase how long every night is. Both in story and quickplay." Then: "I want to actually make the night be from 4pm to 8pm. Lets make it 7 minutes long." Every evening (Story, the uncle's evening, Quick play) now runs from 4:00 PM to 8:00 PM and lasts 7 minutes of real time; it was 5:00 to 8:00 PM in 5 minutes. A game minute takes 1.75 seconds (it was 1.67), so the clock ticks at almost the same pace and the evening gains an hour at its start. Asked whether the uncle's evening gets longer too, he picked **"Yes, every evening"**.
+
+**Options considered:** first offered: 5 minutes 15 seconds, 5 minutes 30 seconds or 6 minutes on the same 5:00 to 8:00 clock (he picked 6 minutes, then replaced it with 4:00 to 8:00 in 7 minutes).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the park keeps its clock times (full from the start, emptying from 5:45, 1 or 2 left by 7:00), so it is busy an hour longer; residents' From and Until times stay as they are in the sheet (someone home from 6:00 is now away for the first two hours), and the sheet may use times from 4:00 PM; nothing else is rebalanced (the gas tank, prices, the $600 bike, Quick play's saved high scores).
+
 ## 170 — Bigger − and + price buttons on Today's Menu (2026-11-16)
 
 **Decision (Jira SCREAM-370, under SCREAM-154, PO, November 16, 12:58):** "I want to increase the size of the blue + and - buttons. Not much larger". The − and + on each menu card in the cooler grow from about 22 x 20 px to about 28 x 28 px (text 16 → 20 px, more padding) and sit 2 px further in from the card's edges.

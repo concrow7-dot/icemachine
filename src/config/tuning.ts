@@ -1,11 +1,18 @@
 // Tuning values: numbers the product owner may want to change after playtests.
 // Change them here, not inside the scenes.
 
-/** Real-world length of one evening, in seconds. Issue #5: 5 minutes for the first playable. */
-export const EVENING_LENGTH_SECONDS = 300;
+/**
+ * Real-world length of one evening, in seconds. Issue #5: 5 minutes for the first playable.
+ * SCREAM-371 (PO, November 16): "Lets make it 7 minutes long." Every mode.
+ */
+export const EVENING_LENGTH_SECONDS = 420;
 
-/** In-game clock: the evening runs from 5pm to 8pm (24-hour clock). */
-export const EVENING_START_HOUR = 17;
+/**
+ * In-game clock: the evening runs from 4pm to 8pm (24-hour clock). It was 5pm to 8pm;
+ * SCREAM-371 (PO, November 16): "make the night be from 4pm to 8pm". With 7 minutes that is
+ * 1.75 s per game minute (it was 1.67), so the clock ticks at almost the same pace.
+ */
+export const EVENING_START_HOUR = 16;
 export const EVENING_END_HOUR = 20;
 
 /** Issue #21: cash the player starts with, in cents ($50). Quick play: resets each evening. */
@@ -747,7 +754,7 @@ export const CHASE_REGULAR_SHARE = 0.7;
 // "There should be a lot of people there like 13 at 5pm. Then after 5:45 it should start to
 // empty out. so that by 7 there are only 1 or 2 people left." His answers: "A mix" (the three
 // residents who get home late, plus new visitors) and "Random each evening".
-/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 at 5:00). */
+/** How many of the sheet's park visitors are at the park each evening (13 in the sheet; with the 3 residents that makes 13 from the start of the evening, 4:00 since SCREAM-371). */
 export const PARK_VISITORS_TONIGHT = 10;
 /** How many of tonight's visitors stay at the park all evening: from, to (rolled each evening). */
 export const PARK_STAY_LATE: readonly [number, number] = [1, 2];
