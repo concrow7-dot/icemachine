@@ -357,6 +357,8 @@ interface Running extends ResidentNow {
 
 /** SCREAM-380: about half a car's width plus a margin: how near a car on its way home lets the truck's sides or another car get, px. */
 const CAR_ROOM = 20;
+/** SCREAM-380: a car waits off the map until the car before it is this far along its way, px. */
+const CAR_ENTRY_ROOM = 140;
 
 const between = (rnd: () => number, [low, high]: readonly [number, number]) => low + rnd() * (high - low);
 
@@ -644,6 +646,8 @@ export class Residents {
   private readonly carBack = new Set<string>();
   /** SCREAM-380: the cars on their way home right now, by their owner's id. */
   private readonly drives = new Map<string, HomeDrive>();
+  /** SCREAM-380: the order the cars came onto the map in, by their owner's id (a later car gives way to an earlier one). */
+  private readonly driveOrder = new Map<string, number>();
   /** SCREAM-380: the way along the streets for a resident's car, from the map's edge to its spot (EveningState gives it); null = no way. */
   private driveIn: ((r: Resident) => [number, number][] | null) | null = null;
   /** SCREAM-380: the way the truck was last pointing, degrees. */
@@ -715,8 +719,12 @@ export class Residents {
       const car = p.resident.car;
       const corners = car && this.carsOn && this.driveIn ? this.driveIn(p.resident) : null;
       if (car && corners && corners.length >= 2) {
+        // One car at a time through the way in: this one waits its turn off the map until the last is well clear.
+        if ([...this.drives.values()].some((d) => d.s < CAR_ENTRY_ROOM)) continue;
         const [length] = carFootprint(car[3], car[2]);
-        this.drives.set(p.resident.id, new HomeDrive(corners, { x: car[0], y: car[1], angle: car[2] }, length / 2));
+        const drive = new HomeDrive(corners, { x: car[0], y: car[1], angle: car[2] }, length / 2);
+        this.driveOrder.set(p.resident.id, this.driveOrder.size);
+        this.drives.set(p.resident.id, drive);
         p.arriveAt = null;
         continue;
       }
@@ -779,8 +787,11 @@ export class Residents {
         if (Math.abs(fore) < TRUCK_LENGTH / 2 + CAR_ROOM && Math.abs(side) < TRUCK_WIDTH / 2 + CAR_ROOM) return true;
       }
     }
+    // Another car on its way home that came onto the map earlier: the later car gives way, never
+    // the earlier one, so two cars can never each be waiting for the other.
+    const mine = this.driveOrder.get(id) ?? 0;
     for (const [other, d] of this.drives) {
-      if (other !== id && Math.hypot(x - d.x, y - d.y) < CAR_ROOM + 10) return true;
+      if (other !== id && (this.driveOrder.get(other) ?? 0) < mine && Math.hypot(x - d.x, y - d.y) < CAR_ROOM + 10) return true;
     }
     return this.people.some((p) => p.outside && !p.gone && p.customer !== 'window' && Math.hypot(x - p.x, y - p.y) < HOME_DRIVE_PERSON_ROOM);
   }

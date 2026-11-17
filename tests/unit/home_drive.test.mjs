@@ -8,7 +8,7 @@ import { game } from './game.mjs';
 const { Residents } = await game('state/Residents');
 const { RoadGraph, asphaltAtEdge } = await game('state/RoadGraph');
 const { HomeDrive } = await game('state/HomeDrive');
-const { RoadNetwork } = await game('state/RoadGeometry');
+const { RoadNetwork, boxesOverlap } = await game('state/RoadGeometry');
 const { walkInRoute } = await game('state/ComingHome');
 const { TUTORIAL_RESIDENTS } = await game('config/tutorialResidents');
 const { TUTORIAL } = await game('config/tutorial');
@@ -200,4 +200,21 @@ test('SCREAM-380: people without a car still walk in from the edge', () => {
     return;
   }
   assert.fail('no walker found');
+});
+
+test('SCREAM-380: cars due at the same minute come in one at a time, and every car is parked by 8 PM (60 evenings)', () => {
+  for (let seed = 1; seed <= 12; seed++) {
+    for (const day of [1, 2, 3, 4, 5]) {
+      const { people, at } = evening(day, seed);
+      const drivers = people.awayNow.filter((p) => p.resident.car && people.arrivesAt(p) !== null);
+      at(T.EVENING_END_HOUR * 60, { x: 2600, y: 600, radius: 10, open: false, heading: 0 }, () => {
+        const moving = people.carsNow.filter((c) => c.moving);
+        // (Two cars may pass each other in opposite lanes, 32 px apart: what matters is that they never touch.)
+        for (const a of moving) for (const b of moving) if (a !== b) assert.ok(!boxesOverlap(a, b), `seed ${seed} day ${day}: moving cars never touch (${Math.round(a.x)}, ${Math.round(a.y)} and ${Math.round(b.x)}, ${Math.round(b.y)})`);
+      });
+      assert.equal(people.carsNow.filter((c) => c.moving).length, 0, `seed ${seed} day ${day}: no car is still on its way at 8 PM`);
+      // (Someone with an Until has left again by 8 PM, and their car with them: SCREAM-252.)
+      for (const p of drivers) assert.ok(!p.away && (!!p.resident.hours || people.carsNow.some((c) => c.id === p.resident.id)), `seed ${seed} day ${day}: ${p.resident.name} and their car are home`);
+    }
+  }
 });

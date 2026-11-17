@@ -66,22 +66,25 @@ const { chromium } = require('playwright');
     window.__driver = p;
     e.elapsedMs = Math.max(e.elapsedMs, (res.arrivesAt(p) - 960) * 1750 + 500);
     let c;
-    for (let t = 0; t < 600; t++) { res.update(0.1, window.__far); e.elapsedMs += 100; c = res.carsNow.find(c => c.id === p.resident.id); if (c && c.moving && c.x > 520) break; }
-    return c ? { id: c.id, x: c.x, y: c.y, angle: c.angle, moving: !!c.moving, away: p.away, outside: p.outside, driving: res.drivingHome(p) } : null;
+    // On until it is 400 px along its way (past the way in, wherever it lives); `ahead` is where its way goes 230 px on.
+    let ahead = null;
+    for (let t = 0; t < 600; t++) { res.update(0.1, window.__far); e.elapsedMs += 100; c = res.carsNow.find(c => c.id === p.resident.id); const d = res.drives.get(p.resident.id); if (c && d && d.s > 400) { ahead = d.at(d.s + 230); break; } }
+    return c && ahead ? { id: c.id, x: c.x, y: c.y, angle: c.angle, moving: !!c.moving, away: p.away, outside: p.outside, driving: res.drivingHome(p), ahead } : null;
   });
   check('SCREAM-380: an away car owner comes in by car along the road; the owner is not on the map while driving', driver && [driver.moving, driver.away, driver.outside, driver.driving].join(' '), 'true true false true');
   check('...the car is on the asphalt', await sc('Drive', `s.roads.onRoad(${driver.x}, ${driver.y})`), true);
   // The truck stops in the car's lane ahead of it: the car stops and waits.
-  const rad = driver.angle * Math.PI / 180;
-  const tx = driver.x + 230 * Math.cos(rad) - 14 * Math.sin(rad), ty = driver.y + 230 * Math.sin(rad) + 14 * Math.cos(rad);
-  await sc('Drive', `(s.truck.setPosition(${tx}, ${ty}), s.setHeading(${driver.angle}), s.speed = 0, s.parkBrake = true, true)`);
-  await wait(2500);
+  const tx = driver.ahead.x, ty = driver.ahead.y;
+  await sc('Drive', `(s.truck.setPosition(${tx}, ${ty}), s.setHeading(${driver.ahead.angle}), s.speed = 0, s.parkBrake = true, true)`);
+  await until(async () => await ev(`(d => !!d && d.waiting && d.v === 0)(res.drives.get('${driver.id}'))`), 6000);
+  await wait(300);
   const car = () => ev(`(c => c ? { x: c.x, y: c.y, angle: c.angle, moving: !!c.moving, hl: c.halfLength } : null)(res.carsNow.find(c => c.id === '${driver.id}'))`);
   const w1 = await car(); await wait(500); const w2 = await car();
-  const gap = Math.hypot(w1.x - tx, w1.y - ty) - 52 - w1.hl;
-  check('SCREAM-380: with the truck in its way the car stops and waits behind it, without touching', [w1.moving, Math.hypot(w2.x - w1.x, w2.y - w1.y) < 0.5, gap > 8 && gap < 60 ? 'gap ok' : 'gap ' + gap.toFixed(0)].join(' '), 'true true gap ok');
+  const apart = Math.hypot(w1.x - tx, w1.y - ty);
+  const touching = await page.evaluate(async ([c, tx, ty, th]) => { const { boxesOverlap } = await import('/src/state/RoadGeometry.js'); return boxesOverlap({ x: c.x, y: c.y, angle: c.angle, halfLength: c.hl, halfWidth: 14 }, { x: tx, y: ty, angle: th, halfLength: 52, halfWidth: 21 }); }, [w1, tx, ty, driver.ahead.angle]);
+  check('SCREAM-380: with the truck in its way the car stops and waits behind it, without touching', [w1.moving, Math.hypot(w2.x - w1.x, w2.y - w1.y) < 0.5, touching, apart < 170 ? 'close' : 'apart ' + apart.toFixed(0)].join(' '), 'true true false close');
   check('...it is drawn where it is, turned the way it is going', await sc('Drive', `(g => !!g && g.visible && Math.hypot(g.x - ${w2.x}, g.y - ${w2.y}) < 1)(s.residentCars.get('${driver.id}'))`), true);
-  check('...and it is an obstacle like a parked car: the truck cannot drive into it', await sc('Drive', `s.obstacleAt(${w2.x} + 60 * Math.cos(${rad}), ${w2.y} + 60 * Math.sin(${rad}), ${driver.angle}) + ' ' + s.obstacleAt(s.truck.x, s.truck.y)`), 'car null');
+  check('...and it is an obstacle like a parked car: the truck cannot drive into it', await sc('Drive', `s.obstacleAt(${w2.x}, ${w2.y}, ${w2.angle})`), 'car');
   await page.screenshot({ path: outDir + '/arrivals_car_waiting.png' });
   // The truck drives off: the car carries on, parks, and its owner walks to the door.
   await sc('Drive', '(s.truck.setPosition(2600, 600), s.setHeading(0), s.speed = 0, s.parkBrake = true, true)'); await wait(300);
