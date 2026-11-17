@@ -427,6 +427,8 @@ export const TOW_MESSAGE_SECONDS = 2.5;
  * still starts with FUEL_STORY_OUT_OF_GAS_START. Quick play is not charged.
  */
 export const TOW_COST_CENTS = 2500;
+/** SCREAM-390: the tow truck that pops up with "Needed a tow home." pulses this many times (like GAS_CAN_PULSES), then stays. */
+export const TOW_TRUCK_PULSES = 3;
 
 /** PO (November 2): Quick play has fuel too, but starts each evening with a full tank. */
 export const FUEL_QUICK_PLAY_START = 1;

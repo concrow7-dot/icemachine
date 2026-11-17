@@ -2,7 +2,8 @@ import { currentMap } from '../config/maps';
 import { loadHandFonts } from '../ui/handFonts';
 import { UNCLE_HAND } from '../state/Handwriting';
 import * as Phaser from 'phaser';
-import { PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS } from '../config/tuning';
+import { PATIENCE_WARNING_SECONDS, SERVING_PATIENCE, TOW_MESSAGE_SECONDS, TOW_TRUCK_PULSES } from '../config/tuning';
+import { drawTowTruck } from '../ui/powerUpLogo';
 import { musicFor } from '../audio/Music';
 import { endEvening, getEvening, getStory, SceneKeys, pauseEvening } from '../flow';
 import { EveningEvents, EveningState } from '../state/EveningState';
@@ -19,11 +20,6 @@ import { dayText } from '../state/Residents';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
-/** SCREAM-208, SCREAM-390: what the road says when the tank runs dry; in Story the tow's price follows (doc 15). */
-export function towMessage(towCents: number): string {
-  return towCents > 0 ? `Needed a tow home. -${formatMoney(towCents)}` : 'Needed a tow home.';
-}
-
 export class HudScene extends Phaser.Scene {
   private evening!: EveningState;
   /** SCREAM-19: "  Day 1/3" beside the clock in Story mode; empty in Quick play. */
@@ -38,6 +34,10 @@ export class HudScene extends Phaser.Scene {
   /** True on the frames the gauge's edge is red (it flashes when the tank is empty); a test hook. */
   gaugeRed = false;
   towText?: Phaser.GameObjects.Text;
+  /** SCREAM-390: the tow's price under the line, in Story (test hook). */
+  towCost?: Phaser.GameObjects.Text;
+  /** SCREAM-390: the tow truck that pops up with it (test hook). */
+  towTruck?: Phaser.GameObjects.Container;
   /** SCREAM-22: the fuel gauge, shown while driving and at the pump. */
   private fuelGauge!: Phaser.GameObjects.Container;
   private dial!: FuelDialParts;
@@ -370,15 +370,46 @@ export class HudScene extends Phaser.Scene {
     this.towing = true;
     (this.scene.get(SceneKeys.Drive) as unknown as { stopForTow?: () => void }).stopForTow?.();
     const { width, height } = this.scale;
+    // SCREAM-390 (PO, November 17): a tow truck pops up over the darkened road and pulses, like the
+    // Temporary Gas Can's pop-up, and stays until the end-of-day screen; the line sits under it.
+    this.add.rectangle(0, 0, width, height, 0x000000, 0.35).setOrigin(0, 0).setDepth(900);
+    this.towTruck = this.add.container(width / 2, height / 2 - 40).setDepth(901);
+    const g = this.add.graphics();
+    drawTowTruck(g, 200);
+    this.towTruck.add(g);
+    this.towTruck.setScale(0);
+    this.tweens.chain({
+      targets: this.towTruck,
+      tweens: [
+        { scale: 1, duration: 180, ease: 'Back.easeOut' },
+        { scale: 1.18, duration: 190, ease: 'Sine.easeInOut', yoyo: true, repeat: TOW_TRUCK_PULSES - 1 },
+      ],
+    });
     this.towText = this.add
-      .text(width / 2, height / 2, towMessage(this.evening.towCents), {
+      .text(width / 2, height / 2 + 105, 'Needed a tow home.', {
         fontFamily: 'monospace',
         fontSize: '30px',
         color: '#ffffff',
         backgroundColor: '#14161c',
         padding: { x: 18, y: 10 },
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(901);
+    // SCREAM-390 (PO, November 17: "The screen should show that the player is paying $25"): the tow's
+    // price, big and red under the line, when there is one (Story).
+    if (this.evening.towCents > 0) {
+      this.towCost = this.add
+        .text(width / 2, height / 2 + 168, `-${formatMoney(this.evening.towCents)}`, {
+          fontFamily: 'monospace',
+          fontSize: '44px',
+          fontStyle: 'bold',
+          color: '#ff6b6b',
+          backgroundColor: '#14161c',
+          padding: { x: 18, y: 6 },
+        })
+        .setOrigin(0.5)
+        .setDepth(901);
+    }
     this.time.delayedCall(TOW_MESSAGE_SECONDS * 1000, then);
   }
 

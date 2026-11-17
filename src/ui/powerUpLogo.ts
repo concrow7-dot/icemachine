@@ -153,6 +153,45 @@ export function drawGasCan(g: Phaser.GameObjects.Graphics, size: number, grey: b
 }
 
 /**
+ * SCREAM-390 (PO, November 17: "an animation where the tow truck comes up to make it more obvious that
+ * the player ran out of gas ... almost like the extra gas power up"): a tow truck, engineering's own
+ * drawing in the gas can's style, on a 100 x 100 grid: side on, facing left, an amber light on the cab,
+ * the boom up at the back with its cable and hook.
+ */
+export function drawTowTruck(g: Phaser.GameObjects.Graphics, size: number): void {
+  const u = size / 100;
+  const line = Math.max(2, 5 * u);
+  const P = (x: number, y: number) => new Phaser.Math.Vector2((x - 50) * u, (y - 50) * u);
+  const poly = (colour: number, pts: [number, number][]) => {
+    const v = pts.map(([x, y]) => P(x, y));
+    g.fillStyle(colour, 1).fillPoints(v, true);
+    g.lineStyle(line, INK, 1).strokePoints(v, true, true);
+  };
+  const yellow = 0xf2b233;
+  const steel = 0x4a505c;
+  // The boom, behind the bed: up and back from just behind the cab, then its cable and hook.
+  poly(steel, [[44, 60], [52, 60], [86, 26], [80, 20]]);
+  g.lineStyle(Math.max(1.5, 3 * u), INK, 1);
+  g.strokePoints([P(83, 23), P(83, 46), P(77, 46), P(77, 41)], false, false);
+  // The amber light on the roof.
+  poly(0xff8a1f, [[19, 38], [19, 30], [30, 30], [30, 38]]);
+  // The cab (its nose to the left) and the bed.
+  poly(yellow, [[7, 76], [7, 54], [14, 38], [38, 38], [38, 76]]);
+  poly(yellow, [[38, 58], [93, 58], [93, 76], [38, 76]]);
+  // The window, and a darker sill along the bottom of the bed.
+  poly(0xbfe6f5, [[13, 54], [18, 43], [33, 43], [33, 54]]);
+  g.fillStyle(0xc98a1e, 1).fillRect((40 - 50) * u, (69 - 50) * u, 51 * u, 5 * u);
+  // The bumper.
+  poly(0xb9bec7, [[3, 68], [9, 68], [9, 77], [3, 77]]);
+  // The wheels.
+  for (const x of [24, 74]) {
+    g.fillStyle(0x2a2622, 1).fillCircle((x - 50) * u, (78 - 50) * u, 11 * u);
+    g.lineStyle(line, INK, 1).strokeCircle((x - 50) * u, (78 - 50) * u, 11 * u);
+    g.fillStyle(0xb9bec7, 1).fillCircle((x - 50) * u, (78 - 50) * u, 4.5 * u);
+  }
+}
+
+/**
  * SCREAM-309: Gitty Up, from the PO's sketch (Personal Notes, November 14): a box truck pulling
  * away to the left, with a puff of exhaust behind it. Drawn like the gas can, on a 100 x 100 grid.
  */

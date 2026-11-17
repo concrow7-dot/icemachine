@@ -10,7 +10,9 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Why (product owner's rationale):** _to be filled in by the PO._ Background, engineering's and not his reason: the balance write-up of November 17 found that running dry cost nothing and gave a third of a tank the next day, so with the Temporary Gas Can a player never had to buy gas.
 
-**Engineering's calls (proposals):** the road says "Needed a tow home. -$25.00"; the tow is counted inside the end-of-day screen's Gas row (no new row), and the note beside it says "The tow home cost $25.00."; Quick play and the uncle's evening are not charged (the Story-only rule, decision 076).
+**Added while testing (PO, November 17, 16:46):** "I also want to add an animation where the tow truck comes up to make it more obvious that the player ran out of gas. This should show up right before the end of day screen. It should pop-up almost like the extra gas power up." and "The screen should show that the player is paying $25". So the road darkens, a tow truck pops up and pulses three times like the Temporary Gas Can, "Needed a tow home." sits under it, and in Story "-$25.00" shows big and red under that, until the end-of-day screen. The truck shows in Quick play too (a look change), without a price.
+
+**Engineering's calls (proposals):** the tow truck is engineering's own drawing (yellow, side on, boom up at the back, in the gas can's style); it stays for the same 2.5 seconds the line always did; the tow is counted inside the end-of-day screen's Gas row (no new row), and the note beside it says "The tow home cost $25.00."; Quick play and the uncle's evening are not charged (the Story-only rule, decision 076).
 
 ## 186 — Two Ball Lou Ball: the tip is 1.5 times (was double), and the gas and the brake swap too (2026-11-17)
 
