@@ -48,3 +48,9 @@ test('SCREAM-103: every hint line fits the bubble with every hinted tutorial reg
     }
   }
 });
+
+test('SCREAM-381 (PO, November 17): the teleport hint says "roundabout", not "rotary"', async () => {
+  const { ROTARY_HINT_LINE } = await game('config/tuning');
+  assert.equal(ROTARY_HINT_LINE, "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it.");
+  assert.doesNotMatch(ROTARY_HINT_LINE, /rotary/i);
+});

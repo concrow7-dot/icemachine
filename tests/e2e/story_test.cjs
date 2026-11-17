@@ -218,7 +218,7 @@ const { chromium } = require('playwright');
   check('SCREAM-299: the second regular served twice says nothing now', (await serve(r2)).split('|')[0], 'quiet');
   check('...a regular served a third time does not count twice', (await serve(r1)).split('|')[0], 'quiet');
   const told = (await serve(r3)) && (await serve(r3));
-  check('SCREAM-299: the third regular served twice tells the trick, after the thanks', /^told\|Thanks! Psst, .*Highland Street three times/.test(told), true);
+  check('SCREAM-299: the third regular served twice tells the trick, after the thanks', /^told\|Thanks! I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it\.$/.test(told), true); // SCREAM-381: the PO's own line, "roundabout"
   check('...once per run: a fourth regular served twice says nothing', (await serve(r4)) && (await serve(r4)).split('|')[0], 'quiet');
   check('...and no big-regular hint on top of it in the same breath', /Here's a hint/.test(told), false);
   check('...marked as given', (await ev('e.rotaryHintGiven')) + ' ' + (await ev('e.secondVisits.join(",")')), 'true ' + r1 + ',' + r2 + ',' + r3 + ',' + r4);
