@@ -27,7 +27,7 @@ export class HomeDrive {
   waiting = false;
   private readonly spot: { x: number; y: number; angle: number };
   /** Half the car's length, px (how far its nose is in front of its middle). */
-  private readonly nose: number;
+  readonly nose: number;
 
   /**
    * `corners` is the way along the streets' centre lines (RoadGraph.driveIn), ending in the

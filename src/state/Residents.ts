@@ -791,7 +791,12 @@ export class Residents {
     // the earlier one, so two cars can never each be waiting for the other.
     const mine = this.driveOrder.get(id) ?? 0;
     for (const [other, d] of this.drives) {
-      if (other !== id && (this.driveOrder.get(other) ?? 0) < mine && Math.hypot(x - d.x, y - d.y) < CAR_ROOM + 10) return true;
+      if (other === id || (this.driveOrder.get(other) ?? 0) >= mine) continue;
+      // Its box, grown by the room a car needs round it (as for the truck): right on a bend too, where the two point different ways.
+      const h = (d.angle * Math.PI) / 180;
+      const fore = (x - d.x) * Math.cos(h) + (y - d.y) * Math.sin(h);
+      const side = -(x - d.x) * Math.sin(h) + (y - d.y) * Math.cos(h);
+      if (Math.abs(fore) < d.nose + CAR_ROOM && Math.abs(side) < CAR_ROOM + 14) return true;
     }
     return this.people.some((p) => p.outside && !p.gone && p.customer !== 'window' && Math.hypot(x - p.x, y - p.y) < HOME_DRIVE_PERSON_ROOM);
   }
