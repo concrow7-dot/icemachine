@@ -53,8 +53,12 @@ import {
   PARK_HOME_WALK_MINUTES,
   PARK_LEAVE_SPEED,
   PARK_SPOT_GAP,
+  AWAY_STAY_OUT_SHARE,
+  AWAY_WALK_ALLOWANCE_MINUTES,
+  AWAY_WALK_SPEED,
 } from '../config/tuning';
 import { CAR_MODELS } from '../config/carModels';
+import { arrivalMinute, awayDice } from './ComingHome';
 import type { CurbFinder } from './CurbFinder';
 
 /** One resident, as generated from the sheet (src/config/residents.ts). */
@@ -281,6 +285,10 @@ export interface ResidentNow {
   leaving?: boolean;
   /** SCREAM-224: a park visitor who isn't here tonight, or has left: not on the map at all. */
   gone?: boolean;
+  /** SCREAM-379: away today (a day not ticked for them) and not back yet: not on the map, no porch light, hears nothing. */
+  away?: boolean;
+  /** SCREAM-379: back from being away, walking home from the map's edge (until they go indoors). */
+  comingHome?: boolean;
 }
 
 /** The truck's music ring this frame: who can hear it, and whether anyone may start wanting ice cream. */
@@ -327,6 +335,10 @@ interface Running extends ResidentNow {
   follows?: boolean;
   /** SCREAM-224: when they leave the park, in minutes since midnight; null = they stay all evening. */
   leaveAt?: number | null;
+  /** SCREAM-379: when someone away appears at the map's edge, in minutes since midnight; null = out all evening. */
+  arriveAt?: number | null;
+  /** SCREAM-379: the way they walk home: from just outside the map to where they stand at their curb. */
+  homeRoute?: [number, number][];
   /**
    * SCREAM-155 (PO, November 13): sent home because the truck sold out. "If the player goes home,
    * gets ice cream and then returns to that player, they should be willing to buy": they come
@@ -451,7 +463,9 @@ export class Residents {
 
   /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232). */
   likelihoodNow(resident: Resident): number {
-    return Math.min(1, resident.likelihood * scheduleFactor(resident, this.story));
+    // SCREAM-379 (PO: "Yes, like a ticked day"): someone who was away and has come back is as likely as on a ticked day.
+    const factor = this.cameBack.has(resident.id) ? SCHEDULE_TICKED_FACTOR : scheduleFactor(resident, this.story);
+    return Math.min(1, resident.likelihood * factor);
   }
 
   /** Test hook: when true, nobody new wants ice cream (keeps driving tests free of sales). */
@@ -533,7 +547,8 @@ export class Residents {
    */
   porchLit(p: ResidentNow): boolean {
     // SCREAM-224: a park visitor has no house, so no porch light.
-    return !p.outside && p.customer !== 'window' && !p.resident.visitor && this.homeNow(p.resident);
+    // SCREAM-379: nobody is in while they are away.
+    return !p.outside && !p.away && p.customer !== 'window' && !p.resident.visitor && this.homeNow(p.resident);
   }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
   private readonly curbs?: CurbFinder;
@@ -611,6 +626,84 @@ export class Residents {
       }
       return person;
     });
+  }
+
+  /** SCREAM-379: the ids of the people who were away today and have appeared again, and of those who are back indoors. */
+  private readonly cameBack = new Set<string>();
+  private readonly homeAgain = new Set<string>();
+  /** SCREAM-379: true once today's away people have been sent away (Story, not the uncle's evening). */
+  awayOn = false;
+
+  /**
+   * SCREAM-379 (PO, November 17): "the days people aren't home (marked in the residents sheet),
+   * they don't show up on their property. I also want to make it so that those people slowly
+   * arrive home throughout the evening ... they should come from the edge of the map and make
+   * there way home. Starting at 5:30 they should start getting home, especially the adults."
+   * His answers: once home they buy "like a ticked day"; "Some stay out" all evening.
+   *
+   * Everyone whose day is not ticked today starts the evening away: off the map, no porch light,
+   * no car outside, deaf to the truck. Each gets the minute they appear at the map's edge
+   * (`arrivalMinute`), or none (AWAY_STAY_OUT_SHARE of them). `walkIn` gives the way they walk
+   * from the edge to their curb. Story only; EveningState calls it (not in the uncle's evening).
+   *
+   * Engineering's calls: the park's residents keep their evening at the park (SCREAM-224), and
+   * the hard-to-find stay as they are; with a From, they are back no earlier than it; with an
+   * Until they would not make, they stay out.
+   */
+  sendAway(walkIn: (r: Resident) => [number, number][]): void {
+    if (!this.story || this.awayOn) return;
+    this.awayOn = true;
+    const dice = awayDice(this.story.seed, this.story.day);
+    const today = weekdayOf(this.story.day);
+    for (const p of this.people) {
+      const r = p.resident;
+      if (r.visitor || r.hardToFind || r.park || !r.days || r.days.includes(today)) continue;
+      // Always the same rolls per person, so one person's evening doesn't shift another's.
+      const stays = dice() < AWAY_STAY_OUT_SHARE;
+      let at: number | null = arrivalMinute(r.kid, dice);
+      const [from, until] = r.hours ?? [null, null];
+      if (from != null) at = Math.max(at, from);
+      if (stays || (until != null && at + AWAY_WALK_ALLOWANCE_MINUTES >= until)) at = null;
+      p.away = true;
+      p.comingHome = false;
+      p.arriveAt = at;
+      p.homeRoute = at == null ? undefined : walkIn(r);
+      p.outside = false;
+      p.walking = false;
+      p.x = r.door[0];
+      p.y = r.door[1];
+      p.plan = { kind: 'inside', until: Infinity };
+    }
+  }
+
+  /** SCREAM-379: the people who are away right now (not on the map). */
+  get awayNow(): readonly ResidentNow[] {
+    return this.people.filter((p) => p.away);
+  }
+
+  /** SCREAM-379: when this person, away today, appears at the map's edge (minutes since midnight); null if they stay out or aren't away. */
+  arrivesAt(person: ResidentNow): number | null {
+    const p = person as Running;
+    return p.away ? (p.arriveAt ?? null) : null;
+  }
+
+  /** SCREAM-379: anyone away whose time has come appears just outside the map and walks home. */
+  private bringHome(): void {
+    if (!this.awayOn || !this.nowMinutes) return;
+    const now = this.nowMinutes();
+    for (const p of this.people) {
+      if (!p.away || p.arriveAt == null || now < p.arriveAt) continue;
+      const route = p.homeRoute?.length ? p.homeRoute : [p.resident.door as [number, number]];
+      const [x, y] = route[0]!;
+      p.away = false;
+      p.comingHome = true;
+      p.outside = true;
+      p.x = x;
+      p.y = y;
+      p.heard = 0;
+      this.cameBack.add(p.resident.id);
+      this.walkTo(p, [...route.slice(1), [p.resident.door[0], p.resident.door[1]]], AWAY_WALK_SPEED, 'inside');
+    }
   }
 
   /** SCREAM-224: true once tonight's people have been put at the park (Story, not the uncle's evening). */
@@ -724,7 +817,8 @@ export class Residents {
    */
   carWanted(r: Resident): boolean {
     if (!r.car || !this.story || !this.carsOn) return false;
-    if (!(r.days?.includes(weekdayOf(this.story.day)) ?? false)) return false;
+    // SCREAM-379: on a day that isn't ticked, the car is there once its owner is back indoors.
+    if (!(r.days?.includes(weekdayOf(this.story.day)) ?? false) && !this.homeAgain.has(r.id)) return false;
     if (r.park && !r.visitor) return true;
     return this.homeNow(r);
   }
@@ -794,6 +888,7 @@ export class Residents {
   update(dt: number, ring?: Ring): void {
     this.now += dt;
     if (ring) this.truck = [ring.x, ring.y];
+    this.bringHome(); // SCREAM-379
     this.moveCars(); // SCREAM-252
     if (ring?.soldOut) this.sendHomeSoldOut();
     this.sinceRoll += dt;
@@ -836,6 +931,7 @@ export class Residents {
     const p = person as Running;
     // SCREAM-224: someone at the park waits at the park's curb spot; a visitor who wasn't here tonight is now.
     p.gone = false;
+    p.away = false; // SCREAM-379: nor is anyone called to the curb away any more
     const own = this.curbOf(p);
     p.customer = 'waiting';
     p.outside = true;
@@ -877,7 +973,7 @@ export class Residents {
 
   private rollChances(ring?: Ring): void {
     for (const p of this.people) {
-      if (p.customer !== 'none' || p.gone) continue; // SCREAM-224: a visitor who isn't here hears nothing
+      if (p.customer !== 'none' || p.gone || p.away) continue; // SCREAM-224: a visitor who isn't here hears nothing; SCREAM-379: nor does anyone away
       const indoors = !p.outside;
       const [x, y] = indoors ? p.resident.door : [p.x, p.y];
       const inRing = !!ring && Math.hypot(x - ring.x, y - ring.y) <= ring.radius;
@@ -949,6 +1045,7 @@ export class Residents {
   }
 
   private wantIceCream(p: Running): void {
+    p.away = false; // SCREAM-379 (only a test hook can call someone who is away)
     p.customer = 'running';
     p.missedOut = false;
     p.chased = 0;
@@ -1185,6 +1282,9 @@ export class Residents {
         p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident).inside) };
       }
     } else if (then === 'inside') {
+      // SCREAM-379: someone who was away is home now (their car can be outside again).
+      if (p.comingHome) this.homeAgain.add(p.resident.id);
+      p.comingHome = false;
       p.outside = false;
       p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident).inside) };
     } else if (then === 'curb') {

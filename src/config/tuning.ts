@@ -812,3 +812,24 @@ export const CARS_JSON = 'assets/limezu/cars.json';
 // ---- SCREAM-374 (PO, November 16): ice creams that go onto Today's Menu at the most a customer pays (Story) ----
 /** Flavour ids. The Two Ball Lou Ball and the Drum Cone already start at their top ($3.00, flavours.ts). */
 export const MENU_STARTS_AT_TOP: readonly string[] = ['eclair', 'spongepop', 'explorer'];
+
+// ---- SCREAM-379 (PO, November 17): on their unticked days people are away, and come home through the evening ----
+/** "Starting at 5:30 they should start getting home": the first minute anyone who was away appears at the map's edge. */
+export const AWAY_FIRST_HOME_MINUTE = 17 * 60 + 30;
+/** "especially the adults": this share of the adults appear in the first hour (5:30 to 6:30); the rest, and the kids, any time up to AWAY_LAST_HOME_MINUTE. */
+export const AWAY_ADULT_EARLY_SHARE = 0.75;
+export const AWAY_ADULT_EARLY_UNTIL_MINUTE = 18 * 60 + 30;
+/** The last minute anyone appears at the map's edge (7:30 PM). */
+export const AWAY_LAST_HOME_MINUTE = 19 * 60 + 30;
+/** PO: "Some stay out": about this share of the people away never come home that evening (engineering's number). */
+export const AWAY_STAY_OUT_SHARE = 1 / 6;
+/** How fast someone walks home from the map's edge, px per second (a brisk walk: strolling is 11, running to the truck 37). */
+export const AWAY_WALK_SPEED = 30;
+/** Someone whose Until is this soon after they would appear stays out instead (minutes): they would not be home in time. */
+export const AWAY_WALK_ALLOWANCE_MINUTES = 30;
+/** How far outside the map someone coming home first appears, px. */
+export const AWAY_EDGE_MARGIN = 24;
+/** A walk in through the back yard, or straight across the street, counts as this many times its length, so people come along their street unless the edge is much nearer that way. */
+export const AWAY_BACK_YARD_COST = 1.5;
+/** A walk in that crosses the middle of a roundabout counts as this many times its length: nobody walks across one unless there is no other way. */
+export const AWAY_ROUNDABOUT_COST = 4;
