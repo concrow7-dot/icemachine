@@ -661,7 +661,9 @@ export const PORTAL_VOLUME = 0.1;
  */
 /** SCREAM-299 (decision 107, PO, November 13): the rotary hint comes when this many regulars have each been served twice in the Story run. */
 export const ROTARY_HINT_REGULARS = 3;
-export const ROTARY_HINT_LINE = "Psst, between you and me: go round the rotary at the end of Highland Street three times. There's a whole other neighbourhood past it.";
+// SCREAM-381 (PO, November 17): "I want to change the hint for the teleport to be "roundabout" from now on. It's
+// referred to as the rotary right now." (The names in the code keep "rotary".)
+export const ROTARY_HINT_LINE = "Psst, between you and me: go round the roundabout at the end of Highland Street three times. There's a whole other neighbourhood past it.";
 
 // ---- SCREAM-122: the Temporary Gas Can (PO, November 13) ----
 /** How much of the tank the can pours in when the tank runs empty: a fifth. */

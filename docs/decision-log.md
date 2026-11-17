@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 181 — The teleport hint says "roundabout", not "rotary" (2026-11-17)
+
+**Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." The regular's hint now reads: "Psst, between you and me: go round the roundabout at the end of Highland Street three times. There's a whole other neighbourhood past it." The Residents sheet's hint line has the same word changed. From now on the word is "roundabout" in chat, tickets and docs.
+
+**Options considered:** none offered.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** only the word changed: the rest of the line is still engineering's draft of November 9, not the PO's own version in the sheet (which has typos to settle first); the street's name on the map and in the top bar, "Elm Park Rotary", is unchanged until he says; the names in the code (`ROTARY_HINT_LINE`, `rotaryHintGiven`) and the sheet tab's name keep "rotary".
+
 ## 180 — Car owners drive home along the road and park outside their house (2026-11-17)
 
 **Decision (Jira SCREAM-380, under SCREAM-11, PO, November 17, about 00:55):** asked how people who are away (decision 179) should get home, he chose **"Drive in by car"**: car owners drive in along the road and park; others walk. Engineering had said this is much bigger, as nothing but the truck moved on the road before. Asked what happens when a moving car and the truck meet: **"The car stops and waits"**: it brakes when the truck is in its way and carries on once clear, and driving into it costs the same as bumping a parked car. People without a car: **"They walk in"**. So a resident with a Car in the sheet who is away comes home in it: the car comes onto the map where the road runs off its edge (in Elm Park, west of the roundabout), drives along the streets in its lane, round the roundabout the way traffic goes, to its own parking spot; the owner then gets out and walks to the door.
