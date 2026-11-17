@@ -83,7 +83,8 @@ export const STORY_FIRST_FLAVOUR = 'eclair';
 /** SCREAM-271 (PO: "Prices will be different. To start lets say $15."): what unlocking an ice cream costs. */
 export const ICE_CREAM_UNLOCK_CENTS = 1500;
 /** PO, November 14 (testing SCREAM-313 and 312): SpongePop's note costs $20 and the Lil Explorer Pop's $25. Others keep ICE_CREAM_UNLOCK_CENTS. */
-export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 2000, explorer: 2500, louball: 3000, drumcone: 3000 };
+/** SCREAM-376 (PO, November 16): "The now spongpop drum cone line should be $15. The 2 ball and lil explorer should be $20." (They were $20, $25, $30 and $30.) */
+export const ICE_CREAM_UNLOCK_PRICES: { [flavour: string]: number | undefined } = { spongepop: 1500, drumcone: 1500, louball: 2000, explorer: 2000 };
 
 /**
  * Issue #9: truck top speed in pixels per second. Doubled to 300 after PO

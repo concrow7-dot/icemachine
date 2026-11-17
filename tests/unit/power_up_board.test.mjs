@@ -37,8 +37,8 @@ test('...and cross from one tree to the next', () => {
   // SCREAM-333: the Ice Cream tree's third row has a note on each side.
   assert.equal(nextNote(notes, 'steam-engine', 'right'), 'icecream-louball');
   assert.equal(nextNote(notes, 'icecream-louball', 'left'), 'steam-engine');
-  assert.equal(nextNote(notes, 'icecream-louball', 'right'), 'icecream-drumcone');
-  assert.equal(nextNote(notes, 'icecream-drumcone', 'right'), 'heavier-bass');
+  assert.equal(nextNote(notes, 'icecream-louball', 'right'), 'icecream-explorer'); // SCREAM-376: the Explorer Pop is the third row's right note now
+  assert.equal(nextNote(notes, 'icecream-explorer', 'right'), 'heavier-bass');
 });
 
 test('...and stay put at the edge of the board', () => {
@@ -111,23 +111,26 @@ test('SCREAM-310: Trot is the right note under the gas can, $15, with its own na
   assert.deepEqual(notes.find((n) => n.id === 'steam-engine').from, ['trot']);
 });
 
-test('SCREAM-333: the eclair on top, SpongePop and the Explorer Pop side by side, a third-row note under each, the sandwich under both; SpongePop $20, Explorer $25, the Two Ball Lou Ball and the Drum Cone $30, the sandwich $15', () => {
+test('SCREAM-333, SCREAM-376 (PO: "switch the lil explorer pop with the drum cone"): the eclair on top, SpongePop and the Drum Cone side by side ($15), the Two Ball Lou Ball and the Lil Explorer Pop under them ($20), the sandwich under both ($15)', () => {
   const tree = POWER_UP_TREES.find((t) => t.id === 'icecream');
-  assert.deepEqual(tree.notes.map((n) => n.id), ['icecream-eclair', 'icecream-spongepop', 'icecream-explorer', 'icecream-louball', 'icecream-drumcone', 'icecream-cookie']);
+  assert.deepEqual(tree.notes.map((n) => n.id), ['icecream-eclair', 'icecream-spongepop', 'icecream-drumcone', 'icecream-louball', 'icecream-explorer', 'icecream-cookie']);
   assert.deepEqual(FREE_NOTE_IDS, ['icecream-eclair']);
-  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 2000, 2500, 3000, 3000, 1500]);
+  assert.deepEqual(tree.notes.map((n) => n.priceCents), [0, 1500, 1500, 2000, 2000, 1500]);
   assert.deepEqual(tree.notes.map((n) => [n.col, n.row]), [[1, 0], [0, 1], [2, 1], [0, 2], [2, 2], [1, 3]]);
-  assert.deepEqual(tree.notes.map((n) => n.from), [[], ['icecream-eclair'], ['icecream-eclair'], ['icecream-spongepop'], ['icecream-explorer'], ['icecream-louball', 'icecream-drumcone']]);
-  const [, sponge, explorer, left, right, cookie] = tree.notes;
-  assert.equal(buyStatus(sponge, FREE_NOTE_IDS, 2000, true), 'ok');
-  // The Explorer Pop no longer waits for SpongePop.
-  assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 2500, true), 'ok');
-  assert.equal(buyStatus(left, FREE_NOTE_IDS, 3000, true), 'locked');
+  assert.deepEqual(tree.notes.map((n) => n.from), [[], ['icecream-eclair'], ['icecream-eclair'], ['icecream-spongepop'], ['icecream-drumcone'], ['icecream-louball', 'icecream-explorer']]);
+  const [, sponge, drum, left, explorer, cookie] = tree.notes;
+  const right = drum; // the checks below are the Drum Cone's
+  assert.equal(buyStatus(sponge, FREE_NOTE_IDS, 1500, true), 'ok');
+  // The Drum Cone needs only the eclair; the Explorer Pop waits for the Drum Cone.
+  assert.equal(buyStatus(drum, FREE_NOTE_IDS, 1500, true), 'ok');
+  assert.equal(buyStatus(explorer, FREE_NOTE_IDS, 2000, true), 'locked');
+  assert.equal(buyStatus(explorer, [...FREE_NOTE_IDS, drum.id], 2000, true), 'ok');
+  assert.equal(buyStatus(left, FREE_NOTE_IDS, 2000, true), 'locked');
   // SCREAM-334: the Two Ball Lou Ball, $30, the PO's line, $3.00 at most (PO, November 15: "can be sold for $3").
   assert.deepEqual([left.name, left.flavour, left.logo], ['TWO BALL LOU BALL', 'louball', 'louball']);
   assert.equal(left.description, "High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock."); // SCREAM-365: $0.75 (was $1.00)
   assert.equal(storyRefuseAboveCents('louball'), 300);
-  assert.equal(buyStatus(right, [...FREE_NOTE_IDS, explorer.id], 3000, true), 'ok');
+  assert.equal(buyStatus(left, [...FREE_NOTE_IDS, sponge.id], 2000, true), 'ok');
   // SCREAM-335: the Drum Cone, $30, the PO's line, $3.00 at most.
   assert.deepEqual([right.name, right.flavour, right.logo], ['DRUM CONE', 'drumcone', 'drumcone']);
   assert.equal(storyRefuseAboveCents('drumcone'), 300);
@@ -135,8 +138,8 @@ test('SCREAM-333: the eclair on top, SpongePop and the Explorer Pop side by side
   // SCREAM-352: the opened note shows these as paragraphs with an empty line between.
   assert.deepEqual(right.paragraphs, ['Drum solo reaches more of the neighborhood.', "The average person won't pay more than $3.00 for one.", 'Costs you $0.75 each to stock.']);
   // The sandwich needs either third-row note.
-  assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, sponge.id, explorer.id], 1500, true), 'locked');
-  assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, explorer.id, right.id], 1500, true), 'ok');
+  assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, sponge.id, drum.id], 1500, true), 'locked');
+  assert.equal(buyStatus(cookie, [...FREE_NOTE_IDS, drum.id, explorer.id], 1500, true), 'ok');
   assert.match(tree.notes[0].description, /won't pay more than \$2\.50/);
   assert.equal(storyRefuseAboveCents('eclair'), 250);
   assert.equal(storyRefuseAboveCents('cookie'), 400);
@@ -190,11 +193,11 @@ test('PO, November 15 (03:28): two notes come out of Brakes Made This Century an
   }
 });
 
-test('SCREAM-369 (PO: "The first level should cost $10. The second $15. The next $20. Then $30."): the Truck and Customer trees cost the same, row by row; the Ice Cream tree keeps its prices', () => {
+test('SCREAM-369 (PO: "The first level should cost $10. The second $15. The next $20. Then $30."): the Truck and Customer trees cost the same, row by row; the Ice Cream tree has its own (SCREAM-376)', () => {
   const byRow = [1000, 1500, 2000, 3000];
   for (const id of ['truck', 'customer']) {
     const tree = POWER_UP_TREES.find((t) => t.id === id);
     for (const n of tree.notes.filter((x) => x.row < 4)) assert.equal(n.priceCents, byRow[n.row], `${id}: ${n.name ?? n.id}`);
   }
-  assert.deepEqual(POWER_UP_TREES.find((t) => t.id === 'icecream').notes.map((n) => n.priceCents), [0, 2000, 2500, 3000, 3000, 1500]);
+  assert.deepEqual(POWER_UP_TREES.find((t) => t.id === 'icecream').notes.map((n) => n.priceCents), [0, 1500, 1500, 2000, 2000, 1500]);
 });
