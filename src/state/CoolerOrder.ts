@@ -33,6 +33,8 @@ export class CoolerOrder {
   private readonly open: (cell: number) => boolean;
   /** SCREAM-343: the highest price Today's Menu allows for a flavour (in Story, the price on its cork board note). */
   private readonly topPrice: (flavour: FlavourId) => number;
+  /** SCREAM-374: the menu price an ice cream starts at when it is added to an empty line of Today's Menu, or null to keep its price. */
+  private readonly addPrice: (flavour: FlavourId) => number | null;
   /** The squares holding this draft's picks, in the order they were picked. */
   private picked: number[] = [];
   private moved = false;
@@ -45,8 +47,9 @@ export class CoolerOrder {
    * `owned` is the cooler's stock as it is now, `cells` where each of those ice creams sits,
    * `cash` reads the player's current cash.
    */
-  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], open: (cell: number) => boolean = () => true, topPrice: (flavour: FlavourId) => number = () => MAX_PRICE_CENTS, cost: (flavour: FlavourId) => number = (f) => getFlavour(f).costCents) {
+  constructor(owned: readonly Readonly<CoolerSlot>[], cash: () => number, cells: readonly (FlavourId | null)[] = [], open: (cell: number) => boolean = () => true, topPrice: (flavour: FlavourId) => number = () => MAX_PRICE_CENTS, cost: (flavour: FlavourId) => number = (f) => getFlavour(f).costCents, addPrice: (flavour: FlavourId) => number | null = () => null) {
     this.open = open;
+    this.addPrice = addPrice; // SCREAM-374
     this.cost = cost; // SCREAM-365: Story's stock prices
     this.topPrice = (flavour) => Math.min(MAX_PRICE_CENTS, topPrice(flavour));
     this.capacity = Array.from({ length: COOLER_CAPACITY }, (_, i) => i).filter((i) => open(i)).length;
@@ -141,6 +144,12 @@ export class CoolerOrder {
     if (target < 0) return this.refuse('full');
     this.draft[target] = { flavour, paid: false };
     this.picked.push(target);
+    // SCREAM-374 (PO, November 16): the first one added from Available Ice Cream puts it on Today's
+    // Menu at its starting price there (in Story the eclair, SpongePop and Lil Explorer Pop start at their top).
+    if (slot.quantity === 0) {
+      const start = this.addPrice(flavour);
+      if (start !== null) slot.priceCents = Math.min(start, this.topPrice(flavour));
+    }
     slot.quantity += 1;
     return true;
   }

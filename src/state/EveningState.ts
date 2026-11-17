@@ -46,7 +46,7 @@ import {
 } from '../config/tuning';
 
 /** Events the evening sends out. Scenes listen for these instead of checking every frame. */
-import { MAX_PRICE_CENTS } from '../config/tuning';
+import { MAX_PRICE_CENTS, MENU_STARTS_AT_TOP } from '../config/tuning';
 import { MIRRORS_ID, SPEEDY_ID } from '../config/powerUps';
 import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
@@ -741,6 +741,16 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   menuTopPriceCents(flavour: FlavourId): number {
     return this.story && !this.tutorial ? storyRefuseAboveCents(flavour) : MAX_PRICE_CENTS;
+  }
+
+  /**
+   * SCREAM-374 (PO, November 16): "On the chocolate éclair, spongepop and lil explorer, [m]ake the
+   * price the max allowed when added [from] available ice cream." In Story (not the uncle's
+   * evening) those three go onto Today's Menu at the most a customer pays; null = keep its price.
+   */
+  menuAddPriceCents(flavour: FlavourId): number | null {
+    if (!this.story || this.tutorial || !MENU_STARTS_AT_TOP.includes(flavour)) return null;
+    return this.menuTopPriceCents(flavour);
   }
 
   /** SCREAM-343: brings any menu price above its top down to it (an old save's); called when the cooler opens. */

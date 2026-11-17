@@ -2,6 +2,14 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 174 — The eclair, SpongePop and Lil Explorer Pop join Today's Menu at the most a customer pays (2026-11-16)
+
+**Decision (Jira SCREAM-374, under SCREAM-78, PO, November 16, 21:42):** "On the chocolate éclair, spongepop and lil explorer, ake the price the max allowed when added fomr available ice cream." In Story, when the first one of these is added from Available Ice Cream, its line on Today's Menu starts at the most a customer pays for it: the Chocolate Eclair $2.50 (it started at $2.00), SpongePop and the Lil Explorer Pop $3.00 (they started at $2.50). The Two Ball Lou Ball and the Drum Cone already start at their most ($3.00).
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** read as "the price it starts at when it goes onto the menu"; Story only, not the uncle's evening or Quick play (the standing rule, decision 076); the Cookie Ice Cream Sandwich keeps its start ($3.00 of $4.00) because he didn't name it; an ice cream still in the cooler from yesterday keeps the price the player left it at, and one that sold out and is added again starts at its most again.
+
 ## 173 — Residents' cars: hit boxes that match the car, parked against the curb (2026-11-16)
 
 **Decision (Jira SCREAM-372, under SCREAM-11, PO, November 16, 21:33, with a screenshot of the truck stuck between two cars):** "two cars are parked across from each other. This wouldn't be a problem, I actually like that there is some challenge there, but the hit boxes on the cars are two wide and I can't pass between them. Two things: Reduce the size of the hit boxes to better match the actual shape of the cars. Also, lets move the cars closer to the curb or edge of the street." A car's hit box now comes from the picture it is drawn with (a nose-up or nose-down car is narrower than the side-on picture the box used to be taken from), pulled in 3 px on every side; and cars park with the side of their picture 1 px from the curb (it was 3 px, measured from the wider box, so about 5 px on streets that run up the map). The pair he met on Haviland Street (Susie Parlor's and Kathleen Scoopley's cars) keeps facing each other: the room between their boxes goes from about 44 px to 58 px, for a truck 42 px wide.
