@@ -2,7 +2,6 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
-<<<<<<< HEAD
 ## 182 — Temporary Gas Can note: the last line is "Refills daily." (2026-11-17)
 
 **Decision (Jira SCREAM-382, under SCREAM-78, PO, November 17, 02:02):** "On the temporary gas can. I want to change the last line to be: "Refills daily."" The note now reads: "Run out of gas and it pours itself in: a splash to get you going. Refills daily." (its last line was "Full again every day.").
@@ -11,10 +10,7 @@ Newest first. Each entry: what was decided, the options considered, and why.
 
 **Why (product owner's rationale):** "I just liked the shorter more concise wording."
 
-## 181 — The teleport hint says "roundabout", not "rotary" (2026-11-17)
-=======
 ## 181 — "Roundabout", not "rotary": the teleport hint, and the street's name (2026-11-17)
->>>>>>> feature/SCREAM-381-roundabout-hint
 
 **Decision (Jira SCREAM-381, under SCREAM-10, PO, November 17, 01:55):** "I want to change the hint for the teleport to be "roundabout" from now on. It's referred to as the rotary right now." Asked at 02:12 whether the street "Elm Park Rotary" (on the map and in the top bar) should change too: "Yes": it is "Elm Park Roundabout". Asked whether the game should use his own line from the sheet once its typos were fixed: "Yes fix my typos and use that". The regular's hint now reads: "I don't know if it's true, but I've heard if you go round the roundabout at the end of Highland Street three times, there's a whole other neighbourhood past it." From now on the word is "roundabout" in chat, tickets, docs and on screen.
 
