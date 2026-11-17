@@ -43,6 +43,7 @@ const { TRACK } = require('./track.cjs');
   // The title now opens the cooler directly (#66)
   await press('+', 5); await press('Enter'); await wait(200);
   await press('ArrowRight'); await press('Enter'); await wait(300);
+  await page.waitForFunction(() => window.__game.scene.isActive('Drive') && !window.__game.scene.isActive('Loading'), null, { timeout: 10000 }).catch(() => {}); // the map's pictures take a moment (SCREAM-384)
   check("Driver's seat opens the driving view", await scenes(), 'Drive,Hud');
   // SCREAM-75: the map's first load ran the loading screen, which closed once it was done
   const loadingNow = () => page.evaluate(() => window.__game.scene.isActive('Loading'));
