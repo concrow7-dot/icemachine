@@ -1,5 +1,5 @@
-import type { MapRoad } from '../config/mapTypes';
-import { AWAY_EDGE_MARGIN, WALKER_CORNER_GAP, WALKER_CORNER_STEP, WALKER_EXIT_REACH, WALKER_NO_CROSSING_WEIGHT, WALKER_JOIN_REACH, WALKER_RING_CLEAR, WALKER_SIDEWALK_GAP } from '../config/tuning';
+import type { MapRoad, RoadMask } from '../config/mapTypes';
+import { AWAY_EDGE_MARGIN, WALKER_CORNER_GAP, WALKER_CORNER_STEP, WALKER_KERB_CLEAR, WALKER_EXIT_REACH, WALKER_NO_CROSSING_WEIGHT, WALKER_JOIN_REACH, WALKER_RING_CLEAR, WALKER_SIDEWALK_GAP } from '../config/tuning';
 
 /**
  * SCREAM-394 (PO, November 17): "a few people who are randomly walking up and down the streets of
@@ -55,10 +55,13 @@ export class StreetNet {
 
   private readonly size: { width: number; height: number };
   private readonly margin: number;
+  /** Where the asphalt really is (the map's own mask: rounded corners, wide junctions), when the map has one. */
+  private readonly mask?: RoadMask;
 
-  constructor(roads: readonly MapRoad[], size: { width: number; height: number }, margin = AWAY_EDGE_MARGIN) {
+  constructor(roads: readonly MapRoad[], size: { width: number; height: number; roadMask?: RoadMask }, margin = AWAY_EDGE_MARGIN) {
     this.size = size;
     this.margin = margin;
+    this.mask = size.roadMask;
     // Nobody walks through a roundabout: no corner inside one, and no way in or out across one.
     const rings = roads.flatMap((r) => (r.ring ? [{ at: [r.ring.x, r.ring.y] as Point, reach: r.ring.r + WALKER_RING_CLEAR }] : []));
     const inRing = (p: Point): boolean => rings.some((g) => dist(g.at, p) < g.reach);
@@ -154,8 +157,11 @@ export class StreetNet {
     // Where a street comes in at a slant, one side's corner is further back: step back until clear of every other street.
     let back = s.clear[k]!;
     let at = place(back);
-    const inStreet = (p: Point): boolean => this.streets.some((o, j) => j !== spot.road && this.nearest(j, p).d < o.off - 2);
-    for (let i = 0; i < 40 && back > 0 && inStreet(at); i++) {
+    // ...and, by the map's own mask, until nothing within a step of their feet is asphalt (corners are rounded, junctions wide).
+    const near: Point[] = [[0, 0], [WALKER_KERB_CLEAR, 0], [-WALKER_KERB_CLEAR, 0], [0, WALKER_KERB_CLEAR], [0, -WALKER_KERB_CLEAR]];
+    const inStreet = (p: Point): boolean =>
+      this.streets.some((o, j) => j !== spot.road && this.nearest(j, p).d < o.off - 2) || near.some(([dx, dy]) => this.asphalt([p[0] + dx, p[1] + dy]));
+    for (let i = 0; i < 40 && inStreet(at); i++) {
       back += 10;
       at = place(back);
     }
@@ -164,6 +170,17 @@ export class StreetNet {
   }
 
   private readonly corners = new Map<string, Point>();
+
+  /** Whether this point is on the road's asphalt, by the map's mask (false with no mask). */
+  asphalt(p: Point): boolean {
+    const mask = this.mask;
+    if (!mask) return false;
+    const runs = mask.rows[Math.floor(p[1] / mask.scale)];
+    if (!runs) return false;
+    const col = Math.floor(p[0] / mask.scale);
+    for (let i = 0; i + 1 < runs.length; i += 2) if (col >= runs[i]! && col < runs[i + 1]!) return true;
+    return false;
+  }
 
 
   /** The point of a street nearest `p`: how far along it, and how far away. */

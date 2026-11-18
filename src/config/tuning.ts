@@ -923,6 +923,8 @@ export const WALKER_SIDEWALK_GAP = 12;
  * a crossing is one straight walk from corner to corner.
  */
 export const WALKER_CORNER_GAP = 4;
+/** A corner where they stop has no asphalt within this of their feet (by the map's road mask). */
+export const WALKER_KERB_CLEAR = 8;
 /** A corner further off than this is across a street (nearer is the same corner of the block). */
 export const WALKER_CORNER_STEP = 30;
 /** How fast they cross a street, px a second (their walk is WALKER_SPEED). */

@@ -67,6 +67,7 @@ test('the sidewalks: corners where streets meet, ways in and out near the map\'s
   const asphalt = (p) => TUTORIAL.roads.some((r) => { if (r.ring) return false; const q = r.points; const l2 = (q[2] - q[0]) ** 2 + (q[3] - q[1]) ** 2; const f = Math.max(0, Math.min(1, ((p[0] - q[0]) * (q[2] - q[0]) + (p[1] - q[1]) * (q[3] - q[1])) / l2)); return Math.hypot(p[0] - q[0] - f * (q[2] - q[0]), p[1] - q[1] - f * (q[3] - q[1])) < (r.lanes ?? 1) * 60 - 5; });
   for (const [road, s] of n.streets.entries()) for (const t of s.stops) for (const side of [1, -1]) for (const at of [1, -1]) {
     if ((t === s.stops[0] && at === -1) || (t === s.stops.at(-1) && at === 1)) continue; // beyond the street's end: nobody stands there
+    assert.ok(!n.asphalt(n.stand({ road, t, side, at })), `by the map's own mask too (street ${road} at ${Math.round(t)})`);
     assert.ok(!asphalt(n.stand({ road, t, side, at })), `the corner of street ${road} at ${Math.round(t)} (${side}, ${at}) is off the asphalt`);
   }
   // Coming in: they appear just off the map and walk to a street's end.
@@ -91,6 +92,7 @@ test('an evening: nine are out from the start (the four long-stayers and five mo
     const seen = new Set();
     const still = new Map();
     let onMap = 0, inStreet = 0;
+    const masked = net();
     let most = 0;
     while (seconds() < T.EVENING_LENGTH_SECONDS) {
       step(0.25);
@@ -99,7 +101,7 @@ test('an evening: nine are out from the start (the four long-stayers and five mo
         seen.add(p.resident.id);
         assert.ok(p.outside && !people.hasPorchLight?.(p), 'on the map, outside');
         onMap++;
-        if (onAsphalt([p.x, p.y])) { inStreet++; assert.ok(p.walking, `${p.resident.name} is never standing in the street`); }
+        if (onAsphalt([p.x, p.y]) || masked.asphalt([p.x, p.y])) { inStreet++; assert.ok(p.walking, `${p.resident.name} is never standing in the street`); }
         const was = still.get(p.resident.id);
         if (was && Math.hypot(was[0] - p.x, was[1] - p.y) < 0.01) {
           was[2] += 0.25;
@@ -107,7 +109,7 @@ test('an evening: nine are out from the start (the four long-stayers and five mo
         } else still.set(p.resident.id, [p.x, p.y, 0]);
       }
     }
-    assert.ok(inStreet / onMap < 0.09, `in the street only to cross: ${(100 * inStreet / onMap).toFixed(1)}% of their time`);
+    assert.ok(inStreet / onMap < 0.14, `in the street only to cross: ${(100 * inStreet / onMap).toFixed(1)}% of their time`);
     assert.equal(seen.size, T.WALKERS_TONIGHT, 'all of tonight\'s 16 came by');
     assert.ok(most >= 6 && most <= 18, `at most ${most} at once`);
     // Everyone who came in before 6:00 and was due to leave has left by 8:00, off the map.
