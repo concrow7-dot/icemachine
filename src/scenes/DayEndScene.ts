@@ -119,11 +119,13 @@ export class DayEndScene extends Phaser.Scene {
           : (stock > 0 ? 'Your cash and ice cream\ncarry over to tomorrow.' : 'Your cash carries over to tomorrow.') +
             '\n\nGame saved.'; // SCREAM-17: saved at the end of each evening
     // SCREAM-119: say why the day ended early, and what tomorrow's tank holds.
+    // SCREAM-390: the tow's price (it is inside the Gas row above).
+    const towNote = evening.towCents > 0 ? `\nThe tow home cost ${formatMoney(evening.towCents)}.` : '';
     const gasNote = !evening.endedOutOfGas
       ? ''
       : this.outcome === 'next'
-        ? 'You ran out of gas!\nTomorrow you start with 1/3 of a tank.\n\n'
-        : 'You ran out of gas!\n\n';
+        ? `You ran out of gas!${towNote}\nTomorrow you start with 1/3 of a tank.\n\n`
+        : `You ran out of gas!${towNote}\n\n`;
     this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
 
     // SCREAM-276 (PO, November 12): the gas dial, the same as on the road, bottom left. It shows what
