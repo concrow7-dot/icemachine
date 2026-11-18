@@ -168,6 +168,7 @@ const { chromium } = require('playwright');
 
   // --- Driver's seat locks ---
   await press('ArrowRight'); await press('Enter'); await wait(150);
+  await page.waitForFunction(() => window.__game.scene.isActive('Drive') && !window.__game.scene.isActive('Loading'), null, { timeout: 10000 }).catch(() => {}); // the map's pictures take a moment (SCREAM-384)
   check("Driver's seat locks prep", await ev('e.isPrepLocked'), true);
   // The hub can't be reached after driving any more (sales go straight to the window), so open the locked cooler directly
   await page.evaluate(() => { const g = window.__game; g.scene.stop('Drive'); g.scene.start('Cooler'); }); await wait(400);
