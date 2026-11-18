@@ -46,6 +46,7 @@ const { chromium } = require('playwright');
   // ---- Quick play: no XP at all (PO: "No xp in quickplay") ----
   await page.click('canvas'); await press('Enter'); await wait(400);
   check('Quick play: XP is off', (await ev('e.xpOn')) + ' ' + (await ev('e.xp')), 'false 0');
+  check('...and no XP total beside the cash', await sc('Hud', 's.xpText.visible'), false);
   check('...a sale earns none', await serve(await ev('e.residents.all[0].resident.id'), 20), 0);
   check('...driving earns none', await ev('(e.burnFuel(600), e.xp)'), 0);
   await ev('(e.endNow(), true)'); await wait(600);
@@ -58,10 +59,13 @@ const { chromium } = require('playwright');
   await flow('f.startStory(s, true)');
   await until(async () => (await ev('!!e && !!e.tutorial')) === true);
   check('PO: "No xp when the uncle is with you": off on his evening', (await ev('e.tutorial.step')) + ' ' + (await ev('e.xpOn')), 'stock false');
+  check('...no XP total beside the cash while he is with you', await sc('Hud', 's.xpText.visible'), false);
   check('...his evening earns nothing from a sale or from driving', (await serve(await ev('e.residents.all[0].resident.id'), 20)) + ' ' + (await ev('(e.burnFuel(600), e.xp)')), '0 0');
   await ev('(e.tutorial.skip(), true)'); await wait(150);
   check('PO: "but once he leaves then you can": on once he is gone', (await ev('e.tutorial.skipped')) + ' ' + (await ev('e.xpOn')), 'true true');
   check('...driving now earns the first distance step', await ev('(e.burnFuel(' + DIST[0] + '), e.xp)'), 1);
+  await wait(100);
+  check('...and the total shows beside the cash', (await sc('Hud', 's.xpText.visible')) + ' ' + (await sc('Hud', 's.xpText.text')), 'true XP 1');
 
   // ---- Story, on my own ----
   await page.goto(`http://127.0.0.1:${port}/index.html`);
@@ -79,6 +83,7 @@ const { chromium } = require('playwright');
   check('First sale, a regular: customers step 1 + new face + regular', await serve(regular), stepXp(1) + NEW + REG);
   await wait(100);
   check('...shown as one pop-up', await popup(), `+${stepXp(1) + NEW + REG} XP Sale`);
+  check('PO, November 18: "the amount of xp a player has next to the cash amount": just left of the cash, on the same line', await sc('Hud', "(() => { const x = s.xpText.getBounds(), m = s.children.list.find(c => c.text && c.text.startsWith('Cash ')).getBounds(); return s.xpText.text + ' ' + (x.right < m.left && m.left - x.right < 40 && x.top === m.top); })()"), `XP ${stepXp(1) + NEW + REG} true`);
   await page.screenshot({ path: outDir + '/xp_popup.png' });
   check('Second sale, the same regular: only the regular\'s XP (2 is no step, no new face)', await serve(regular), REG);
   check('Third sale, a walker: customers step 3 + new face + walker', await serve(walker), stepXp(3) + NEW + WALK);

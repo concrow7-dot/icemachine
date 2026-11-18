@@ -30,6 +30,8 @@ export class HudScene extends Phaser.Scene {
   private debugText?: Phaser.GameObjects.Text;
   private clockText!: Phaser.GameObjects.Text;
   private moneyText!: Phaser.GameObjects.Text;
+  /** SCREAM-395: "XP 120", left of the cash (test hook). */
+  xpText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
   private patienceWarning!: Phaser.GameObjects.Container;
   /** SCREAM-208: true from running out of gas until the end-of-evening screen; the message shown meanwhile. */
@@ -83,6 +85,10 @@ export class HudScene extends Phaser.Scene {
         color: '#c8f7c5',
       })
       .setOrigin(1, 0);
+
+    // SCREAM-395 (PO, November 18): "I want to add the amount of xp a player has next to the cash amount".
+    // Just left of the cash, in the XP pop-up's colour; only where XP counts (Story, once the uncle has left).
+    this.xpText = this.add.text(0, 10, '', { fontFamily: 'monospace', fontSize: '22px', color: '#d9c8ff' }).setOrigin(1, 0).setName('xp-total');
 
     // Issue #12: on the road with an empty cooler, no customers come.
     this.soldOutText = this.add
@@ -138,6 +144,7 @@ export class HudScene extends Phaser.Scene {
     // SCREAM-395: XP earned shows like money does, a line lower and in its own colour.
     const onXp = (points: number, _xp: number, label: string) => {
       if (points > 0) this.showXpChange(points, label);
+      this.refresh();
     };
     this.evening.on(EveningEvents.XpChanged, onXp);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.evening.off(EveningEvents.XpChanged, onXp));
@@ -365,6 +372,7 @@ export class HudScene extends Phaser.Scene {
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
+    this.xpText.setVisible(this.evening.xpOn).setText(`XP ${this.evening.xp}`).setX(this.moneyText.x - this.moneyText.width - 26);
     this.soldOutText
       .setVisible(this.evening.isSoldOut)
       .setX(this.leftOfMoney() - 6);
@@ -372,7 +380,8 @@ export class HudScene extends Phaser.Scene {
 
   /** Where SOLD OUT and the "!" line up: just left of the money (SCREAM-238: the gauge no longer sits there). */
   private leftOfMoney(): number {
-    return this.moneyText.x - this.moneyText.width - 14;
+    const left = this.xpText.visible ? this.xpText.x - this.xpText.width : this.moneyText.x - this.moneyText.width;
+    return left - 14;
   }
 
   /** SCREAM-208: stops the truck, shows "Needed a tow home." (SCREAM-390: with its price in Story) (the gauge flashes meanwhile), then `then`. */
