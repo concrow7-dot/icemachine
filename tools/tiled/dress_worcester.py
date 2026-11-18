@@ -10,7 +10,8 @@ Usage (run from the repo root):
     python3 tools/tiled/dress_worcester.py <worcester-map folder> <singles folder> <zone> [<zone> ...]
     then: python3 tools/tiled/import_tiled.py <worcester-map folder>/worcester-map.tmx <singles folder>
 
-<zone> is small, apartments or modern. Each zone is dressed once (the Tiled file remembers which
+<zone> is small, apartments or modern; then `driveways` (SCREAM-388), once the three are dressed, lays a driveway
+beside each small house and modern building and a shared parking area by the apartments. Each zone is dressed once (the Tiled file remembers which
 are done, in its "dressed" property); dressing the zones one after another gives the same map
 as dressing them together. Do not rerun a zone after the PO has edited it in Tiled.
 
@@ -369,6 +370,10 @@ def dress(folder, singles, zones):
     tmx = Tmx(os.path.join(folder, 'worcester-map.tmx'))
     done = [z for z in (tmx.prop('dressed') or '').split(',') if z]
     for z in zones:
+        if z == 'driveways':
+            if z in done: sys.exit('the driveways are already in this Tiled file')
+            if any(q not in done for q in ZONES): sys.exit('dress the three neighbourhoods before the driveways')
+            continue
         if z not in ZONES: sys.exit(f'unknown zone "{z}": use {", ".join(ZONES)}')
         if z in done: sys.exit(f'the {z} zone is already dressed in this Tiled file (rerunning would undo edits made since)')
     s = open(os.path.join(ROOT, 'src', 'config', 'worcester.ts'), encoding='utf-8').read()
@@ -383,7 +388,10 @@ def dress(folder, singles, zones):
         for o in tmx.layers[layer].findall('object'):
             if o.get('gid'): world.things.append(rect_of(o))
 
-    for zone in zones:
+    if 'driveways' in zones:
+        driveways(tmx, world, art, houses)
+        done.append('driveways')
+    for zone in [z for z in zones if z != 'driveways']:
         cfg = DECOR[zone]
         report = dict(houses=0, kept=0, ornaments_out=0, ornaments_in=0, street=0, trees=0, trees_out=0)
         # 1. Buildings
@@ -607,6 +615,149 @@ def dress(folder, singles, zones):
               f'{report["trees"]} trees changed, {report["trees_out"]} trees taken out')
     tmx.prop('dressed', ','.join(done))
     tmx.save()
+
+
+# ---- Driveways and parking (SCREAM-388) ----
+ASPHALT = (83, 79, 82)   # the roads' asphalt in images/roads.png; anything else in that picture is sidewalk or curb
+DRIVE = {  # per neighbourhood: width beside the building, how far back it goes (a share of the building, or px), the look
+    'small': dict(width=30, back=0.55, look='asphalt'),
+    'modern': dict(width=34, back=0.6, look='pavers'),
+    'apartments': dict(width=76, back=58, look='parking'),
+}
+PARKING_SHARED_WITHIN = 260  # an apartment building this close to a parking area shares it
+
+
+def paint_drive(mask, look, along_x, far_first, rng):
+    """The picture for one driveway: `mask` (half size, True where it is) filled with the look.
+    along_x: the driveway runs left-right; far_first: the end away from the street is at index 0."""
+    h, w = mask.shape
+    out = np.zeros((h, w, 4), np.uint8)
+    if look == 'pavers':
+        base = np.empty((h, w, 3), np.uint8); base[:] = (206, 202, 196)
+        yy, xx = np.mgrid[0:h, 0:w]
+        joints = (yy % 4 == 0) | ((xx + (yy // 4 % 2) * 4) % 8 == 0)
+        base[joints] = (178, 174, 168)
+        edge_colour = (150, 146, 140)
+    else:
+        base = np.empty((h, w, 3), np.uint8); base[:] = ASPHALT
+        speck = np.array([rng.random() for _ in range(h * w)]).reshape(h, w)
+        base[speck < 0.10] = (86, 82, 84); base[speck > 0.93] = (89, 85, 85); base[(speck > 0.10) & (speck < 0.14)] = (79, 74, 79)
+        edge_colour = (66, 62, 66)
+        if look == 'parking':  # white bay lines at the end away from the street
+            n_along = w if along_x else h
+            n_across = h if along_x else w
+            a0, a1 = (2, min(n_along, 20)) if far_first else (max(0, n_along - 20), n_along - 2)
+            for c in range(0, n_across, 9):
+                c = min(c, n_across - 1)
+                if along_x: base[c, a0:a1] = (232, 232, 226)
+                else: base[a0:a1, c] = (232, 232, 226)
+    edge = mask & ~(np.pad(mask, 1)[:-2, 1:-1] & np.pad(mask, 1)[2:, 1:-1] & np.pad(mask, 1)[1:-1, :-2] & np.pad(mask, 1)[1:-1, 2:])
+    out[:, :, :3] = base
+    out[:, :, 3] = np.where(mask, 255, 0)
+    return out, edge, edge_colour
+
+
+def driveways(tmx, world, art, houses):
+    """One flat piece per driveway (small houses, modern buildings) or parking area (apartments), on "Flat ground":
+    beside the building, from the sidewalk back along it (the sidewalk stays whole)."""
+    roads = np.asarray(Image.open(os.path.join(os.path.dirname(tmx.path), 'images', 'roads.png')).convert('RGBA'))
+    on_road = roads[:, :, 3] > 0
+    asphalt = on_road & (roads[:, :, 0] == ASPHALT[0]) & (roads[:, :, 1] == ASPHALT[1]) & (roads[:, :, 2] == ASPHALT[2])
+    if 'Flat ground' not in tmx.layers:
+        g = ET.Element('objectgroup', dict(color='#7f7f7f', id=tmx.root.get('nextlayerid'), name='Flat ground'))
+        tmx.root.set('nextlayerid', str(int(tmx.root.get('nextlayerid')) + 1))
+        tmx.root.insert(list(tmx.root).index(tmx.layers['Houses']), g)
+        tmx.layers['Flat ground'] = g
+    laid = []      # rects of what has been laid
+    parking = []   # centres of the parking areas
+    count = collections_counter()
+    for o in sorted(houses, key=lambda o: house_number(o) or 0):
+        n = house_number(o)
+        if n is None: continue
+        l, t, r, b = rect_of(o)
+        cx, cy = (l + r) / 2, (t + b) / 2
+        d, name, qx, qy = world.nearest_road(cx, cy)
+        zone = zone_of_street(name, qx)
+        cfg = DRIVE[zone]
+        if zone == 'apartments' and any(math.hypot(px - cx, py - cy) < PARKING_SHARED_WITHIN for px, py in parking): continue
+        rng = random.Random(f'driveway-{n}')
+        dx, dy = qx - cx, qy - cy
+        vertical = abs(dy) >= abs(dx)                  # the street is below or above the building
+        sign = (1 if dy > 0 else -1) if vertical else (1 if dx > 0 else -1)
+        W = cfg['width']
+        depth = cfg['back'] * ((b - t) if vertical else (r - l)) if cfg['back'] <= 1 else cfg['back']
+        sides = [1, -1]; rng.shuffle(sides)
+        if not vertical: sides = [1, -1]              # beside the foot of the building first (where the door is)
+        for side in sides:
+            # across: the strip's two edges beside the building; along: from `far` (in the lot) toward the street
+            lo = ((r + 4) if side > 0 else (l - 4 - W)) if vertical else ((b + 4) if side > 0 else (t - 4 - W))
+            lo = int(lo) // 2 * 2
+            near_edge = (b if sign > 0 else t) if vertical else (r if sign > 0 else l)
+            far = near_edge - sign * depth
+            mid = lo + W // 2
+            hit = None
+            for k in range(0, 150):                    # walk from the building's street-facing edge to the asphalt
+                a = int(near_edge + sign * k)
+                x, y = (mid, a) if vertical else (a, mid)
+                if not (0 <= x < world.W and 0 <= y < world.H): break
+                if asphalt[y, x]: hit = a; break
+            if hit is None: continue
+            a_lo, a_hi = sorted((int(far), int(hit + sign * 60)))
+            a_lo, a_hi = a_lo // 2 * 2, a_hi // 2 * 2
+            x0, y0, x1, y1 = (lo, a_lo, lo + W, a_hi) if vertical else (a_lo, lo, a_hi, lo + W)
+            if x0 < 4 or y0 < 4 or x1 > world.W - 4 or y1 > world.H - 4: continue
+            sub = on_road[y0:y1, x0:x1]   # each line stops at the sidewalk, which stays whole
+            mask = np.zeros(sub.shape, bool)
+            lines = range(x1 - x0) if vertical else range(y1 - y0)
+            centre_len = abs(hit - far)
+            for i in lines:                            # each line along the driveway stops where it meets the sidewalk
+                col = sub[:, i] if vertical else sub[i, :]
+                if sign < 0: col = col[::-1]
+                idx = np.argmax(col) if col.any() else None
+                length = int(idx) if idx is not None else int(centre_len)
+                seg = np.zeros(len(col), bool); seg[:length] = True
+                if sign < 0: seg = seg[::-1]
+                if vertical: mask[:, i] = seg
+                else: mask[i, :] = seg
+            # trim to what is used, and check the grass part is free
+            ys, xs = np.nonzero(mask)
+            if len(ys) < 200: continue
+            grass = mask & ~on_road[y0:y1, x0:x1]
+            gy, gx = np.nonzero(grass)
+            if len(gy) == 0: continue
+            grect = (x0 + gx.min(), y0 + gy.min(), x0 + gx.max() + 1, y0 + gy.max() + 1)
+            if world.hits_building(grect, 2) or world.any(world.park, *grect): continue
+            if any(grect[0] - q < x < grect[2] + q and grect[1] - q < y < grect[3] + q for x, y, q in world.gas): continue
+            if any(not (grect[2] + 6 <= q[0] or grect[0] - 6 >= q[2] or grect[3] + 6 <= q[1] or grect[1] - 6 >= q[3]) for q in laid): continue
+            # the picture, at half size (the ground is kept at half size), then doubled
+            half = mask[::2, ::2]
+            img, edge, edge_colour = paint_drive(half, cfg['look'], not vertical, (sign > 0), rng)
+            img[edge, :3] = edge_colour
+            im = Image.fromarray(img, 'RGBA').resize((img.shape[1] * 2, img.shape[0] * 2), Image.NEAREST)
+            key = f'flat_{"parking" if zone == "apartments" else "driveway"}_{n}'
+            im.save(os.path.join(art.dir, key + '.png'), optimize=True)
+            tmx.add('Flat ground', key, im.width, im.height, x0 + im.width / 2, y0 + im.height)
+            laid.append(grect)
+            if zone == 'apartments': parking.append((cx, cy))
+            count[zone] += 1
+            # nothing stands on it: trees and ornaments there go
+            for layer in ('Trees', 'Garden ornaments', 'Street lamps'):
+                for q in list(tmx.layers[layer].findall('object')):
+                    if not q.get('gid'): continue
+                    qx_, qy_ = float(q.get('x')), float(q.get('y')) - 4
+                    hw = 8 if layer != 'Garden ornaments' else float(q.get('width')) / 2
+                    if grect[0] - hw < qx_ < grect[2] + hw and grect[1] - 2 < qy_ < grect[3] + (10 if layer == 'Trees' else 4):
+                        ix, iy = int(min(max(qx_, x0), x1 - 1)) - x0, int(min(max(qy_, y0), y1 - 1)) - y0
+                        if mask[iy, ix]:
+                            tmx.layers[layer].remove(q); count['cleared'] += 1
+            break
+    print(f"driveways: {count['small']} by the small houses, {count['modern']} by the modern buildings, {count['apartments']} parking areas by the apartments; "
+          f"{count['cleared']} trees and ornaments taken off them")
+
+
+def collections_counter():
+    import collections
+    return collections.Counter()
 
 
 if __name__ == '__main__':

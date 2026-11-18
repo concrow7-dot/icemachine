@@ -1,4 +1,4 @@
-// SCREAM-334 and SCREAM-335: the Ice Cream tree's third row. The Two Ball Lou Ball (double tip,
+// SCREAM-334 and SCREAM-335: the Ice Cream tree's third row. The Two Ball Lou Ball (1.5 times the tip since SCREAM-389,
 // then the steering is reversed for 10 seconds of driving) and the Drum Cone (a drum solo that
 // reaches further for 30 seconds). Also the cooler with more than four ice creams unlocked.
 const { chromium } = require('playwright');
@@ -130,19 +130,28 @@ const { chromium } = require('playwright');
   await drive('(() => { const r = s.homeBay.rotation; s.truck.setPosition(s.homeBay.x + Math.cos(r) * 300, s.homeBay.y + Math.sin(r) * 300); s.homeArmed = false; s.speed = 0; s.parkBrake = true; return true; })()');
   check('Before any sale the steering is normal and nothing is shown', (await ev('e.steeringReversed')) + ' ' + (await drive('s.reversedLabel.visible')), 'false false');
   check('A sale of an eclair: the usual tip, steering still normal', await sell('eclair'), 'eclair | factor 1 | tip 80 | reversed 0');
-  check('SCREAM-334: a sale with a Two Ball Lou Ball pays double the tip, and the steering is reversed for 10 seconds', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
+  check('SCREAM-334: a sale with a Two Ball Lou Ball pays 1.5 times the tip (SCREAM-389; was double), and the controls are reversed for 10 seconds', await sell('louball'), 'louball | factor 1.5 | tip 120 | reversed 10000');
   await wait(400);
-  check('...the countdown shows, starting at 10', (await drive('s.reversedLabel.visible')) + ' | ' + (await drive('s.reversedLabel.text')) + ' | ' + (await ev('e.steeringReversedMs') >= 9000), 'true | STEERING REVERSED  10 | true');
+  check('...the countdown shows, starting at 10', (await drive('s.reversedLabel.visible')) + ' | ' + (await drive('s.reversedLabel.text')) + ' | ' + (await ev('e.steeringReversedMs') >= 9000), 'true | CONTROLS REVERSED  10 | true');
   // SCREAM-358 (PO, November 15): the 10 seconds only run while the truck is moving.
   check('SCREAM-358: parked since the sale, none of the 10 seconds has gone, and the countdown still shows', (await ev('e.steeringReversedMs')) + ' ' + (await drive('s.reversedLabel.visible')), '10000 true');
   await page.screenshot({ path: outDir + '/icecreams_steering_reversed.png' });
   // Driving with Right held, frame by frame (like the feel suite). Reversed, the truck turns left (its heading goes down).
   const turned = () => drive(`(() => { const g = s.roads.nearestSegment(s.truck.x, s.truck.y); s.truck.setPosition((g.ax + g.bx) / 2, (g.ay + g.by) / 2); s.setHeading(Math.atan2(g.by - g.ay, g.bx - g.ax) * 180 / Math.PI); const h0 = s.heading; s.parkBrake = false; s.held = ['right']; for (let i = 0; i < 6; i++) { s.speed = 40; s.update(0, 16); } const d = s.heading - h0; s.held = []; s.speed = 0; s.parkBrake = true; return Math.abs(d) < 0.2 ? 0 : Math.sign(d); })()`);
   check('...holding Right turns the truck left', await turned(), -1);
+  // SCREAM-389: the gas and the brake swap too. From a stop: Down drives forward, Up backs up. From 100 px/s: Up slows it.
+  const pedal = (key, speed) => drive(`(() => { const g = s.roads.nearestSegment(s.truck.x, s.truck.y); s.truck.setPosition((g.ax + g.bx) / 2, (g.ay + g.by) / 2); s.setHeading(Math.atan2(g.by - g.ay, g.bx - g.ax) * 180 / Math.PI); s.parkBrake = false; s.speed = ${speed}; s.held = ['${key}']; for (let i = 0; i < 60; i++) s.update(0, 16); const v = s.speed; s.held = []; s.speed = 0; s.parkBrake = true; return v > ${speed} + 0.5 ? 'faster' : v < 0 ? 'backwards' : v < ${speed} - 0.5 ? 'slower' : 'same'; })()`);
+  await ev('(e.steeringReversedMs = 10000, true)');
+  check('SCREAM-389: reversed, Down is the gas...', await pedal('down', 0), 'faster');
+  await ev('(e.steeringReversedMs = 10000, true)');
+  check('...Up slows a moving truck...', await pedal('up', 100), 'slower');
+  await ev('(e.steeringReversedMs = 10000, true)');
+  check('...and Up held at a stop backs it up', await pedal('up', 0), 'backwards');
+  await ev('(e.steeringReversedMs = 10000, true)'); await turned();
   check('...they run down while the truck moves (the six frames driven above)', await ev('e.steeringReversedMs < 10000 && e.steeringReversedMs > 9000'), true);
   const left = await ev('e.steeringReversedMs'); await wait(600);
   check('...and wait again once it is parked on the brake', (await ev('e.steeringReversedMs')) === left, true);
-  check('...a second sale starts the 10 seconds again; it doesn\'t add up', await sell('louball'), 'louball | factor 2 | tip 160 | reversed 10000');
+  check('...a second sale starts the 10 seconds again; it doesn\'t add up', await sell('louball'), 'louball | factor 1.5 | tip 120 | reversed 10000');
   await ev('(e.steeringReversedMs = 60, true)'); await turned(); await wait(200); // six moving frames (96 ms) use them up
   check('...when they run out the steering is normal again and the countdown goes', (await ev('e.steeringReversed')) + ' ' + (await drive('s.reversedLabel.visible')) + ' ' + (await turned()), 'false false 1');
 
@@ -160,7 +169,7 @@ const { chromium } = require('playwright');
   check('...with the speaker upgrade the 10% is on top of it', await ev("(() => { const before = e.spec.musicRadius; e.powerUpsOwned.push('upgrade-speaker'); e.buyPowerUp('nothing'); return true; })()") && await page.evaluate(async () => { const { truckSpec } = await import('/src/state/TruckSpec.js'); const e = window.__game.registry.get('evening'); const base = truckSpec(true, e.powerUpsOwned).musicRadius; e.truckNow = truckSpec(true, e.powerUpsOwned); return Math.round((e.spec.musicRadius / base) * 100) / 100 + ' ' + (base > 170); }), '1.1 true');
   await ev('(e.drumSoloMs = 200, true)'); await wait(600);
   check('...when the 30 seconds run out the tune is back, the ring is its own size and the countdown goes', (await music('m.drumSolo')) + ' ' + (await ev('e.drumSolo')) + ' ' + (await drive('s.drumLabel.visible')) + ' ' + (await drive('Math.round(s.ring.radius) === Math.round(' + (await ev('e.truckNow.musicRadius')) + ')')) + ' ' + (await drive('s.songLabel.text !== "♪ Drum Solo"')), 'false false false true true');
-  check('...a sale with both: double tip, reversed steering and the drum solo together', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const before = e.coolerSlots.map(s => s.quantity); e.coolerSlots.forEach(s => { s.quantity = s.flavour === 'louball' || s.flavour === 'drumcone' ? 1 : 0; }); let sale; for (let i = 0; i < 40 && !(sale && sale.louBall && sale.drumCone); i++) { sale = e.startSale(); e.saleNow = null; e.setCustomerWaiting(false); } e.coolerSlots.forEach((s, i) => { s.quantity = before[i]; }); return sale.louBall + ' ' + sale.drumCone + ' ' + sale.tipFactor; }), 'true true 2');
+  check('...a sale with both: double tip, reversed controls and the drum solo together', await page.evaluate(() => { const e = window.__game.registry.get('evening'); const before = e.coolerSlots.map(s => s.quantity); e.coolerSlots.forEach(s => { s.quantity = s.flavour === 'louball' || s.flavour === 'drumcone' ? 1 : 0; }); let sale; for (let i = 0; i < 40 && !(sale && sale.louBall && sale.drumCone); i++) { sale = e.startSale(); e.saleNow = null; e.setCustomerWaiting(false); } e.coolerSlots.forEach((s, i) => { s.quantity = before[i]; }); return sale.louBall + ' ' + sale.drumCone + ' ' + sale.tipFactor; }), 'true true 1.5');
 
   // ---- SCREAM-340: Back It Up ----
   {

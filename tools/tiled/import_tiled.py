@@ -292,7 +292,8 @@ def main(tmx, singles):
             pc['layer'], pc['z'] = lname, z
             # Flat things (SCREAM-157): pieces on "Flat ground" from the pack, and pack terrain
             # pieces (asphalt, paths) anywhere, are painted into the ground, under everyone.
-            if (lname == 'Flat ground' and not pc['game']) or 'Terrains' in pc['stem']:
+            # SCREAM-388: the game's own flat pieces (Foley Stadium's driveways, `flat_*`) are painted in too.
+            if (lname == 'Flat ground' and (not pc['game'] or pc['stem'].startswith('flat_'))) or 'Terrains' in pc['stem']:
                 flat.append(pc); continue
             # Only numbered houses (and home) are houses; other pieces on the Houses layer, and
             # unnamed pieces on Businesses, are decorations (mailboxes, shrubs, a bench).

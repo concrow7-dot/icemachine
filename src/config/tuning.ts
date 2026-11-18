@@ -681,7 +681,9 @@ export const GAS_CAN_PULSES = 3;
  * driving. The note costs $30, one costs $2.00, and customers pay up to $3.00 (he first said $3.75, then, November 15: "The two ball and the drum can be sold for $3")
  * (ICE_CREAM_UNLOCK_PRICES, flavours.ts, STORY_REFUSE_ABOVE_CENTS).
  */
-export const LOU_BALL_TIP_FACTOR = 2;
+// SCREAM-389 (PO, November 17: "Let's make the tip reduce"; his answer "Tip x 1.5"): one and a half times the tip (it was 2).
+// The same sale's 10 seconds now swap the gas and the brake as well as left and right (DriveScene.driveHard).
+export const LOU_BALL_TIP_FACTOR = 1.5;
 export const LOU_BALL_REVERSED_SECONDS = 10;
 
 /**
