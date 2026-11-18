@@ -17,6 +17,8 @@ const T = await game('config/tuning');
 
 const perMinute = T.EVENING_LENGTH_SECONDS / ((T.EVENING_END_HOUR - T.EVENING_START_HOUR) * 60);
 const net = () => new StreetNet(TUTORIAL.roads, TUTORIAL);
+/** On a street's asphalt (55 px a lane from its middle)? */
+const onAsphalt = (p) => TUTORIAL.roads.some((r) => { if (r.ring) return false; const q = r.points; const l2 = (q[2] - q[0]) ** 2 + (q[3] - q[1]) ** 2; const f = Math.max(0, Math.min(1, ((p[0] - q[0]) * (q[2] - q[0]) + (p[1] - q[1]) * (q[3] - q[1])) / l2)); return Math.hypot(p[0] - q[0] - f * (q[2] - q[0]), p[1] - q[1] - f * (q[3] - q[1])) < (r.lanes ?? 1) * 60 - 5; });
 
 /** A Story evening in Elm Park with the walkers, with a clock the test moves. */
 function evening(day, seed) {
@@ -58,9 +60,15 @@ test('the sidewalks: corners where streets meet, ways in and out near the map\'s
       assert.ok(Math.hypot(x - ring.x, y - ring.y) >= ring.r + T.WALKER_RING_CLEAR, `no corner in the roundabout (street ${i} at ${t})`);
     }
   }
-  // Someone on a sidewalk stands off the asphalt: 67 px from the middle of a one-lane street, 127 px from Park Avenue's.
-  const off = (road) => { const m = n.middle(road, 100); const p = n.stand({ road, t: 100, side: 1 }); return Math.round(Math.hypot(p[0] - m[0], p[1] - m[1])); };
-  assert.deepEqual([off(3), off(2)], [67, 127]);
+  // They walk on the sidewalk's outer edge: 72 px from the middle of a one-lane street, 132 px from Park Avenue's.
+  assert.deepEqual([n.streets[3].off, n.streets[2].off], [72, 132]);
+  // PO, November 17 ("in the street a lot ... make it as quick as possible"): every place they stop is a
+  // block's corner, clear of every street's asphalt (55 px a lane from its middle).
+  const asphalt = (p) => TUTORIAL.roads.some((r) => { if (r.ring) return false; const q = r.points; const l2 = (q[2] - q[0]) ** 2 + (q[3] - q[1]) ** 2; const f = Math.max(0, Math.min(1, ((p[0] - q[0]) * (q[2] - q[0]) + (p[1] - q[1]) * (q[3] - q[1])) / l2)); return Math.hypot(p[0] - q[0] - f * (q[2] - q[0]), p[1] - q[1] - f * (q[3] - q[1])) < (r.lanes ?? 1) * 60 - 5; });
+  for (const [road, s] of n.streets.entries()) for (const t of s.stops) for (const side of [1, -1]) for (const at of [1, -1]) {
+    if ((t === s.stops[0] && at === -1) || (t === s.stops.at(-1) && at === 1)) continue; // beyond the street's end: nobody stands there
+    assert.ok(!asphalt(n.stand({ road, t, side, at })), `the corner of street ${road} at ${Math.round(t)} (${side}, ${at}) is off the asphalt`);
+  }
   // Coming in: they appear just off the map and walk to a street's end.
   let k = 7;
   const dice = () => ((k = (Math.imul(k, 1664525) + 1013904223) >>> 0) / 4294967296);
@@ -72,12 +80,17 @@ test('the sidewalks: corners where streets meet, ways in and out near the map\'s
   }
 });
 
-test('an evening: four are out from the start, all 20 come, they keep moving, and they leave by the edge', () => {
+test('an evening: nine are out from the start (the four long-stayers and five more), 16 of the 20 come, mostly early, they keep moving, and they leave by the edge', () => {
   for (const seed of [11, 222, 3333]) {
     const { people, step, seconds } = evening(2, seed);
-    assert.equal(people.walkersNow.length, T.WALKER_LONG_STAY, 'the long-stayers are on the streets at 4:00');
+    assert.equal(people.walkersNow.length, T.WALKER_LONG_STAY + T.WALKER_OUT_AT_START, 'the long-stayers and the early ones are on the streets at 4:00');
+    assert.equal(T.WALKER_LONG_STAY + T.WALKER_OUT_AT_START, 9);
+    const coming = people.all.filter((p) => p.resident.walker).map((p) => people.walkerTimes(p).from).filter((t) => t != null);
+    assert.equal(coming.length, T.WALKERS_TONIGHT - 9);
+    assert.ok(coming.every((t) => t >= T.WALKER_ENTER_MINUTES[0] && t <= T.WALKER_ENTER_MINUTES[1]));
     const seen = new Set();
     const still = new Map();
+    let onMap = 0, inStreet = 0;
     let most = 0;
     while (seconds() < T.EVENING_LENGTH_SECONDS) {
       step(0.25);
@@ -85,6 +98,8 @@ test('an evening: four are out from the start, all 20 come, they keep moving, an
       for (const p of people.walkersNow) {
         seen.add(p.resident.id);
         assert.ok(p.outside && !people.hasPorchLight?.(p), 'on the map, outside');
+        onMap++;
+        if (onAsphalt([p.x, p.y])) { inStreet++; assert.ok(p.walking, `${p.resident.name} is never standing in the street`); }
         const was = still.get(p.resident.id);
         if (was && Math.hypot(was[0] - p.x, was[1] - p.y) < 0.01) {
           was[2] += 0.25;
@@ -92,11 +107,12 @@ test('an evening: four are out from the start, all 20 come, they keep moving, an
         } else still.set(p.resident.id, [p.x, p.y, 0]);
       }
     }
-    assert.equal(seen.size, 20, 'all 20 came by');
+    assert.ok(inStreet / onMap < 0.09, `in the street only to cross: ${(100 * inStreet / onMap).toFixed(1)}% of their time`);
+    assert.equal(seen.size, T.WALKERS_TONIGHT, 'all of tonight\'s 16 came by');
     assert.ok(most >= 6 && most <= 18, `at most ${most} at once`);
     // Everyone who came in before 6:00 and was due to leave has left by 8:00, off the map.
     const gone = [...seen].filter((id) => !people.walkersNow.some((p) => p.resident.id === id));
-    assert.ok(gone.length >= 8, `${gone.length} have left by 8:00`);
+    assert.ok(gone.length >= 7, `${gone.length} have left by 8:00`);
   }
 });
 

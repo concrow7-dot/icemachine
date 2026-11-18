@@ -1,5 +1,5 @@
 import type { MapRoad } from '../config/mapTypes';
-import { AWAY_EDGE_MARGIN, WALKER_EXIT_REACH, WALKER_JOIN_REACH, WALKER_RING_CLEAR, WALKER_SIDEWALK_GAP } from '../config/tuning';
+import { AWAY_EDGE_MARGIN, WALKER_CORNER_GAP, WALKER_CORNER_STEP, WALKER_EXIT_REACH, WALKER_NO_CROSSING_WEIGHT, WALKER_JOIN_REACH, WALKER_RING_CLEAR, WALKER_SIDEWALK_GAP } from '../config/tuning';
 
 /**
  * SCREAM-394 (PO, November 17): "a few people who are randomly walking up and down the streets of
@@ -12,11 +12,17 @@ import { AWAY_EDGE_MARGIN, WALKER_EXIT_REACH, WALKER_JOIN_REACH, WALKER_RING_CLE
  */
 export type Point = [number, number];
 
-/** A stop on a street: which street, how far along it (px from its first point), and which sidewalk (+1 = right of first to last). */
+/**
+ * A stop on a street: which street, how far along it the corner is (px from its first point), which
+ * sidewalk (+1 = right of first to last), and which side of the corner they stand on (`at`: +1 = the
+ * far side, further along the street). Nobody stands in the cross street: they wait at the block's
+ * corner, short of it or past it.
+ */
 export interface WalkSpot {
   road: number;
   t: number;
   side: 1 | -1;
+  at: 1 | -1;
 }
 
 /** One stretch of a walk: the points to walk through and the stop it ends at (`out`: it ends off the map). */
@@ -24,6 +30,8 @@ export interface WalkLeg {
   route: Point[];
   to: WalkSpot;
   out?: boolean;
+  /** It starts by crossing a street: the first point of `route` is the corner on the other side. */
+  cross?: boolean;
 }
 
 interface Street {
@@ -34,6 +42,8 @@ interface Street {
   off: number;
   /** Where the corners are, px along the street, in order (its two ends included). */
   stops: number[];
+  /** For each corner: how far back along this street the block's corner is (clear of the cross street and its sidewalk); 0 where no street crosses. */
+  clear: number[];
 }
 
 const dist = (a: Point, b: Point): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -64,7 +74,7 @@ export class StreetNet {
       if (pts.length < 2) continue;
       const cum = [0];
       for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1]! + dist(pts[i - 1]!, pts[i]!));
-      this.streets.push({ pts, cum, length: cum[cum.length - 1]!, off: (road.lanes ?? 1) * 60 + WALKER_SIDEWALK_GAP, stops: [] });
+      this.streets.push({ pts, cum, length: cum[cum.length - 1]!, off: (road.lanes ?? 1) * 60 + WALKER_SIDEWALK_GAP, stops: [], clear: [] });
     }
     // The corners: a street's own ends, and wherever another street's end comes up to it.
     this.streets.forEach((s, i) => {
@@ -77,6 +87,25 @@ export class StreetNet {
         }
       });
       s.stops = stops.sort((a, b) => a - b).filter((t) => !inRing(this.middle(i, t)));
+    });
+    // The block's corner at each stop: back from the middle of the cross street by its half width and sidewalk
+    // (more when the streets meet at a slant).
+    this.streets.forEach((s, i) => {
+      s.clear = s.stops.map((t) => {
+        const [here, d] = this.at(i, t);
+        let clear = 0;
+        this.streets.forEach((o, j) => {
+          if (i === j) return;
+          const near = this.nearest(j, here);
+          if (near.d > WALKER_JOIN_REACH) return;
+          const [, e] = this.at(j, near.t);
+          const sin = Math.max(0.5, Math.abs(d[0] * e[1] - d[1] * e[0]));
+          const cos = Math.abs(d[0] * e[0] + d[1] * e[1]);
+          if (cos > 0.94) return; // the same street carrying on under another name: nothing to cross
+          clear = Math.max(clear, (o.off + WALKER_CORNER_GAP + s.off * cos) / sin);
+        });
+        return clear;
+      });
     });
     // The ways in and out: a street end from which straight on soon leaves the map.
     this.streets.forEach((s, road) => {
@@ -112,10 +141,30 @@ export class StreetNet {
 
   /** Where someone at this stop stands: on the sidewalk beside the street. */
   stand(spot: WalkSpot): Point {
-    const [p, d] = this.at(spot.road, spot.t);
-    const off = this.streets[spot.road]!.off * spot.side;
-    return [p[0] - d[1] * off, p[1] + d[0] * off];
+    const s = this.streets[spot.road]!;
+    const k = s.stops.findIndex((t) => Math.abs(t - spot.t) < 1);
+    const key = `${spot.road}/${k}/${spot.side}/${spot.at}`;
+    const known = k < 0 ? undefined : this.corners.get(key);
+    if (known) return known;
+    const place = (back: number): Point => {
+      const [p, d] = this.at(spot.road, spot.t + spot.at * back);
+      return [p[0] - d[1] * s.off * spot.side, p[1] + d[0] * s.off * spot.side];
+    };
+    if (k < 0) return place(0);
+    // Where a street comes in at a slant, one side's corner is further back: step back until clear of every other street.
+    let back = s.clear[k]!;
+    let at = place(back);
+    const inStreet = (p: Point): boolean => this.streets.some((o, j) => j !== spot.road && this.nearest(j, p).d < o.off - 2);
+    for (let i = 0; i < 40 && back > 0 && inStreet(at); i++) {
+      back += 10;
+      at = place(back);
+    }
+    this.corners.set(key, at);
+    return at;
   }
+
+  private readonly corners = new Map<string, Point>();
+
 
   /** The point of a street nearest `p`: how far along it, and how far away. */
   private nearest(road: number, p: Point): { t: number; d: number } {
@@ -157,7 +206,8 @@ export class StreetNet {
   /** Someone new: where they appear (just off the map) and the stop they walk to first. */
   enter(dice: () => number): { from: Point; leg: WalkLeg } {
     const exit = this.exits[Math.floor(dice() * this.exits.length)]!;
-    const to: WalkSpot = { road: exit.road, t: exit.t, side: dice() < 0.5 ? 1 : -1 };
+    // They stop at the block's corner on the map's side of the street end.
+    const to: WalkSpot = { road: exit.road, t: exit.t, side: dice() < 0.5 ? 1 : -1, at: exit.t === this.streets[exit.road]!.stops[0] ? 1 : -1 };
     return { from: this.beyond(to, exit), leg: { route: [this.stand(to)], to } };
   }
 
@@ -166,7 +216,8 @@ export class StreetNet {
     const usable = this.streets.map((s, i) => (s.stops.length >= 2 ? i : -1)).filter((i) => i >= 0);
     const road = usable[Math.floor(dice() * usable.length)]!;
     const stops = this.streets[road]!.stops;
-    return { road, t: stops[Math.floor(dice() * stops.length)]!, side: dice() < 0.5 ? 1 : -1 };
+    const k = Math.floor(dice() * stops.length);
+    return { road, t: stops[k]!, side: dice() < 0.5 ? 1 : -1, at: k === 0 ? 1 : k === stops.length - 1 ? -1 : dice() < 0.5 ? 1 : -1 };
   }
 
   /** The stops that can be walked to from this one: along its own street, or along a street that meets it here. */
@@ -186,18 +237,28 @@ export class StreetNet {
       const k = s.stops.indexOf(at);
       for (const next of [s.stops[k + 1], s.stops[k - 1]]) {
         if (next === undefined) continue;
+        // They set off from the block's corner on the side of this corner they are heading for, and
+        // stop at the next block's corner short of its cross street: the only asphalt they step on is
+        // the straight crossing between two corners here, when the way on needs one.
+        const way: 1 | -1 = next > at ? 1 : -1;
         // Whichever sidewalk is nearer to where they are standing.
         const sides: (1 | -1)[] = road === spot.road ? [spot.side] : [1, -1];
-        const side = sides.reduce((best, x) => (dist(this.stand({ road, t: at, side: x }), from) < dist(this.stand({ road, t: at, side: best }), from) ? x : best), sides[0]!);
+        const side = sides.reduce((best, x) => (dist(this.stand({ road, t: at, side: x, at: way }), from) < dist(this.stand({ road, t: at, side: best, at: way }), from) ? x : best), sides[0]!);
         const route: Point[] = [];
-        const start = this.stand({ road, t: at, side });
-        if (dist(start, from) > 1) route.push(start);
+        const start = this.stand({ road, t: at, side, at: way });
+        // Further than a step or two: that corner is across a street.
+        const cross = dist(start, from) > WALKER_CORNER_STEP;
+        if (cross) route.push(start);
         // A street with bends: round each bend on the way.
         const [lo, hi] = at < next ? [at, next] : [next, at];
         const bends = s.cum.filter((c) => c > lo + 1 && c < hi - 1);
-        for (const c of at < next ? bends : bends.reverse()) route.push(this.stand({ road, t: c, side }));
-        route.push(this.stand({ road, t: next, side }));
-        legs.push({ route, to: { road, t: next, side } });
+        for (const c of at < next ? bends : bends.reverse()) {
+          const [m, d] = this.at(road, c);
+          route.push([m[0] - d[1] * s.off * side, m[1] + d[0] * s.off * side]);
+        }
+        const to: WalkSpot = { road, t: next, side, at: way === 1 ? -1 : 1 };
+        route.push(this.stand(to));
+        legs.push({ route, to, cross });
       }
     });
     return legs;
@@ -218,7 +279,16 @@ export class StreetNet {
     const onward = all.filter((leg) => !back(leg));
     const pool = onward.length ? onward : all;
     if (pool.length === 0) return { route: [this.nearestEdge(from)], to: spot, out: true };
-    if (!leaving) return pool[Math.floor(dice() * pool.length)]!;
+    if (!leaving) {
+      // A way on that needs no crossing is likelier than one that does.
+      const weight = (leg: WalkLeg): number => (leg.cross ? 1 : WALKER_NO_CROSSING_WEIGHT);
+      let roll = dice() * pool.reduce((sum, leg) => sum + weight(leg), 0);
+      for (const leg of pool) {
+        roll -= weight(leg);
+        if (roll < 0) return leg;
+      }
+      return pool[pool.length - 1]!;
+    }
     const far = (leg: WalkLeg): number => Math.min(...this.exits.map((e) => dist(this.middle(e.road, e.t), this.middle(leg.to.road, leg.to.t))));
     return pool.reduce((best, leg) => (far(leg) < far(best) ? leg : best), pool[0]!);
   }

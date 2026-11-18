@@ -887,7 +887,7 @@ export const HOME_DRIVE_PERSON_ROOM = 22;
  * Likelihood), "Engineering drafts, I adjust"). Story, Elm Park, not the uncle's evening. The numbers
  * below are engineering's proposals.
  */
-export const WALKERS_TONIGHT = 20;
+export const WALKERS_TONIGHT = 16; // of the sheet's 20, picked each evening (it was all 20 until the PO asked for a lower peak, November 17, 21:39)
 /** How many of them are out most of the evening: on the streets at 4:00, leaving in WALKER_LONG_LEAVE_MINUTES. */
 export const WALKER_LONG_STAY = 4;
 export const WALKER_LONG_LEAVE_MINUTES: readonly [number, number] = [19 * 60 + 20, 19 * 60 + 55];
@@ -896,12 +896,39 @@ export const WALKER_LONG_LEAVE_MINUTES: readonly [number, number] = [19 * 60 + 2
  * for a way out (game minutes). Getting out takes about half a game hour more (the blocks are long),
  * so they are around "for an hour or so" in all (measured over 200 simulated evenings).
  */
-export const WALKER_ENTER_MINUTES: readonly [number, number] = [16 * 60, 19 * 60];
+export const WALKER_ENTER_MINUTES: readonly [number, number] = [16 * 60 + 20, 19 * 60];
 export const WALKER_STAY_MINUTES: readonly [number, number] = [25, 50];
+/**
+ * PO, November 17, 21:39, after seeing the numbers (about 10 on the map from 5:30 to 7:00): "Lets
+ * slightly reduce the amount at the peak and lets have the people be heaviest at the start of the day."
+ * So some of the short-stay walkers are already on the streets at 4:00 (WALKER_OUT_AT_START of them),
+ * and the rest come in early more often than late: a roll from 0 to 1 raised to WALKER_ENTER_SKEW picks
+ * the moment in WALKER_ENTER_MINUTES (1 = evenly spread). Engineering's numbers.
+ */
+export const WALKER_OUT_AT_START = 5;
+/** How long the ones out at the start go on wandering from 4:00 (game minutes): they have been out a while already. */
+export const WALKER_START_STAY_MINUTES: readonly [number, number] = [5, 40];
+export const WALKER_ENTER_SKEW = 1.5;
 /** Their walking speed, px a second (the same as someone walking home, AWAY_WALK_SPEED). */
 export const WALKER_SPEED = 30;
-/** From the edge of a lane to the middle of the sidewalk (a street's middle to its sidewalk is 60 px a lane plus this). */
-export const WALKER_SIDEWALK_GAP = 7;
+/**
+ * From the edge of a lane to where they walk (a street's middle to there is 60 px a lane plus this). The
+ * sidewalk is the 13 px from about 57 to 70 px out; 12 keeps their feet on its outer edge. (It was 7.)
+ */
+export const WALKER_SIDEWALK_GAP = 12;
+/**
+ * PO, November 17, 21:46: "The walkers are having a tendency to be in the street a lot. I want to remove
+ * that, I know they need to be in the street at points but try and make it as quick as possible." They
+ * stop at the block's corner, this far clear of the cross street's sidewalk line, never in the junction;
+ * a crossing is one straight walk from corner to corner.
+ */
+export const WALKER_CORNER_GAP = 4;
+/** A corner further off than this is across a street (nearer is the same corner of the block). */
+export const WALKER_CORNER_STEP = 30;
+/** How fast they cross a street, px a second (their walk is WALKER_SPEED). */
+export const WALKER_CROSS_SPEED = 66;
+/** At a corner, a way on that needs no crossing is this many times likelier than one that does. */
+export const WALKER_NO_CROSSING_WEIGHT = 3;
 /** Two streets meet where one's end is within this of the other. */
 export const WALKER_JOIN_REACH = 90;
 /** A street end is a way in and out when straight on from it leaves the map within this. */

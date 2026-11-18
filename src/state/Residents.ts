@@ -45,7 +45,11 @@ import {
   WALKER_ENTER_MINUTES,
   WALKER_STAY_MINUTES,
   WALKER_SPEED,
+  WALKER_CROSS_SPEED,
   WALKER_LATE_LEGS,
+  WALKER_OUT_AT_START,
+  WALKER_START_STAY_MINUTES,
+  WALKER_ENTER_SKEW,
   STORY_BUYERS_START_OUTSIDE_CHANCE,
   STORY_BUYERS_OUTSIDE_SECONDS,
   STORY_BUYERS_INSIDE_SECONDS,
@@ -363,7 +367,7 @@ interface Running extends ResidentNow {
   /** SCREAM-394: a walker who hasn't come yet: when they appear at the map's edge, in minutes since midnight. */
   strollAt?: number | null;
   /** SCREAM-394: a walker on the streets: the stop they are at or walking to, the one before, and the corners passed since their time was up. */
-  stroll?: { spot: WalkSpot; prev?: WalkSpot; late: number };
+  stroll?: { spot: WalkSpot; prev?: WalkSpot; late: number; rest?: [number, number][] };
   /** SCREAM-379: when someone away appears at the map's edge, in minutes since midnight; null = out all evening. */
   arriveAt?: number | null;
   /** SCREAM-379: the way they walk home: from just outside the map to where they stand at their curb. */
@@ -1281,7 +1285,7 @@ export class Residents {
    * 20 people total in the evening. A few wandering around most of the time, others only around for
    * an hour or so." Rolls tonight's walkers with the evening's own dice: WALKER_LONG_STAY of them
    * are on the streets from the start and leave late; the rest each come in at their own time and
-   * stay WALKER_STAY_MINUTES. Story only; EveningState calls it.
+   * stay WALKER_STAY_MINUTES; some of those are out at the start too, and the rest come early more often than late. Story only; EveningState calls it.
    */
   openStreets(net: StreetNet): void {
     if (!this.story || this.streets || net.exits.length === 0) return;
@@ -1294,8 +1298,9 @@ export class Residents {
       [walkers[i], walkers[j]] = [walkers[j]!, walkers[i]!];
     }
     walkers.slice(0, WALKERS_TONIGHT).forEach((p, i) => {
-      if (i < WALKER_LONG_STAY) {
-        p.leaveAt = between(dice, WALKER_LONG_LEAVE_MINUTES);
+      // The long-stayers, and (PO, November 17: "heaviest at the start of the day") some of the others, are out at 4:00.
+      if (i < WALKER_LONG_STAY + WALKER_OUT_AT_START) {
+        p.leaveAt = i < WALKER_LONG_STAY ? between(dice, WALKER_LONG_LEAVE_MINUTES) : (this.nowMinutes?.() ?? WALKER_ENTER_MINUTES[0]) + between(dice, WALKER_START_STAY_MINUTES);
         p.strollAt = null;
         const spot = net.anywhere(dice);
         [p.x, p.y] = net.stand(spot);
@@ -1304,7 +1309,8 @@ export class Residents {
         p.outside = true;
         p.plan = { kind: 'idle', until: this.now + between(dice, RESIDENT_IDLE_SECONDS) * dice() };
       } else {
-        p.strollAt = Math.round(between(dice, WALKER_ENTER_MINUTES));
+        // Early more often than late.
+        p.strollAt = Math.round(WALKER_ENTER_MINUTES[0] + (WALKER_ENTER_MINUTES[1] - WALKER_ENTER_MINUTES[0]) * dice() ** WALKER_ENTER_SKEW);
         p.leaveAt = p.strollAt + between(dice, WALKER_STAY_MINUTES);
       }
     });
@@ -1345,13 +1351,24 @@ export class Residents {
     const leaving = !!this.nowMinutes && p.leaveAt != null && this.nowMinutes() >= p.leaveAt;
     const here: [number, number] = [p.x, p.y];
     // Back on their sidewalk first, if the truck took them off it.
-    const stand = net.stand(s.spot);
-    if (Math.hypot(stand[0] - p.x, stand[1] - p.y) > 2) return this.walkTo(p, [stand], WALKER_SPEED, 'idle');
+    const stand = s.rest ? [p.x, p.y] : net.stand(s.spot);
+    if (Math.hypot(stand[0]! - p.x, stand[1]! - p.y) > 2) return this.walkTo(p, [stand as [number, number]], WALKER_SPEED, 'idle');
     if (leaving && ++s.late > WALKER_LATE_LEGS) return this.walkTo(p, [net.nearestEdge(here)], WALKER_SPEED, 'inside');
+    // The rest of a stretch that began with a crossing: on along the sidewalk.
+    if (s.rest) {
+      const rest = s.rest;
+      s.rest = undefined;
+      return this.walkTo(p, rest, WALKER_SPEED, 'idle');
+    }
     const leg = net.next(s.spot, s.prev, here, this.walkDice, leaving);
     if (leg.out) return this.walkTo(p, leg.route, WALKER_SPEED, 'inside');
     s.prev = s.spot;
     s.spot = leg.to;
+    // PO, November 17: in the street "as quick as possible": a crossing is one brisk straight walk to the far corner.
+    if (leg.cross && leg.route.length > 1) {
+      s.rest = leg.route.slice(1);
+      return this.walkTo(p, [leg.route[0]!], WALKER_CROSS_SPEED, 'idle');
+    }
     this.walkTo(p, leg.route, WALKER_SPEED, 'idle');
   }
 
@@ -1545,7 +1562,8 @@ export class Residents {
       p.plan = { kind: 'idle', until: Infinity };
     } else {
       p.facing = 'down';
-      p.plan = { kind: 'idle', until: this.now + between(this.rnd, RESIDENT_IDLE_SECONDS) };
+      // SCREAM-394: a walker who has just crossed a street carries straight on (no pause on the far corner).
+      p.plan = { kind: 'idle', until: p.stroll?.rest ? this.now : this.now + between(this.rnd, RESIDENT_IDLE_SECONDS) };
     }
   }
 

@@ -36,7 +36,7 @@ const { chromium } = require('playwright');
   await sc('Drive', '(s.truck.setPosition(2600, 600), s.speed = 0, s.parkBrake = true, true)'); await wait(200);
 
   // ---- SCREAM-394: people walking the streets ----
-  check('SCREAM-394: four walkers are out on the streets at 4:00, of 20 tonight, with no porch light', await ev("res.walkersNow.length + ' ' + res.all.filter(p => p.resident.walker).length + ' ' + res.walkersNow.every(p => p.outside && !res.porchLit(p))"), '4 20 true');
+  check('SCREAM-394: nine walkers are out on the streets at 4:00, of the sheet\'s 20, with no porch light', await ev("res.walkersNow.length + ' ' + res.all.filter(p => p.resident.walker).length + ' ' + res.walkersNow.every(p => p.outside && !res.porchLit(p))"), '9 20 true');
   const walkerId = await ev('res.walkersNow[0].resident.id');
   const walkerAt = await ev('(() => { const p = res.walkersNow[0]; return [p.x, p.y]; })()');
   await sc('Drive', `(s.truck.setPosition(${walkerAt[0]} + 110, ${walkerAt[1]} + 20), true)`);
