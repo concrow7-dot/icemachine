@@ -20,6 +20,9 @@ import { dayText } from '../state/Residents';
 
 // Issues #5 and #6: the clock and money display. This scene runs on top of
 // every evening phase and is what keeps the clock moving in all of them.
+/** SCREAM-392 (PO, November 17): the line under the tow truck when the tank runs dry. It was "Needed a tow home." (SCREAM-208). */
+export const TOW_LINE = 'The truck ran out of gas, and you need a tow home.';
+
 export class HudScene extends Phaser.Scene {
   private evening!: EveningState;
   /** SCREAM-19: "  Day 1/3" beside the clock in Story mode; empty in Quick play. */
@@ -386,9 +389,9 @@ export class HudScene extends Phaser.Scene {
       ],
     });
     this.towText = this.add
-      .text(width / 2, height / 2 + 105, 'Needed a tow home.', {
+      .text(width / 2, height / 2 + 105, TOW_LINE, {
         fontFamily: 'monospace',
-        fontSize: '30px',
+        fontSize: '24px', // SCREAM-392: the longer line (it was 30px)
         color: '#ffffff',
         backgroundColor: '#14161c',
         padding: { x: 18, y: 10 },
