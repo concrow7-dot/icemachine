@@ -1,29 +1,29 @@
-// SCREAM-267: what is pinned to the cork board. For now a DUMMY skill map (PO, November 12:
-// "For now lets just add a dummy skill map. As we add more powerups, the actual skill trees
-// will take shape."): three trees with the PO's names, and notes that only mark a place. Each
-// power-up ticket replaces a dummy note with a real one (name, price, what it does).
-// SCREAM-296: the dummies can be bought (and do nothing), so buying and saving can be tested.
+// SCREAM-267: what is pinned to the cork board. It began as a dummy skill map of three trees;
+// each power-up ticket put a real note in a dummy's place. SCREAM-395: two trees now (see below).
 
 import { getFlavour, stockCostOf, type FlavourId } from './flavours';
-import { BACK_IT_UP_PRICE_CENTS, SPEEDY_PRICE_CENTS, MIRRORS_PRICE_CENTS, MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, REGISTER_PRICE_CENTS, NOTEBOOK_PRICE_CENTS, TRAIN_PRICE_CENTS, BRAKES_PRICE_CENTS, STEAM_PRICE_CENTS, CALCULATOR_PRICE_CENTS, GITTY_UP_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, TROT_PRICE_CENTS } from './tuning';
+import { MORE_JUNK_PRICE_CENTS, BASS_PRICE_CENTS, ICE_CREAM_UNLOCK_CENTS, ICE_CREAM_UNLOCK_PRICES, REFUSE_ABOVE_CENTS, SMILE_PRICE_CENTS, SPEAKER_PRICE_CENTS, STORY_FIRST_FLAVOUR, STORY_REFUSE_ABOVE_CENTS, XP_NOTE_PRICES } from './tuning';
 
 // SCREAM-271 (PO, November 13: "I reworked the skill map so its only the three, truck, ice cream
 // and customer"): Speaker is part of Truck now, and Sales became Customer.
-export type PowerUpTreeId = 'truck' | 'icecream' | 'customer';
+// SCREAM-395 (PO, November 17): two trees now, one paid with money and one with XP.
+export type PowerUpTreeId = 'money' | 'xp';
 
 /** The picture on a note: its tree's placeholder, or a power-up's own. */
-export type PowerUpLogo = PowerUpTreeId | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'back-it-up' | 'more-junk' | 'mirror' | 'sneaker' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
+export type PowerUpLogo = 'truck' | 'icecream' | 'customer' | 'speaker' | 'bass-guitar' | 'notepad' | 'tablet' | 'gas-can' | 'gitty-up' | 'trot' | 'tip-jar' | 'calculator' | 'steam-engine' | 'back-it-up' | 'more-junk' | 'mirror' | 'sneaker' | 'brake-disc' | 'train-off-tracks' | 'question' | FlavourId;
 
 export type PowerUpNote = {
   id: string;
-  /** Column in its tree: 0 left, 1 middle, 2 right. */
-  col: 0 | 1 | 2;
+  /** Column in its tree, 0 at the left (the tree says how many it has). */
+  col: number;
   /** Row in its tree, 0 at the top. */
   row: number;
   /** The notes above that this one hangs from (a string joins them). Owning any one of them unlocks it. */
   from: string[];
-  /** What it costs, from the Story cash (decision 073). */
+  /** What it costs, from the Story cash (decision 073). 0 for a note paid with XP. */
   priceCents: number;
+  /** SCREAM-395: what it costs in XP (the XP tree's notes). */
+  xp?: number;
   /** A real power-up's name, description and picture. A dummy note has none: it is called by its tree and number. */
   name?: string;
   description?: string;
@@ -88,15 +88,14 @@ export type PowerUpTree = {
   id: PowerUpTreeId;
   /** The label pinned over the tree. */
   name: string;
+  /** SCREAM-395: how many columns of notes it has. */
+  cols: number;
   /** The colour of the tree's string and pins. */
   string: number;
   /** The colour of its paper notes. */
   paper: number;
   notes: PowerUpNote[];
 };
-
-/** SCREAM-296: what a dummy note says when it is opened (doc 15). Dummy prices too: $5 a row. */
-export const DUMMY_NOTE_TEXT = 'A dummy power-up. It does nothing yet.';
 
 /** SCREAM-271: the id of the note that unlocks an ice cream. */
 export function iceCreamNoteId(flavour: FlavourId): string {
@@ -127,29 +126,9 @@ const ICE_CREAM_EFFECTS: Partial<Record<FlavourId, string>> = {
   drumcone: 'Drum solo reaches more of the neighborhood.', // SCREAM-335; the PO's words (his sketch; the cut-off ending confirmed November 15)
 };
 
-/**
- * SCREAM-333 (PO's sketch, November 14, "Ice cream tree, third row"): where each ice cream's note
- * hangs. The eclair at the top; SpongePop and the Lil Explorer Pop side by side under it, each on
- * its own string; a third-row note under each; the sandwich in the middle of the fourth row,
- * unlocked by either third-row note.
- */
-// SCREAM-376 (PO, November 16): "I want to switch the lil explorer pop with the drum cone": the
-// Drum Cone hangs beside SpongePop now and the Lil Explorer Pop under it, in the third row.
-const ROW_THREE_LEFT_ID = iceCreamNoteId('louball'); // SCREAM-334
-const ROW_THREE_RIGHT_ID = iceCreamNoteId('explorer'); // SCREAM-376 (was the Drum Cone, SCREAM-335)
-const ICE_CREAM_PLACES: Record<FlavourId, { col: 0 | 1 | 2; row: number; from: string[] }> = {
-  eclair: { col: 1, row: 0, from: [] },
-  spongepop: { col: 0, row: 1, from: [iceCreamNoteId('eclair')] },
-  drumcone: { col: 2, row: 1, from: [iceCreamNoteId('eclair')] },
-  louball: { col: 0, row: 2, from: [iceCreamNoteId('spongepop')] },
-  explorer: { col: 2, row: 2, from: [iceCreamNoteId('drumcone')] },
-  cookie: { col: 1, row: 3, from: [ROW_THREE_LEFT_ID, ROW_THREE_RIGHT_ID] },
-};
-
-function iceCreamNote(flavour: FlavourId): PowerUpNote {
+function iceCreamNote(flavour: FlavourId, col: number, row: number, from: string[] = []): PowerUpNote {
   const f = getFlavour(flavour);
   const first = flavour === STORY_FIRST_FLAVOUR;
-  const place = ICE_CREAM_PLACES[flavour];
   const limit = `The average person won't pay more than ${dollars(storyRefuseAboveCents(flavour))} for one.`;
   // SCREAM-352 (PO, November 15): "I want to add the cost of buying each ice cream to the powerup card."
   const cost = `Costs you ${dollars(stockCostOf(flavour, true))} each to stock.`; // SCREAM-365: the notes are Story's
@@ -157,9 +136,9 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
   const paragraphs = [first ? 'Owned from the start.' : '', ICE_CREAM_EFFECTS[flavour] ?? '', limit, cost].filter(Boolean);
   return {
     id: iceCreamNoteId(flavour),
-    col: place.col,
-    row: place.row,
-    from: place.from,
+    col,
+    row,
+    from,
     priceCents: first ? 0 : ICE_CREAM_UNLOCK_PRICES[flavour] ?? ICE_CREAM_UNLOCK_CENTS,
     name: f.name.toUpperCase(),
     description: paragraphs.join(' '),
@@ -170,229 +149,103 @@ function iceCreamNote(flavour: FlavourId): PowerUpNote {
   };
 }
 
-// Left to right on the board.
+// SCREAM-395 (PO, November 17): "Im finding that most items, just aren't worth the money, they are
+// helpful, but you can't exactly see the monetary payoff. Then others obviously do, I want the ones
+// that do to remain in a paid unlock system... All the other items, I want to pull into a new system
+// where its based on XP or experience points." and "I want to completely separate the two. tracks.
+// Some are earned through xp the other tree money." So the three trees became two: a MONEY tree
+// (the ice creams and the notes he ticked "money": gas can, More Space for Scream, Service With A
+// Smile, the two speakers) and an XP tree (everything else). The dummies are gone.
+
+/** What each note says and shows. Where it hangs, and what it costs in XP, is in the trees below. */
+type NoteText = { priceCents: number; name: string; description: string; logo: PowerUpLogo };
+const NOTE_TEXT: Record<string, NoteText> = {
+  // SCREAM-122 (PO, November 13): the first real power-up; the can is full again every day.
+  // SCREAM-369 (PO, November 16): the first row costs $10. SCREAM-382 (PO, November 17): "Refills daily."
+  [GAS_CAN_ID]: { priceCents: 1000, name: 'TEMPORARY GAS CAN', description: 'Run out of gas and it pours itself in: a splash to get you going. Refills daily.', logo: 'gas-can' },
+  // SCREAM-25 (PO, November 15): "Cooler Size", then "Change \"more Junk\" to \"More Space for Scream\"".
+  [MORE_JUNK_ID]: { priceCents: MORE_JUNK_PRICE_CENTS, name: 'MORE SPACE FOR SCREAM', description: 'More room in the cooler: a new bottom row opens in every crate.', logo: 'more-junk' },
+  // SCREAM-303 (PO, November 14).
+  [SMILE_ID]: { priceCents: SMILE_PRICE_CENTS, name: 'SERVICE WITH A SMILE', description: 'Tips start higher, and you get more time to earn one.', logo: 'tip-jar' },
+  // SCREAM-81 (PO, November 14).
+  [SPEAKER_ID]: { priceCents: SPEAKER_PRICE_CENTS, name: 'UPGRADE SPEAKER', description: 'Increase the reach of the speaker.', logo: 'speaker' },
+  // SCREAM-329 (PO, November 14).
+  [BASS_ID]: { priceCents: BASS_PRICE_CENTS, name: 'SPEAKER WITH HEAVIER BASS', description: 'More likely to get customers in their home.', logo: 'bass-guitar' },
+  // The XP tree's notes cost XP, not cash (their old prices are gone).
+  [TROT_ID]: { priceCents: 0, name: 'TROT', description: 'Increase the speed of the truck as it rolls without any gas pedal pushed.', logo: 'trot' }, // SCREAM-310
+  [TRAIN_ID]: { priceCents: 0, name: 'TRAIN OFF THE TRACKS', description: 'Max velocity increased.', logo: 'train-off-tracks' }, // SCREAM-80
+  [BRAKES_ID]: { priceCents: 0, name: 'BRAKES MADE THIS CENTURY', description: 'Brakes are better.', logo: 'brake-disc' }, // SCREAM-325
+  [STEAM_ID]: { priceCents: 0, name: 'STEAM ENGINE', description: 'Increase the speed of the truck as it rolls.', logo: 'steam-engine' }, // SCREAM-326
+  [BACK_IT_UP_ID]: { priceCents: 0, name: 'BACK IT UP', description: 'Increase the speed of the truck in reverse.', logo: 'back-it-up' }, // SCREAM-340
+  [GITTY_UP_ID]: { priceCents: 0, name: 'GITTY UP', description: "Increase acceleration. The truck still is heavy, so don't expect much.", logo: 'gitty-up' }, // SCREAM-309
+  [CALCULATOR_ID]: { priceCents: 0, name: 'CALCULATOR', description: 'Get a calculator to use at the sales window.', logo: 'calculator' }, // SCREAM-317
+  [NOTEBOOK_ID]: { priceCents: 0, name: 'HANDY NOTEBOOK', description: 'Hints given by customers are written down.', logo: 'notepad' }, // SCREAM-245
+  [REGISTER_ID]: { priceCents: 0, name: 'THIS CENTURY REGISTER', description: 'Click the icons of the ice cream to calculate price.', logo: 'tablet' }, // SCREAM-330
+  [MIRRORS_ID]: { priceCents: 0, name: 'BETTER MIRRORS', description: 'A marker at the edge of the screen points at each customer on their way to you.', logo: 'mirror' }, // SCREAM-341
+  [SPEEDY_ID]: { priceCents: 0, name: 'SPEEDY NEIGHBORS', description: 'Most customers run after the truck faster.', logo: 'sneaker' }, // SCREAM-342
+};
+
+/** A money note at its place: pays with the Story cash. */
+function paid(id: string, col: number, row: number, from: string[] = []): PowerUpNote {
+  return { id, col, row, from, ...NOTE_TEXT[id]! };
+}
+
+/** An XP note at its place: its row sets what it costs (XP_NOTE_PRICES). */
+function earned(id: string, col: number, row: number, from: string[] = []): PowerUpNote {
+  return { id, col, row, from, ...NOTE_TEXT[id]!, priceCents: 0, xp: XP_NOTE_PRICES[row] ?? XP_NOTE_PRICES[XP_NOTE_PRICES.length - 1]! };
+}
+
+const ICE = iceCreamNoteId;
+
+// Left to right on the board. PO, November 17: "for now lets just use the same tree structure and put
+// items next to each other that are the same cost." Which note sits where is engineering's proposal.
 export const POWER_UP_TREES: PowerUpTree[] = [
   {
-    id: 'truck',
-    name: 'TRUCK',
-    string: 0xd9622b,
-    paper: 0xfff2a8,
+    id: 'money',
+    name: 'MONEY',
+    cols: 5,
+    string: 0x2f8f46,
+    paper: 0xd9f2c9,
     notes: [
-      // SCREAM-122 (PO, November 13): the first real power-up. $15, bought once; the can is full again every day.
-      {
-        id: GAS_CAN_ID,
-        col: 1,
-        row: 0,
-        from: [],
-        priceCents: 1000, // SCREAM-369 (PO, November 16): the first row costs $10 (was $15)
-        name: 'TEMPORARY GAS CAN',
-        // SCREAM-382 (PO, November 17): "I want to change the last line to be: "Refills daily."" (it was "Full again every day.")
-        description: 'Run out of gas and it pours itself in: a splash to get you going. Refills daily.',
-        logo: 'gas-can',
-      },
-      // SCREAM-25 (PO, November 15, notepad sketches): "Cooler Size - 'More Junk'", then
-      // (02:40) "Change \"more Junk\" to \"More Space for Scream\"". It takes the
-      // Truck 8 dummy's place (engineering's proposal; the sketch gives no place).
-      // SCREAM-364 (PO, November 16): the left note under the gas can now (Gitty Up's old place and price).
-      {
-        id: MORE_JUNK_ID,
-        col: 0,
-        row: 1,
-        from: [GAS_CAN_ID],
-        priceCents: MORE_JUNK_PRICE_CENTS,
-        name: 'MORE SPACE FOR SCREAM',
-        description: 'More room in the cooler: a new bottom row opens in every crate.',
-        logo: 'more-junk',
-      },
-      // SCREAM-310 (PO, November 14): the right note under the gas can.
-      {
-        id: TROT_ID,
-        col: 2,
-        row: 1,
-        from: [GAS_CAN_ID],
-        priceCents: TROT_PRICE_CENTS,
-        name: 'TROT',
-        description: 'Increase the speed of the truck as it rolls without any gas pedal pushed.',
-        logo: 'trot',
-      },
-      // SCREAM-80 (PO, November 14, notepad sketch): the Truck tree's third row.
-      {
-        id: TRAIN_ID,
-        col: 0,
-        row: 2,
-        from: [MORE_JUNK_ID], // SCREAM-364: from the left note under the gas can, now More Space for Scream
-        priceCents: TRAIN_PRICE_CENTS,
-        name: 'TRAIN OFF THE TRACKS',
-        description: 'Max velocity increased.',
-        logo: 'train-off-tracks',
-      },
-      // SCREAM-325 (PO, November 14, notepad sketch): the Truck tree's third row.
-      {
-        id: BRAKES_ID,
-        col: 1,
-        row: 2,
-        from: [MORE_JUNK_ID, TROT_ID], // SCREAM-364
-        priceCents: BRAKES_PRICE_CENTS,
-        name: 'BRAKES MADE THIS CENTURY',
-        description: 'Brakes are better.',
-        logo: 'brake-disc',
-      },
-      // SCREAM-326 (PO, November 14, notepad sketch): the Truck tree's third row.
-      {
-        id: STEAM_ID,
-        col: 2,
-        row: 2,
-        from: [TROT_ID],
-        priceCents: STEAM_PRICE_CENTS,
-        name: 'STEAM ENGINE',
-        description: 'Increase the speed of the truck as it rolls.',
-        logo: 'steam-engine',
-      },
-      // SCREAM-340 (PO, November 15, notepad sketches): "Reverse Speed - 'Back it up'". It takes the
-      // Truck 7 dummy's place (engineering's proposal; the sketch gives no place).
-      {
-        // PO, November 15 (03:28): "From brakes made this century and handy notebook, two powerups should
-        // come out. It should be both of the powerups just added": left and right under Brakes.
-        id: BACK_IT_UP_ID,
-        col: 0,
-        row: 3,
-        from: [BRAKES_ID],
-        priceCents: BACK_IT_UP_PRICE_CENTS,
-        name: 'BACK IT UP',
-        description: 'Increase the speed of the truck in reverse.',
-        logo: 'back-it-up',
-      },
-      // SCREAM-309 (PO, November 14): the left note under the gas can. SCREAM-364 (PO, November 16: "I want
-      // to switch "more space for scream" with "gitty up" in both location and price"): under Brakes now.
-      {
-        id: GITTY_UP_ID,
-        col: 2,
-        row: 3,
-        from: [BRAKES_ID],
-        priceCents: GITTY_UP_PRICE_CENTS,
-        name: 'GITTY UP',
-        description: "Increase acceleration. The truck still is heavy, so don't expect much.",
-        logo: 'gitty-up',
-      },
-      // The last dummy hangs in the middle of the fifth row, from either of the two above (engineering's call).
-      { id: 'truck-9', col: 1, row: 4, from: [BACK_IT_UP_ID, GITTY_UP_ID], priceCents: 2500 }, // SCREAM-364
+      // Top row ($10, and the eclair that is yours from the start).
+      paid(GAS_CAN_ID, 0, 0),
+      iceCreamNote('eclair', 2, 0),
+      paid(SMILE_ID, 4, 0),
+      // Second row ($15).
+      paid(MORE_JUNK_ID, 0, 1, [GAS_CAN_ID]),
+      iceCreamNote('spongepop', 1, 1, [ICE('eclair')]),
+      iceCreamNote('drumcone', 3, 1, [ICE('eclair')]), // SCREAM-376: beside SpongePop
+      paid(SPEAKER_ID, 4, 1, [SMILE_ID]),
+      // Third row ($20).
+      iceCreamNote('louball', 1, 2, [ICE('spongepop')]), // SCREAM-334
+      iceCreamNote('explorer', 3, 2, [ICE('drumcone')]), // SCREAM-376
+      paid(BASS_ID, 4, 2, [SPEAKER_ID]),
+      // SCREAM-333: the sandwich in the middle, unlocked by either third-row ice cream.
+      iceCreamNote('cookie', 2, 3, [ICE('louball'), ICE('explorer')]),
     ],
   },
   {
-    id: 'icecream',
-    name: 'ICE CREAM',
-    string: 0x2884d6,
-    paper: 0xcfe6fb,
+    id: 'xp',
+    name: 'XP',
+    cols: 5,
+    string: 0x7a4fd0,
+    paper: 0xe3d8fb,
     notes: [
-      iceCreamNote('eclair'),
-      iceCreamNote('spongepop'),
-      iceCreamNote('drumcone'), // SCREAM-376: the second row, right (was the Lil Explorer Pop's place)
-      iceCreamNote('louball'), // SCREAM-334: the third row, left
-      iceCreamNote('explorer'), // SCREAM-376: the third row, right (was the Drum Cone's place)
-      iceCreamNote('cookie'),
-    ],
-  },
-  {
-    id: 'customer',
-    name: 'CUSTOMER',
-    string: 0xb23aa8,
-    paper: 0xf6cdea,
-    notes: [
-      // SCREAM-303 (PO, November 14): the second real power-up, the Customer tree's top item.
-      {
-        id: SMILE_ID,
-        col: 1,
-        row: 0,
-        from: [],
-        priceCents: SMILE_PRICE_CENTS,
-        name: 'SERVICE WITH A SMILE',
-        description: 'Tips start higher, and you get more time to earn one.',
-        logo: 'tip-jar',
-      },
-      // SCREAM-303 (PO, November 14): "service with a smile is the only first option under the customer tree".
-      // SCREAM-81 (PO, November 14): the left note under Service With A Smile.
-      {
-        id: SPEAKER_ID,
-        col: 0,
-        row: 1,
-        from: [SMILE_ID],
-        priceCents: SPEAKER_PRICE_CENTS,
-        name: 'UPGRADE SPEAKER',
-        description: 'Increase the reach of the speaker.',
-        logo: 'speaker',
-      },
-      // SCREAM-317 (PO, November 14): the right note under Service With A Smile.
-      {
-        id: CALCULATOR_ID,
-        col: 2,
-        row: 1,
-        from: [SMILE_ID],
-        priceCents: CALCULATOR_PRICE_CENTS,
-        name: 'CALCULATOR',
-        description: 'Get a calculator to use at the sales window.',
-        logo: 'calculator',
-      },
-      // SCREAM-329 (PO, November 14, notepad sketch "Customer power-ups, third row"): note 1, under the speaker.
-      {
-        id: BASS_ID,
-        col: 0,
-        row: 2,
-        from: [SPEAKER_ID],
-        priceCents: BASS_PRICE_CENTS,
-        name: 'SPEAKER WITH HEAVIER BASS',
-        description: 'More likely to get customers in their home.',
-        logo: 'bass-guitar',
-      },
-      // SCREAM-245 (PO, November 14, the same sketch): note 2, in the middle, joined to the speaker and the calculator.
-      // His answer: "$40, need either".
-      {
-        id: NOTEBOOK_ID,
-        col: 1,
-        row: 2,
-        from: [SPEAKER_ID, CALCULATOR_ID],
-        priceCents: NOTEBOOK_PRICE_CENTS,
-        name: 'HANDY NOTEBOOK',
-        description: 'Hints given by customers are written down.',
-        logo: 'notepad',
-      },
-      // SCREAM-330 (PO, November 14, the same sketch): note 3, under the calculator.
-      {
-        id: REGISTER_ID,
-        col: 2,
-        row: 2,
-        from: [CALCULATOR_ID],
-        priceCents: REGISTER_PRICE_CENTS,
-        name: 'THIS CENTURY REGISTER',
-        description: 'Click the icons of the ice cream to calculate price.',
-        logo: 'tablet',
-      },
-      // The rest mirror the Truck tree: dummies until their tickets.
-      // SCREAM-341 (PO, November 15, notepad sketches): "Better Mirrors". It takes the Customer 7
-      // dummy's place (engineering's proposal; the sketches give no place).
-      {
-        // PO, November 15 (03:28): both new notes come out of the Handy Notebook, left and right.
-        id: MIRRORS_ID,
-        col: 0,
-        row: 3,
-        from: [NOTEBOOK_ID],
-        priceCents: MIRRORS_PRICE_CENTS,
-        name: 'BETTER MIRRORS',
-        description: 'A marker at the edge of the screen points at each customer on their way to you.',
-        logo: 'mirror',
-      },
-      // SCREAM-342 (PO, November 15, notepad sketches): "Customers chasing - Speedy Neighbors". It
-      // takes the Customer 8 dummy's place (engineering's proposal; the sketches give no place).
-      {
-        id: SPEEDY_ID,
-        col: 2,
-        row: 3,
-        from: [NOTEBOOK_ID],
-        priceCents: SPEEDY_PRICE_CENTS,
-        name: 'SPEEDY NEIGHBORS',
-        description: 'Most customers run after the truck faster.',
-        logo: 'sneaker',
-      },
-      { id: 'customer-9', col: 1, row: 4, from: [MIRRORS_ID, SPEEDY_ID], priceCents: 2500 },
+      // Top row: the truck's side starts with Trot, the window's side with the Calculator.
+      earned(TROT_ID, 1, 0),
+      earned(CALCULATOR_ID, 3, 0),
+      // Second row.
+      earned(TRAIN_ID, 0, 1, [TROT_ID]),
+      earned(BRAKES_ID, 1, 1, [TROT_ID]),
+      earned(STEAM_ID, 2, 1, [TROT_ID]),
+      earned(NOTEBOOK_ID, 3, 1, [CALCULATOR_ID]),
+      earned(REGISTER_ID, 4, 1, [CALCULATOR_ID]),
+      // Third row. PO, November 15: Back It Up and Gitty Up come out of Brakes; Better Mirrors and
+      // Speedy Neighbors out of the Handy Notebook.
+      earned(BACK_IT_UP_ID, 0, 2, [BRAKES_ID]),
+      earned(GITTY_UP_ID, 1, 2, [BRAKES_ID]),
+      earned(MIRRORS_ID, 3, 2, [NOTEBOOK_ID]),
+      earned(SPEEDY_ID, 4, 2, [NOTEBOOK_ID]),
     ],
   },
 ];

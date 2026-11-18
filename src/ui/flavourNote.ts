@@ -17,14 +17,14 @@ const TEXT_TOP = 184;
 
 /** The cork board's note for this ice cream, or undefined (Quick play's ice creams have none of their own tree). */
 export function flavourNoteOf(flavour: FlavourId): PowerUpNote | undefined {
-  return POWER_UP_TREES.find((t) => t.id === 'icecream')?.notes.find((n) => n.flavour === flavour);
+  return POWER_UP_TREES.flatMap((t) => t.notes).find((n) => n.flavour === flavour);
 }
 
 export type OpenFlavourNote = { flavour: FlavourId; texts: string[]; close: () => void };
 
 /** Opens the note over `scene`. `onClose` runs once, however it is closed. */
 export function showFlavourNote(scene: Phaser.Scene, flavour: FlavourId, onClose: () => void): OpenFlavourNote | null {
-  const tree = POWER_UP_TREES.find((t) => t.id === 'icecream');
+  const tree = POWER_UP_TREES.find((t) => t.notes.some((n) => n.flavour === flavour));
   const note = flavourNoteOf(flavour);
   if (!tree || !note) return null;
   const { width, height } = scene.scale;

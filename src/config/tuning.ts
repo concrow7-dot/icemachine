@@ -502,7 +502,7 @@ export const STORY_TRUCK_ROLL_SECONDS = 4;
  */
 export const GITTY_UP_ACCELERATION_FACTOR = 1.1;
 /** SCREAM-309 (PO: "Lets go with $20"). */
-export const GITTY_UP_PRICE_CENTS = 3000; // SCREAM-364 (PO, November 16): swapped with More Space for Scream's (was $20) // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
+// SCREAM-395: GITTY_UP_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 /**
  * SCREAM-310 (PO, November 14): the Trot power-up: "Increase the speed of the truck as it rolls
  * without any gas pedal pushed." "The roll should be the creep speed": the creep is this many times
@@ -517,23 +517,23 @@ export const TROT_CREEP_FACTOR = 2.1;
  * trot, just on top of it" (it added Trot's step again). SCREAM-336 (PO, November 15): "trot and steam
  * should be another 2x increase": it doubles the roll speed Trot gives (25.2 to 50.4 px/s).
  */
-export const STEAM_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
+// SCREAM-395: STEAM_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const STEAM_CREEP_FACTOR = 2;
 /** SCREAM-325 (PO, November 14): Brakes Made This Century, $30: braking 5% better (braking time / 1.05; 10% at first, the PO while testing: "only be 5% better as well"). */
-export const BRAKES_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
+// SCREAM-395: BRAKES_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const BRAKES_FACTOR = 1.05;
 /** SCREAM-80 (PO, November 14): Train Off The Tracks, $30: top speed x 1.05 (10% at first; the PO while testing: "increase the max velocity by 5 ... not 10"). */
-export const TRAIN_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
+// SCREAM-395: TRAIN_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const TRAIN_TOP_SPEED_FACTOR = 1.05;
 /** SCREAM-310 (PO: "Lets go with $20"). */
-export const TROT_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
+// SCREAM-395: TROT_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
 export const SPEAKER_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 export const SPEAKER_RADIUS_FACTOR = 1.21; // SCREAM-393: Story's 150 px to 181.5 px (it was 1.1: 165 to 181.5)
 /** SCREAM-317 (PO, November 14): the Calculator note, $30. */
-export const CALCULATOR_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
+// SCREAM-395: CALCULATOR_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 /** SCREAM-330 (PO, November 14): This Century Register, $40 (his answer): a tablet at the window; a click on an ice cream adds its price. */
-export const REGISTER_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
+// SCREAM-395: REGISTER_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
 export const STORY_MUSIC_RADIUS_FACTOR = 0.5; // SCREAM-393: 150 px (it was 0.55, 165 px). Before: (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**
@@ -618,7 +618,7 @@ export const HINT_MAX_PER_EVENING = 2;
  * SCREAM-245 (PO, November 14): the Handy Notebook, $40 (his answer). Every hint a customer says
  * at the window is written down once it is owned. How many fit on a page of it.
  */
-export const NOTEBOOK_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
+// SCREAM-395: NOTEBOOK_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const NOTEBOOK_ENTRIES_PER_PAGE = 4;
 
 // ---- Customers mention their own schedule (SCREAM-247) ----
@@ -724,7 +724,7 @@ export const DRUM_CONE_SOLO_SECONDS = 30;
  * strength are engineering's proposals; the strength isn't shown (decision 132). Story's top reverse
  * speed goes from about 46 to about 68 px/s.
  */
-export const BACK_IT_UP_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
+// SCREAM-395: BACK_IT_UP_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const BACK_IT_UP_REVERSE_FACTOR = 1.5;
 
 /**
@@ -743,7 +743,7 @@ export const MORE_JUNK_EXTRA_ROWS = 1;
  * truck who is off screen has a round marker at the screen's edge, with their face, pointing at them.
  * The price and the marker's sizes (px on the map, before the camera's zoom) are engineering's proposals.
  */
-export const MIRRORS_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $50)
+// SCREAM-395: MIRRORS_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const MIRROR_MARKER_RADIUS = 13;
 export const MIRROR_MARKER_MARGIN = 24;
 /** Extra room kept clear at the top (song name, credit) and bottom (key hints, park brake) of the road view, map px. */
@@ -766,7 +766,7 @@ export const MIRROR_MARKER_DIAL = { w: 175, h: 120 };
 export const CHASE_ADULT_SECONDS = 30;
 export const CHASE_SLOW_KID_SECONDS = 20;
 export const FAST_KID_SPEED_FACTOR = 1.5;
-export const SPEEDY_PRICE_CENTS = 3000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $60)
+// SCREAM-395: SPEEDY_PRICE_CENTS is gone: this note is paid with XP now (XP_NOTE_PRICES).
 export const SPEEDY_SPEED_FACTOR = 1.25;
 
 /**
@@ -939,3 +939,28 @@ export const WALKER_EXIT_REACH = 650;
 export const WALKER_RING_CLEAR = 70;
 /** Someone whose time is up and still hasn't reached a way out after this many more corners heads straight for the nearest edge. */
 export const WALKER_LATE_LEGS = 8;
+
+// ---- SCREAM-395 (PO, November 17): XP, and the cork board's XP tree ----
+// "All the other items, I want to pull into a new system where its based on XP or experience points."
+// Story only, and not while the uncle is with you (PO: "No xp in quickplay. No xp when the uncle is with
+// you but once he leaves then you can."). Every number below is engineering's draft for him to adjust.
+
+/** What an XP note costs, by its row on the board (top row first). */
+export const XP_NOTE_PRICES = [40, 60, 90];
+/** PO: "customers served at steps (1, 3, 5, 8, 12...)": the XP for reaching each step in one evening. */
+export const XP_SERVED_STEPS: readonly (readonly [customers: number, xp: number])[] = [[1, 2], [3, 3], [5, 4], [8, 6], [12, 8], [16, 10], [20, 12]];
+/** PO: "each new person served for the first time". */
+export const XP_NEW_PERSON = 3;
+/** PO: "regulars served". */
+export const XP_REGULAR = 2;
+/** PO: "a hard-to-find customer (big)". */
+export const XP_HARD_TO_FIND = 25;
+/** PO: "a walker served". */
+export const XP_WALKER = 4;
+/** PO: "a fast correct price": the right price while the tip is still at its top step. */
+export const XP_FAST_PRICE = 1;
+/** PO: "an evening with no dents". Only if the truck left home. */
+export const XP_NO_DENTS = 5;
+/** PO: "distance driven, (similar to customers served at steps, 100px, 250px, so on, something like that (small)": px driven in one evening. */
+export const XP_DISTANCE_STEPS_PX: readonly number[] = [100, 250, 500, 1000, 2500, 5000, 10000, 15000, 20000, 30000];
+export const XP_DISTANCE_STEP = 1;

@@ -33,6 +33,8 @@ export type StorySave = {
   uncleGasUsed?: boolean;
   /** SCREAM-296: the power-ups owned (the cork board's note ids). Saves from before it have none. */
   powerUps?: string[];
+  /** SCREAM-395: the XP in hand. Saves from before it have none. */
+  xp?: number;
   /** SCREAM-245: the Handy Notebook's entries (oldest first). Saves from before it have none. */
   notebook?: NotebookEntry[];
 };
@@ -86,6 +88,7 @@ export function loadStory(): StorySave | null {
       otherMapSeen: data.otherMapSeen === true,
       uncleGasUsed: data.uncleGasUsed === true,
       powerUps: Array.isArray(data.powerUps) ? data.powerUps.filter((id): id is string => typeof id === 'string') : undefined,
+      xp: Number.isInteger(data.xp) && (data.xp as number) > 0 ? (data.xp as number) : undefined,
       notebook: readNotebook(data.notebook),
       totals: {
         salesCents: cents(t.salesCents),
