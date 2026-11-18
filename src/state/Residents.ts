@@ -39,6 +39,17 @@ import {
   RESIDENT_START_OUTSIDE_CHANCE,
   RESIDENT_WALK_SPEED,
   BUYERS_INSIDE_SECONDS,
+  WALKERS_TONIGHT,
+  WALKER_LONG_STAY,
+  WALKER_LONG_LEAVE_MINUTES,
+  WALKER_ENTER_MINUTES,
+  WALKER_STAY_MINUTES,
+  WALKER_SPEED,
+  WALKER_CROSS_SPEED,
+  WALKER_LATE_LEGS,
+  WALKER_OUT_AT_START,
+  WALKER_START_STAY_MINUTES,
+  WALKER_ENTER_SKEW,
   STORY_BUYERS_START_OUTSIDE_CHANCE,
   STORY_BUYERS_OUTSIDE_SECONDS,
   STORY_BUYERS_INSIDE_SECONDS,
@@ -65,6 +76,7 @@ import {
 } from '../config/tuning';
 import { CAR_MODELS } from '../config/carModels';
 import { arrivalMinute, awayDice } from './ComingHome';
+import { StreetNet, walkerDice, type WalkSpot } from './StreetWalk';
 import { HomeDrive } from './HomeDrive';
 import type { CurbFinder } from './CurbFinder';
 
@@ -125,6 +137,12 @@ export interface Resident {
    */
   visitor?: boolean;
   /**
+   * SCREAM-394 (PO, November 17): the sheet's "Walker": someone who walks the streets in Story. No
+   * house (their `door`, `yard` and `curb` are empty), no days: `Residents.openStreets` rolls when
+   * they come and go. Their Likelihood is their own chance of buying.
+   */
+  walker?: boolean;
+  /**
    * SCREAM-252 (PO, November 15): the sheet's "Car": where their car parks on the street in front of
    * their house, while they are home (Story). [x, y, the way it faces (degrees), which of the pack's
    * cars it is (SCREAM-361: 1 to 26, a different one for each owner)].
@@ -183,7 +201,7 @@ export function buyerKind(likelihood: number): BuyerKind {
  */
 export function kindFor(resident: Resident, story?: { day: number; seed: number }): BuyerKind {
   // SCREAM-224: a park visitor has no days and is never a regular (engineering's call).
-  if (resident.visitor) return resident.likelihood <= 0 ? 'never' : 'sometimes';
+  if (resident.visitor || resident.walker) return resident.likelihood <= 0 ? 'never' : 'sometimes'; // SCREAM-394: a walker too
   if (!story || !resident.days) return buyerKind(resident.likelihood);
   if (resident.likelihood <= 0) return 'never';
   return resident.days.length >= 7 ? 'regular' : 'sometimes';
@@ -220,7 +238,7 @@ export function buysTonight(
 ): boolean {
   const kind = kindFor(resident, story);
   if (kind !== 'sometimes') return kind === 'regular';
-  if (resident.visitor) return true; // SCREAM-224: whether they're at the park tonight is rolled by `openPark`
+  if (resident.visitor || resident.walker) return true; // SCREAM-394: a walker too. SCREAM-224: whether they're at the park tonight is rolled by `openPark`
   if (!story) return rnd() < 1 / BUYER_SOMETIMES_DAYS;
   // SCREAM-232: with ticks, anyone (but 0%) may come out any evening; the ticks change how likely (scheduleFactor).
   if (resident.days) return true;
@@ -346,6 +364,10 @@ interface Running extends ResidentNow {
   follows?: boolean;
   /** SCREAM-224: when they leave the park, in minutes since midnight; null = they stay all evening. */
   leaveAt?: number | null;
+  /** SCREAM-394: a walker who hasn't come yet: when they appear at the map's edge, in minutes since midnight. */
+  strollAt?: number | null;
+  /** SCREAM-394: a walker on the streets: the stop they are at or walking to, the one before, and the corners passed since their time was up. */
+  stroll?: { spot: WalkSpot; prev?: WalkSpot; late: number; rest?: [number, number][] };
   /** SCREAM-379: when someone away appears at the map's edge, in minutes since midnight; null = out all evening. */
   arriveAt?: number | null;
   /** SCREAM-379: the way they walk home: from just outside the map to where they stand at their curb. */
@@ -571,7 +593,7 @@ export class Residents {
   porchLit(p: ResidentNow): boolean {
     // SCREAM-224: a park visitor has no house, so no porch light.
     // SCREAM-379: nobody is in while they are away.
-    return !p.outside && !p.away && p.customer !== 'window' && !p.resident.visitor && this.homeNow(p.resident);
+    return !p.outside && !p.away && p.customer !== 'window' && !p.resident.visitor && !p.resident.walker && this.homeNow(p.resident);
   }
   /** SCREAM-140: finds a spot at the curb with room for a pink square (without it, customers wait at their own curb spot). */
   private readonly curbs?: CurbFinder;
@@ -602,7 +624,7 @@ export class Residents {
     this.pickChasers(list);
     this.people = list.map((resident) => {
       // SCREAM-224: a park visitor isn't on the map until `openPark` puts tonight's at the park.
-      if (resident.visitor) {
+      if (resident.visitor || resident.walker) {
         const away: Running = {
           resident,
           x: resident.door[0],
@@ -692,7 +714,7 @@ export class Residents {
     const today = weekdayOf(this.story.day);
     for (const p of this.people) {
       const r = p.resident;
-      if (r.visitor || r.hardToFind || r.park || !r.days || r.days.includes(today)) continue;
+      if (r.visitor || r.walker || r.hardToFind || r.park || !r.days || r.days.includes(today)) continue;
       // Always the same rolls per person, so one person's evening doesn't shift another's.
       const stays = dice() < AWAY_STAY_OUT_SHARE;
       let at: number | null = arrivalMinute(r.kid, dice);
@@ -1015,6 +1037,7 @@ export class Residents {
     if (ring) this.truck = [ring.x, ring.y];
     if (ring?.heading !== undefined) this.truckHeading = ring.heading;
     this.bringHome(); // SCREAM-379
+    this.bringWalkers(); // SCREAM-394
     this.stepDrives(dt); // SCREAM-380
     this.moveCars(); // SCREAM-252
     if (ring?.soldOut) this.sendHomeSoldOut();
@@ -1191,6 +1214,11 @@ export class Residents {
       p.plan = { kind: 'follow' };
       return;
     }
+    // SCREAM-394: a walker has no curb spot of their own: with no curb finder (tests) they wait where they are.
+    if (p.resident.walker) {
+      p.waitAt = [p.x, p.y, 0];
+      return this.walkTo(p, [[p.x, p.y]], this.runSpeedOf(p.resident), 'curb');
+    }
     const own = this.curbOf(p);
     const stand: [number, number] = [own[0], own[1]];
     // Yard spots are chosen so the walk to the door never crosses the house; the run to the curb starts there.
@@ -1239,7 +1267,109 @@ export class Residents {
   private walkHome(p: Running): void {
     // SCREAM-224: someone from the park goes back to it (or leaves it, if their time is up).
     if (p.atPark) return this.parkNext(p);
+    // SCREAM-394: a walker has no home here: after a moment they carry on with their walk.
+    if (p.resident.walker) {
+      p.walking = false;
+      p.plan = { kind: 'idle', until: this.now + 1 };
+      return;
+    }
     this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside');
+  }
+
+  /** SCREAM-394: the streets' sidewalks, once `openStreets` has run. */
+  private streets?: StreetNet;
+  private walkDice: () => number = Math.random;
+
+  /**
+   * SCREAM-394 (PO, November 17): "a few people who are randomly walking up and down the streets ...
+   * 20 people total in the evening. A few wandering around most of the time, others only around for
+   * an hour or so." Rolls tonight's walkers with the evening's own dice: WALKER_LONG_STAY of them
+   * are on the streets from the start and leave late; the rest each come in at their own time and
+   * stay WALKER_STAY_MINUTES; some of those are out at the start too, and the rest come early more often than late. Story only; EveningState calls it.
+   */
+  openStreets(net: StreetNet): void {
+    if (!this.story || this.streets || net.exits.length === 0) return;
+    this.streets = net;
+    const dice = walkerDice(this.story.seed, this.story.day);
+    this.walkDice = dice;
+    const walkers = this.people.filter((p) => p.resident.walker);
+    for (let i = walkers.length - 1; i > 0; i--) {
+      const j = Math.floor(dice() * (i + 1));
+      [walkers[i], walkers[j]] = [walkers[j]!, walkers[i]!];
+    }
+    walkers.slice(0, WALKERS_TONIGHT).forEach((p, i) => {
+      // The long-stayers, and (PO, November 17: "heaviest at the start of the day") some of the others, are out at 4:00.
+      if (i < WALKER_LONG_STAY + WALKER_OUT_AT_START) {
+        p.leaveAt = i < WALKER_LONG_STAY ? between(dice, WALKER_LONG_LEAVE_MINUTES) : (this.nowMinutes?.() ?? WALKER_ENTER_MINUTES[0]) + between(dice, WALKER_START_STAY_MINUTES);
+        p.strollAt = null;
+        const spot = net.anywhere(dice);
+        [p.x, p.y] = net.stand(spot);
+        p.stroll = { spot, late: 0 };
+        p.gone = false;
+        p.outside = true;
+        p.plan = { kind: 'idle', until: this.now + between(dice, RESIDENT_IDLE_SECONDS) * dice() };
+      } else {
+        // Early more often than late.
+        p.strollAt = Math.round(WALKER_ENTER_MINUTES[0] + (WALKER_ENTER_MINUTES[1] - WALKER_ENTER_MINUTES[0]) * dice() ** WALKER_ENTER_SKEW);
+        p.leaveAt = p.strollAt + between(dice, WALKER_STAY_MINUTES);
+      }
+    });
+  }
+
+  /** SCREAM-394: the walkers on the streets right now. */
+  get walkersNow(): readonly ResidentNow[] {
+    return this.people.filter((p) => p.resident.walker && !p.gone);
+  }
+
+  /** SCREAM-394: when this walker comes in (minutes since midnight; null once they have, or if not tonight) and when their time is up. */
+  walkerTimes(person: ResidentNow): { from: number | null; until: number | null } {
+    const p = person as Running;
+    return { from: p.strollAt ?? null, until: p.resident.walker ? (p.leaveAt ?? null) : null };
+  }
+
+  /** SCREAM-394: a walker whose time has come appears just off the map at the end of a street and walks in. */
+  private bringWalkers(): void {
+    if (!this.streets || !this.nowMinutes) return;
+    const now = this.nowMinutes();
+    for (const p of this.people) {
+      if (!p.resident.walker || !p.gone || p.strollAt == null || now < p.strollAt) continue;
+      const { from, leg } = this.streets.enter(this.walkDice);
+      p.strollAt = null;
+      p.gone = false;
+      p.outside = true;
+      [p.x, p.y] = from;
+      p.stroll = { spot: leg.to, late: 0 };
+      this.walkTo(p, leg.route, WALKER_SPEED, 'idle');
+    }
+  }
+
+  /** SCREAM-394: a walker standing at a corner (or done at the truck): on to the next corner, or off the map when their time is up. */
+  private walkerNext(p: Running): void {
+    const net = this.streets;
+    const s = p.stroll;
+    if (!net || !s) return;
+    const leaving = !!this.nowMinutes && p.leaveAt != null && this.nowMinutes() >= p.leaveAt;
+    const here: [number, number] = [p.x, p.y];
+    // Back on their sidewalk first, if the truck took them off it.
+    const stand = s.rest ? [p.x, p.y] : net.stand(s.spot);
+    if (Math.hypot(stand[0]! - p.x, stand[1]! - p.y) > 2) return this.walkTo(p, [stand as [number, number]], WALKER_SPEED, 'idle');
+    if (leaving && ++s.late > WALKER_LATE_LEGS) return this.walkTo(p, [net.nearestEdge(here)], WALKER_SPEED, 'inside');
+    // The rest of a stretch that began with a crossing: on along the sidewalk.
+    if (s.rest) {
+      const rest = s.rest;
+      s.rest = undefined;
+      return this.walkTo(p, rest, WALKER_SPEED, 'idle');
+    }
+    const leg = net.next(s.spot, s.prev, here, this.walkDice, leaving);
+    if (leg.out) return this.walkTo(p, leg.route, WALKER_SPEED, 'inside');
+    s.prev = s.spot;
+    s.spot = leg.to;
+    // PO, November 17: in the street "as quick as possible": a crossing is one brisk straight walk to the far corner.
+    if (leg.cross && leg.route.length > 1) {
+      s.rest = leg.route.slice(1);
+      return this.walkTo(p, [leg.route[0]!], WALKER_CROSS_SPEED, 'idle');
+    }
+    this.walkTo(p, leg.route, WALKER_SPEED, 'idle');
   }
 
   /**
@@ -1354,6 +1484,7 @@ export class Residents {
       if (this.now < plan.until) return;
       // SCREAM-224: at the park: on to another spot, or out of the park when their time is up.
       if (p.atPark) return this.parkNext(p);
+      if (p.resident.walker) return this.walkerNext(p); // SCREAM-394: on to the next corner, or out
       if (this.now >= p.goInsideAt || !this.homeNow(p.resident)) this.walkTo(p, [p.resident.door], RESIDENT_WALK_SPEED, 'inside'); // SCREAM-249: in at their Until
       else this.walkTo(p, [this.yardSpot(p.resident)], RESIDENT_WALK_SPEED, 'idle');
       return;
@@ -1394,7 +1525,7 @@ export class Residents {
 
   private arrive(p: Running, then: Then): void {
     p.walking = false;
-    if (then === 'inside' && (p.atPark || p.resident.visitor)) {
+    if (then === 'inside' && (p.atPark || p.resident.visitor || p.resident.walker)) {
       // SCREAM-224: out of the park. A visitor is gone for the evening; a resident is on their
       // way home, and comes out of their own door once their From time has come.
       p.atPark = false;
@@ -1402,7 +1533,7 @@ export class Residents {
       p.outside = false;
       p.x = p.resident.door[0];
       p.y = p.resident.door[1];
-      if (p.resident.visitor) {
+      if (p.resident.visitor || p.resident.walker) {
         p.gone = true;
         p.plan = { kind: 'inside', until: Infinity };
       } else {
@@ -1431,7 +1562,8 @@ export class Residents {
       p.plan = { kind: 'idle', until: Infinity };
     } else {
       p.facing = 'down';
-      p.plan = { kind: 'idle', until: this.now + between(this.rnd, RESIDENT_IDLE_SECONDS) };
+      // SCREAM-394: a walker who has just crossed a street carries straight on (no pause on the far corner).
+      p.plan = { kind: 'idle', until: p.stroll?.rest ? this.now : this.now + between(this.rnd, RESIDENT_IDLE_SECONDS) };
     }
   }
 

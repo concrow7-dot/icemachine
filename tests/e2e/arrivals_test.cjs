@@ -35,6 +35,16 @@ const { chromium } = require('playwright');
   // Keep the truck out of everyone's way, and the evening's own clock still: these checks move time themselves.
   await sc('Drive', '(s.truck.setPosition(2600, 600), s.speed = 0, s.parkBrake = true, true)'); await wait(200);
 
+  // ---- SCREAM-394: people walking the streets ----
+  check('SCREAM-394: nine walkers are out on the streets at 4:00, of the sheet\'s 20, with no porch light', await ev("res.walkersNow.length + ' ' + res.all.filter(p => p.resident.walker).length + ' ' + res.walkersNow.every(p => p.outside && !res.porchLit(p))"), '9 20 true');
+  const walkerId = await ev('res.walkersNow[0].resident.id');
+  const walkerAt = await ev('(() => { const p = res.walkersNow[0]; return [p.x, p.y]; })()');
+  await sc('Drive', `(s.truck.setPosition(${walkerAt[0]} + 110, ${walkerAt[1]} + 20), true)`);
+  // They pause up to 7 seconds at a corner before setting off.
+  check('...and they walk: one has moved along the sidewalk', await until(() => ev(`(() => { const p = res.walkersNow.find(q => q.resident.id === '${walkerId}'); return !!p && Math.hypot(p.x - ${walkerAt[0]}, p.y - ${walkerAt[1]}) > 12; })()`), 12000), true);
+  await page.screenshot({ path: outDir + '/arrivals_walker.png' });
+  await sc('Drive', '(s.truck.setPosition(2600, 600), true)'); await wait(200);
+
   // ---- SCREAM-379: who is away ----
   check('SCREAM-379: the people not ticked for Monday are away (not the park\'s residents or the hard-to-find)', await ev("(() => { const want = res.all.filter(p => { const x = p.resident; return !x.visitor && !x.hardToFind && !x.park && x.days && !x.days.includes(0); }); const away = res.awayNow; return away.length + ' ' + (away.length === want.length) + ' ' + away.every(p => want.includes(p)); })()"), '17 true true');
   check('...they are not on their property, their porch light is off and their car is not outside', await ev("res.awayNow.every(p => !p.outside && !res.porchLit(p) && !res.carsNow.some(c => c.id === p.resident.id))"), true);

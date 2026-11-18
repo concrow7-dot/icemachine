@@ -53,6 +53,7 @@ import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
 import { walkInRoute } from './ComingHome';
+import { StreetNet } from './StreetWalk';
 import { RoadGraph } from './RoadGraph';
 
 /** SCREAM-296: every note on the cork board. */
@@ -409,7 +410,9 @@ export class EveningState extends Phaser.Events.EventEmitter {
       const map = MAPS[id];
       const roads = roadsOf(id, map.data);
       const cars = () => [...fixedParkedCars(map), ...(this.residentsByMap.get(id)?.carsNow ?? []).filter((c) => !c.moving)]; // SCREAM-252 (SCREAM-380: not the cars driving home)
-      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story, !!this.story && !this.tutorial); // SCREAM-393: Story's indoor routine, not in the uncle's evening
+      // SCREAM-394: in Story (not the uncle's evening) the map's street walkers are among its people.
+      const strolling = this.story && !this.tutorial ? (map.walkers ?? []) : [];
+      people = new Residents(strolling.length ? [...map.residents, ...strolling] : map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story, !!this.story && !this.tutorial); // SCREAM-393: Story's indoor routine, not in the uncle's evening
       people.carsOn = !!this.story && !this.tutorial; // SCREAM-252: Story, not the uncle's evening
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
@@ -418,6 +421,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       people.speedyFactor = this.speedyFactor; // SCREAM-342
       people.walls = wallsOf(map.data);
       if (this.story && !this.tutorial) people.openPark(); // SCREAM-224: people at the park, Story only, not the uncle's evening
+      if (strolling.length) people.openStreets(new StreetNet(map.data.roads, map.data)); // SCREAM-394
       if (this.story && !this.tutorial) {
         // SCREAM-379: away on their unticked days. SCREAM-380: car owners drive home (the streets' web is made the first time it is needed).
         let graph: RoadGraph | null = null;

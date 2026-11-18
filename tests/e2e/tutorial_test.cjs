@@ -33,7 +33,7 @@ const { chromium } = require('playwright');
   await press('o'); await wait(300); await press('Enter'); await wait(400); // past the Story intro
   check('Story starts an evening on the tutorial map, no uncle', (await ev('e.mapId')) + ' ' + (await ev('e.tutorial === null')), 'tutorial true');
   check('...Day 1 of 10, with $25', (await page.evaluate(() => (r => r.day + '/' + r.days)(window.__game.registry.get('story')))) + ' ' + (await ev('e.moneyCents')), '1/10 2500');
-  check('...with its own 40 residents (sheet 23), and SCREAM-224: 13 park visitors, 10 of them at the park tonight with the 3 residents (On My Own)', await ev('e.residents.all.filter(p => !p.resident.visitor).length + " " + e.residents.all.every(p => p.resident.id.startsWith("T")) + " " + e.residents.all.filter(p => p.resident.visitor).length + " " + e.residents.all.filter(p => p.resident.visitor && (p.outside || !p.gone)).length + " " + e.residents.atParkNow.length'), '40 true 13 10 13');
+  check('...with its own 40 residents (sheet 23), and SCREAM-224: 13 park visitors, 10 of them at the park tonight with the 3 residents (On My Own)', await ev('e.residents.all.filter(p => !p.resident.visitor && !p.resident.walker).length + " " + e.residents.all.every(p => p.resident.id.startsWith("T")) + " " + e.residents.all.filter(p => p.resident.visitor).length + " " + e.residents.all.filter(p => p.resident.visitor && (p.outside || !p.gone)).length + " " + e.residents.atParkNow.length'), '40 true 13 10 13');
 
   // ---- On the road ----
   await press('+', 5); await press('Enter'); await wait(250);
@@ -44,7 +44,7 @@ const { chromium } = require('playwright');
   check('...starting outside home on Westland Street', await drive('Math.round(Math.hypot(s.map.homeStart.x - s.truck.x, s.map.homeStart.y - s.truck.y)) < 10'), true);
   check('...with Westland Street on the map', await drive('s.map.roads.some(r => r.name === "Westland Street") && !s.map.roads.some(r => r.name === "Dover Street")'), true);
   check('One gas station, with its bay', await drive('s.pumpBays.length'), 1);
-  check('Residents drawn from the tutorial sheet', await drive('s.residentSprites.length + " " + s.residentSprites[0].texture.key'), '53 residents-tutorial');
+  check('Residents drawn from the tutorial sheet', await drive('s.residentSprites.length + " " + s.residentSprites[0].texture.key'), '73 residents-tutorial'); // SCREAM-394: 53 residents and park visitors, and 20 street walkers (On My Own)
   await wait(2500);
   await page.screenshot({ path: outDir + '/tutorial_drive.png' });
 
@@ -80,7 +80,7 @@ const { chromium } = require('playwright');
   check('...which is fetched with the map version', await drive("s.assets.atlasPng.endsWith('?v=' + s.map.assetVersion) && !!s.map.assetVersion"), true);
   check('A basketball court and a playground', (kinds.court || 0) + ' ' + (kinds.play || 0), '1 1');
   check('Gardens beside a few houses', await drive("s.map.objects.filter(o => o.key.startsWith('orn_garden_bed')).length >= 4"), true);
-  check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.door[1] > 0)"), true);
+  check('Every resident lives in a house (none in a shop)', await ev("e.residents.all.every(p => p.resident.walker || p.resident.door[1] > 0)"), true);
   await drive('(() => { const g = s.map.signs[0]; s.truck.setPosition(g.x + 40, g.y + 160); s.speed = 0; s.parkBrake = true; return true; })()'); await wait(2600);
   check('...a shop sign is shown when the truck is near', await drive("(t => !!t && t.visible)(s.children.getByName('sign-Bagel Time'))"), true);
   await page.screenshot({ path: outDir + '/tutorial_shops.png' });
@@ -108,7 +108,7 @@ const { chromium } = require('playwright');
   // SCREAM-162: nobody gets stuck at a corner: every resident, truck at their pink square and 250 px either way.
   const stuck = await ev(`(() => {
     const R = e.residents; let tries = 0; const out = [];
-    R.all.filter(p => !p.resident.visitor).forEach(p => { // SCREAM-224: the park visitors have no house to come from
+    R.all.filter(p => !p.resident.visitor && !p.resident.walker).forEach(p => { // SCREAM-224: the park visitors have no house to come from
       const c = p.resident.curb, a = c[4] * Math.PI / 180;
       for (const off of [0, 250, -250]) {
         const tx = c[2] + Math.cos(a) * off, ty = c[3] + Math.sin(a) * off;
