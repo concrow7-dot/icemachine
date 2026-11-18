@@ -39,6 +39,9 @@ import {
   RESIDENT_START_OUTSIDE_CHANCE,
   RESIDENT_WALK_SPEED,
   BUYERS_INSIDE_SECONDS,
+  STORY_BUYERS_START_OUTSIDE_CHANCE,
+  STORY_BUYERS_OUTSIDE_SECONDS,
+  STORY_BUYERS_INSIDE_SECONDS,
   BUYERS_OUTSIDE_SECONDS,
   BUYERS_START_OUTSIDE_CHANCE,
   CUSTOMER_CURVE_POINTS,
@@ -434,11 +437,15 @@ export function peakTimeOf(id: string): number {
 }
 
 /** SCREAM-148 / 152 (PO, November 3): sometimes buyers and regulars are outside about 3/4 of the time; never buyers as before. */
-function routineFor(resident: Resident, story?: { day: number; seed: number }): {
+function routineFor(resident: Resident, story?: { day: number; seed: number }, homebodies = false): {
   startOutside: number;
   outside: readonly [number, number];
   inside: readonly [number, number];
 } {
+  // SCREAM-393: in Story (not the uncle's evening) people who buy are indoors about half the time.
+  if (homebodies && kindFor(resident, story) !== 'never') {
+    return { startOutside: STORY_BUYERS_START_OUTSIDE_CHANCE, outside: STORY_BUYERS_OUTSIDE_SECONDS, inside: STORY_BUYERS_INSIDE_SECONDS };
+  }
   return kindFor(resident, story) !== 'never'
     ? { startOutside: BUYERS_START_OUTSIDE_CHANCE, outside: BUYERS_OUTSIDE_SECONDS, inside: BUYERS_INSIDE_SECONDS }
     : { startOutside: RESIDENT_START_OUTSIDE_CHANCE, outside: RESIDENT_OUTSIDE_SECONDS, inside: RESIDENT_INSIDE_SECONDS };
@@ -469,10 +476,13 @@ export class Residents {
 
   /**
    * SCREAM-366 (PO, November 16): how likely someone indoors is to come out, against someone in their
-   * yard. Story: a quarter (STORY_INDOORS_FACTOR), or half with Speaker with Heavier Bass
+   * yard. Story: a tenth (STORY_INDOORS_FACTOR; SCREAM-393), or the same as outdoors with Speaker with Heavier Bass
    * (BASS_INDOORS_FACTOR); Quick play keeps half. EveningState sets it.
    */
   indoorsFactor = CUSTOMER_INDOORS_FACTOR;
+
+  /** SCREAM-393: people who buy are indoors about half the time (Story, not the uncle's evening). */
+  readonly homebodies: boolean;
 
   /** What someone's Likelihood counts as tonight: the sheet's, times today's tick (SCREAM-232). */
   likelihoodNow(resident: Resident): number {
@@ -582,7 +592,10 @@ export class Residents {
     rnd: () => number = Math.random,
     curbs?: CurbFinder,
     story?: { day: number; seed: number },
+    /** SCREAM-393: Story's indoor routine for people who buy (EveningState: Story, not the uncle's evening). */
+    homebodies = false,
   ) {
+    this.homebodies = homebodies;
     this.rnd = rnd;
     this.curbs = curbs;
     this.story = story;
@@ -610,7 +623,7 @@ export class Residents {
         };
         return away;
       }
-      const times = routineFor(resident, story);
+      const times = routineFor(resident, story, homebodies);
       // SCREAM-249: in Story, someone who only gets home later in the evening starts indoors.
       const outside = rnd() < times.startOutside && !(story && resident.hours && resident.hours[0] !== null);
       const spot = outside ? this.yardSpot(resident) : resident.door;
@@ -1333,7 +1346,7 @@ export class Residents {
       p.outside = true;
       p.x = p.resident.door[0];
       p.y = p.resident.door[1];
-      p.goInsideAt = this.now + between(this.rnd, routineFor(p.resident).outside);
+      p.goInsideAt = this.now + between(this.rnd, routineFor(p.resident, undefined, this.homebodies).outside);
       this.walkTo(p, [this.yardSpot(p.resident)], RESIDENT_WALK_SPEED, 'idle');
       return;
     }
@@ -1393,14 +1406,14 @@ export class Residents {
         p.gone = true;
         p.plan = { kind: 'inside', until: Infinity };
       } else {
-        p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident).inside) };
+        p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident, undefined, this.homebodies).inside) };
       }
     } else if (then === 'inside') {
       // SCREAM-379: someone who was away is home now (their car can be outside again).
       if (p.comingHome) this.carBack.add(p.resident.id);
       p.comingHome = false;
       p.outside = false;
-      p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident).inside) };
+      p.plan = { kind: 'inside', until: this.now + between(this.rnd, routineFor(p.resident, undefined, this.homebodies).inside) };
     } else if (then === 'curb') {
       // At the curb: wait for the truck, the pink square beside them (SCREAM-140: where they stopped).
       p.customer = 'waiting';

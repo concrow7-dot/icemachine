@@ -74,14 +74,32 @@ test('Each weekday favours a different crowd (decision 057: neighbourhoods diffe
   assert.equal(new Set([1, 2, 3, 4, 5].map(crowd)).size, 5);
 });
 
-test('SCREAM-366 (PO: "harder for people in their home to become customers. That way the powerup has a bigger effect"): Story indoors a quarter as likely, half with Speaker with Heavier Bass; Quick play keeps half', () => {
+test('SCREAM-366 (PO: "harder for people in their home to become customers. That way the powerup has a bigger effect"): Story indoors a tenth as likely, the same as outdoors with Speaker with Heavier Bass (SCREAM-393); Quick play keeps half', () => {
   const { STORY_INDOORS_FACTOR, BASS_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR } = tuning;
-  assert.deepEqual([STORY_INDOORS_FACTOR, BASS_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR], [0.25, 0.5, 0.5]);
+  assert.deepEqual([STORY_INDOORS_FACTOR, BASS_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR], [0.1, 1, 0.5]); // SCREAM-393: a tenth, and the bass ignores walls (was a quarter and a half)
   const out = Residents.chance(1, 0.4, false, false, STORY_INDOORS_FACTOR);
-  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, STORY_INDOORS_FACTOR) - out / 4) < 1e-12, 'indoors: a quarter');
-  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, BASS_INDOORS_FACTOR) - out / 2) < 1e-12, 'with the bass: half');
-  assert.ok(Math.abs(Residents.curveChance(7, 0.4, true, 7, STORY_INDOORS_FACTOR) - Residents.curveChance(7, 0.4, false, 7) / 4) < 1e-12, 'the curve too');
+  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, STORY_INDOORS_FACTOR) - out / 10) < 1e-12, 'indoors: a tenth');
+  assert.ok(Math.abs(Residents.chance(1, 0.4, true, false, BASS_INDOORS_FACTOR) - out) < 1e-12, 'with the bass: the same as outdoors');
+  assert.ok(Math.abs(Residents.curveChance(7, 0.4, true, 7, STORY_INDOORS_FACTOR) - Residents.curveChance(7, 0.4, false, 7) / 10) < 1e-12, 'the curve too');
   // The bass no longer touches people in their yards, or the some-days people's Likelihood.
   const people = new Residents([monThu, everyDay], () => 0.99, undefined, story(1));
   assert.deepEqual([monThu, everyDay].map((r) => people.likelihoodNow(r)), [0.3 * SCHEDULE_TICKED_FACTOR, 0.15 * SCHEDULE_TICKED_FACTOR]);
+});
+
+test('SCREAM-393: in Story people who buy are indoors about half the time; the uncle\'s evening and Quick play keep the old routine', () => {
+  const buyers = TUTORIAL_RESIDENTS.filter((r) => !r.visitor && r.likelihood > 0 && !r.hardToFind && !(r.hours && r.hours[0] !== null));
+  const share = (homebodies) => {
+    let n = 12345;
+    const rnd = () => ((n = (Math.imul(n, 1664525) + 1013904223) >>> 0) / 4294967296);
+    const people = new Residents(buyers, rnd, undefined, story(1), homebodies);
+    let out = 0, all = 0;
+    for (let t = 0; t < 400; t += 0.5) {
+      people.update(0.5);
+      for (const p of people.people) { all++; if (p.outside) out++; }
+    }
+    return out / all;
+  };
+  const before = share(false), after = share(true);
+  assert.ok(before > 0.68 && before < 0.9, `the old routine: outside about three quarters of the time (${before.toFixed(2)})`);
+  assert.ok(after > 0.4 && after < 0.6, `Story: outside about half the time (${after.toFixed(2)})`);
 });
