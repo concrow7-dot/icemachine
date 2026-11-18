@@ -409,7 +409,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
       const map = MAPS[id];
       const roads = roadsOf(id, map.data);
       const cars = () => [...fixedParkedCars(map), ...(this.residentsByMap.get(id)?.carsNow ?? []).filter((c) => !c.moving)]; // SCREAM-252 (SCREAM-380: not the cars driving home)
-      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story);
+      people = new Residents(map.residents, Math.random, new CurbFinder(roads, pinkSquareFitsOn(map.data, roads, cars)), this.story, !!this.story && !this.tutorial); // SCREAM-393: Story's indoor routine, not in the uncle's evening
       people.carsOn = !!this.story && !this.tutorial; // SCREAM-252: Story, not the uncle's evening
       people.nowMinutes = () => this.clockMinutes; // SCREAM-249: hours of the evening
       people.hardToFindOn = !this.tutorial; // SCREAM-250: not in the uncle's evening
@@ -806,7 +806,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     return this.powerUpsOwned.includes(MIRRORS_ID);
   }
 
-  /** SCREAM-366: how likely someone indoors is to come out, against someone in their yard (Story: a quarter; half with the bass). */
+  /** SCREAM-366: how likely someone indoors is to come out, against someone in their yard (Story: a tenth; the same as outdoors with the bass, SCREAM-393). */
   get indoorsFactor(): number {
     if (!this.story) return CUSTOMER_INDOORS_FACTOR;
     return this.powerUpsOwned.includes(BASS_ID) ? BASS_INDOORS_FACTOR : STORY_INDOORS_FACTOR;

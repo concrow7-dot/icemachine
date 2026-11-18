@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 189 — The speaker notes pay off more: a 150 px starting ring, people indoors half the time, and a bass that ignores walls (2026-11-17)
+
+**Decision (Jira SCREAM-393, under SCREAM-78; PO, November 17, 20:10):** "How can I make the speaker powerups pay off more. IM thinking: The radius should start smaller so that it's harder to get further away customers. Then the powerups brings the radius back up to where it is now and the bass powerup should work much better than it currently does, and/or the people inside should be even harder to get out of the house." Shown a table of simulated evenings (below) he chose (20:32): "I like the last row, lets go ahead and implement that." So in Story: the music ring starts at 150 px (it was 165) and Upgrade Speaker takes it to 181.5 px (where the note took it before); people indoors come out a tenth as often as people in their yard (it was a quarter), and with Speaker with Heavier Bass as often as people in their yard (it was half); and people who buy are indoors about half the time (20 to 50 seconds out, 20 to 50 in, half start indoors; it was 40 to 100 out, 10 to 30 in, a quarter start indoors). This replaces decision 168's "a quarter" and "indoors back to half".
+
+**Options considered (customers who come out per evening; no notes / Upgrade Speaker / Speaker and Heavier Bass; 200 simulated Story evenings each in Elm Park with the game's own customer code, a truck driving every road once and stopping 15 seconds per customer):** before this decision 7.9 / 9.1 / 9.3; the PO's first idea, a 125 px start with the Speaker back to 165 px, 4.2 / 7.9 / 8.0 (the start roughly halved); the same with indoors a tenth and a bass that ignores walls, 4.1 / 7.7 / 8.3; a 150 px start, Speaker 181.5 px, indoors a tenth, the bass ignoring walls, 6.4 / 9.0 / 9.5; the same with people indoors half the time (chosen), 5.0 / 7.9 / 9.4.
+
+**Why (product owner's rationale):** to make "the speaker powerups pay off more" (his words above). _Anything more: to be filled in by the PO._
+
+**Engineering's calls (proposals):** the uncle's evening gets the 150 px ring and the indoor chance (it shares Story's truck) but its people keep the old outdoor routine; Quick play is unchanged; the notes' words are unchanged; the Drum Cone still adds 10% to the ring for 30 seconds; the bike's price and the notes' prices are not changed here, though a Story with no notes now gets about 5 customers an evening in the simulation, from about 8.
+
 ## 188 — Out of gas: the line reads "The truck ran out of gas, and you need a tow home." (2026-11-17)
 
 **Decision (Jira SCREAM-392, under SCREAM-78; PO, November 17, 20:12, after SCREAM-390 was merged):** "On the needed a tow screen. I want to change the text to: "The truck ran out of gas, and you need a tow home."" The line under the tow truck changes from "Needed a tow home." (SCREAM-208) to his sentence. The tow truck, the red -$25.00 in Story and the 2.5 seconds are unchanged.

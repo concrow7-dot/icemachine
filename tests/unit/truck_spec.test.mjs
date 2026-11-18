@@ -43,7 +43,7 @@ test("Story's truck is worse at everything the PO listed", () => {
   assert.ok(rollSeconds(full) > 9 && rollSeconds(full) < 10.5, 'Quick play still about 10 s');
   assert.equal(weak.accelerationSeconds, full.accelerationSeconds * 4);
   assert.ok(Math.abs(weak.creepSpeed - full.creepSpeed / 6) < 1e-9);
-  assert.ok(Math.abs(weak.musicRadius - full.musicRadius * 0.55) < 1e-9); // 85%, 70%, then 55%
+  assert.ok(Math.abs(weak.musicRadius - full.musicRadius * 0.5) < 1e-9); // 85%, 70%, 55%, then 50% (SCREAM-393)
   assert.ok(Math.abs(weak.reverseSpeed - full.reverseSpeed / 3) < 1e-9);
   assert.equal(weak.reverseAccelerationSeconds, full.reverseAccelerationSeconds * 2);
   assert.ok(weak.maxTurnDegrees < full.maxTurnDegrees, 'turns less sharply at speed');
@@ -98,10 +98,10 @@ test('SCREAM-310: Trot raises Story\'s creep from 12 to 25.2 px/s (SCREAM-336: w
   assert.deepEqual([both.creepSpeed, both.accelerationSeconds], [trot.creepSpeed, truckSpec(true, ['gitty-up']).accelerationSeconds], 'the two add up');
 });
 
-test('SCREAM-81: Upgrade Speaker makes the music ring 10% bigger: Story\'s 165 px to 181.5', () => {
+test('SCREAM-81, SCREAM-393: Upgrade Speaker makes the music ring bigger: Story\'s 150 px to 181.5', () => {
   const weak = truckSpec(true);
   const speaker = truckSpec(true, ['service-with-a-smile', 'upgrade-speaker']);
-  assert.ok(Math.abs(weak.musicRadius - 165) < 1e-9);
+  assert.ok(Math.abs(weak.musicRadius - 150) < 1e-9);
   assert.ok(Math.abs(speaker.musicRadius - 181.5) < 1e-9);
   for (const k of Object.keys(weak)) if (k !== 'musicRadius') assert.equal(speaker[k], weak[k], k);
 });

@@ -109,7 +109,7 @@ export function truckSpec(weak: boolean, powerUps: readonly string[] = []): Truc
     reverseAccelerationSeconds: weak ? TRUCK_REVERSE_ACCELERATION_SECONDS * STORY_TRUCK_REVERSE_ACCELERATION_FACTOR : TRUCK_REVERSE_ACCELERATION_SECONDS,
     maxTurnDegrees: weak ? TRUCK_MAX_TURN_DEGREES_PER_SECOND * STORY_TRUCK_TURN_FACTOR : TRUCK_MAX_TURN_DEGREES_PER_SECOND,
     turnAboveRoll: weak ? STORY_TRUCK_TURN_ABOVE_ROLL_FACTOR : 1,
-    // SCREAM-81: Upgrade Speaker reaches 10% further than tonight's ring.
+    // SCREAM-81: Upgrade Speaker's bigger ring. SCREAM-393: Story's 150 px to 181.5 px.
     musicRadius: (weak ? MUSIC_RING_RADIUS * STORY_MUSIC_RADIUS_FACTOR : MUSIC_RING_RADIUS) * (has(SPEAKER_ID) ? SPEAKER_RADIUS_FACTOR : 1),
     coolerHalfCovered: halfCovered,
     coolerColumns,

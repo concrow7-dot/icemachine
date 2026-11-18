@@ -333,8 +333,20 @@ export const BASS_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by
  * Speaker with Heavier Bass half as likely again (CUSTOMER_INDOORS_FACTOR). The bass no longer makes
  * the some-days people 10% likelier (it was BASS_SOMETIMES_FACTOR, 1.1).
  */
-export const STORY_INDOORS_FACTOR = 0.25;
-export const BASS_INDOORS_FACTOR = 0.5;
+export const STORY_INDOORS_FACTOR = 0.1; // SCREAM-393: a tenth (it was a quarter, 0.25)
+export const BASS_INDOORS_FACTOR = 1; // SCREAM-393: walls don't matter with the bass (it was half, 0.5)
+/**
+ * SCREAM-393 (PO, November 17: "How can I make the speaker powerups pay off more ... The radius should
+ * start smaller ... the bass powerup should work much better ... and/or the people inside should be even
+ * harder to get out of the house"; shown 200 simulated evenings per setup he chose "the last row"):
+ * Story's ring starts at 150 px and Upgrade Speaker takes it to 181.5 px (STORY_MUSIC_RADIUS_FACTOR,
+ * SPEAKER_RADIUS_FACTOR); indoors is a tenth as likely, and as likely as outdoors with the bass (above);
+ * and in Story (not the uncle's evening) people who buy are indoors about half the time, with these in
+ * place of BUYERS_START_OUTSIDE_CHANCE, BUYERS_OUTSIDE_SECONDS and BUYERS_INSIDE_SECONDS.
+ */
+export const STORY_BUYERS_START_OUTSIDE_CHANCE = 0.5;
+export const STORY_BUYERS_OUTSIDE_SECONDS: readonly [number, number] = [20, 50];
+export const STORY_BUYERS_INSIDE_SECONDS: readonly [number, number] = [20, 50];
 
 /** How fast a customer walks to the curb and along it, in px per second. SCREAM-140 (PO, November 2): half the old 75. */
 export const CUSTOMER_RUN_SPEED = 37;
@@ -517,13 +529,13 @@ export const TRAIN_TOP_SPEED_FACTOR = 1.05;
 export const TROT_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $20)
 /** SCREAM-81 (PO, November 14): Upgrade Speaker, $30: the music ring reaches 10% further (Story's 165 px to about 182). */
 export const SPEAKER_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
-export const SPEAKER_RADIUS_FACTOR = 1.1;
+export const SPEAKER_RADIUS_FACTOR = 1.21; // SCREAM-393: Story's 150 px to 181.5 px (it was 1.1: 165 to 181.5)
 /** SCREAM-317 (PO, November 14): the Calculator note, $30. */
 export const CALCULATOR_PRICE_CENTS = 1500; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $30)
 /** SCREAM-330 (PO, November 14): This Century Register, $40 (his answer): a tablet at the window; a click on an ice cream adds its price. */
 export const REGISTER_PRICE_CENTS = 2000; // SCREAM-369 (PO, November 16): prices by row, $10, $15, $20, $30 (was $40)
 /** Story's music reaches this share of MUSIC_RING_RADIUS. PO, November 12: 85% (engineering's first guess was 75%). */
-export const STORY_MUSIC_RADIUS_FACTOR = 0.55; // (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
+export const STORY_MUSIC_RADIUS_FACTOR = 0.5; // SCREAM-393: 150 px (it was 0.55, 165 px). Before: (02:17) "the same amount": 70%; (02:36) "another 85% of max": another 15 points, 300 to 165
 /**
  * SCREAM-269 (PO, November 12: "24 to start"): in Story the right half of every crate is covered, so
  * the cooler holds half as much: 3 crates x 8 squares = 24 (SCREAM-25 will uncover them). It was 2
