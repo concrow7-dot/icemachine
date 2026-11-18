@@ -210,7 +210,8 @@ const { chromium } = require('playwright');
   await drive(`(() => { const b = s.pumpBays[0]; s.truck.setPosition(b.x + Math.cos(b.rotation) * 160, b.y + Math.sin(b.rotation) * 160); return true; })()`);
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
   // SCREAM-208: first the truck stops, the gauge flashes and "Needed a tow home." shows.
-  check('Out of gas: the truck stops and "Needed a tow home." shows (SCREAM-208)', (await scenes()) + ' ' + (await sc('Drive', 's.speed')) + ' ' + (await sc('Hud', 's.towing && s.towText.visible && s.towText.text')), 'Drive,Hud 0 Needed a tow home.');
+  check('Out of gas: the truck stops and "Needed a tow home." shows (SCREAM-208)', (await scenes()) + ' ' + (await sc('Drive', 's.speed')) + ' ' + (await sc('Hud', 's.towing && s.towText.visible && s.towText.text')), 'Drive,Hud 0 The truck ran out of gas, and you need a tow home.');
+  check('SCREAM-392: ...the longer line is on one line and fully on screen', await sc('Hud', '(() => { const b = s.towText.getBounds(); return b.left >= 8 && b.right <= s.scale.width - 8 && !/\\n/.test(s.towText.text); })()'), true);
   check('SCREAM-390: a tow truck has popped up above the line; Quick play shows no price', await sc('Hud', '(!!s.towTruck && s.towTruck.visible && s.towTruck.scale >= 0.99 && s.towTruck.y < s.towText.y) + " " + !!s.towCost'), 'true false');
   const flashes = new Set();
   for (let i = 0; i < 8; i++) { flashes.add(await sc('Hud', 's.gaugeRed')); await wait(60); }
@@ -262,7 +263,7 @@ const { chromium } = require('playwright');
   await ev('(e.cashCents = 6000, true)');
   const gasBefore = await ev('e.breakdown.gasCents');
   await ev('(e.burnFuel(1e9), true)'); await wait(600);
-  check('Story: out of gas shows "Needed a tow home." first too, with the tow\'s $25 (SCREAM-390)', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text + " | " + (s.towCost && s.towCost.visible && s.towCost.text) + " | " + (s.towCost.y > s.towText.y)')), 'Drive,Hud Needed a tow home. | -$25.00 | true');
+  check('Story: out of gas shows "Needed a tow home." first too, with the tow\'s $25 (SCREAM-390)', (await scenes()) + ' ' + (await sc('Hud', 's.towText && s.towText.text + " | " + (s.towCost && s.towCost.visible && s.towCost.text) + " | " + (s.towCost.y > s.towText.y)')), 'Drive,Hud The truck ran out of gas, and you need a tow home. | -$25.00 | true');
   await page.screenshot({ path: outDir + '/fuel_tow_story.png' });
   check('SCREAM-390: ...$25 is taken from the cash and counted with tonight\'s gas', (await ev('e.moneyCents')) + ' ' + (await ev('e.towCents')) + ' ' + ((await ev('e.breakdown.gasCents')) - gasBefore), '3500 2500 2500');
   await until(async () => (await scenes()).startsWith('DayEnd'));

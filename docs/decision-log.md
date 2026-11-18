@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 188 — Out of gas: the line reads "The truck ran out of gas, and you need a tow home." (2026-11-17)
+
+**Decision (Jira SCREAM-392, under SCREAM-78; PO, November 17, 20:12, after SCREAM-390 was merged):** "On the needed a tow screen. I want to change the text to: "The truck ran out of gas, and you need a tow home."" The line under the tow truck changes from "Needed a tow home." (SCREAM-208) to his sentence. The tow truck, the red -$25.00 in Story and the 2.5 seconds are unchanged.
+
+**Options considered:** none; the PO gave the wording.
+
+**Why (product owner's rationale):** _to be filled in by the PO._
+
+**Engineering's calls (proposals):** the line is 24 px (it was 30 px) so the longer sentence fits on one line with room to spare; Quick play shows the same line, with no price.
+
 ## 187 — Running out of gas: the tow home costs $25 in Story (2026-11-17)
 
 **Decision (Jira SCREAM-390, under SCREAM-78; PO, November 17, 16:34):** "I like adding a price to the towing. Let's say $25." Asked what happens when the player has less than $25, he chose "Go below $0, run ends": the full $25 is always charged, and the out-of-money rule that was already there (cash below $0 at the end of an evening) then ends the run. Asked what the next day starts with after a tow, he chose "Keep a third (Recommended)". So in Story, when the tank runs dry and the evening ends with "Needed a tow home.", $25 is taken from the cash; the next day still starts with a third of a tank. The Temporary Gas Can still pours itself in first.
