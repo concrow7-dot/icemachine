@@ -59,6 +59,7 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 MAP_TS = os.path.join(ROOT, 'src', 'config', 'worcester.ts')
 CSV_PATH = os.path.join(HERE, 'residents.csv')
 OUT_TS = os.path.join(ROOT, 'src', 'config', 'residents.ts')
+WALKERS_TS = os.path.join(ROOT, 'src', 'config', 'tutorialWalkers.ts')   # SCREAM-394
 OUT_PNG = os.path.join(ROOT, 'public', 'assets', 'limezu', 'residents.png')
 
 ROAD_HALF, SIDEWALK = 60, 14          # as tools/worcester/build_map.py
@@ -244,8 +245,17 @@ def read_csv():
         if park not in ('', 'yes', 'no'):
             bad('Park must be Yes or blank')
         visitor = park == 'yes' and not (r['House'] or '').strip()
+        # SCREAM-394 (PO, November 17): an optional "Walker" column (Elm Park only). Yes = someone who
+        # walks the streets in Story: no House, Park, days, hours or car; their Likelihood is their own
+        # chance of buying. They are written to their own file, not the residents'.
+        walker = (r.get('Walker') or '').strip().lower()
+        if walker not in ('', 'yes', 'no'):
+            bad('Walker must be Yes or blank')
+        walker = walker == 'yes'
+        if walker and (not TUTORIAL or (r['House'] or '').strip() or park == 'yes' or (r.get('Car') or '').strip().lower() == 'yes'):
+            bad('a Walker is only for the Elm Park tab, and has no House, Park or Car')
         try:
-            house = None if visitor else int(r['House'])
+            house = None if visitor or walker else int(r['House'])
             likely, look = float(str(r['Likelihood (%)']).rstrip('%')), int(r['Look'])
         except ValueError:
             bad('House, Likelihood (%) and Look must be numbers (only a park visitor has no House)')
@@ -277,7 +287,9 @@ def read_csv():
             person['hinted'] = True
         # SCREAM-221 (PO, decision 057): optional Mon to Sun columns, the sheet's checkboxes
         # (TRUE or FALSE; blank counts as FALSE): the days of the week they're home, in Story.
-        if visitor:
+        if walker:
+            person['walker'] = True   # no days either: who walks when is rolled each evening
+        elif visitor:
             pass   # a visitor has no days: who is at the park is rolled each evening
         elif all(d in r for d in DAYS):
             ticks = [(r[d] or '').strip().upper() for d in DAYS]
@@ -299,6 +311,8 @@ def read_csv():
             hours.append(minutes)
         if hours[0] is not None and hours[1] is not None and hours[0] >= hours[1]:
             bad('From must be earlier than Until')
+        if walker and hours != [None, None]:
+            bad('a Walker has no From or Until: the game rolls when they come and go each evening')
         if visitor and hours != [None, None]:
             bad('a park visitor has no From or Until: the game rolls when they leave each evening')
         if park == 'yes' and not visitor and hours[0] is None:
@@ -575,6 +589,14 @@ def place(m, people, index):
     for p in people:
         # SCREAM-224: a park visitor has no house: their "door" is where they walk off the map,
         # their "yard" is their spots at the park and their curb spot is the park's.
+        if p.get('walker'):
+            # SCREAM-394: a walker has no house, yard or curb spot: the game walks them along the streets.
+            out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': '',
+                        'likelihood': p['likelihood'], 'look': index[(p['look'], p['kid'])],
+                        'door': [0, 0], 'yard': [], 'curb': [0, 0, 0, 0, 0],
+                        **({'orderSize': p['orderSize']} if 'orderSize' in p else {}),
+                        'walker': True})
+            continue
         if p.get('visitor'):
             pk = park_of(m, segs, blocks, p)
             out.append({'id': p['id'], 'name': p['name'], 'kid': p['kid'], 'street': pk['street'],
@@ -624,7 +646,7 @@ def place(m, people, index):
     free = [model for model in order if model not in kept.values()] or order
     new = [rid for rid in wants if rid not in kept]
     model_of = {**kept, **{rid: free[k % len(free)] for k, rid in enumerate(new)}}
-    squares = [(o['curb'][2], o['curb'][3]) for o in out] + [(o['park']['curb'][2], o['park']['curb'][3]) for o in out if o.get('park')]
+    squares = [(o['curb'][2], o['curb'][3]) for o in out if not o.get('walker')] + [(o['park']['curb'][2], o['park']['curb'][3]) for o in out if o.get('park')]
     cars = []
     for o in [x for x in out if x['id'] in kept] + [x for x in out if x['id'] in new]:
         if o['id'] in model_of:
@@ -781,7 +803,20 @@ def build(folder):
     people = read_csv()
     looks, index = look_index(people)
     png = 'no art drawn' if folder == '--no-art' else draw_looks(folder, looks, index)
-    out = place(m, people, index)
+    placed = place(m, people, index)
+    out = [o for o in placed if not o.get('walker')]
+    walkers = [o for o in placed if o.get('walker')]
+    if TUTORIAL:
+        # SCREAM-394: the walkers' own file, so the residents' list (and everything that counts it) is unchanged.
+        open(WALKERS_TS, 'w').write('\n'.join([
+            '// GENERATED by tools/residents/build_residents.py from ' + os.path.relpath(CSV_PATH, ROOT).replace(os.sep, '/'),
+            "// (the rows with Walker = Yes on the Residents sheet's Elm Park tab): edit the sheet, not this file.",
+            '// Art: LimeZu Modern Interiors (limezu.itch.io).',
+            '',
+            "import type { Resident } from '../state/Residents';",
+            '',
+            '/** SCREAM-394: the people who walk the streets of Elm Park in Story. Their looks are in the residents\' picture sheet. */',
+            f'export const TUTORIAL_WALKERS: Resident[] = {json.dumps(walkers, separators=(",", ":"))};', '']))
     ts = ['// GENERATED by tools/residents/build_residents.py from ' + os.path.relpath(CSV_PATH, ROOT).replace(os.sep, '/'),
           ('// (a copy of the PO\'s Tutorial residents sheet, doc 23): edit the sheet, not this file.' if TUTORIAL else
            '// (a copy of the PO\'s residents sheet, doc 38): edit the sheet, not this file.'),
@@ -797,7 +832,7 @@ def build(folder):
           f'export const {EXPORT}: Resident[] = {json.dumps(out, separators=(",", ":"))};', '']
     open(OUT_TS, 'w').write('\n'.join(ts))
     few = [o['id'] for o in out if len(o['yard']) < 4]
-    print(f'{len(out)} residents, {len(looks)} looks -> {OUT_TS}, {png}; '
+    print(f'{len(out)} residents, {len(walkers)} walkers, {len(looks)} looks -> {OUT_TS}, {png}; '
           f'{len(few)} with under 2 yard spots: {few[:10]}')
 
 
@@ -811,6 +846,8 @@ def check():
     now = {r['id']: r for r in json.loads(s[:s.rindex(';')])}
     moved = 0
     for r in place(m, people, index):
+        if r.get('walker'):
+            continue   # SCREAM-394: walkers have no place to move
         old = now.get(r['id'])
         if old is None:
             print(f'{r["id"]} {r["name"]}: new'); moved += 1

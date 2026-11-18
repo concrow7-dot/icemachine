@@ -3,6 +3,7 @@ import type { WorcesterMap } from './mapTypes';
 import { RESIDENTS } from './residents';
 import { TUTORIAL } from './tutorial';
 import { TUTORIAL_RESIDENTS } from './tutorialResidents';
+import { TUTORIAL_WALKERS } from './tutorialWalkers';
 import { WORCESTER } from './worcester';
 
 // SCREAM-146 (PO, November 4): a second, smaller map for the tutorial, with its own
@@ -18,6 +19,8 @@ export interface GameMap {
   name: string;
   data: WorcesterMap;
   residents: Resident[];
+  /** SCREAM-394: the people who walk this map's streets in Story (not residents: no house). */
+  walkers?: Resident[];
   /** Texture keys and files. */
   atlasKey: string;
   atlasPng: string;
@@ -72,6 +75,7 @@ export const MAPS: Record<MapId, GameMap> = {
     name: 'Elm Park',
     data: TUTORIAL,
     residents: TUTORIAL_RESIDENTS,
+    walkers: TUTORIAL_WALKERS,
     atlasKey: 'tut-atlas',
     atlasPng: versioned('assets/limezu/map-tutorial/atlas.png', TUTORIAL),
     atlasJson: versioned('assets/limezu/map-tutorial/atlas.json', TUTORIAL),

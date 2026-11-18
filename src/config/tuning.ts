@@ -878,3 +878,35 @@ export const HOME_DRIVE_PARK_GLIDE = 90;
 export const HOME_DRIVE_GAP = 14;
 /** How near a moving car's path a person on foot has to be to make it wait, px. */
 export const HOME_DRIVE_PERSON_ROOM = 22;
+
+/**
+ * SCREAM-394 (PO, November 17: "a few people who are randomly walking up and down the streets of the
+ * elm park map ... random chances of buying ice cream ... come from the edge map and walk around
+ * awhile before they leave"; his answers: "20 people total in the evening. A few wandering around
+ * most of the time, others only around for an hour or so", "Random 10% to 50% each" (the sheet's
+ * Likelihood), "Engineering drafts, I adjust"). Story, Elm Park, not the uncle's evening. The numbers
+ * below are engineering's proposals.
+ */
+export const WALKERS_TONIGHT = 20;
+/** How many of them are out most of the evening: on the streets at 4:00, leaving in WALKER_LONG_LEAVE_MINUTES. */
+export const WALKER_LONG_STAY = 4;
+export const WALKER_LONG_LEAVE_MINUTES: readonly [number, number] = [19 * 60 + 20, 19 * 60 + 55];
+/**
+ * The others: when they come in (minutes since midnight), and how long they wander before they head
+ * for a way out (game minutes). Getting out takes about half a game hour more (the blocks are long),
+ * so they are around "for an hour or so" in all (measured over 200 simulated evenings).
+ */
+export const WALKER_ENTER_MINUTES: readonly [number, number] = [16 * 60, 19 * 60];
+export const WALKER_STAY_MINUTES: readonly [number, number] = [25, 50];
+/** Their walking speed, px a second (the same as someone walking home, AWAY_WALK_SPEED). */
+export const WALKER_SPEED = 30;
+/** From the edge of a lane to the middle of the sidewalk (a street's middle to its sidewalk is 60 px a lane plus this). */
+export const WALKER_SIDEWALK_GAP = 7;
+/** Two streets meet where one's end is within this of the other. */
+export const WALKER_JOIN_REACH = 90;
+/** A street end is a way in and out when straight on from it leaves the map within this. */
+export const WALKER_EXIT_REACH = 650;
+/** Walkers keep this far outside a roundabout's road: no corner nearer, and no way in or out across one. */
+export const WALKER_RING_CLEAR = 70;
+/** Someone whose time is up and still hasn't reached a way out after this many more corners heads straight for the nearest edge. */
+export const WALKER_LATE_LEGS = 8;
