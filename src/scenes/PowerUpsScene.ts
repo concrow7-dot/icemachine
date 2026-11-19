@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { getEvening, returnToTruck, SceneKeys } from '../flow';
 import { POWER_UP_TREES } from '../config/powerUps';
-import { BOARD_LAYOUT, nextNote, placeNotes, type BoardDirection, type BuyStatus, type PlacedNote } from '../state/PowerUpBoard';
+import { BOARD_LAYOUT, BOARD_VIEW, clampScroll, inBoardView, maxScrollOf, nextNote, placeNotes, scrollToShow, type BoardDirection, type BuyStatus, type PlacedNote } from '../state/PowerUpBoard';
 import { EveningEvents, EveningState } from '../state/EveningState';
 import { loadFlavourArt, MARKER_FONT } from '../ui/flavourArt';
 import { addPowerUpLogo } from '../ui/powerUpLogo';
@@ -28,9 +28,12 @@ const CORK_SPECKS = [0xb5843f, 0xdcb277, 0xa87838];
 const GREY_PAPER = 0xd9d6cf;
 /** The cork inside the wooden frame. The top strip is left to the clock and the money. */
 const CORK_RECT = { x: 16, y: 50, w: 928, h: 444 };
-// SCREAM-396: the Money tree has seven rows and reaches the bottom of the cork, so the card sits
-// under the XP tree (it was along the bottom left: x 300, y 454, w 520).
-const DETAIL = { x: 706, y: 356, w: 440, h: 60 };
+// SCREAM-397: the board scrolls, so the card is back along the bottom (396 had moved it under the XP tree).
+const DETAIL = { x: 300, y: 454, w: 520, h: 60 };
+/** SCREAM-397: the two scroll buttons, between the trees (the mobile rule: a button for every action). */
+const SCROLL_BUTTON = { x: 480, upY: 132, downY: 394, size: 40 };
+/** Above the notes and their strings (2 to 5), below the opened note (20). */
+const FIXED_DEPTH = 12;
 const BACK = { x: 866, y: 454, w: 108, h: 44 };
 /** The opened note, in the middle of the board. */
 const BIG = { x: 480, y: 268, w: 330, h: 372 };
@@ -66,6 +69,20 @@ export class PowerUpsScene extends Phaser.Scene {
   hint!: Phaser.GameObjects.Text;
   /** SCREAM-395: the XP tree's label, "XP: 120" (test hook). */
   xpLabel: Phaser.GameObjects.Text | null = null;
+  /** SCREAM-397: how far the board is scrolled down, and how far it can be (test hooks). */
+  scrollY = 0;
+  maxScroll = 0;
+  /** SCREAM-397: the on-screen scroll buttons (test hooks); hidden when there is nothing that way. */
+  scrollUpButton!: Phaser.GameObjects.Zone;
+  scrollDownButton!: Phaser.GameObjects.Zone;
+  private scrollArt: Phaser.GameObjects.Container[] = [];
+  /** Each note's place on the unscrolled board; `notes[].y` is where it is on the screen now. */
+  private baseY = new Map<string, number>();
+  private zones = new Map<string, Phaser.GameObjects.Zone>();
+  private strings!: Phaser.GameObjects.Graphics;
+  private drag: { y: number; scroll: number; moved: boolean } | null = null;
+  /** The note the press began on (a click that closes an opened note mustn't open the one under it). */
+  private pressedOn = '';
   private evening!: EveningState;
   private ring!: Phaser.GameObjects.Graphics;
   private noteArt = new Map<string, Phaser.GameObjects.Container>();
@@ -90,15 +107,27 @@ export class PowerUpsScene extends Phaser.Scene {
     this.buyButton = null;
     this.bigTexts = [];
     this.noteArt.clear();
+    this.zones.clear();
+    this.baseY = new Map(this.notes.map((n) => [n.id, n.y]));
+    this.maxScroll = maxScrollOf(this.notes.map((n) => n.y));
+    this.drag = null;
 
     this.drawBoard(width, height);
-    this.drawStrings();
+    this.strings = this.add.graphics();
     for (const note of this.notes) this.addNote(note);
-    POWER_UP_TREES.forEach((tree, t) => this.addTreeLabel(tree.id, tree.name, BOARD_LAYOUT.treeX[t]!, tree.string));
+    // SCREAM-397: everything that stays put while the notes scroll is drawn over them.
+    this.fixed(() => {
+      this.drawCovers(width, height);
+      POWER_UP_TREES.forEach((tree, t) => this.addTreeLabel(tree.id, tree.name, BOARD_LAYOUT.treeX[t]!, tree.string));
+    });
 
     this.ring = this.add.graphics().setDepth(5);
-    this.addDetail();
-    this.addBack();
+    this.fixed(() => {
+      this.addDetail();
+      this.addBack();
+      this.addScrollButtons();
+    });
+    this.addScrolling();
 
     this.add.rectangle(0, height - 34, width, 34, 0x000000, 0.45).setOrigin(0, 0).setDepth(30);
     this.hint = this.add
@@ -126,7 +155,112 @@ export class PowerUpsScene extends Phaser.Scene {
       this.evening.off(EveningEvents.XpChanged, onMoney);
     });
 
+    // The board opens showing the note left highlighted.
+    this.scrollY = -1;
+    this.setScroll(scrollToShow(this.baseY.get(this.selected) ?? 0, 0, this.maxScroll));
     this.refresh();
+  }
+
+  /** SCREAM-397: runs a piece of drawing and lifts what it made above the scrolling notes. */
+  private fixed(draw: () => void): void {
+    const before = this.children.list.length;
+    draw();
+    for (const made of this.children.list.slice(before)) (made as unknown as Phaser.GameObjects.Components.Depth).setDepth(FIXED_DEPTH);
+  }
+
+  /**
+   * SCREAM-397: cork and wood drawn again over the strips above and below the view, so a note
+   * scrolled out of it slides under the labels at the top and under the card at the bottom.
+   */
+  private drawCovers(width: number, height: number): void {
+    const g = this.add.graphics();
+    const bottom = CORK_RECT.y + CORK_RECT.h;
+    g.fillStyle(WOOD, 1).fillRect(0, 0, width, CORK_RECT.y).fillRect(0, bottom, width, height - bottom);
+    g.fillStyle(CORK, 1).fillRect(CORK_RECT.x, CORK_RECT.y, CORK_RECT.w, BOARD_VIEW.top - CORK_RECT.y);
+    g.fillStyle(CORK, 1).fillRect(CORK_RECT.x, BOARD_VIEW.bottom, CORK_RECT.w, bottom - BOARD_VIEW.bottom);
+    let seed = 397;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    for (const [top, h] of [[CORK_RECT.y, BOARD_VIEW.top - CORK_RECT.y], [BOARD_VIEW.bottom, bottom - BOARD_VIEW.bottom]] as const) {
+      for (let i = 0; i < 110; i++) {
+        g.fillStyle(CORK_SPECKS[i % CORK_SPECKS.length], 0.7);
+        g.fillRect(CORK_RECT.x + next() * (CORK_RECT.w - 3), top + next() * (h - 3), 2 + next() * 2, 2 + next() * 2);
+      }
+    }
+    g.lineStyle(4, WOOD_DARK, 1).strokeRect(CORK_RECT.x - 4, CORK_RECT.y - 4, CORK_RECT.w + 8, CORK_RECT.h + 8);
+  }
+
+  /** SCREAM-397: an up and a down button between the trees; each shows only when the board can move that way. */
+  private addScrollButtons(): void {
+    const { x, upY, downY, size } = SCROLL_BUTTON;
+    const make = (y: number, arrow: string, by: number) => {
+      const art = this.add.container(x, y);
+      art.add(this.add.rectangle(2, 3, size, size, 0x000000, 0.22));
+      art.add(this.add.rectangle(0, 0, size, size, HIGHLIGHT, 1).setStrokeStyle(2, OUTLINE, 0.9));
+      art.add(this.add.text(0, 0, arrow, { fontFamily: 'monospace', fontSize: '22px', fontStyle: 'bold', color: INK }).setOrigin(0.5));
+      this.scrollArt.push(art);
+      const zone = this.add.zone(x - size / 2, y - size / 2, size, size).setOrigin(0, 0).setInteractive();
+      zone.input!.cursor = 'pointer';
+      zone.on('pointerdown', () => this.scrollBy(by));
+      return zone;
+    };
+    this.scrollArt = [];
+    this.scrollUpButton = make(upY, '▲', -BOARD_VIEW.step);
+    this.scrollDownButton = make(downY, '▼', BOARD_VIEW.step);
+  }
+
+  /** SCREAM-397: the mouse wheel and a drag (a finger, or the mouse held down) scroll the board. */
+  private addScrolling(): void {
+    this.input.on('wheel', (_p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => {
+      if (dy !== 0) this.scrollBy(Math.sign(dy) * BOARD_VIEW.step);
+    });
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.drag = !this.open && inBoardView(p.y) ? { y: p.y, scroll: this.scrollY, moved: false } : null;
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!this.drag || !p.isDown || this.open) return;
+      if (!this.drag.moved && Math.abs(p.y - this.drag.y) < 8) return;
+      this.drag.moved = true;
+      this.setScroll(this.drag.scroll - (p.y - this.drag.y));
+    });
+  }
+
+  /** Scrolls the board by this many pixels (down is positive). Test hook too. */
+  scrollBy(by: number): void {
+    if (this.open) return;
+    this.setScroll(this.scrollY + by);
+  }
+
+  /** Scrolls just far enough to show a note whole, and tells where it is on the screen (test hook). */
+  reveal(id: string): [number, number] {
+    this.setScroll(scrollToShow(this.baseY.get(id) ?? 0, this.scrollY, this.maxScroll));
+    const note = this.notes.find((n) => n.id === id);
+    return note ? [note.x, note.y] : [0, 0];
+  }
+
+  /** Moves every note, its click area and the strings to this scroll. */
+  private setScroll(scroll: number): void {
+    const next = clampScroll(Math.round(scroll), this.maxScroll);
+    if (next === this.scrollY) return;
+    this.scrollY = next;
+    const size = BOARD_LAYOUT.note;
+    for (const note of this.notes) {
+      note.y = (this.baseY.get(note.id) ?? note.y) - next;
+      this.noteArt.get(note.id)?.setY(note.y);
+      const zone = this.zones.get(note.id);
+      if (!zone) continue;
+      zone.setPosition(note.x - size / 2, note.y - size / 2);
+      // A note under the labels or the card can't be pointed at or clicked.
+      if (inBoardView(note.y)) zone.setInteractive();
+      else zone.disableInteractive();
+    }
+    this.drawStrings();
+    this.drawRing();
+    this.scrollArt[0]?.setVisible(next > 0);
+    this.scrollArt[1]?.setVisible(next < this.maxScroll);
+    if (next > 0) this.scrollUpButton.setInteractive();
+    else this.scrollUpButton.disableInteractive();
+    if (next < this.maxScroll) this.scrollDownButton.setInteractive();
+    else this.scrollDownButton.disableInteractive();
   }
 
   /** Can the note be bought now, and if not, why (test hook too). */
@@ -151,7 +285,7 @@ export class PowerUpsScene extends Phaser.Scene {
 
   /** A string from each note's pin up to the pin of every note it hangs from. */
   private drawStrings(): void {
-    const g = this.add.graphics();
+    const g = this.strings.clear();
     const pin = (n: PlacedNote) => ({ x: n.x, y: n.y - BOARD_LAYOUT.note / 2 + 5 });
     for (const note of this.notes) {
       for (const id of note.from) {
@@ -170,12 +304,18 @@ export class PowerUpsScene extends Phaser.Scene {
     const size = BOARD_LAYOUT.note;
     const zone = this.add.zone(note.x - size / 2, note.y - size / 2, size, size).setOrigin(0, 0).setInteractive();
     zone.input!.cursor = 'pointer';
+    this.zones.set(note.id, zone);
     zone.on('pointerover', () => {
-      if (this.open) return;
+      if (this.open || this.drag?.moved) return;
       this.selected = note.id;
       this.refresh();
     });
-    zone.on('pointerdown', () => {
+    // SCREAM-397: a note opens when the press is let go on it, so a drag that starts on a note scrolls instead.
+    zone.on('pointerdown', () => (this.pressedOn = note.id));
+    zone.on('pointerup', () => {
+      const pressedHere = this.pressedOn === note.id;
+      this.pressedOn = '';
+      if (!pressedHere || this.open || this.drag?.moved) return;
       this.selected = note.id;
       this.openNote();
     });
@@ -239,6 +379,7 @@ export class PowerUpsScene extends Phaser.Scene {
   private move(direction: BoardDirection): void {
     if (this.open) return;
     this.selected = nextNote(this.notes, this.selected, direction);
+    this.reveal(this.selected); // SCREAM-397: the board follows the highlight
     this.refresh();
   }
 
@@ -383,6 +524,16 @@ export class PowerUpsScene extends Phaser.Scene {
     this.hint.setText(status === 'ok' ? HINT_OPEN_BUY : HINT_OPEN);
   }
 
+  /** The yellow frame round the highlighted note. */
+  private drawRing(): void {
+    this.ring.clear();
+    const note = this.notes.find((n) => n.id === this.selected);
+    if (!note) return;
+    const half = BOARD_LAYOUT.note / 2 + 6;
+    this.ring.lineStyle(8, OUTLINE, 0.9).strokeRect(note.x - half, note.y - half, half * 2, half * 2);
+    this.ring.lineStyle(4, HIGHLIGHT, 1).strokeRect(note.x - half, note.y - half, half * 2, half * 2);
+  }
+
   private refresh(): void {
     this.xpLabel?.setText(`XP: ${this.evening.xp}`);
     for (const n of this.notes) this.drawNote(n);
@@ -393,15 +544,12 @@ export class PowerUpsScene extends Phaser.Scene {
     this.hint.setText(HINT_CLOSED);
 
     const note = this.notes.find((n) => n.id === this.selected);
-    this.ring.clear();
+    this.drawRing();
     if (!note) return;
-    const half = BOARD_LAYOUT.note / 2 + 6;
-    this.ring.lineStyle(8, OUTLINE, 0.9).strokeRect(note.x - half, note.y - half, half * 2, half * 2);
-    this.ring.lineStyle(4, HIGHLIGHT, 1).strokeRect(note.x - half, note.y - half, half * 2, half * 2);
     const status = this.status(note.id);
     this.detailName.setText(note.name);
     // The card has one line: a long description is cut short there (the opened note has all of it).
-    this.detailText.setText(note.description.length > 48 ? `${note.description.slice(0, 45).trimEnd()}...` : note.description);
+    this.detailText.setText(note.description.length > 58 ? `${note.description.slice(0, 55).trimEnd()}...` : note.description);
     this.detailStatus.setText(status === 'owned' ? 'Owned' : priceOf(note)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
     if (this.open) this.drawBig(note);
   }

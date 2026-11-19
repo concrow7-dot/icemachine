@@ -118,16 +118,44 @@ const { chromium } = require('playwright');
   // SCREAM-296: notes have pictures and prices, open bigger, and can be bought.
   const pu = (fn) => sc('PowerUps', fn);
   const cashNow = () => page.evaluate(() => window.__game.registry.get('evening').moneyCents);
-  const noteAt = (id) => pu(`(() => { const n = s.notes.find(n => n.id === '${id}'); return [n.x, n.y]; })()`);
+  const noteAt = (id) => pu(`s.reveal('${id}')`); // SCREAM-397: scrolls the board to the note first
   const big = () => pu("s.open + ' | ' + s.bigTexts.join(' | ') + ' | button=' + !!s.buyButton");
   check('...the first note is marked, and the card gives its name and price', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')) + ' / ' + (await pu('s.detailStatus.text')), 'temp-gas-can / TEMPORARY GAS CAN / $10.00');
   check('...no ice cream says ? any more (SCREAM-334, SCREAM-335)', await pu("s.notes.filter(n => n.logo === 'question').map(n => n.id).join()"), '');
   check('...nothing is owned yet but the Chocolate Eclair (SCREAM-271)', await pu("s.notes.filter(n => s.status(n.id) === 'owned').map(n => n.id).join()"), 'icecream-eclair');
   check('SCREAM-396: the eclair on top, SpongePop under the Speaker and the Drum Cone under the Bass, the Lou Ball and the Explorer Pop last under More Space for Scream; no sandwich', await pu("s.notes.filter(n => n.id.startsWith('icecream')).map(n => n.name + '<' + n.from.join('+')).join(' | ')"), 'CHOCOLATE ECLAIR< | SPONGEPOP<upgrade-speaker | DRUM CONE<heavier-bass | TWO BALL LOU BALL<more-junk | LIL EXPLORER POP<more-junk');
-  check('...SpongePop and the Drum Cone sit level, left and right of the eclair; the Lou Ball and the Explorer Pop are lowest, above the bottom strip', await pu("(() => { const at = (id) => s.notes.find(n => n.id === 'icecream-' + id); const [e, sp, ex, l, r] = ['eclair','spongepop','drumcone','louball','explorer'].map(at); return [sp.y === ex.y, sp.x < e.x && e.x < ex.x, l.x === sp.x && r.x === ex.x, l.y === r.y && l.y > sp.y, l.y === Math.max(...s.notes.map(n => n.y)) && l.y + 23 < 506].join(); })()"), 'true,true,true,true,true');
+  check('...SpongePop and the Drum Cone sit level, left and right of the eclair; the Lou Ball and the Explorer Pop are lowest (SCREAM-397: below the view until the board scrolls)', await pu("(() => { const at = (id) => s.notes.find(n => n.id === 'icecream-' + id); const [e, sp, ex, l, r] = ['eclair','spongepop','drumcone','louball','explorer'].map(at); return [sp.y === ex.y, sp.x < e.x && e.x < ex.x, l.x === sp.x && r.x === ex.x, l.y === r.y && l.y > sp.y, l.y === Math.max(...s.notes.map(n => n.y)) && l.y > 420 && s.maxScroll > 0].join(); })()"), 'true,true,true,true,true');
   check('SCREAM-396: only the gas can can be bought first; the speakers and the ice creams wait', await pu("['temp-gas-can','upgrade-speaker','heavier-bass','icecream-spongepop','icecream-drumcone','service-with-a-smile','more-junk','icecream-louball'].map(id => s.status(id)).join()"), 'ok,locked,locked,locked,locked,locked,locked,locked');
   await page.mouse.move(5, 5); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_board.png' });
+  // ---- SCREAM-397: the cork board scrolls; both trees move together ----
+  {
+    const ys = () => pu("['icecream-eclair','icecream-louball','trot'].map(id => Math.round(s.notes.find(n => n.id === id).y)).join()");
+    const buttons = () => pu("s.scrollArt.map(a => a.visible).join()");
+    check('SCREAM-397: the board opens at the top: rows 60 px apart, the last Money rows below the view, only the down button showing', (await pu('s.scrollY')) + ' ' + (await pu('s.maxScroll')) + ' ' + (await ys()) + ' ' + (await buttons()), '0 107 136,496,136 false,true');
+    await page.mouse.move(480, 300); await page.mouse.wheel(0, 100); await wait(150);
+    check('...the mouse wheel moves it down a row; both trees move together; both buttons show', (await pu('s.scrollY')) + ' ' + (await ys()) + ' ' + (await buttons()), '60 76,436,76 true,true');
+    check('...a note scrolled under the labels can\'t be clicked; one in the view can', await pu("s.zones.get('icecream-eclair').input.enabled + ' ' + s.zones.get('temp-gas-can').input.enabled"), 'false true');
+    const down = await pu('[s.scrollDownButton.x + 20, s.scrollDownButton.y + 20]');
+    await page.mouse.click(down[0], down[1]); await wait(150);
+    check('...the down button moves it to the end and then hides', (await pu('s.scrollY')) + ' ' + (await ys()) + ' ' + (await buttons()), '107 29,389,29 true,false');
+    await page.mouse.move(5, 5); await wait(100);
+    await page.screenshot({ path: outDir + '/hub_cork_board_scrolled.png' });
+    await page.mouse.move(700, 300); await page.mouse.down(); await page.mouse.move(700, 340, { steps: 4 }); await page.mouse.up(); await wait(150);
+    check('...dragging the cork down 40 px moves the board back 40', await pu('s.scrollY'), 67);
+    const lou = await pu("(() => { const n = s.notes.find(n => n.id === 'icecream-drumcone'); return [n.x, n.y]; })()");
+    await page.mouse.move(lou[0], lou[1]); await page.mouse.down(); await page.mouse.move(lou[0], lou[1] + 30, { steps: 4 }); await page.mouse.up(); await wait(150);
+    check('...a drag that starts on a note scrolls and doesn\'t open it', (await pu('s.scrollY')) + ' ' + (await pu('s.open')), '37 false');
+    const up = await pu('[s.scrollUpButton.x + 20, s.scrollUpButton.y + 20]');
+    await page.mouse.click(up[0], up[1]); await wait(150);
+    check('...the up button goes back to the top', (await pu('s.scrollY')) + ' ' + (await buttons()), '0 false,true');
+    await page.mouse.move(5, 5); await wait(100);
+    await pu("(s.selected = 'more-junk', s.refresh(), true)");
+    await press('ArrowDown');
+    check('...the arrow keys bring the highlighted note into view (Down from More Space for Scream)', (await pu('s.selected')) + ' ' + (await pu('s.scrollY')) + ' ' + (await pu("Math.round(s.notes.find(n => n.id === s.selected).y) <= 420 - 23")), 'icecream-louball 107 true');
+    check('...showing the gas can again scrolls back only as far as needed; showing the eclair, to the top', (await pu("(s.reveal('temp-gas-can'), s.scrollY)")) + ' ' + (await pu("(s.reveal('icecream-eclair'), s.scrollY)")), '59 0');
+    await pu("(s.selected = 'temp-gas-can', s.refresh(), true)");
+  }
   await press('ArrowDown');
   check('...Down moves to the nearest note below (SCREAM-396: Service With A Smile, straight under the gas can)', await pu('s.selected'), 'service-with-a-smile');
   for (let i = 0; i < 4; i++) await press('ArrowRight');

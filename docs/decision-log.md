@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 193 — The cork board scrolls (2026-11-18)
+
+**Decision (Jira SCREAM-397, under SCREAM-78; PO, November 18, 21:10 and 21:39):** "The xp tree will also be very long as well. I think we should plan on making this screen scroll down within the cork board", then "Let's also pull in the scrolling feature to the dev work since I think they will affect each other". His answers: do the trees move together or each on its own: "Together (Recommended)"; do the MONEY and XP labels stay pinned or scroll away: "Stay pinned (Recommended)". So the notes of both trees scroll as one board between the labels at the top and the card along the bottom; the labels, the card that names the highlighted note and BACK never move.
+
+**Options considered:** each tree scrolling on its own; the labels scrolling away with the notes; squeezing the rows instead (decision 192 did, to 54 px, and an eighth row would not have fit).
+
+**Why (product owner's rationale):** "The xp tree will also be very long as well." Earlier the same evening: "I will slowly be adding more and more powerups".
+
+**Engineering's calls (proposals):** four ways to scroll: the mouse wheel (a row at a time), the arrow keys (the board follows the highlighted note), dragging the cork with the mouse or a finger, and an up and a down button between the trees (the mobile rule, SCREAM-77; each shows only when there is more that way); a note opens when the click is let go, so a drag that starts on a note scrolls instead of opening it; a note that has slid under the labels or the card can't be clicked; the rows are 60 px apart again and the card is back along the bottom left (192 had moved both); the board opens showing the note left highlighted; the scroll isn't saved.
+
 ## 192 — The Money tree's new order: one path, the best notes last; the sandwich comes off the board (2026-11-18)
 
 **Decision (Jira SCREAM-396, under SCREAM-78; PO, November 18, 20:30 on):** two notepad sketches (Personal Notes, "Power-up tree (notepad, November 18)" and "Power-up tree, second sketch (notepad, November 18)") and "I want the best items to be last." The Money tree is one path now, top to bottom: the Chocolate Eclair (yours from the start; "Yes, eclair on top") → the Temporary Gas Can → Upgrade Speaker and Speaker with Heavier Bass side by side → SpongePop under the Speaker and the Drum Cone under the Bass → Service With A Smile, from either → More Space for Scream → the Two Ball Lou Ball and the Lil Explorer Pop. His second sketch had "Drumcone" twice; asked which was a different note: "Bottom one is Explorer Pop". The Cookie Ice Cream Sandwich, on neither sketch: "I will slowly be adding more and more powerups so I wont be getting rid of it. For now we can remove it from the game." So it has no note and can't be bought or stocked in Story. On the first sketch, where the last pair was the Lou Ball and the Drum Cone, he was asked whether to leave them together though they cost and sell alike: "Leave as sketched" (the second sketch then made the last pair the Lou Ball and the Explorer Pop).

@@ -8,10 +8,46 @@ import type { PowerUpLogo, PowerUpTree } from '../config/powerUps';
 export const BOARD_LAYOUT = {
   treeX: [250, 710],
   firstRowY: 136,
-  rowGap: 54, // SCREAM-396: the Money tree has seven rows now (was 60 for four)
+  rowGap: 60, // SCREAM-397: back to 60 (396 squeezed seven rows into 54): the board scrolls now
   colGap: 84,
   note: 46,
 };
+
+/**
+ * SCREAM-397 (PO, November 18: "making this screen scroll down within the cork board"): the part of
+ * the cork the notes show in, between the trees' labels and the card along the bottom. Rows below
+ * it are reached by scrolling; both trees move together.
+ */
+export const BOARD_VIEW = { top: 106, bottom: 420, step: 60, margin: 8 };
+
+/** How far the board can scroll: until the lowest note sits just inside the view. 0 when everything fits. */
+export function maxScrollOf(noteYs: number[]): number {
+  if (noteYs.length === 0) return 0;
+  const lowest = Math.max(...noteYs) + BOARD_LAYOUT.note / 2 + BOARD_VIEW.margin;
+  return Math.max(0, Math.ceil(lowest - BOARD_VIEW.bottom));
+}
+
+/** A scroll within what the board allows. */
+export function clampScroll(scroll: number, max: number): number {
+  return Math.min(max, Math.max(0, scroll));
+}
+
+/**
+ * The scroll that shows a note whole (y is its place on the unscrolled board): unchanged when it
+ * already is, otherwise moved just far enough.
+ */
+export function scrollToShow(y: number, scroll: number, max: number): number {
+  const half = BOARD_LAYOUT.note / 2 + BOARD_VIEW.margin;
+  let next = scroll;
+  if (y + half - next > BOARD_VIEW.bottom) next = y + half - BOARD_VIEW.bottom;
+  if (y - half - next < BOARD_VIEW.top) next = y - half - BOARD_VIEW.top;
+  return clampScroll(Math.round(next), max);
+}
+
+/** Is a note at this place on the screen inside the view (its middle, at least)? */
+export function inBoardView(screenY: number): boolean {
+  return screenY >= BOARD_VIEW.top && screenY <= BOARD_VIEW.bottom;
+}
 
 export type PlacedNote = {
   id: string;

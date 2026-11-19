@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { game } from './game.mjs';
 
-const { placeNotes, nextNote, buyStatus, BOARD_LAYOUT } = await game('state/PowerUpBoard');
+const { placeNotes, nextNote, buyStatus, BOARD_LAYOUT, BOARD_VIEW, maxScrollOf, clampScroll, scrollToShow, inBoardView } = await game('state/PowerUpBoard');
 const { POWER_UP_TREES, FREE_NOTE_IDS, storyRefuseAboveCents } = await game('config/powerUps');
 const { XP_NOTE_PRICES } = await game('config/tuning');
 
@@ -144,8 +144,6 @@ test('SCREAM-396 (the PO\'s sketches, November 18): the Money tree, top to botto
   assert.deepEqual(place('more-junk'), [2, 5, ['service-with-a-smile']]);
   assert.deepEqual(place('icecream-louball'), [1, 6, ['more-junk']]);
   assert.deepEqual(place('icecream-explorer'), [3, 6, ['more-junk']]);
-  // The last row is clear of the hint strip along the bottom of the screen (y 506).
-  assert.ok(Math.max(...notes.map((n) => n.y)) + BOARD_LAYOUT.note / 2 < 506);
   const [eclair, sponge, drum, left, explorer] = ice;
   // Either speaker opens a way down; the other one can be bypassed.
   const speakerWay = [...FREE_NOTE_IDS, 'temp-gas-can', 'upgrade-speaker'];
@@ -205,4 +203,31 @@ test('PO, November 15 (03:28): two notes come out of Brakes Made This Century an
     assert.equal(at(left).y, at(right).y); // level with each other
     assert.ok(at(left).y > at(parent).y && at(left).x < at(right).x); // below it, side by side
   }
+});
+
+test('SCREAM-397 (PO: "making this screen scroll down within the cork board"): the rows are 60 px apart again and the lowest are reached by scrolling', () => {
+  assert.equal(BOARD_LAYOUT.rowGap, 60);
+  const ys = notes.map((n) => n.y);
+  const max = maxScrollOf(ys);
+  const lowest = Math.max(...ys);
+  assert.ok(lowest + BOARD_LAYOUT.note / 2 > BOARD_VIEW.bottom, 'the last row does not fit in the view');
+  assert.equal(max, lowest + BOARD_LAYOUT.note / 2 + BOARD_VIEW.margin - BOARD_VIEW.bottom);
+  assert.ok(lowest - max + BOARD_LAYOUT.note / 2 < BOARD_VIEW.bottom, 'scrolled all the way, the last row is in the view');
+  assert.equal(maxScrollOf([136, 196, 256]), 0, 'a short tree does not scroll');
+  assert.equal(maxScrollOf([]), 0);
+  assert.deepEqual([clampScroll(-5, max), clampScroll(30, max), clampScroll(9999, max)], [0, 30, max]);
+});
+
+test('SCREAM-397: the board scrolls just far enough to show a note whole, and stays put when it already is', () => {
+  const max = maxScrollOf(notes.map((n) => n.y));
+  const top = 136; // the first row
+  const low = Math.max(...notes.map((n) => n.y));
+  assert.equal(scrollToShow(top, 0, max), 0);
+  assert.equal(scrollToShow(low, 0, max), max);
+  assert.equal(scrollToShow(top, max, max), 0, 'back up: the first row sits just under the labels at scroll 0');
+  assert.equal(scrollToShow(256, 40, max), 40, 'a note already in view does not move the board');
+  const half = BOARD_LAYOUT.note / 2 + BOARD_VIEW.margin;
+  const partly = scrollToShow(436, 0, max);
+  assert.equal(436 + half - partly, BOARD_VIEW.bottom, 'a note just below the view comes up to its bottom edge');
+  assert.deepEqual([inBoardView(BOARD_VIEW.top - 1), inBoardView(BOARD_VIEW.top), inBoardView(300), inBoardView(BOARD_VIEW.bottom + 1)], [false, true, true, false]);
 });
