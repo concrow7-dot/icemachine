@@ -33,8 +33,11 @@ test('SCREAM-395 (PO: "put items next to each other that are the same cost", "Le
   // call), so the two speakers sit side by side at $15 and $20: its rows no longer cost the same.
   const moneyRows = [0, 1, 2, 3, 4, 5, 6].map((r) => money.notes.filter((n) => n.row === r && !n.free).map((n) => n.priceCents));
   assert.deepEqual(moneyRows, [[], [1000], [1500, 2000], [1500, 1500], [1000], [1500], [2000, 2000]]);
-  assert.deepEqual(rows(xp), [[XP_NOTE_PRICES[0]], [XP_NOTE_PRICES[1]], [XP_NOTE_PRICES[2]], []]);
-  assert.ok(XP_NOTE_PRICES[0] < XP_NOTE_PRICES[1] && XP_NOTE_PRICES[1] < XP_NOTE_PRICES[2]);
+  // SCREAM-398 (PO: "Rise by row"): the XP tree has six rows, each dearer than the one above.
+  const xpRows = [0, 1, 2, 3, 4, 5].map((r) => [...new Set(xp.notes.filter((n) => n.row === r).map((n) => n.xp))]);
+  assert.deepEqual(xpRows, XP_NOTE_PRICES.map((price) => [price]));
+  assert.deepEqual(XP_NOTE_PRICES, [40, 50, 60, 80, 100, 120]);
+  assert.ok(XP_NOTE_PRICES.every((price, i) => i === 0 || price > XP_NOTE_PRICES[i - 1]));
 });
 
 test('every note has its own place, and hangs only from notes above it in its own tree', () => {
@@ -56,9 +59,10 @@ test('the arrow keys move to the nearest note that way', () => {
   assert.equal(nextNote(notes, 'icecream-spongepop', 'right'), 'icecream-drumcone');
   assert.equal(nextNote(notes, 'more-junk', 'up'), 'service-with-a-smile');
   assert.equal(nextNote(notes, 'icecream-louball', 'right'), 'icecream-explorer');
-  assert.equal(nextNote(notes, 'brakes-made-this-century', 'left'), 'train-off-the-tracks');
-  assert.equal(nextNote(notes, 'brakes-made-this-century', 'right'), 'steam-engine');
-  assert.equal(nextNote(notes, 'brakes-made-this-century', 'up'), 'trot');
+  assert.equal(nextNote(notes, 'brakes-made-this-century', 'left'), 'calculator');
+  assert.equal(nextNote(notes, 'handy-notebook', 'down'), 'steam-engine');
+  assert.equal(nextNote(notes, 'steam-engine', 'up'), 'handy-notebook');
+  assert.equal(nextNote(notes, 'gitty-up', 'right'), 'speedy-neighbors');
 });
 
 test('...and cross from one tree to the other', () => {
@@ -70,7 +74,7 @@ test('...and stay put at the edge of the board', () => {
   assert.equal(nextNote(notes, 'upgrade-speaker', 'left'), 'upgrade-speaker');
   assert.equal(nextNote(notes, 'icecream-eclair', 'up'), 'icecream-eclair');
   assert.equal(nextNote(notes, 'icecream-louball', 'down'), 'icecream-louball');
-  assert.equal(nextNote(notes, 'speedy-neighbors', 'right'), 'speedy-neighbors');
+  assert.equal(nextNote(notes, 'back-it-up', 'right'), 'back-it-up');
 });
 
 test('every note can be reached with the arrow keys from the first one', () => {
@@ -88,9 +92,9 @@ test('every note can be reached with the arrow keys from the first one', () => {
 
 test('SCREAM-296: every note has a name and a price (in cash, or SCREAM-395 in XP)', () => {
   const mirrors = at('better-mirrors');
-  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.xp, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 0, XP_NOTE_PRICES[2], ['handy-notebook'], 'mirror']);
+  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.xp, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 0, XP_NOTE_PRICES[5], ['speedy-neighbors'], 'mirror']);
   const speedy = at('speedy-neighbors');
-  assert.deepEqual([speedy.name, speedy.xp, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', XP_NOTE_PRICES[2], ['handy-notebook'], 'sneaker', 'Most customers run after the truck faster.']);
+  assert.deepEqual([speedy.name, speedy.xp, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', XP_NOTE_PRICES[4], ['steam-engine'], 'sneaker', 'Most customers run after the truck faster.']);
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && Number.isInteger(n.xp) && (n.priceCents > 0 || n.xp > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
 });
 
@@ -179,15 +183,26 @@ test('SCREAM-303, SCREAM-81, SCREAM-329: Service With A Smile and the two speake
   assert.ok(speaker.y === bass.y && speaker.x < bass.x && smile.y > speaker.y);
 });
 
-test('SCREAM-395: the XP tree starts with Trot (the truck\'s side) and the Calculator (the window\'s side)', () => {
-  assert.deepEqual(notes.filter((n) => n.tree === 1 && n.from.length === 0).map((n) => n.id), ['trot', 'calculator']);
+test('SCREAM-398 (the PO\'s sketch, November 18): the XP tree, top to bottom', () => {
+  assert.deepEqual(notes.filter((n) => n.tree === 1 && n.from.length === 0).map((n) => n.id), ['trot']);
+  const place = (id) => { const n = xp.notes.find((m) => m.id === id); return [n.col, n.row, n.from]; };
+  assert.deepEqual(place('trot'), [2, 0, []]);
+  assert.deepEqual(place('calculator'), [1, 1, ['trot']]);
+  assert.deepEqual(place('brakes-made-this-century'), [3, 1, ['trot']]);
+  assert.deepEqual(place('train-off-the-tracks'), [0, 2, ['calculator']]); // his "Max Velocity"
+  assert.deepEqual(place('handy-notebook'), [2, 2, ['calculator', 'brakes-made-this-century']]);
+  assert.deepEqual(place('back-it-up'), [4, 2, ['brakes-made-this-century']]);
+  assert.deepEqual(place('steam-engine'), [2, 3, ['handy-notebook']]);
+  assert.deepEqual(place('gitty-up'), [1, 4, ['steam-engine']]);
+  assert.deepEqual(place('speedy-neighbors'), [3, 4, ['steam-engine']]);
+  // His second page (21:58): the last row.
+  assert.deepEqual(place('this-century-register'), [1, 5, ['gitty-up']]);
+  assert.deepEqual(place('better-mirrors'), [3, 5, ['speedy-neighbors']]);
   const trot = at('trot');
   assert.deepEqual([trot.name, trot.logo], ['TROT', 'trot']);
   assert.match(trot.description, /without any gas pedal/);
   const calc = at('calculator');
   assert.deepEqual([calc.name, calc.description], ['CALCULATOR', 'Get a calculator to use at the sales window.']);
-  assert.deepEqual(notes.filter((n) => n.from.includes('trot')).map((n) => n.id), ['train-off-the-tracks', 'brakes-made-this-century', 'steam-engine']);
-  assert.deepEqual(notes.filter((n) => n.from.includes('calculator')).map((n) => n.id), ['handy-notebook', 'this-century-register']);
   for (const [id, name, logo, description] of [
     ['train-off-the-tracks', 'TRAIN OFF THE TRACKS', 'train-off-tracks', 'Max velocity increased.'],
     ['brakes-made-this-century', 'BRAKES MADE THIS CENTURY', 'brake-disc', 'Brakes are better.'],
@@ -195,14 +210,6 @@ test('SCREAM-395: the XP tree starts with Trot (the truck\'s side) and the Calcu
     ['back-it-up', 'BACK IT UP', 'back-it-up', 'Increase the speed of the truck in reverse.'],
   ]) assert.deepEqual([at(id).tree, at(id).name, at(id).logo, at(id).description], [1, name, logo, description]);
   assert.match(at('gitty-up').description, /Increase acceleration\./);
-});
-
-test('PO, November 15 (03:28): two notes come out of Brakes Made This Century and two out of the Handy Notebook, side by side', () => {
-  for (const [parent, left, right] of [['brakes-made-this-century', 'back-it-up', 'gitty-up'], ['handy-notebook', 'better-mirrors', 'speedy-neighbors']]) {
-    assert.deepEqual([at(left).from, at(right).from], [[parent], [parent]]);
-    assert.equal(at(left).y, at(right).y); // level with each other
-    assert.ok(at(left).y > at(parent).y && at(left).x < at(right).x); // below it, side by side
-  }
 });
 
 test('SCREAM-397 (PO: "making this screen scroll down within the cork board"): the rows are 60 px apart again and the lowest are reached by scrolling', () => {

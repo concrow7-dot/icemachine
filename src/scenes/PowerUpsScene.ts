@@ -67,7 +67,7 @@ export class PowerUpsScene extends Phaser.Scene {
   /** The opened note's words, top to bottom (name, description, price, the line under it). */
   bigTexts: string[] = [];
   hint!: Phaser.GameObjects.Text;
-  /** SCREAM-395: the XP tree's label, "XP: 120" (test hook). */
+  /** The XP tree's label (test hook). SCREAM-398 (PO, November 18): it says "XP" only; the amount is in the top strip. */
   xpLabel: Phaser.GameObjects.Text | null = null;
   /** SCREAM-397: how far the board is scrolled down, and how far it can be (test hooks). */
   scrollY = 0;
@@ -348,7 +348,7 @@ export class PowerUpsScene extends Phaser.Scene {
     this.add.rectangle(x + 2, y + 3, w, 36, 0x000000, 0.22);
     this.add.rectangle(x, y, w, 36, 0xfffdf2, 1).setStrokeStyle(2, OUTLINE, 0.9);
     const label = this.add.text(x, y + 1, name, { fontFamily: MARKER_FONT, fontSize: '24px', color: INK }).setOrigin(0.5).setName(`tree-${name}`);
-    if (id === 'xp') this.xpLabel = label; // SCREAM-395: the XP tree's label tells the XP in hand
+    if (id === 'xp') this.xpLabel = label;
     for (const px of [x - w / 2 + 10, x + w / 2 - 10]) {
       this.add.circle(px, y, 5, pinColour, 1).setStrokeStyle(1.5, OUTLINE, 1);
     }
@@ -535,7 +535,6 @@ export class PowerUpsScene extends Phaser.Scene {
   }
 
   private refresh(): void {
-    this.xpLabel?.setText(`XP: ${this.evening.xp}`);
     for (const n of this.notes) this.drawNote(n);
     this.big?.destroy();
     this.big = null;

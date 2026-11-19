@@ -8,9 +8,9 @@ const { POWER_UP_TREES } = await game('config/powerUps');
 const { placeNotes, buyStatus } = await game('state/PowerUpBoard');
 const { NOTEBOOK_ENTRIES_PER_PAGE } = await game('config/tuning');
 
-test('SCREAM-245: Handy Notebook; SCREAM-395: an XP note now, under the Calculator', () => {
+test('SCREAM-245: Handy Notebook; SCREAM-395: an XP note; SCREAM-398: under the Calculator or Brakes', () => {
   const n = placeNotes(POWER_UP_TREES).find((x) => x.id === 'handy-notebook');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'HANDY NOTEBOOK', 0, 'notepad', ['calculator'], 'Hints given by customers are written down.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'HANDY NOTEBOOK', 0, 'notepad', ['calculator', 'brakes-made-this-century'], 'Hints given by customers are written down.']);
   assert.equal(buyStatus(n, [], 0, true, 999), 'locked');
   assert.equal(buyStatus(n, ['calculator'], 0, true, n.xp), 'ok');
   assert.equal(buyStatus(n, ['calculator'], 4000, true, n.xp - 1), 'poor');
@@ -54,11 +54,12 @@ test('reading a save: only real entries are kept; a save from before the noteboo
   assert.deepEqual(readNotebook([{ day: 2, who: 'Big Kev', text: 'Hi' }, { day: 0, who: 'x', text: 'y' }, { day: 2, who: 5, text: 'y' }, null, { day: 2, who: 'x', text: '' }]), [{ day: 2, who: 'Big Kev', text: 'Hi' }]);
 });
 
-test('SCREAM-330: This Century Register; SCREAM-395: an XP note now, under the Calculator, beside the Handy Notebook', () => {
+test('SCREAM-330: This Century Register; SCREAM-395: an XP note; SCREAM-398: last, under Gitty Up', () => {
   const notes = placeNotes(POWER_UP_TREES);
   const n = notes.find((x) => x.id === 'this-century-register');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'THIS CENTURY REGISTER', 0, 'tablet', ['calculator'], 'Click the icons of the ice cream to calculate price.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'THIS CENTURY REGISTER', 0, 'tablet', ['gitty-up'], 'Click the icons of the ice cream to calculate price.']);
   assert.equal(buyStatus(n, [], 0, true, 999), 'locked');
-  assert.equal(buyStatus(n, ['calculator'], 0, true, n.xp), 'ok');
-  assert.equal(n.y, notes.find((x) => x.id === 'handy-notebook').y);
+  assert.equal(buyStatus(n, ['calculator'], 0, true, 999), 'locked');
+  assert.equal(buyStatus(n, ['gitty-up'], 0, true, n.xp), 'ok');
+  assert.equal(n.y, Math.max(...notes.filter((x) => x.tree === 1).map((x) => x.y)));
 });

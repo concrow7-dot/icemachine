@@ -946,7 +946,8 @@ export const WALKER_LATE_LEGS = 8;
 // you but once he leaves then you can."). Every number below is engineering's draft for him to adjust.
 
 /** What an XP note costs, by its row on the board (top row first). */
-export const XP_NOTE_PRICES = [40, 60, 90];
+// SCREAM-398 (PO, November 18: "Rise by row"): the XP tree has six rows now; engineering's draft numbers (all eleven notes: 840 XP; they were 740).
+export const XP_NOTE_PRICES = [40, 50, 60, 80, 100, 120];
 /** PO: "customers served at steps (1, 3, 5, 8, 12...)": the XP for reaching each step in one evening. */
 export const XP_SERVED_STEPS: readonly (readonly [customers: number, xp: number])[] = [[1, 2], [3, 3], [5, 4], [8, 6], [12, 8], [16, 10], [20, 12]];
 /** PO: "each new person served for the first time". */
