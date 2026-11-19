@@ -237,7 +237,8 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       // SCREAM-398 (PO's notepad sketch, November 18, "Here the xp tree"): Trot on top; the
       // Calculator and Brakes under it; Train Off The Tracks (his "Max Velocity") from the Calculator,
       // the Handy Notebook from either, Back It Up from Brakes; the Steam Engine from the Notebook;
-      // Gitty Up and Speedy Neighbors from the Steam Engine; This Century Register from either.
+      // Gitty Up and Speedy Neighbors from the Steam Engine. His second page (21:58) is the last row:
+      // This Century Register under Gitty Up, Better Mirrors under Speedy Neighbors.
       earned(TROT_ID, 2, 0),
       earned(CALCULATOR_ID, 1, 1, [TROT_ID]),
       earned(BRAKES_ID, 3, 1, [TROT_ID]),
@@ -245,12 +246,10 @@ export const POWER_UP_TREES: PowerUpTree[] = [
       earned(NOTEBOOK_ID, 2, 2, [CALCULATOR_ID, BRAKES_ID]),
       earned(BACK_IT_UP_ID, 4, 2, [BRAKES_ID]),
       earned(STEAM_ID, 2, 3, [NOTEBOOK_ID]),
-      // Better Mirrors is not on his sketch ("I'll add a screenshot"): engineering's placeholder
-      // until it comes, under the Handy Notebook as before.
-      earned(MIRRORS_ID, 4, 3, [NOTEBOOK_ID]),
       earned(GITTY_UP_ID, 1, 4, [STEAM_ID]),
       earned(SPEEDY_ID, 3, 4, [STEAM_ID]),
-      earned(REGISTER_ID, 2, 5, [GITTY_UP_ID, SPEEDY_ID]),
+      earned(REGISTER_ID, 1, 5, [GITTY_UP_ID]),
+      earned(MIRRORS_ID, 3, 5, [SPEEDY_ID]),
     ],
   },
 ];

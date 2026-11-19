@@ -54,12 +54,12 @@ test('reading a save: only real entries are kept; a save from before the noteboo
   assert.deepEqual(readNotebook([{ day: 2, who: 'Big Kev', text: 'Hi' }, { day: 0, who: 'x', text: 'y' }, { day: 2, who: 5, text: 'y' }, null, { day: 2, who: 'x', text: '' }]), [{ day: 2, who: 'Big Kev', text: 'Hi' }]);
 });
 
-test('SCREAM-330: This Century Register; SCREAM-395: an XP note; SCREAM-398: last, under Gitty Up or Speedy Neighbors', () => {
+test('SCREAM-330: This Century Register; SCREAM-395: an XP note; SCREAM-398: last, under Gitty Up', () => {
   const notes = placeNotes(POWER_UP_TREES);
   const n = notes.find((x) => x.id === 'this-century-register');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'THIS CENTURY REGISTER', 0, 'tablet', ['gitty-up', 'speedy-neighbors'], 'Click the icons of the ice cream to calculate price.']);
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'THIS CENTURY REGISTER', 0, 'tablet', ['gitty-up'], 'Click the icons of the ice cream to calculate price.']);
   assert.equal(buyStatus(n, [], 0, true, 999), 'locked');
   assert.equal(buyStatus(n, ['calculator'], 0, true, 999), 'locked');
-  assert.equal(buyStatus(n, ['speedy-neighbors'], 0, true, n.xp), 'ok');
+  assert.equal(buyStatus(n, ['gitty-up'], 0, true, n.xp), 'ok');
   assert.equal(n.y, Math.max(...notes.filter((x) => x.tree === 1).map((x) => x.y)));
 });

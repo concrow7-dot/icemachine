@@ -92,7 +92,7 @@ test('every note can be reached with the arrow keys from the first one', () => {
 
 test('SCREAM-296: every note has a name and a price (in cash, or SCREAM-395 in XP)', () => {
   const mirrors = at('better-mirrors');
-  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.xp, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 0, XP_NOTE_PRICES[3], ['handy-notebook'], 'mirror']);
+  assert.deepEqual([mirrors.name, mirrors.priceCents, mirrors.xp, mirrors.from, mirrors.logo], ['BETTER MIRRORS', 0, XP_NOTE_PRICES[5], ['speedy-neighbors'], 'mirror']);
   const speedy = at('speedy-neighbors');
   assert.deepEqual([speedy.name, speedy.xp, speedy.from, speedy.logo, speedy.description], ['SPEEDY NEIGHBORS', XP_NOTE_PRICES[4], ['steam-engine'], 'sneaker', 'Most customers run after the truck faster.']);
   assert.ok(notes.every((n) => Number.isInteger(n.priceCents) && Number.isInteger(n.xp) && (n.priceCents > 0 || n.xp > 0 || n.id === 'icecream-eclair'))); // SCREAM-271: the eclair is free
@@ -195,9 +195,9 @@ test('SCREAM-398 (the PO\'s sketch, November 18): the XP tree, top to bottom', (
   assert.deepEqual(place('steam-engine'), [2, 3, ['handy-notebook']]);
   assert.deepEqual(place('gitty-up'), [1, 4, ['steam-engine']]);
   assert.deepEqual(place('speedy-neighbors'), [3, 4, ['steam-engine']]);
-  assert.deepEqual(place('this-century-register'), [2, 5, ['gitty-up', 'speedy-neighbors']]);
-  // Better Mirrors is not on the sketch: engineering's placeholder until the PO's screenshot comes.
-  assert.deepEqual(place('better-mirrors'), [4, 3, ['handy-notebook']]);
+  // His second page (21:58): the last row.
+  assert.deepEqual(place('this-century-register'), [1, 5, ['gitty-up']]);
+  assert.deepEqual(place('better-mirrors'), [3, 5, ['speedy-neighbors']]);
   const trot = at('trot');
   assert.deepEqual([trot.name, trot.logo], ['TROT', 'trot']);
   assert.match(trot.description, /without any gas pedal/);
