@@ -464,7 +464,7 @@ const { chromium } = require('playwright');
   check('SCREAM-323: the cooler has RETURN TO TRUCK, bottom left', await sc('Cooler', 's.returnButton.text + " " + (s.returnButton.x < 40) + " " + (s.returnButton.y > 500)'), 'RETURN TO TRUCK true true');
   await page.mouse.click(rb[0], rb[1]); await until(async () => (await scenes()).startsWith('Truck'));
   check('...clicking it goes back to the truck screen', await scenes(), 'Truck,Hud');
-  check('...the power-ups can be looked at, not bought', await ev("e.powerUpStatus('service-with-a-smile')"), 'away');
+  check('...the power-ups can be looked at, not bought', await ev("e.powerUpStatus('temp-gas-can')"), 'away'); // SCREAM-396: the gas can is the note that isn't locked now
   await sc('Truck', '(s.activate("menu"), true)'); await until(async () => (await scenes()).startsWith('PowerUps'));
   check('...the cork board opens', await scenes(), 'PowerUps,Hud');
   await press('b'); await until(async () => (await scenes()).startsWith('Truck'));

@@ -207,21 +207,24 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     string: 0x2f8f46,
     paper: 0xd9f2c9,
     notes: [
-      // Top row ($10, and the eclair that is yours from the start).
-      paid(GAS_CAN_ID, 0, 0),
+      // SCREAM-396 (PO's two notepad sketches, November 18; "I want the best items to be last"): one
+      // path down the middle. The eclair (yours from the start), the gas can, then a choice of
+      // speaker ("The player should buy both items but the choice may make them bypass one. I also
+      // want players to get better speakers for making finding customers less frusterating."),
+      // an ice cream under each, Service With A Smile from either, More Space for Scream, and the
+      // Lou Ball and the Explorer Pop last. Every note keeps its price (engineering's call).
+      // The Cookie Ice Cream Sandwich is off the board ("For now we can remove it from the game."):
+      // its flavour stays in flavours.ts for Quick play and for the day it comes back.
+      paid(GAS_CAN_ID, 2, 1, [ICE('eclair')]),
       iceCreamNote('eclair', 2, 0),
-      paid(SMILE_ID, 4, 0),
-      // Second row ($15).
-      paid(MORE_JUNK_ID, 0, 1, [GAS_CAN_ID]),
-      iceCreamNote('spongepop', 1, 1, [ICE('eclair')]),
-      iceCreamNote('drumcone', 3, 1, [ICE('eclair')]), // SCREAM-376: beside SpongePop
-      paid(SPEAKER_ID, 4, 1, [SMILE_ID]),
-      // Third row ($20).
-      iceCreamNote('louball', 1, 2, [ICE('spongepop')]), // SCREAM-334
-      iceCreamNote('explorer', 3, 2, [ICE('drumcone')]), // SCREAM-376
-      paid(BASS_ID, 4, 2, [SPEAKER_ID]),
-      // SCREAM-333: the sandwich in the middle, unlocked by either third-row ice cream.
-      iceCreamNote('cookie', 2, 3, [ICE('louball'), ICE('explorer')]),
+      paid(SPEAKER_ID, 1, 2, [GAS_CAN_ID]),
+      paid(BASS_ID, 3, 2, [GAS_CAN_ID]),
+      iceCreamNote('spongepop', 1, 3, [SPEAKER_ID]),
+      iceCreamNote('drumcone', 3, 3, [BASS_ID]),
+      paid(SMILE_ID, 2, 4, [ICE('spongepop'), ICE('drumcone')]),
+      paid(MORE_JUNK_ID, 2, 5, [SMILE_ID]),
+      iceCreamNote('louball', 1, 6, [MORE_JUNK_ID]),
+      iceCreamNote('explorer', 3, 6, [MORE_JUNK_ID]),
     ],
   },
   {

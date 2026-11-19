@@ -53,22 +53,29 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()).includes('StoryIntro')); await press('Enter');
   await until(async () => (await scenes()).includes('Cooler')); await wait(300);
   await ev("(e.changeMoney(30000, 'Test', false), true)");
-  check('SCREAM-334: the Two Ball Lou Ball\'s note: $20 (SCREAM-376), under SpongePop, with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.flatMap(t => t.notes).find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 2000 | 1 | 2 | icecream-spongepop | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
-  check('...it can\'t be bought before SpongePop; after SpongePop it can', (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true true eclair,spongepop,louball');
+  check('SCREAM-334: the Two Ball Lou Ball\'s note: $20 (SCREAM-376), last, under More Space for Scream (SCREAM-396), with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.flatMap(t => t.notes).find(n => n.id === 'icecream-louball'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "TWO BALL LOU BALL | 2000 | 1 | 6 | more-junk | High upside, crazy downside. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
+  // SCREAM-396: the ice creams hang low in the Money tree now. This suite is about the ice creams, so the notes above them are simply owned.
+  await ev("(e.powerUpsOwned.push('temp-gas-can', 'upgrade-speaker', 'heavier-bass'), true)");
+  check('...it can\'t be bought before More Space for Scream; after it, it can (SpongePop hangs under the Speaker)', (await ev("e.buyPowerUp('icecream-louball')")) + ' ' + (await ev("e.buyPowerUp('icecream-spongepop')")) + ' ' + (await ev("(e.powerUpsOwned.push('more-junk'), e.buyPowerUp('icecream-louball'))")) + ' ' + (await ev('e.unlockedFlavours.join()')), 'false true true eclair,spongepop,louball');
+  // ...and More Space for Scream is taken away again: its own checks are further down.
+  await page.evaluate(async () => { const { truckSpec } = await import('/src/state/TruckSpec.js'); const e = window.__game.registry.get('evening'); e.powerUpsOwned.splice(e.powerUpsOwned.indexOf('more-junk'), 1); e.truckNow = truckSpec(true, e.powerUps); });
   check('...it costs $0.75 to stock (SCREAM-365; was $1.00) and is refused above $3.00', await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('louball').costCents + ' ' + e.refuseAboveCents('louball') + ' ' + e.slots.find(x => x.flavour === 'louball').priceCents; }), '75 300 300');
-  check('...the sandwich hangs from it: it can be bought now', await ev("e.buyPowerUp('icecream-cookie')"), true);
-  // SCREAM-376: the Explorer Pop hangs under the Drum Cone now; here it is owned without it, as in a run saved before the swap.
+  check('SCREAM-396: the sandwich is off the board: it can\'t be bought, and a run saved while it was owned can\'t stock it', (await ev("e.buyPowerUp('icecream-cookie')")) + ' ' + (await ev("(() => { e.powerUpsOwned.push('icecream-cookie'); const ok = e.flavourUnlocked('cookie'); e.powerUpsOwned.pop(); return ok; })()")), 'false false');
+  // SCREAM-396: the Explorer Pop hangs under More Space for Scream now; here it is owned without it, as in a run saved before the change.
   await ev("(e.powerUpsOwned.push('icecream-explorer'), true)");
 
-  // ---- The cooler with five ice creams ----
+  // ---- SCREAM-335: the Drum Cone's note ----
+  check('SCREAM-335: the Drum Cone\'s note: $15, under the Bass (SCREAM-396), with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.flatMap(t => t.notes).find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 1500 | 3 | 3 | heavier-bass | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
+  check('...bought (the Bass is owned): $0.75 to stock (SCREAM-365), refused above $3.00', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone') + ' ' + e.slots.find(x => x.flavour === 'drumcone').priceCents; })), 'true 75 300 300');
+  // ---- The cooler with five ice creams (SCREAM-396: all of Story's, now that the sandwich is off the board) ----
   await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
-  check('Five ice creams unlocked: the clipboard lists all five, in the order of the list', await sc('Cooler', "s.offered.map(f => f.id).join()"), 'eclair,spongepop,explorer,cookie,louball');
+  check('Five ice creams unlocked: the clipboard lists all five, in the order of the list', await sc('Cooler', "s.offered.map(f => f.id).join()"), 'eclair,spongepop,explorer,louball,drumcone');
   check('...the rows sit closer together and every row is above the totals', await sc('Cooler', "s.rowYs.join() + ' ' + (Math.max(...s.rowYs) + 20 < s.totals.y - 14)"), '140,182,224,266,308 true');
-  for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball']) {
+  for (const f of ['eclair', 'spongepop', 'explorer', 'louball', 'drumcone']) {
     const [x, y] = await sc('Cooler', `(() => { const b = s.addButtons.get('${f}'); return [b.x, b.y]; })()`);
     await page.mouse.click(x, y); await wait(120);
   }
-  check('...clicking each picture adds one of each', await sc('Cooler', "s.order.slots.filter(x => x.quantity > 0).map(x => x.flavour + ':' + x.quantity).join()"), 'eclair:1,spongepop:1,explorer:1,cookie:1,louball:1');
+  check('...clicking each picture adds one of each', await sc('Cooler', "s.order.slots.filter(x => x.quantity > 0).map(x => x.flavour + ':' + x.quantity).join()"), 'eclair:1,spongepop:1,explorer:1,louball:1,drumcone:1');
   check("...Today's Menu shows five cards, smaller, all on the wall (left of x 940)", await sc('Cooler', "(() => { const v = s.cards.filter(c => c.container.visible); const last = v[v.length - 1].container; return v.length + ' ' + (last.scaleX < 1) + ' ' + (last.x + 156 * last.scaleX <= 941) + ' ' + (v[0].container.x === 262); })()"), '5 true true true');
   await page.mouse.move(5, 5); await wait(150);
   await page.screenshot({ path: outDir + '/icecreams_cooler_five.png' });
@@ -85,7 +92,7 @@ const { chromium } = require('playwright');
     await page.screenshot({ path: outDir + '/icecreams_more_junk.png' });
     await own(false); await wait(700);
     check('...without it the cooler is 18 again', await sc('Cooler', 's.order.capacity'), 18);
-    for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball']) await sc('Cooler', `(s.order.addOne('${f}'), true)`);
+    for (const f of ['eclair', 'spongepop', 'explorer', 'louball', 'drumcone']) await sc('Cooler', `(s.order.addOne('${f}'), true)`);
     await sc('Cooler', '(s.refresh(), true)');
   }
 
@@ -94,10 +101,10 @@ const { chromium } = require('playwright');
   const plusAlpha = (f) => sc('Cooler', `s.cards.find(c => c.flavour === '${f}').plus.alpha`);
   check('SCREAM-374: the eclair went onto the menu at its top price, $2.50: the + is greyed', (await sc('Cooler', "s.order.slots[0].priceCents")) + ' ' + (await plusAlpha('eclair')), '250 0.35');
   check('...raised 20 times it stops at the $2.50 on its note, and the + is greyed', (await raise('eclair', 20)) + ' ' + (await plusAlpha('eclair')), '250 0.35');
-  check('...SpongePop, the Explorer Pop and the Lou Ball stop at $3.00; the sandwich at the general $4.00', [await raise('spongepop', 20), await raise('explorer', 20), await raise('louball', 20), await raise('cookie', 20)].join(), '300,300,300,400');
+  check('...SpongePop, the Explorer Pop, the Lou Ball and the Drum Cone stop at $3.00', [await raise('spongepop', 20), await raise('explorer', 20), await raise('louball', 20), await raise('drumcone', 20)].join(), '300,300,300,300');
   await page.screenshot({ path: outDir + '/icecreams_price_cap.png' });
   check('...lowered one step the + is bright again', (await sc('Cooler', "(s.order.changePrice('eclair', -25), s.refresh(), s.order.slots[0].priceCents)")) + ' ' + (await plusAlpha('eclair')), '225 1');
-  check('...an old save\'s higher price is brought down when the cooler opens', await (async () => { await ev("(e.coolerSlots[0].priceCents = 900, true)"); await sc('Cooler', '(s.scene.restart(), true)'); await wait(700); const got = (await ev('e.slots[0].priceCents')) + ' ' + (await sc('Cooler', 's.order.slots[0].priceCents')); for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball']) await sc('Cooler', `(s.order.addOne('${f}'), true)`); await sc('Cooler', '(s.refresh(), true)'); return got; })(), '250 250');
+  check('...an old save\'s higher price is brought down when the cooler opens', await (async () => { await ev("(e.coolerSlots[0].priceCents = 900, true)"); await sc('Cooler', '(s.scene.restart(), true)'); await wait(700); const got = (await ev('e.slots[0].priceCents')) + ' ' + (await sc('Cooler', 's.order.slots[0].priceCents')); for (const f of ['eclair', 'spongepop', 'explorer', 'louball', 'drumcone']) await sc('Cooler', `(s.order.addOne('${f}'), true)`); await sc('Cooler', '(s.refresh(), true)'); return got; })(), '250 250');
   {
     // The price buttons on a small card still work (SpongePop: SCREAM-343 leaves it room under its $3.00).
     const [x, y] = await sc('Cooler', "(() => { const c = s.cards.find(c => c.flavour === 'spongepop').container; return [c.x + (156 - 16) * c.scaleX, c.y + 120 * c.scaleY]; })()");
@@ -106,18 +113,6 @@ const { chromium } = require('playwright');
     await page.mouse.click(x, y); await wait(150);
     check('...a small card\'s + still raises its price', (await sc('Cooler', "s.order.slots.find(x => x.flavour === 'spongepop').priceCents")) - was, 25);
   }
-  // ---- SCREAM-335: the Drum Cone's note, and the cooler with all six ----
-  check('SCREAM-335: the Drum Cone\'s note: $15, beside SpongePop under the eclair (SCREAM-376), with the PO\'s line and the $3.00 limit', await page.evaluate(async () => { const { POWER_UP_TREES } = await import('/src/config/powerUps.js'); const n = POWER_UP_TREES.flatMap(t => t.notes).find(n => n.id === 'icecream-drumcone'); return [n.name, n.priceCents, n.col, n.row, n.from.join(), n.description].join(' | '); }), "DRUM CONE | 1500 | 3 | 1 | icecream-eclair | Drum solo reaches more of the neighborhood. The average person won't pay more than $3.00 for one. Costs you $0.75 each to stock.");
-  check('...bought (the Explorer Pop is owned): $0.75 to stock (SCREAM-365), refused above $3.00', (await ev("e.buyPowerUp('icecream-drumcone')")) + ' ' + (await page.evaluate(async () => { const { getFlavour } = await import('/src/config/flavours.js'); const e = window.__game.registry.get('evening'); return getFlavour('drumcone').costCents + ' ' + e.refuseAboveCents('drumcone') + ' ' + e.slots.find(x => x.flavour === 'drumcone').priceCents; })), 'true 75 300 300');
-  await sc('Cooler', '(s.scene.restart(), true)'); await wait(700);
-  check('Six ice creams unlocked: six rows, all above the totals', await sc('Cooler', "s.offered.map(f => f.id).join() + ' ' + s.rowYs.join() + ' ' + (Math.max(...s.rowYs) + 20 < s.totals.y - 14)"), 'eclair,spongepop,explorer,cookie,louball,drumcone 140,182,224,266,308,350 true');
-  for (const f of ['eclair', 'spongepop', 'explorer', 'cookie', 'louball', 'drumcone']) {
-    const [x, y] = await sc('Cooler', `(() => { const b = s.addButtons.get('${f}'); return [b.x, b.y]; })()`);
-    await page.mouse.click(x, y); await wait(120);
-  }
-  check("...Today's Menu shows six cards, all on the wall", await sc('Cooler', "(() => { const v = s.cards.filter(c => c.container.visible); const last = v[v.length - 1].container; return v.length + ' ' + (last.x + 156 * last.scaleX <= 941) + ' ' + v.map(c => c.flavour).join(); })()"), '6 true eclair,spongepop,explorer,cookie,louball,drumcone');
-  await page.mouse.move(5, 5); await wait(150);
-  await page.screenshot({ path: outDir + '/icecreams_cooler_six.png' });
   await sc('Cooler', '(s.buyButton.emit("pointerdown"), true)'); await wait(300);
   check('...bought: one Two Ball Lou Ball in the cooler', await ev("e.slots.find(s => s.flavour === 'louball').quantity"), 1);
 

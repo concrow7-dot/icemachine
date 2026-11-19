@@ -28,7 +28,9 @@ const CORK_SPECKS = [0xb5843f, 0xdcb277, 0xa87838];
 const GREY_PAPER = 0xd9d6cf;
 /** The cork inside the wooden frame. The top strip is left to the clock and the money. */
 const CORK_RECT = { x: 16, y: 50, w: 928, h: 444 };
-const DETAIL = { x: 300, y: 454, w: 520, h: 60 };
+// SCREAM-396: the Money tree has seven rows and reaches the bottom of the cork, so the card sits
+// under the XP tree (it was along the bottom left: x 300, y 454, w 520).
+const DETAIL = { x: 706, y: 356, w: 440, h: 60 };
 const BACK = { x: 866, y: 454, w: 108, h: 44 };
 /** The opened note, in the middle of the board. */
 const BIG = { x: 480, y: 268, w: 330, h: 372 };
@@ -399,7 +401,7 @@ export class PowerUpsScene extends Phaser.Scene {
     const status = this.status(note.id);
     this.detailName.setText(note.name);
     // The card has one line: a long description is cut short there (the opened note has all of it).
-    this.detailText.setText(note.description.length > 58 ? `${note.description.slice(0, 55).trimEnd()}...` : note.description);
+    this.detailText.setText(note.description.length > 48 ? `${note.description.slice(0, 45).trimEnd()}...` : note.description);
     this.detailStatus.setText(status === 'owned' ? 'Owned' : priceOf(note)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
     if (this.open) this.drawBig(note);
   }
