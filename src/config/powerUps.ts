@@ -234,21 +234,23 @@ export const POWER_UP_TREES: PowerUpTree[] = [
     string: 0x7a4fd0,
     paper: 0xe3d8fb,
     notes: [
-      // Top row: the truck's side starts with Trot, the window's side with the Calculator.
-      earned(TROT_ID, 1, 0),
-      earned(CALCULATOR_ID, 3, 0),
-      // Second row.
-      earned(TRAIN_ID, 0, 1, [TROT_ID]),
-      earned(BRAKES_ID, 1, 1, [TROT_ID]),
-      earned(STEAM_ID, 2, 1, [TROT_ID]),
-      earned(NOTEBOOK_ID, 3, 1, [CALCULATOR_ID]),
-      earned(REGISTER_ID, 4, 1, [CALCULATOR_ID]),
-      // Third row. PO, November 15: Back It Up and Gitty Up come out of Brakes; Better Mirrors and
-      // Speedy Neighbors out of the Handy Notebook.
-      earned(BACK_IT_UP_ID, 0, 2, [BRAKES_ID]),
-      earned(GITTY_UP_ID, 1, 2, [BRAKES_ID]),
-      earned(MIRRORS_ID, 3, 2, [NOTEBOOK_ID]),
-      earned(SPEEDY_ID, 4, 2, [NOTEBOOK_ID]),
+      // SCREAM-398 (PO's notepad sketch, November 18, "Here the xp tree"): Trot on top; the
+      // Calculator and Brakes under it; Train Off The Tracks (his "Max Velocity") from the Calculator,
+      // the Handy Notebook from either, Back It Up from Brakes; the Steam Engine from the Notebook;
+      // Gitty Up and Speedy Neighbors from the Steam Engine; This Century Register from either.
+      earned(TROT_ID, 2, 0),
+      earned(CALCULATOR_ID, 1, 1, [TROT_ID]),
+      earned(BRAKES_ID, 3, 1, [TROT_ID]),
+      earned(TRAIN_ID, 0, 2, [CALCULATOR_ID]),
+      earned(NOTEBOOK_ID, 2, 2, [CALCULATOR_ID, BRAKES_ID]),
+      earned(BACK_IT_UP_ID, 4, 2, [BRAKES_ID]),
+      earned(STEAM_ID, 2, 3, [NOTEBOOK_ID]),
+      // Better Mirrors is not on his sketch ("I'll add a screenshot"): engineering's placeholder
+      // until it comes, under the Handy Notebook as before.
+      earned(MIRRORS_ID, 4, 3, [NOTEBOOK_ID]),
+      earned(GITTY_UP_ID, 1, 4, [STEAM_ID]),
+      earned(SPEEDY_ID, 3, 4, [STEAM_ID]),
+      earned(REGISTER_ID, 2, 5, [GITTY_UP_ID, SPEEDY_ID]),
     ],
   },
 ];

@@ -113,7 +113,7 @@ const { chromium } = require('playwright');
   await until(async () => (await scenes()) === 'PowerUps,Hud');
   check('...a click opens the cork board, not the menu', await scenes(), 'PowerUps,Hud');
   const boardTexts = () => sc('PowerUps', "s.children.list.filter(o => o.type === 'Text').map(o => o.text).join(' | ')");
-  check('SCREAM-395: ...with two trees, MONEY and XP (the XP label tells the XP in hand)', (await boardTexts()).split(' | ').filter(t => ['TRUCK', 'ICE CREAM', 'CUSTOMER', 'MONEY', 'XP', 'XP: 0'].includes(t)).join(','), 'MONEY,XP: 0');
+  check('SCREAM-395: ...with two trees, MONEY and XP (SCREAM-398: the XP label has no amount)', (await boardTexts()).split(' | ').filter(t => ['TRUCK', 'ICE CREAM', 'CUSTOMER', 'MONEY', 'XP', 'XP: 0'].includes(t)).join(','), 'MONEY,XP');
   check('...21 notes pinned to it (SCREAM-395: no dummies; SCREAM-396: no sandwich)', await sc('PowerUps', 's.notes.length'), 21);
   // SCREAM-296: notes have pictures and prices, open bigger, and can be bought.
   const pu = (fn) => sc('PowerUps', fn);
@@ -159,7 +159,7 @@ const { chromium } = require('playwright');
   await press('ArrowDown');
   check('...Down moves to the nearest note below (SCREAM-396: Service With A Smile, straight under the gas can)', await pu('s.selected'), 'service-with-a-smile');
   for (let i = 0; i < 4; i++) await press('ArrowRight');
-  check('...Right four times crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')) + ' / ' + (await pu('s.detailStatus.text')), 'better-mirrors / BETTER MIRRORS / 90 XP');
+  check('...Right four times crosses into the next tree', (await pu('s.selected')) + ' / ' + (await pu('s.detailName.text')) + ' / ' + (await pu('s.detailStatus.text')), 'back-it-up / BACK IT UP / 60 XP');
   {
     // SCREAM-25 (PO, November 15): "Change "more Junk" to "More Space for Scream"": a long name, on two lines.
     const junk = await noteAt('more-junk');
@@ -199,7 +199,7 @@ const { chromium } = require('playwright');
   await press('b');
   ice = await noteAt('calculator');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('SCREAM-317: Calculator; SCREAM-395: a top note of the XP tree, 40 XP, BUY greyed out with no XP', await big(), 'true | CALCULATOR | Get a calculator to use at the sales window. | 40 XP | BUY | button=false');
+  check('SCREAM-317: Calculator; SCREAM-398: 50 XP, under Trot', await big(), 'true | CALCULATOR | Get a calculator to use at the sales window. | 50 XP | TROT Required | button=false');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_calculator.png' });
   // SCREAM-329 (PO, November 14, notepad sketch): the third row's left note is Speaker with Heavier Bass, $40.
@@ -213,14 +213,14 @@ const { chromium } = require('playwright');
   await press('b');
   ice = await noteAt('handy-notebook');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('SCREAM-245: Handy Notebook; SCREAM-395: 60 XP, under the Calculator', await big(), 'true | HANDY NOTEBOOK | Hints given by customers are written down. | 60 XP | CALCULATOR Required | button=false');
+  check('SCREAM-245: Handy Notebook; SCREAM-395: 60 XP, under the Calculator or Brakes (SCREAM-398)', await big(), 'true | HANDY NOTEBOOK | Hints given by customers are written down. | 60 XP | CALCULATOR or BRAKES MADE THIS CENTURY Required | button=false');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_notebook.png' });
   // SCREAM-330 (PO, November 14, the same sketch): the right note is This Century Register, $40, under the calculator.
   await press('b');
   ice = await noteAt('this-century-register');
   await page.mouse.click(ice[0], ice[1]); await wait(150);
-  check('SCREAM-330: This Century Register, $20, under Calculator', await big(), 'true | THIS CENTURY REGISTER | Click the icons of the ice cream to calculate price. | 60 XP | CALCULATOR Required | button=false');
+  check('SCREAM-330: This Century Register; SCREAM-398: last in the XP tree, 120 XP', await big(), 'true | THIS CENTURY REGISTER | Click the icons of the ice cream to calculate price. | 120 XP | GITTY UP or SPEEDY NEIGHBORS Required | button=false');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_note_register.png' });
   await press('b');
@@ -231,7 +231,7 @@ const { chromium } = require('playwright');
   await page.evaluate(() => window.__game.registry.get('evening').changeMoney(3500, 'Test', false)); await wait(100);
   const cash = await cashNow();
   await page.mouse.click(spot[0], spot[1]); await wait(150);
-  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first (PO, November 14: "CUSTOMER 4 Required"), with no button', await big(), 'true | BETTER MIRRORS | A marker at the edge of the screen points at each customer on their way to you. | 90 XP | HANDY NOTEBOOK Required | button=false');
+  check('SCREAM-296: a click opens the note bigger; a locked one says what to buy first (PO, November 14: "CUSTOMER 4 Required"), with no button', await big(), 'true | BETTER MIRRORS | A marker at the edge of the screen points at each customer on their way to you. | 80 XP | HANDY NOTEBOOK Required | button=false');
   check('...a note under two says either one', await pu("s.reason(s.notes.find(n => n.id === 'service-with-a-smile'), 'locked')"), 'SPONGEPOP or DRUM CONE Required');
   await page.screenshot({ path: outDir + '/hub_cork_note_locked.png' });
   await press('Enter');
@@ -292,12 +292,12 @@ const { chromium } = require('playwright');
   await press('Enter');
   check('...Enter buys nothing', (await cashNow()) + ' ' + (await pu("s.status('trot')")), cashBeforeXp + ' poor');
   await page.evaluate(() => window.__game.registry.get('evening').debugAddXp(50)); await wait(120);
-  check('...with 50 XP (the debug key\'s) the label says so and BUY lights up', (await pu('s.xpLabel.text')) + ' ' + (await pu('s.status()')) + ' ' + (await pu('!!s.buyButton')), 'XP: 50 ok true');
+  check('...with 50 XP (the debug key\'s) BUY lights up; SCREAM-398: the label still says only XP', (await pu('s.xpLabel.text')) + ' ' + (await pu('s.status()')) + ' ' + (await pu('!!s.buyButton')), 'XP ok true');
   await press('Enter'); await wait(150);
-  check('...Enter buys it with 40 XP and no cash', (await pu('s.xpLabel.text')) + ' ' + (await cashNow()) + ' ' + (await pu('s.bigTexts.slice(-2).join()')) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').powerUps.includes('trot'))), 'XP: 10 ' + cashBeforeXp + ' 40 XP,Owned true');
+  check('...Enter buys it with 40 XP and no cash', (await pu('s.xpLabel.text')) + ' ' + (await cashNow()) + ' ' + (await pu('s.bigTexts.slice(-2).join()')) + ' ' + (await page.evaluate(() => window.__game.registry.get('evening').powerUps.includes('trot'))), 'XP ' + cashBeforeXp + ' 40 XP,Owned true');
   await page.mouse.move(5, 300); await wait(100);
   await page.screenshot({ path: outDir + '/hub_cork_xp_owned.png' });
-  check('...the notes under it are unlocked, and short of XP', await pu("['train-off-the-tracks','brakes-made-this-century','steam-engine','back-it-up'].map(id => s.status(id)).join()"), 'poor,poor,poor,locked');
+  check('...the notes under it are unlocked, and short of XP', await pu("['calculator','brakes-made-this-century','train-off-the-tracks','handy-notebook'].map(id => s.status(id)).join()"), 'poor,poor,locked,locked');
   const c0 = await clockAt(); await wait(600);
   check('SCREAM-318: ...the clock waits at the board until DRIVE (Story)', (await clockAt()) === c0, true);
   await press('Escape'); await wait(250);
@@ -380,12 +380,12 @@ const { chromium } = require('playwright');
   check('SCREAM-310: Trot (bought with XP on day 1) is still owned: tonight\'s creep is 25.2 px/s, not 12 (SCREAM-336)', (await ev("e.powerUpStatus('trot')")) + ' ' + (await ev('Math.round(e.spec.creepSpeed * 10) / 10')), 'owned 25.2');
   // SCREAM-395: XP notes are bought with XP: cash alone doesn't do it.
   const xp0 = await ev('(e.changeMoney(5000, \'Test\', false), e.debugAddXp(60 - e.xp % 60), e.xp)');
-  check('SCREAM-395: at home a note under an owned one can be bought with XP; the cash is left alone', (await ev("e.powerUpStatus('brakes-made-this-century')")) + ' ' + (await ev("(() => { const cash = e.moneyCents; const ok = e.buyPowerUp('brakes-made-this-century'); return ok + ' ' + (e.moneyCents === cash); })()")) + ' ' + ((await ev('e.xp')) - xp0), 'ok true true -60');
+  check('SCREAM-395: at home a note under an owned one can be bought with XP; the cash is left alone', (await ev("e.powerUpStatus('brakes-made-this-century')")) + ' ' + (await ev("(() => { const cash = e.moneyCents; const ok = e.buyPowerUp('brakes-made-this-century'); return ok + ' ' + (e.moneyCents === cash); })()")) + ' ' + ((await ev('e.xp')) - xp0), 'ok true true -50'); // SCREAM-398: Brakes is in the 50 XP row
   await ev('(e.debugAddXp(300), true)');
   check('SCREAM-81: Upgrade Speaker (bought on day 1) is still owned: tonight\'s ring is 181.5 px', (await ev("e.powerUpStatus('upgrade-speaker')")) + ' ' + (await ev('Math.round(e.spec.musicRadius * 10) / 10')), 'owned 181.5');
   check('SCREAM-25, SCREAM-396: More Space for Scream, under Service With A Smile, bought at home: the cooler holds 24, not 18', (await ev('e.spec.coolerCapacity')) + ' ' + (await ev("(e.changeMoney(3000, 'Test', false), e.buyPowerUp('more-junk'))")) + ' ' + (await ev('e.spec.coolerCapacity')), '18 true 24');
   check('SCREAM-329, SCREAM-366: Speaker with Heavier Bass bought at home: people indoors go from a tenth as likely to as likely as in their yard (SCREAM-393), from now on', (await ev('e.residents.indoorsFactor')) + ' ' + (await ev("(e.changeMoney(4000, 'Test', false), e.buyPowerUp('heavier-bass'))")) + ' ' + (await ev('e.residents.indoorsFactor')), '0.1 true 1');
-  check('SCREAM-245: Handy Notebook bought at home (SCREAM-395: with XP, after the Calculator)', (await ev('e.hasNotebook')) + ' ' + (await ev("e.powerUpStatus('handy-notebook') + ' ' + e.buyPowerUp('calculator') + ' ' + e.buyPowerUp('handy-notebook')")) + ' ' + (await ev('e.hasNotebook')), 'false locked true true true');
+  check('SCREAM-245: Handy Notebook bought at home (SCREAM-398: with XP; Brakes, owned, already unlocks it)', (await ev('e.hasNotebook')) + ' ' + (await ev("e.powerUpStatus('handy-notebook') + ' ' + e.buyPowerUp('calculator') + ' ' + e.buyPowerUp('handy-notebook')")) + ' ' + (await ev('e.hasNotebook')), 'false ok true true true');
   await press('+'); await press('Enter');
   await until(async () => (await scenes()) === 'Truck,Hud');
   // SCREAM-245 (PO): "Notebook should be a new clickable item in the truck view".
@@ -450,9 +450,9 @@ const { chromium } = require('playwright');
   check('SCREAM-81: ...and the ring drawn round the truck is the bigger one', await page.evaluate(() => Math.round(window.__game.scene.getScene('Drive').ring.radius * 10) / 10), 181.5);
   check('...once the truck sets off, nothing can be bought', (await ev("e.powerUpStatus('train-off-the-tracks')")) + ' ' + (await ev("e.buyPowerUp('train-off-the-tracks')")), 'away false');
   // SCREAM-320 (PO, November 14): "purchase powerups while at home at any time": a home stop later in the evening.
-  check('SCREAM-320: ...away from home the board says to buy it at home', await ev("e.powerUpStatus('this-century-register')"), 'away');
+  check('SCREAM-320: ...away from home the board says to buy it at home', await ev("e.powerUpStatus('back-it-up')"), 'away');
   await ev("(e.changeMoney(3000, 'Test', false), e.startRestock(), true)");
-  check('SCREAM-320: on a home stop after setting off, notes can be bought again', (await ev("e.powerUpStatus('this-century-register')")) + ' ' + (await ev("e.buyPowerUp('this-century-register')")) + ' ' + (await ev("e.powerUpStatus('this-century-register')")), 'ok true owned');
+  check('SCREAM-320: on a home stop after setting off, notes can be bought again', (await ev("e.powerUpStatus('back-it-up')")) + ' ' + (await ev("e.buyPowerUp('back-it-up')")) + ' ' + (await ev("e.powerUpStatus('back-it-up')")), 'ok true owned');
   await ev('(e.endRestock(), true)');
   check('SCREAM-320: ...back on the road, not any more', await ev("e.powerUpStatus('steam-engine')"), 'away');
   await page.keyboard.down('ArrowUp'); await wait(300); await page.keyboard.up('ArrowUp'); await wait(2000);

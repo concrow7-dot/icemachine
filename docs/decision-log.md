@@ -2,6 +2,16 @@
 
 Newest first. Each entry: what was decided, the options considered, and why.
 
+## 194 — The XP tree's new order, six rows priced rising, and the label says only "XP" (2026-11-18)
+
+**Decision (Jira SCREAM-398, under SCREAM-78; PO, November 18, 21:39):** "Here the xp tree. Let's remove the amount from the xp in the cork board. Having it at the top left is enough." His notepad sketch (Personal Notes, "XP tree (notepad, November 18)"), top to bottom: Trot → Calculator and Brakes → Max Velocity (Train Off The Tracks) from the Calculator, the Notebook from either, Back it up from Brakes → Steam Engine from the Notebook → Gitty Up and Speedy Neighbor from the Steam Engine → This Century Register from either. Asked how the six rows are priced: "Rise by row (Recommended)". Better Mirrors is not on the sketch; asked what happens to it: "I'll add a screenshot". The XP tree's label reads "XP" (it read "XP: 120"); the XP in hand stays in the top strip beside the cash.
+
+**Options considered:** XP prices: rising by row, or every note keeping the price it had. Better Mirrors: off the board for now, or a place proposed by engineering (he will send a screenshot instead).
+
+**Why (product owner's rationale):** the label: "Having it at the top left is enough." The new order: _to be filled in by the PO._
+
+**Engineering's calls (proposals):** "Max Velocity" is read as Train Off The Tracks (its note says "Max velocity increased."); the six rows cost 40, 50, 60, 80, 100 and 120 XP (all eleven notes 800 XP; they were 740), with Trot left at 40; Better Mirrors hangs under the Handy Notebook as before, in the fourth row beside the Steam Engine, **a placeholder until his screenshot**; a run saved before the change keeps the notes it owns. Not measured: how many of the eleven a 10-day run can now afford.
+
 ## 193 — The cork board scrolls (2026-11-18)
 
 **Decision (Jira SCREAM-397, under SCREAM-78; PO, November 18, 21:10 and 21:39):** "The xp tree will also be very long as well. I think we should plan on making this screen scroll down within the cork board", then "Let's also pull in the scrolling feature to the dev work since I think they will affect each other". His answers: do the trees move together or each on its own: "Together (Recommended)"; do the MONEY and XP labels stay pinned or scroll away: "Stay pinned (Recommended)". So the notes of both trees scroll as one board between the labels at the top and the card along the bottom; the labels, the card that names the highlighted note and BACK never move.
