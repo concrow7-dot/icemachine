@@ -9,7 +9,7 @@ import {
   BASS_INDOORS_FACTOR, STORY_INDOORS_FACTOR, CUSTOMER_INDOORS_FACTOR, DRUM_CONE_RADIUS_FACTOR, DRUM_CONE_SOLO_SECONDS, LOU_BALL_REVERSED_SECONDS, LOU_BALL_TIP_FACTOR, TOW_COST_CENTS, GAS_CAN_FILL, COOLER_CAPACITY, ROTARY_HINT_LINE, ROTARY_HINT_REGULARS, REFUSE_ABOVE_CENTS, SMILE_TIP_PERCENT_STEPS, SPONGEPOP_KID_TIP_POINTS, TIP_PERCENT_STEPS } from '../config/tuning';
 import { coolerCellOpenIn, truckSpec, type TruckSpec } from './TruckSpec';
 import type { WorcesterMap } from '../config/mapTypes';
-import { Residents, type ResidentNow, type Wall } from './Residents';
+import { Residents, type Resident, type ResidentNow, type Wall } from './Residents';
 import { CurbFinder } from './CurbFinder';
 import { assignHints } from './Hints';
 import { HINT_LINES } from '../config/hintLines';
@@ -49,6 +49,7 @@ import {
 import { MAX_PRICE_CENTS, MENU_STARTS_AT_TOP } from '../config/tuning';
 import { MIRRORS_ID, SPEEDY_ID } from '../config/powerUps';
 import { SPEEDY_SPEED_FACTOR } from '../config/tuning';
+import { XP_DISTANCE_STEP, XP_DISTANCE_STEPS_PX, XP_FAST_PRICE, XP_HARD_TO_FIND, XP_NEW_PERSON, XP_NO_DENTS, XP_REGULAR, XP_SERVED_STEPS, XP_WALKER } from '../config/tuning';
 import { BASS_ID, FREE_NOTE_IDS, GAS_CAN_ID, NOTEBOOK_ID, iceCreamNoteId, POWER_UP_TREES, SMILE_ID, storyRefuseAboveCents } from '../config/powerUps';
 import { buyStatus, placeNotes, type BuyStatus } from './PowerUpBoard';
 import { addNotebookEntry, type NotebookEntry } from './Notebook';
@@ -64,6 +65,8 @@ export const EveningEvents = {
   MoneyChanged: 'money-changed',
   /** () — the clock reached 8pm */
   Ended: 'ended',
+  /** SCREAM-395: (points: number, xp: number, label: string) — XP was earned (points > 0) or spent on a note */
+  XpChanged: 'xp-changed',
   /** (waiting: boolean) — a customer arrived at, or left, the window */
   CustomerChanged: 'customer-changed',
   /** () — a cooler slot's flavour, quantity or price changed */
@@ -320,6 +323,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     uncleGas?: boolean;
     /** SCREAM-296: Story only: the power-ups bought so far this run (note ids). */
     powerUps?: readonly string[];
+    /** SCREAM-395: Story only: the XP in hand so far this run. */
+    xp?: number;
     /** SCREAM-245: Story only: what the Handy Notebook holds so far this run. */
     notebook?: readonly NotebookEntry[];
   }, mapId: MapId = 'worcester', guided = false) {
@@ -353,6 +358,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.otherMapSeen = carry?.otherMapSeen ?? false;
     this.uncleGasLeft = carry?.uncleGas ?? false;
     this.powerUpsOwned = [...(carry?.powerUps ?? [])];
+    this.xpNow = carry?.xp ?? 0; // SCREAM-395
     this.notebook = (carry?.notebook ?? []).map((e) => ({ ...e })); // SCREAM-245
     this.truckNow = truckSpec(!!carry?.story, this.powerUpsOwned);
     this.gasCanReady = this.powerUpsOwned.includes(GAS_CAN_ID); // SCREAM-122: full again every day
@@ -455,6 +461,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     if (!person || !this.story) return;
     if (this.tutorial?.step === 'sale') return; // the uncle's sale (PO)
     const id = person.resident.id;
+    this.xpForSale(sale, person.resident, (this.visits[id] ?? 0) === 0); // SCREAM-395
     this.visits[id] = (this.visits[id] ?? 0) + 1;
     if (this.visits[id] !== 2 || this.residents.kindOf(person.resident) !== 'regular') return;
     this.secondVisits.push(id);
@@ -608,6 +615,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
       this.endPending = true;
       return;
     }
+    // SCREAM-395 (PO, November 17): "an evening with no dents" earns XP (only if the truck left home).
+    if (this.xpOn && this.xpDrivenPx > 0 && this.damageTotalCents === 0) this.addXp(XP_NO_DENTS, 'No dents');
     this.ended = true;
     this.emit(EveningEvents.Ended);
   }
@@ -667,6 +676,13 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.changeMoney(cents, 'Debug');
   }
 
+  /** Debug (Shift+-, SCREAM-395): XP to test the XP tree with, in Story (the uncle's evening too). Not on the end-of-day list. */
+  debugAddXp(points: number): void {
+    if (this.ended || !this.story) return;
+    this.xpNow += points;
+    this.emit(EveningEvents.XpChanged, points, this.xpNow, 'Debug');
+  }
+
   /**
    * Debug (Shift+0, SCREAM-337; PO, November 15): "another testing helper. Fill gas." The tank
    * is full again; it costs nothing and counts as no purchase. The Temporary Gas Can is left alone.
@@ -717,7 +733,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
   powerUpStatus(id: string): BuyStatus | null {
     const note = POWER_UP_NOTES.find((n) => n.id === id);
     // SCREAM-271: the free notes (the Chocolate Eclair) are owned without being in the run's list.
-    return note ? buyStatus(note, [...FREE_NOTE_IDS, ...this.powerUpsOwned], this.cashCents, this.atHome) : null;
+    return note ? buyStatus(note, [...FREE_NOTE_IDS, ...this.powerUpsOwned], this.cashCents, this.atHome, this.xpNow) : null;
   }
 
   /**
@@ -825,9 +841,80 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.truckNow = truckSpec(!!this.story, this.powerUpsOwned); // SCREAM-309: a power-up may change the truck
     if (id === BASS_ID) for (const people of this.residentsByMap.values()) people.indoorsFactor = this.indoorsFactor; // SCREAM-329, SCREAM-366: from now on
     if (id === SPEEDY_ID) for (const people of this.residentsByMap.values()) people.speedyFactor = this.speedyFactor; // SCREAM-342: from now on
+    if (note.xp > 0) {
+      // SCREAM-395: an XP note is paid with XP, not cash.
+      this.xpNow -= note.xp;
+      this.xpSpent += note.xp;
+      this.emit(EveningEvents.XpChanged, -note.xp, this.xpNow, 'Power-up');
+      return true;
+    }
     this.powerUpsSpentCents += note.priceCents;
     this.changeMoney(-note.priceCents, 'Power-up');
     return true;
+  }
+
+  // ---- XP (SCREAM-395) ----
+
+  private xpNow = 0;
+  private xpSpent = 0;
+  private xpServed = 0;
+  private xpDrivenPx = 0;
+  private readonly xpTally = new Map<string, { count: number; points: number }>();
+
+  /** The XP in hand: the run's, plus tonight's, less what was spent on notes. */
+  get xp(): number {
+    return this.xpNow;
+  }
+
+  /**
+   * PO, November 17: "No xp in quickplay. No xp when the uncle is with you but once he leaves then you can."
+   * So: Story only, and on the uncle's evening only from his goodbye on (or once he is skipped).
+   */
+  get xpOn(): boolean {
+    if (!this.story) return false;
+    const uncle = this.tutorial;
+    return !uncle || uncle.skipped || uncle.step === 'alone' || uncle.step === 'done';
+  }
+
+  /** Tonight's XP by where it came from, biggest first, and its total (the end-of-day screen shows it). */
+  get xpEarned(): { total: number; spent: number; lines: { label: string; count: number; points: number }[] } {
+    const lines = [...this.xpTally].map(([label, t]) => ({ label, ...t })).sort((a, b) => b.points - a.points);
+    return { total: lines.reduce((sum, l) => sum + l.points, 0), spent: this.xpSpent, lines };
+  }
+
+  /** Earns XP (when it is on). `label` is its line on the end-of-day screen; `quiet` leaves the pop-up to the caller. */
+  private addXp(points: number, label: string, quiet = false): number {
+    if (!this.xpOn || this.ended || points <= 0) return 0;
+    this.xpNow += points;
+    const line = this.xpTally.get(label) ?? { count: 0, points: 0 };
+    line.count += 1;
+    line.points += points;
+    this.xpTally.set(label, line);
+    if (!quiet) this.emit(EveningEvents.XpChanged, points, this.xpNow, label);
+    return points;
+  }
+
+  /** A paid sale's XP, shown as one pop-up. `first`: this person had never been served this run. */
+  private xpForSale(sale: Sale, who: Resident, first: boolean): void {
+    if (!this.xpOn) return;
+    this.xpServed += 1;
+    let points = 0;
+    const step = XP_SERVED_STEPS.find(([customers]) => customers === this.xpServed);
+    if (step) points += this.addXp(step[1], 'Customers', true);
+    if (first) points += this.addXp(XP_NEW_PERSON, 'New faces', true);
+    if (who.hardToFind) points += this.addXp(XP_HARD_TO_FIND, 'Hard to find', true);
+    else if (who.walker) points += this.addXp(XP_WALKER, 'Walkers', true);
+    else if (this.residents.kindOf(who) === 'regular') points += this.addXp(XP_REGULAR, 'Regulars', true);
+    if (sale.outcome?.kind === 'paid' && sale.outcome.tipPercent >= Math.max(...sale.tipSteps)) points += this.addXp(XP_FAST_PRICE, 'Fast prices', true);
+    if (points > 0) this.emit(EveningEvents.XpChanged, points, this.xpNow, 'Sale');
+  }
+
+  /** PO: XP for "distance driven", at steps of one evening's driving. */
+  private xpForDriving(px: number): void {
+    if (!this.xpOn) return;
+    const before = this.xpDrivenPx;
+    this.xpDrivenPx += px;
+    for (const at of XP_DISTANCE_STEPS_PX) if (before < at && this.xpDrivenPx >= at) this.addXp(XP_DISTANCE_STEP, 'Distance');
   }
 
   /**
@@ -908,6 +995,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
    */
   burnFuel(px: number): boolean {
     if (this.ended || px <= 0) return false;
+    this.xpForDriving(px); // SCREAM-395
     const before = this.fuelLeft;
     this.fuelLeft = Math.max(0, this.fuelLeft - px / this.spec.fuelTankPx);
     if (before > 0 && this.fuelLeft <= 0) {
@@ -1261,6 +1349,7 @@ export class EveningState extends Phaser.Events.EventEmitter {
     this.tutorial?.signal('saleClosed');
     if (this.endPending) {
       this.endPending = false;
+      if (this.xpOn && this.xpDrivenPx > 0 && this.damageTotalCents === 0) this.addXp(XP_NO_DENTS, 'No dents'); // SCREAM-395
       this.ended = true;
       this.emit(EveningEvents.Ended);
     }

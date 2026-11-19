@@ -8,13 +8,12 @@ const { POWER_UP_TREES } = await game('config/powerUps');
 const { placeNotes, buyStatus } = await game('state/PowerUpBoard');
 const { NOTEBOOK_ENTRIES_PER_PAGE } = await game('config/tuning');
 
-test('SCREAM-245: Handy Notebook is the Customer tree\'s middle third-row note, $20 (SCREAM-369), unlocked by the speaker OR the calculator (PO: "need either")', () => {
+test('SCREAM-245: Handy Notebook; SCREAM-395: an XP note now, under the Calculator', () => {
   const n = placeNotes(POWER_UP_TREES).find((x) => x.id === 'handy-notebook');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'HANDY NOTEBOOK', 2000, 'notepad', ['upgrade-speaker', 'calculator'], 'Hints given by customers are written down.']);
-  assert.equal(buyStatus(n, ['service-with-a-smile'], 4000, true), 'locked');
-  assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'ok');
-  assert.equal(buyStatus(n, ['service-with-a-smile', 'calculator'], 4000, true), 'ok');
-  assert.equal(buyStatus(n, ['service-with-a-smile', 'calculator'], 1999, true), 'poor');
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'HANDY NOTEBOOK', 0, 'notepad', ['calculator'], 'Hints given by customers are written down.']);
+  assert.equal(buyStatus(n, [], 0, true, 999), 'locked');
+  assert.equal(buyStatus(n, ['calculator'], 0, true, n.xp), 'ok');
+  assert.equal(buyStatus(n, ['calculator'], 4000, true, n.xp - 1), 'poor');
 });
 
 test('entries are written at the end, with the day and who said it', () => {
@@ -55,12 +54,11 @@ test('reading a save: only real entries are kept; a save from before the noteboo
   assert.deepEqual(readNotebook([{ day: 2, who: 'Big Kev', text: 'Hi' }, { day: 0, who: 'x', text: 'y' }, { day: 2, who: 5, text: 'y' }, null, { day: 2, who: 'x', text: '' }]), [{ day: 2, who: 'Big Kev', text: 'Hi' }]);
 });
 
-test('SCREAM-330: This Century Register is the Customer tree\'s right third-row note, under Calculator, $20; the tree mirrors the Truck tree', () => {
+test('SCREAM-330: This Century Register; SCREAM-395: an XP note now, under the Calculator, beside the Handy Notebook', () => {
   const notes = placeNotes(POWER_UP_TREES);
   const n = notes.find((x) => x.id === 'this-century-register');
-  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [2, 'THIS CENTURY REGISTER', 2000, 'tablet', ['calculator'], 'Click the icons of the ice cream to calculate price.']);
-  assert.equal(buyStatus(n, ['service-with-a-smile', 'upgrade-speaker'], 4000, true), 'locked');
-  assert.equal(buyStatus(n, ['service-with-a-smile', 'calculator'], 4000, true), 'ok');
-  const rows = (tree) => notes.filter((x) => x.tree === tree).map((x) => `${Math.round((x.y - 136) / 60)}:${Math.round((x.x - [170, 480, 790][tree]) / 84)}`);
-  assert.deepEqual(rows(2), rows(0));
+  assert.deepEqual([n.tree, n.name, n.priceCents, n.logo, n.from, n.description], [1, 'THIS CENTURY REGISTER', 0, 'tablet', ['calculator'], 'Click the icons of the ice cream to calculate price.']);
+  assert.equal(buyStatus(n, [], 0, true, 999), 'locked');
+  assert.equal(buyStatus(n, ['calculator'], 0, true, n.xp), 'ok');
+  assert.equal(n.y, notes.find((x) => x.id === 'handy-notebook').y);
 });

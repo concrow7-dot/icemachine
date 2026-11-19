@@ -30,6 +30,8 @@ export class HudScene extends Phaser.Scene {
   private debugText?: Phaser.GameObjects.Text;
   private clockText!: Phaser.GameObjects.Text;
   private moneyText!: Phaser.GameObjects.Text;
+  /** SCREAM-395: "XP 120", left of the cash (test hook). */
+  xpText!: Phaser.GameObjects.Text;
   private soldOutText!: Phaser.GameObjects.Text;
   private patienceWarning!: Phaser.GameObjects.Container;
   /** SCREAM-208: true from running out of gas until the end-of-evening screen; the message shown meanwhile. */
@@ -84,6 +86,10 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(1, 0);
 
+    // SCREAM-395 (PO, November 18): "I want to add the amount of xp a player has next to the cash amount".
+    // Just left of the cash, in the XP pop-up's colour; only where XP counts (Story, once the uncle has left).
+    this.xpText = this.add.text(0, 10, '', { fontFamily: 'monospace', fontSize: '22px', color: '#d9c8ff' }).setOrigin(1, 0).setName('xp-total');
+
     // Issue #12: on the road with an empty cooler, no customers come.
     this.soldOutText = this.add
       .text(0, 12, 'SOLD OUT', {
@@ -135,6 +141,13 @@ export class HudScene extends Phaser.Scene {
     };
 
     const onStock = () => this.refresh();
+    // SCREAM-395: XP earned shows like money does, a line lower and in its own colour.
+    const onXp = (points: number, _xp: number, label: string) => {
+      if (points > 0) this.showXpChange(points, label);
+      this.refresh();
+    };
+    this.evening.on(EveningEvents.XpChanged, onXp);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.evening.off(EveningEvents.XpChanged, onXp));
     this.evening.on(EveningEvents.MoneyChanged, onMoney);
     this.evening.on(EveningEvents.CoolerChanged, onStock);
     this.evening.once(EveningEvents.Ended, onEnded);
@@ -158,7 +171,7 @@ export class HudScene extends Phaser.Scene {
    * TEMPORARY debug keys, available on every evening screen.
    * SCREAM-88 (PO, November 1): only "Shift+3: end evening" is shown, just right
    * of the clock and day, and since SCREAM-220 only with ?debug in the address. Shift+1 (+$4.50), Shift+2 (-$2.00), Shift+5 (show the loading screen, SCREAM-75), Shift+6 (the next
-   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247), Shift+8 (...with a line about a neighbour, SCREAM-248), Shift+9 (+$50 cash, not profit, SCREAM-324), Shift+0 (a full gas tank, SCREAM-337) and Shift+4 (serve now) still work for testing, but aren't shown.
+   * tipped sale ends with a hint, SCREAM-103), Shift+7 (the next paid sale ends with the customer's schedule line, SCREAM-247), Shift+8 (...with a line about a neighbour, SCREAM-248), Shift+- (+50 XP in Story, SCREAM-395), Shift+9 (+$50 cash, not profit, SCREAM-324), Shift+0 (a full gas tank, SCREAM-337) and Shift+4 (serve now) still work for testing, but aren't shown.
    */
   private addDebugKeys(): void {
     // SCREAM-220 (PO, November 9): players don't see the debug hint; add ?debug to the address to show it.
@@ -204,6 +217,7 @@ export class HudScene extends Phaser.Scene {
       if (event.code === 'Digit8') this.evening.forceNeighbourLine = true; // SCREAM-248: the next paid sale ends with a line about a neighbour
       if (event.code === 'Digit9') this.evening.debugAddCash(5000); // SCREAM-324: +$50 on any evening screen, not counted as profit
       if (event.code === 'Digit0') this.evening.debugFillGas(); // SCREAM-337: a full tank on any evening screen, free
+      if (event.code === 'Minus') this.evening.debugAddXp(50); // SCREAM-395: +50 XP in Story (engineering's addition, for testing the XP tree)
     });
   }
 
@@ -358,6 +372,7 @@ export class HudScene extends Phaser.Scene {
     const cents = this.evening.moneyCents;
     this.moneyText.setText(`Cash ${formatMoney(cents)}`);
     this.moneyText.setColor(cents < 0 ? '#ff9c9c' : '#c8f7c5');
+    this.xpText.setVisible(this.evening.xpOn).setText(`XP ${this.evening.xp}`).setX(this.moneyText.x - this.moneyText.width - 26);
     this.soldOutText
       .setVisible(this.evening.isSoldOut)
       .setX(this.leftOfMoney() - 6);
@@ -365,7 +380,8 @@ export class HudScene extends Phaser.Scene {
 
   /** Where SOLD OUT and the "!" line up: just left of the money (SCREAM-238: the gauge no longer sits there). */
   private leftOfMoney(): number {
-    return this.moneyText.x - this.moneyText.width - 14;
+    const left = this.xpText.visible ? this.xpText.x - this.xpText.width : this.moneyText.x - this.moneyText.width;
+    return left - 14;
   }
 
   /** SCREAM-208: stops the truck, shows "Needed a tow home." (SCREAM-390: with its price in Story) (the gauge flashes meanwhile), then `then`. */
@@ -414,6 +430,19 @@ export class HudScene extends Phaser.Scene {
         .setDepth(901);
     }
     this.time.delayedCall(TOW_MESSAGE_SECONDS * 1000, then);
+  }
+
+  /** SCREAM-395: the last XP pop-up's words (test hook). */
+  lastXpPopup = '';
+
+  /** SCREAM-395: shows "+5 XP Sale" under the money pop-ups, then fades it out. */
+  private showXpChange(points: number, label: string): void {
+    const { width } = this.scale;
+    this.lastXpPopup = `+${points} XP ${label}`;
+    const popup = this.add
+      .text(width - 16, 76, this.lastXpPopup, { fontFamily: 'monospace', fontSize: '16px', color: '#d9c8ff', stroke: '#1b1030', strokeThickness: 3 })
+      .setOrigin(1, 0);
+    this.tweens.add({ targets: popup, y: 104, alpha: 0, duration: 1600, ease: 'Cubic.easeOut', onComplete: () => popup.destroy() });
   }
 
   /** Shows "+$4.50 Sale" or "-$2.00 Damage" under the total, then fades it out. */

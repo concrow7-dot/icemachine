@@ -33,6 +33,9 @@ export class DayEndScene extends Phaser.Scene {
     showLoadingWhileLoading(this); // SCREAM-75
   }
 
+  /** SCREAM-395: the XP line's words, or '' when there is none (test hook). */
+  xpLine = '';
+
   /** SCREAM-276: the gas dial (a test hook); only when there is a tomorrow. */
   gasDial?: FuelDialParts;
 
@@ -126,7 +129,23 @@ export class DayEndScene extends Phaser.Scene {
       : this.outcome === 'next'
         ? `You ran out of gas!${towNote}\nTomorrow you start with 1/3 of a tank.\n\n`
         : `You ran out of gas!${towNote}\n\n`;
-    this.add.text(540, 280, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: 6 });
+    // SCREAM-395: tonight's XP and where it came from, under the cooler line; the message moves down to make room.
+    let messageY = 280;
+    const xp = evening.xpEarned;
+    this.xpLine = '';
+    if (xp.total > 0 || evening.xp > 0) {
+      this.xpLine = `XP earned: +${xp.total}   XP to spend: ${evening.xp}`;
+      this.add.text(540, 258, this.xpLine, { fontFamily: MONO, fontSize: '18px', color: '#d9c8ff' }).setName('xp-line');
+      messageY = 292;
+      if (xp.lines.length > 0) {
+        const from = this.add
+          .text(540, 284, xp.lines.map((l) => `${l.label} +${l.points}`).join(' · '), { fontFamily: MONO, fontSize: '12px', color: '#a99cc9', wordWrap: { width: 400 }, lineSpacing: 2 })
+          .setName('xp-from');
+        messageY = from.getBounds().bottom + 12;
+      }
+    }
+    // With the XP above it, the long out-of-gas message is set tighter so it still clears the footer.
+    this.add.text(540, messageY, gasNote + message, { fontFamily: MONO, fontSize: '18px', color: '#d6deeb', lineSpacing: messageY > 280 && gasNote ? 0 : 6 }).setName('day-message');
 
     // SCREAM-276 (PO, November 12): the gas dial, the same as on the road, bottom left. It shows what
     // tomorrow's tank starts with (after a near-empty or empty night, the 1/6 or 1/3 the player is given).

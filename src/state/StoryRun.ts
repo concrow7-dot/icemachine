@@ -74,6 +74,8 @@ export class StoryRun {
   uncleGasUsed = false;
   /** SCREAM-296: the power-ups owned when tonight started (note ids). Bought with the run's cash; kept for the rest of the run. */
   powerUps: string[] = [];
+  /** SCREAM-395: the XP in hand when tonight started. A new run starts at 0 (PO: "Should reset, as well as all powerups unlocked"). */
+  xp = 0;
   /** SCREAM-245: what the Handy Notebook held when tonight started (so Restart Evening gives tonight's back). */
   notebook: NotebookEntry[] = [];
   /** Set once the run is over (the last day ended, or out of money). */
@@ -99,6 +101,7 @@ export class StoryRun {
       this.otherMapSeen = save.otherMapSeen ?? false;
       this.uncleGasUsed = save.uncleGasUsed ?? false;
       this.powerUps = [...(save.powerUps ?? [])];
+      this.xp = save.xp ?? 0;
       this.notebook = (save.notebook ?? []).map((e) => ({ ...e }));
       if (save.seed !== undefined) this.seed = save.seed;
     }
@@ -118,6 +121,7 @@ export class StoryRun {
         otherMapSeen: this.otherMapSeen,
         uncleGas: !this.uncleGasUsed,
         powerUps: this.powerUps,
+        xp: this.xp,
         notebook: this.notebook,
       },
       STORY_MAP,
@@ -143,6 +147,7 @@ export class StoryRun {
     if (evening.otherMapSeen) this.otherMapSeen = true; // SCREAM-377
     if (evening.uncleGasUsed) this.uncleGasUsed = true;
     this.powerUps = [...evening.powerUps]; // SCREAM-296
+    this.xp = evening.xp; // SCREAM-395
     this.notebook = evening.notebook.map((e) => ({ ...e })); // SCREAM-245
     const b = evening.breakdown;
     this.totals = {
@@ -172,6 +177,7 @@ export class StoryRun {
         otherMapSeen: this.otherMapSeen,
         uncleGasUsed: this.uncleGasUsed,
         powerUps: this.powerUps,
+        xp: this.xp,
         notebook: this.notebook,
       });
     } else {

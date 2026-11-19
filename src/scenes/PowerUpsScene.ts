@@ -39,6 +39,11 @@ const HINT_CLOSED = '← ↑ ↓ → Look Around    Enter: Open Note    B: Back 
 const HINT_OPEN_BUY = 'Enter: Buy    B: Close Note';
 const HINT_OPEN = 'B: Close Note';
 
+/** SCREAM-395: what a note costs, as shown: "$15.00", or "40 XP" for a note paid with XP. */
+function priceOf(note: PlacedNote): string {
+  return note.xp > 0 ? `${note.xp} XP` : formatMoney(note.priceCents);
+}
+
 export class PowerUpsScene extends Phaser.Scene {
   /** Test hooks: every note with its place, the one highlighted, and whether it is opened big. */
   notes: PlacedNote[] = [];
@@ -57,6 +62,8 @@ export class PowerUpsScene extends Phaser.Scene {
   /** The opened note's words, top to bottom (name, description, price, the line under it). */
   bigTexts: string[] = [];
   hint!: Phaser.GameObjects.Text;
+  /** SCREAM-395: the XP tree's label, "XP: 120" (test hook). */
+  xpLabel: Phaser.GameObjects.Text | null = null;
   private evening!: EveningState;
   private ring!: Phaser.GameObjects.Graphics;
   private noteArt = new Map<string, Phaser.GameObjects.Container>();
@@ -85,7 +92,7 @@ export class PowerUpsScene extends Phaser.Scene {
     this.drawBoard(width, height);
     this.drawStrings();
     for (const note of this.notes) this.addNote(note);
-    POWER_UP_TREES.forEach((tree, t) => this.addTreeLabel(tree.name, BOARD_LAYOUT.treeX[t], tree.string));
+    POWER_UP_TREES.forEach((tree, t) => this.addTreeLabel(tree.id, tree.name, BOARD_LAYOUT.treeX[t]!, tree.string));
 
     this.ring = this.add.graphics().setDepth(5);
     this.addDetail();
@@ -111,7 +118,11 @@ export class PowerUpsScene extends Phaser.Scene {
     // The cash can change while the board is open (a debug key, or a purchase): redraw what depends on it.
     const onMoney = () => this.refresh();
     this.evening.on(EveningEvents.MoneyChanged, onMoney);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.evening.off(EveningEvents.MoneyChanged, onMoney));
+    this.evening.on(EveningEvents.XpChanged, onMoney); // SCREAM-395: and the XP
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.evening.off(EveningEvents.MoneyChanged, onMoney);
+      this.evening.off(EveningEvents.XpChanged, onMoney);
+    });
 
     this.refresh();
   }
@@ -189,12 +200,13 @@ export class PowerUpsScene extends Phaser.Scene {
   }
 
   /** The tree's name on a strip of paper, pinned at both ends. */
-  private addTreeLabel(name: string, x: number, pinColour: number): void {
+  private addTreeLabel(id: string, name: string, x: number, pinColour: number): void {
     const y = 80;
     const w = 190;
     this.add.rectangle(x + 2, y + 3, w, 36, 0x000000, 0.22);
     this.add.rectangle(x, y, w, 36, 0xfffdf2, 1).setStrokeStyle(2, OUTLINE, 0.9);
-    this.add.text(x, y + 1, name, { fontFamily: MARKER_FONT, fontSize: '24px', color: INK }).setOrigin(0.5).setName(`tree-${name}`);
+    const label = this.add.text(x, y + 1, name, { fontFamily: MARKER_FONT, fontSize: '24px', color: INK }).setOrigin(0.5).setName(`tree-${name}`);
+    if (id === 'xp') this.xpLabel = label; // SCREAM-395: the XP tree's label tells the XP in hand
     for (const px of [x - w / 2 + 10, x + w / 2 - 10]) {
       this.add.circle(px, y, 5, pinColour, 1).setStrokeStyle(1.5, OUTLINE, 1);
     }
@@ -289,7 +301,8 @@ export class PowerUpsScene extends Phaser.Scene {
       .setOrigin(0.5, paragraphs ? 0 : 0.5);
     this.bigDescription = description;
     const textTop = nameOnTwoLines ? BIG_TEXT_TOP + 12 : BIG_TEXT_TOP;
-    const priceGap = note.priceCents === 0 ? 0 : 58;
+    const free = note.priceCents === 0 && note.xp === 0;
+    const priceGap = free ? 0 : 58;
     const flowPriceY = textTop + description.height + 30;
     const flowButtonY = flowPriceY + priceGap + (priceGap ? 0 : 6);
     const h = paragraphs ? Math.max(BIG.h, flowButtonY + 44) : BIG.h;
@@ -324,13 +337,13 @@ export class PowerUpsScene extends Phaser.Scene {
       .setOrigin(0.5);
     description.setPosition(x, paragraphs ? top + textTop : top + 210);
     const price = this.add
-      .text(x, paragraphs ? top + flowPriceY : top + 266, formatMoney(note.priceCents), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
+      .text(x, paragraphs ? top + flowPriceY : top + 266, priceOf(note), { fontFamily: MARKER_FONT, fontSize: '32px', color: status === 'poor' ? RED : INK })
       .setOrigin(0.5);
     big.add([name, description, price]);
-    this.bigTexts = [note.name, note.description, formatMoney(note.priceCents)];
+    this.bigTexts = [note.name, note.description, priceOf(note)];
     // SCREAM-271 (PO, November 14): a note that was never for sale (the Chocolate Eclair) shows no
     // price: "$0.00" "makes it seem like you paid for it already, or that the ice cream should cost that much".
-    if (note.priceCents === 0) {
+    if (free) {
       price.setVisible(false);
       this.bigTexts = [note.name, note.description];
     }
@@ -369,6 +382,7 @@ export class PowerUpsScene extends Phaser.Scene {
   }
 
   private refresh(): void {
+    this.xpLabel?.setText(`XP: ${this.evening.xp}`);
     for (const n of this.notes) this.drawNote(n);
     this.big?.destroy();
     this.big = null;
@@ -386,7 +400,7 @@ export class PowerUpsScene extends Phaser.Scene {
     this.detailName.setText(note.name);
     // The card has one line: a long description is cut short there (the opened note has all of it).
     this.detailText.setText(note.description.length > 58 ? `${note.description.slice(0, 55).trimEnd()}...` : note.description);
-    this.detailStatus.setText(status === 'owned' ? 'Owned' : formatMoney(note.priceCents)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
+    this.detailStatus.setText(status === 'owned' ? 'Owned' : priceOf(note)).setColor(status === 'owned' ? '#1f6b2e' : status === 'poor' ? RED : INK);
     if (this.open) this.drawBig(note);
   }
 }
