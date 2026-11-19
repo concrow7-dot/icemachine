@@ -8,7 +8,7 @@ import type { PowerUpLogo, PowerUpTree } from '../config/powerUps';
 export const BOARD_LAYOUT = {
   treeX: [250, 710],
   firstRowY: 136,
-  rowGap: 60,
+  rowGap: 54, // SCREAM-396: the Money tree has seven rows now (was 60 for four)
   colGap: 84,
   note: 46,
 };

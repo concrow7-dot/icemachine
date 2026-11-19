@@ -744,7 +744,8 @@ export class EveningState extends Phaser.Events.EventEmitter {
     // SCREAM-334: an ice cream made for Story's cork board is never on Quick play's clipboard.
     if (!this.story) return !getFlavour(flavour).storyOnly;
     const id = iceCreamNoteId(flavour);
-    return FREE_NOTE_IDS.includes(id) || this.powerUpsOwned.includes(id);
+    // SCREAM-396: an ice cream whose note is off the board (the sandwich) can't be stocked, even by an old save that owns it.
+    return FREE_NOTE_IDS.includes(id) || (this.powerUpsOwned.includes(id) && POWER_UP_TREES.some((t) => t.notes.some((n) => n.id === id)));
   }
 
   /** SCREAM-303: tonight's tip steps: 25% first and 10 seconds longer once Service With A Smile is owned. */
